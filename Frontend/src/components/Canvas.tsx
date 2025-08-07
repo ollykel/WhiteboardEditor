@@ -18,6 +18,7 @@ export interface CanvasProps {
 // For starters, just assume all rectangles have uniform width, height, and
 // color.
 interface RectProps {
+  id: number;
   x: number;
   y: number;
 }
@@ -25,13 +26,19 @@ interface RectProps {
 const Canvas = (props: CanvasProps) => {
   const { width, height } = props;
   const stageRef = useRef<returntype<Stage> | null>(null);
+  // for generating unique ids
+  const rectCountRef = useRef<number>(0);
   const [rectangles, setRectangles] = useState<RectProps[]>([]);
 
   const addRectangle = (x: number, y: number) => {
+    const rectCount = rectCountRef.current;
+
     setRectangles((orig) => [
       ...orig,
-      { x, y }
+      { id: rectCount, x, y }
     ]);
+
+    rectCountRef.current += 1;
   };
 
   const handleStageClick = (ev: React.MouseEvent<React.HTMLElement>) => {
@@ -45,16 +52,17 @@ const Canvas = (props: CanvasProps) => {
       ref={stageRef}
       width={width}
       height={height}
-      onClick={handleStageClick}
+      onMouseDown={handleStageClick}
     >
       <Layer>
         <Text text="Click to insert rectangles" fontSize={15} />
         {
           rectangles.map((props: RectProps) => {
-            const { x, y } = props;
+            const { id, x, y } = props;
             
             return (
               <Rect
+                key={id}
                 x={x}
                 y={y}
                 width={50}
