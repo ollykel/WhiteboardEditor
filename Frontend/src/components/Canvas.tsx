@@ -4,7 +4,7 @@
 //
 // =============================================================================
 
-import { useRef, useEffect } from 'react';
+import { Stage, Layer, Rect, Circle, Text } from 'react-konva';
 
 export interface CanvasProps {
   width: number;
@@ -12,42 +12,30 @@ export interface CanvasProps {
 }
 
 const Canvas = (props: CanvasProps) => {
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const { width, height } = props;
 
-  const handleClick = (ev: React.MouseEvent<React.HTMLElement>) => {
-    const boundingRect = canvasRef.current.getBoundingClientRect();
-    const { x: canvasX, y: canvasY } = boundingRect;
-    const { clientX, clientY } = ev;
-    const offX = clientX - canvasX;
-    const offY = clientY - canvasY;
-    console.log(`Click received at x = ${offX}, y = ${offY}`);
-  };
-
-  // Draw initial rectangle
-  useEffect(() => {
-    if (canvasRef.current !== null) {
-      const ctx = canvasRef.current.getContext('2d');
-
-      ctx.fillStyle = 'rgb(200, 0, 0)';
-      ctx.fillRect(10, 10, 50, 50);
-    }
-  }, [canvasRef.current]);
-
   return (
-    <div>
-      <h2>Canvas</h2>
-      <div style={{ 'backgroundColor': 'white' }}>
-        <canvas
-          ref={canvasRef}
-          width={width}
-          height={height}
-          onClick={handleClick}
-        >
-          Please enable JavaScript to enable canvas.
-        </canvas>
-      </div>
-    </div>
+    <Stage width={width} height={height}>
+      <Layer>
+        <Text text="Try to drag shapes" fontSize={15} />
+        <Rect
+          x={20}
+          y={50}
+          width={100}
+          height={100}
+          fill="red"
+          shadowBlur={10}
+          draggable
+        />
+        <Circle
+          x={200}
+          y={100}
+          radius={50}
+          fill="green"
+          draggable
+        />
+      </Layer>
+    </Stage>
   );
 };
 
