@@ -4,6 +4,7 @@
 //
 // =============================================================================
 
+import { useState, useRef } from 'react';
 import { Stage, Layer, Rect, Circle, Text } from 'react-konva';
 
 export interface CanvasProps {
@@ -11,29 +12,56 @@ export interface CanvasProps {
   height: number;
 }
 
+// For starters, just assume all rectangles have uniform width, height, and
+// color.
+interface RectProps {
+  x: number;
+  y: number;
+}
+
 const Canvas = (props: CanvasProps) => {
   const { width, height } = props;
+  const stageRef = useRef<returntype<Stage> | null>(null);
+  const [rectangles, setRectangles] = useState<RectProps[]>([]);
+
+  const addRectangle = (x: number, y: number) => {
+    setRectangles((orig) => [
+      ...orig,
+      { x, y }
+    ]);
+  };
+
+  const handleStageClick = (ev: React.MouseEvent<React.HTMLElement>) => {
+    const { offsetX, offsetY } = ev.evt;
+
+    addRectangle(offsetX, offsetY);
+  };
 
   return (
-    <Stage width={width} height={height}>
+    <Stage
+      ref={stageRef}
+      width={width}
+      height={height}
+      onClick={handleStageClick}
+    >
       <Layer>
-        <Text text="Try to drag shapes" fontSize={15} />
-        <Rect
-          x={20}
-          y={50}
-          width={100}
-          height={100}
-          fill="red"
-          shadowBlur={10}
-          draggable
-        />
-        <Circle
-          x={200}
-          y={100}
-          radius={50}
-          fill="green"
-          draggable
-        />
+        <Text text="Click to insert rectangles" fontSize={15} />
+        {
+          rectangles.map((props: RectProps) => {
+            const { x, y } = props;
+            
+            return (
+              <Rect
+                x={x}
+                y={y}
+                width={50}
+                height={50}
+                fill="red"
+                shadowBlur={10}
+              />
+            );
+          })
+        }
       </Layer>
     </Stage>
   );
