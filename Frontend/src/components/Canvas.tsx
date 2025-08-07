@@ -2,6 +2,9 @@
 //
 // Component which allows users to draw within the browser.
 //
+// Makes use of react-konva. For documentation, see
+// https://konvajs.org/docs/react/index.html.
+//
 // =============================================================================
 
 import { useState, useRef } from 'react';
