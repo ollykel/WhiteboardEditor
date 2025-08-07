@@ -6,8 +6,8 @@ const App = () => {
   return (
     <div>
       <Canvas
-        width={256}
-        height={256}
+        width={512}
+        height={512}
       />
     </div>
   );
