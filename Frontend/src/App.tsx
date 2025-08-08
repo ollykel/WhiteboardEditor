@@ -1,14 +1,11 @@
 import './App.css'
 
-import Canvas from '@/components/Canvas';
+import Whiteboard from './pages/Whiteboard';
 
 const App = () => {
   return (
     <div>
-      <Canvas
-        width={512}
-        height={512}
-      />
+      <Whiteboard />
     </div>
   );
 };
