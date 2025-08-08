@@ -85,6 +85,11 @@
 .canvas-card {
   display: flex;
   flex-direction: column;
+  padding: 1rem;
+}
+
+.active-users {
+  text-align: center;
 }
 
 .canvas-title {
