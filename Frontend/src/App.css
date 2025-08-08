@@ -46,9 +46,21 @@
   flex-direction: column;
 }
 
+#whiteboard-header {
+  text-align: center;
+}
+
+#whiteboard-content {
+  display: flex;
+}
+
 #whiteboard-toolbar {
   display: flex;
   flex-direction: column;
   flex-shrink: 0;
   text-align: center;
+}
+
+#canvas-container {
+  
 }
