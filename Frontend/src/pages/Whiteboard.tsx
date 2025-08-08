@@ -20,14 +20,18 @@ function Whiteboard() {
           })}
         </aside>
         <div id="canvas-container">
-          <Canvas
-            width={512}
-            height={512}
-          />
-          <Canvas
-            width={512}
-            height={512}
-          />
+          <div className="canvas">
+            <Canvas
+              width={512}
+              height={512}
+            />
+          </div>
+          <div className="canvas">
+            <Canvas
+              width={512}
+              height={512}
+            />
+          </div>
         </div>
       </div>
     </main>
