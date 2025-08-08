@@ -22,6 +22,7 @@ function Whiteboard() {
         <div id="canvas-container">
           <CanvasCard title="Canvas A"></CanvasCard>
           <CanvasCard title="Canvas B"></CanvasCard>
+          {/* <CanvasCard title="Canvas C"></CanvasCard> */}
         </div>
       </div>
     </main>

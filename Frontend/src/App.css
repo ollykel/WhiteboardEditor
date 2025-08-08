@@ -79,7 +79,7 @@
   flex-direction: row;
   justify-content: space-around;
   margin: 2rem;
-  
+  flex-wrap: wrap
 }
 
 .canvas-card {
