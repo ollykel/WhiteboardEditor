@@ -1,14 +1,21 @@
 import Canvas from "@/components/Canvas";
 
-// Hardcoded placeholder
+// TODO: Swap out hardcoded placeholder array with dynamic data
 const tools = ["Vector Tool", "Rectangle", "Ellipse", "Import Image", "New Canvas"];
 
 function Whiteboard() {
   return (
     <main id="whiteboard-main">
-      <aside>
-      {/* TODO: separate into sidebar component */}
-
+      <div>
+      
+      </div>
+      <aside id="whiteboard-toolbar"> {/* TODO: separate into sidebar component */}
+        <h2>Tools</h2>
+        {tools.map((tool) => {
+          return (
+            <h3>{tool}</h3>
+          );
+        })}
       </aside>
 
       <Canvas
