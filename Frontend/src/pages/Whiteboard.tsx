@@ -8,24 +8,26 @@ function Whiteboard() {
   return (
     <main className="flex flex-col justify-center">
       {/* Header | TODO: separate into Header component */}
-      <div 
-        className="text-center shadow-md rounded-2xl mx-20"
-      > 
-        <h1>{title}</h1>
+      <div className="text-center shadow-md rounded-2xl mx-20 m-1 p-3"> 
+        <h1 className="text-2xl">{title}</h1>
       </div>
       {/* Content */}
-      <div className="flex flex-1 justify-center items-center">   
+      <div className="flex flex-1 justify-center items-center"> {/* Might not need this to be flex anymore */}
         {/* Toolbar */}
-        <aside className="flex flex-col flex-shrink-0 text-center p-4 m-4 rounded-2xl shadow-md"> {/* TODO: separate into Sidebar component */}
-          <h2>Tools</h2>
+        <aside className="fixed top-1/2 -translate-y-1/2 left-1 max-w-40 flex flex-col flex-shrink-0 text-center p-4 m-1 rounded-2xl shadow-md"> {/* TODO: separate into Sidebar component */}
+          <h2 className="text-2xl font-bold mb-4">Tools</h2>
           {tools.map((tool) => {
             return (
-              <h3>{tool}</h3>
+              <h3 className="m-2">{tool}</h3>
             );
           })}
         </aside>
         {/* Canvas Container */}
-        <div className="flex flex-1 flex-row justify-around m-8 flex-wrap">
+        <div className="flex flex-1 flex-row justify-center flex-wrap ml-42">
+          <CanvasCard title="Canvas A"></CanvasCard>
+          <CanvasCard title="Canvas B"></CanvasCard>
+          <CanvasCard title="Canvas A"></CanvasCard>
+          <CanvasCard title="Canvas B"></CanvasCard>
           <CanvasCard title="Canvas A"></CanvasCard>
           <CanvasCard title="Canvas B"></CanvasCard>
           {/* <CanvasCard title="Canvas C"></CanvasCard> */}

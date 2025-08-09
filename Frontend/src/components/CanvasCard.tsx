@@ -6,7 +6,7 @@ interface CanvasCardProps {
 
 function CanvasCard({ title }: CanvasCardProps) {
   return (
-    <div className="flex flex-col p-4">
+    <div className="flex flex-col p-6">
       {/* Active Users */}
       <div className="text-center">Active Users: </div>
       {/* Title */}
