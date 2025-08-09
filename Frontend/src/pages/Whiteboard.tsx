@@ -55,12 +55,36 @@ const Whiteboard = () => {
         </aside>
         {/* Canvas Container */}
         <div className="flex flex-1 flex-row justify-center flex-wrap ml-40">
-          <CanvasCard title="Canvas A"></CanvasCard>
-          <CanvasCard title="Canvas B"></CanvasCard>
-          <CanvasCard title="Canvas C"></CanvasCard>
-          <CanvasCard title="Canvas D"></CanvasCard>
-          <CanvasCard title="Canvas E"></CanvasCard>
-          <CanvasCard title="Canvas F"></CanvasCard>
+          <CanvasCard
+            title="Canvas A"
+            width={512} height={512}
+            currentTool={toolChoice}
+          />
+          <CanvasCard
+            title="Canvas B"
+            width={512} height={512}
+            currentTool={toolChoice}
+          />
+          <CanvasCard
+            title="Canvas C"
+            width={512} height={512}
+            currentTool={toolChoice}
+          />
+          <CanvasCard
+            title="Canvas D"
+            width={512} height={512}
+            currentTool={toolChoice}
+          />
+          <CanvasCard
+            title="Canvas E"
+            width={512} height={512}
+            currentTool={toolChoice}
+          />
+          <CanvasCard
+            title="Canvas F"
+            width={512} height={512}
+            currentTool={toolChoice}
+          />
         </div>
       </div>
     </main>

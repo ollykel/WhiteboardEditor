@@ -1,10 +1,12 @@
 import Canvas from "./Canvas";
 
-interface CanvasCardProps {
+import type { CanvasProps } from '@/components/Canvas';
+
+interface CanvasCardProps extends CanvasProps {
   title: string;
 }
 
-function CanvasCard({ title }: CanvasCardProps) {
+function CanvasCard({ title, width, height, currentTool }: CanvasCardProps) {
   return (
     <div className="flex flex-col p-6">
       {/* Active Users */}
@@ -14,8 +16,9 @@ function CanvasCard({ title }: CanvasCardProps) {
       {/* Konva Canvas */}
       <div className="border border-black">
         <Canvas
-          width={512}
-          height={512}
+          width={width}
+          height={height}
+          currentTool={currentTool}
         />
       </div>
       {/* Currently Drawing */}
