@@ -153,10 +153,10 @@ const makeRectangleDispatcher = ({ state, setState, addShapes }: OperationDispat
   };
 
   const getPreview = (): React.JSX.Element | null => {
-    if (state.type === 'rect') {
+    if (state.type === 'rect' && state.mouseDownCoords && state.mouseCoords) {
       const { mouseDownCoords, mouseCoords } = state;
 
-      return (mouseCoords && mouseDownCoords && (
+      return (
         <Rect
           x={Math.min(mouseCoords.x, mouseDownCoords.x)}
           y={Math.min(mouseCoords.y, mouseDownCoords.y)}
@@ -164,7 +164,7 @@ const makeRectangleDispatcher = ({ state, setState, addShapes }: OperationDispat
           height={Math.abs(mouseCoords.y - mouseDownCoords.y)}
           fill="#ffaaaa"
         />
-      )) || null;
+      );
     } else {
       return null;
     }
