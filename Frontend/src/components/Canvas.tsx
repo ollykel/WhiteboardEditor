@@ -8,7 +8,8 @@
 // =============================================================================
 
 import { useState, useRef } from 'react';
-import { Stage, Layer, Rect, Circle, Text } from 'react-konva';
+import { Stage, Layer, Rect, Text } from 'react-konva';
+import Konva from 'konva';
 
 export interface CanvasProps {
   width: number;
@@ -25,7 +26,7 @@ interface RectProps {
 
 const Canvas = (props: CanvasProps) => {
   const { width, height } = props;
-  const stageRef = useRef<returntype<Stage> | null>(null);
+  const stageRef = useRef<any>(null);
   // for generating unique ids
   const rectCountRef = useRef<number>(0);
   const [rectangles, setRectangles] = useState<RectProps[]>([]);
@@ -41,7 +42,7 @@ const Canvas = (props: CanvasProps) => {
     rectCountRef.current += 1;
   };
 
-  const handleStageClick = (ev: React.MouseEvent<React.HTMLElement>) => {
+  const handleStageClick = (ev: Konva.KonvaEventObject<MouseEvent>) => {
     const { offsetX, offsetY } = ev.evt;
 
     addRectangle(offsetX, offsetY);

@@ -4,7 +4,7 @@ import CanvasCard from "@/components/CanvasCard";
 const tools = ["Vector Tool", "Rectangle", "Ellipse", "Import Image", "New Canvas"];
 const title = "My First Whiteboard";
 
-function Whiteboard() {
+const Whiteboard = () => {
   return (
     <main className="flex flex-col justify-center"> {/* Might not need this to be flex anymore */}
       {/* Header | TODO: separate into Header component */}
