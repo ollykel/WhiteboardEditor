@@ -1,5 +1,3 @@
-import './App.css'
-
 import Whiteboard from './pages/Whiteboard';
 
 const App = () => {

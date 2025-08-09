@@ -6,15 +6,19 @@ interface CanvasCardProps {
 
 function CanvasCard({ title }: CanvasCardProps) {
   return (
-    <div className="canvas-card">
-      <div className="active-users">Active Users: </div>
-      <div className="canvas-title">{title}</div>
-      <div className="canvas">
+    <div className="flex flex-col p-6">
+      {/* Active Users */}
+      <div className="text-center">Active Users: </div>
+      {/* Title */}
+      <div className="text-center p-4">{title}</div>
+      {/* Konva Canvas */}
+      <div className="border border-black">
         <Canvas
           width={512}
           height={512}
         />
       </div>
+      {/* Currently Drawing */}
       <div className="currently-drawing">Joe is drawing...</div>
     </div>
   );
