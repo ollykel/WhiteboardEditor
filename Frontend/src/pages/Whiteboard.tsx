@@ -1,27 +1,13 @@
 import { useState } from 'react';
 
 import CanvasCard from "@/components/CanvasCard";
+import { getToolChoiceLabel } from '@/components/Tool';
 
-type ToolChoice = 'hand' | 'rect' | 'ellipse' | 'vector';
+import type { ToolChoice } from '@/components/Tool';
 
 // TODO: Swap out hardcoded placeholders with dynamic data
 const tools: ToolChoice[] = ["hand", "vector", "rect", "ellipse"];
 const title = "My First Whiteboard";
-
-const getToolChoiceLabel = (toolChoice: ToolChoice): string => {
-  switch (toolChoice) {
-    case 'hand':
-      return 'Hand';
-    case 'rect':
-      return 'Rectangle';
-    case 'vector':
-      return 'Vector Tool';
-    case 'ellipse':
-      return 'Ellipse';
-    default:
-      return 'UNDEFINED';
-  }// end switch (toolChoice)
-};
 
 interface ToolbarButtonProps {
   label: string;
