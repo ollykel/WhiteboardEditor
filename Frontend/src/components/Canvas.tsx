@@ -49,7 +49,11 @@ const Canvas = (props: CanvasProps) => {
       case 'hand':
         return 'Click and drag to move objects (TODO: IMPLEMENT)';
       case 'rect':
-        return 'Click to insert rectangles';
+        if (mouseDownCoords) {
+          return 'Drag to desired shape, then release';
+        } else {
+          return 'Click to draw a rectangle';
+        }
       case 'ellipse':
         return 'Click to insert ellipses (TODO: IMPLEMENT)';
       case 'vector':
