@@ -8,7 +8,7 @@
 // =============================================================================
 
 import { useState, useRef } from 'react';
-import { Stage, Layer, Rect, Text } from 'react-konva';
+import { Stage, Layer, Rect, Line, Text } from 'react-konva';
 import Konva from 'konva';
 
 // -- local imports
@@ -46,13 +46,20 @@ interface NilShapeState {
   type: 'nil';
 }
 
-interface RectState {
-  type: 'rect';
+interface ShapePlacementState {
   mouseDownCoords: EventCoords | null;
   mouseCoords: EventCoords | null;
 }
 
-type ShapeState = NilShapeState | RectState;
+interface RectState extends ShapePlacementState {
+  type: 'rect';
+}
+
+interface VectorState extends ShapePlacementState {
+  type: 'vector';
+}
+
+type ShapeState = NilShapeState | RectState | VectorState;
 
 interface OperationDispatcherProps {
   state: ShapeState;
@@ -187,6 +194,83 @@ const makeRectangleDispatcher = ({ state, setState, addShapes }: OperationDispat
   });
 };// end makeRectangleDispatcher
 
+const makeVectorDispatcher = ({ state, setState, addShapes }: OperationDispatcherProps): OperationDispatcher => {
+  const handlePointerDown = (ev: Konva.KonvaEventObject<MouseEvent>) => {
+    const { offsetX, offsetY } = ev.evt;
+
+    setState({
+      type: 'vector',
+      mouseDownCoords: ({ x: offsetX, y: offsetY }),
+      mouseCoords: ({ x: offsetX, y: offsetY })
+    });
+  };
+
+  const handlePointerMove = (ev: Konva.KonvaEventObject<MouseEvent>) => {
+    if (state.type === 'vector') {
+      const { offsetX, offsetY } = ev.evt;
+
+      setState({
+        ...state,
+        mouseCoords: ({ x: offsetX, y: offsetY })
+      });
+    }
+  };
+
+  const handlePointerUp = (ev: Konva.KonvaEventObject<MouseEvent>) => {
+    if (state.type === 'vector') {
+      const { offsetX: xA, offsetY: yA } = ev.evt;
+      const { mouseDownCoords } = state;
+
+      if (mouseDownCoords !== null) {
+        const { x: xB, y: yB } = mouseDownCoords;
+
+        addShapes([{
+          type: 'vector',
+          points: [xA, yA, xB, yB]
+        }]);
+      }
+
+      setState({
+        ...state,
+        mouseDownCoords: null
+      });
+    }
+  };
+
+  const getPreview = (): React.JSX.Element | null => {
+    if (state.type === 'vector' && state.mouseDownCoords && state.mouseCoords) {
+      const { mouseDownCoords, mouseCoords } = state;
+      const { x: xA, y: yA } = mouseDownCoords;
+      const { x: xB, y: yB } = mouseCoords;
+
+      return (
+        <Line
+          points={[xA, yA, xB, yB]}
+          stroke="#888888"
+        />
+      );
+    } else {
+      return null;
+    }
+  };
+
+  const getTooltipText = () => {
+    if ((state.type === 'vector') && (state.mouseDownCoords)) {
+      return 'Drag to desired length, then release';
+    } else {
+      return 'Click to draw a vector';
+    }
+  };
+
+  return ({
+    handlePointerDown,
+    handlePointerMove,
+    handlePointerUp,
+    getPreview,
+    getTooltipText
+  });
+};// end makeVectorDispatcher
+
 const Canvas = (props: CanvasProps) => {
   const { width, height, currentTool } = props;
   const stageRef = useRef<any>(null);
@@ -210,7 +294,7 @@ const Canvas = (props: CanvasProps) => {
       case 'ellipse':
         return makeMockDispatcher({ state, setState, addShapes });
       case 'vector':
-        return makeMockDispatcher({ state, setState, addShapes });
+        return makeVectorDispatcher({ state, setState, addShapes });
       default:
         return makeMockDispatcher({ state, setState, addShapes });
     }
@@ -258,6 +342,18 @@ const Canvas = (props: CanvasProps) => {
                       height={height}
                       fill="red"
                       shadowBlur={10}
+                    />
+                  );
+                }
+              case 'vector':
+                {
+                  const { points } = shape;
+
+                  return (
+                    <Line
+                      key={idx}
+                      points={points}
+                      stroke="#000000"
                     />
                   );
                 }
