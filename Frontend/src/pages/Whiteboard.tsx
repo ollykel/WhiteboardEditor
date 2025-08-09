@@ -6,12 +6,17 @@ const title = "My First Whiteboard";
 
 function Whiteboard() {
   return (
-    <main id="whiteboard-main">
-      <div id="whiteboard-header"> {/* TODO: separate into Header component */}
+    <main className="flex flex-col justify-center">
+      {/* Header | TODO: separate into Header component */}
+      <div 
+        className="text-center shadow-md rounded-2xl mx-20"
+      > 
         <h1>{title}</h1>
       </div>
-      <div id="whiteboard-content">   
-        <aside id="whiteboard-toolbar"> {/* TODO: separate into Sidebar component */}
+      {/* Content */}
+      <div className="flex flex-1 justify-center items-center">   
+        {/* Toolbar */}
+        <aside className="flex flex-col flex-shrink-0 text-center p-4 m-4 rounded-2xl shadow-md"> {/* TODO: separate into Sidebar component */}
           <h2>Tools</h2>
           {tools.map((tool) => {
             return (
@@ -19,7 +24,8 @@ function Whiteboard() {
             );
           })}
         </aside>
-        <div id="canvas-container">
+        {/* Canvas Container */}
+        <div className="flex flex-1 flex-row justify-around m-8 flex-wrap">
           <CanvasCard title="Canvas A"></CanvasCard>
           <CanvasCard title="Canvas B"></CanvasCard>
           {/* <CanvasCard title="Canvas C"></CanvasCard> */}
