@@ -1,7 +1,7 @@
 import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react-swc'
 import { fileURLToPath } from 'url';
 import path from 'path';
+import react from '@vitejs/plugin-react-swc'
 import tailwindcss from '@tailwindcss/vite';
 
 // TypeScript workaround

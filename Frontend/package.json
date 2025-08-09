@@ -11,7 +11,9 @@
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.1.11",
+    "@types/node": "^24.2.1",
     "konva": "^9.3.22",
+    "path": "^0.12.7",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "react-konva": "^19.0.7",
