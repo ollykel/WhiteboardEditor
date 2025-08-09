@@ -77,19 +77,19 @@ const Canvas = (props: CanvasProps) => {
     rectCountRef.current += 1;
   };
 
-  const handleMouseMove = (ev: Konva.KonvaEventObject<MouseEvent>) => {
+  const handlePointerMove = (ev: Konva.KonvaEventObject<MouseEvent>) => {
     const { offsetX, offsetY } = ev.evt;
 
     setMouseCoords({ x: offsetX, y: offsetY });
   };
 
-  const handleMouseDown = (ev: Konva.KonvaEventObject<MouseEvent>) => {
+  const handlePointerDown = (ev: Konva.KonvaEventObject<MouseEvent>) => {
     const { offsetX, offsetY } = ev.evt;
 
     setMouseDownCoords({ x: offsetX, y: offsetY });
   };
 
-  const handleMouseUp = (ev: Konva.KonvaEventObject<MouseEvent>) => {
+  const handlePointerUp = (ev: Konva.KonvaEventObject<MouseEvent>) => {
     const { offsetX: xA, offsetY: yA } = ev.evt;
 
     if (mouseDownCoords !== null) {
@@ -110,9 +110,9 @@ const Canvas = (props: CanvasProps) => {
       ref={stageRef}
       width={width}
       height={height}
-      onMouseDown={handleMouseDown}
-      onMouseMove={handleMouseMove}
-      onMouseUp={handleMouseUp}
+      onPointerdown={handlePointerDown}
+      onPointermove={handlePointerMove}
+      onPointerup={handlePointerUp}
     >
       <Layer>
         <Text
