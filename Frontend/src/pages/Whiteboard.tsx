@@ -12,17 +12,25 @@ const Whiteboard = () => {
   const [toolChoice, setToolChoice] = useState<ToolChoice>('rect');
   const [canvases, setCanvases] = useState<{ id: number, title: string }[]>([{ id: 1, title: "Canvas A" }]);
 
-  const nextID = useRef(1);
-  const nextCanvasTitle = useRef(65);
+  const nextID = useRef(2);
+  const nextCanvasTitle = useRef(66);
 
   const handleNewCanvas = () => {
+    const titleChar = String.fromCharCode(nextCanvasTitle.current);
+    nextCanvasTitle.current += 1;
+
+    const idNum = nextID.current;
+    nextID.current += 1;
+
     setCanvases(prev => [
       ...prev,
       {
-        id: nextID.current++,
-        title: `Canvas ${String.fromCharCode(nextCanvasTitle.current++)}`,
+        id: idNum,
+        title: `Canvas ${titleChar}`,
       }
     ]);
+
+    canvases.forEach(c => console.log(c.id + c.title));
   }
 
   return (

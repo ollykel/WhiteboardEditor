@@ -8,13 +8,13 @@ interface ToolbarProps {
   onNewCanvas: () => void;
 }
 
-const tools: ToolChoice[] = ["hand", "vector", "rect", "ellipse"];
-
 interface ToolbarButtonProps {
   label: string;
   variant: 'default' | 'selected';
   onClick?: () => void;
+
 }
+const tools: ToolChoice[] = ["hand", "vector", "rect", "ellipse"];
 
 const ToolbarButton = ({ label, variant, onClick }: ToolbarButtonProps): React.JSX.Element => (
   <button
@@ -24,8 +24,6 @@ const ToolbarButton = ({ label, variant, onClick }: ToolbarButtonProps): React.J
     {label}
   </button>
 );
-
-
 
 function Toolbar({ toolChoice, onToolChange, onNewCanvas }: ToolbarProps) {
   const renderToolChoice = (choice: ToolChoice): React.JSX.Element => (
