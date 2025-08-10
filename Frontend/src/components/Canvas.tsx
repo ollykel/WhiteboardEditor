@@ -8,7 +8,7 @@
 // =============================================================================
 
 import { useState, useRef } from 'react';
-import { Stage, Layer, Rect, Line, Text } from 'react-konva';
+import { Stage, Layer, Rect, Ellipse, Line, Text } from 'react-konva';
 import Konva from 'konva';
 
 // -- local imports
@@ -35,12 +35,20 @@ interface RectModel {
   height: number;
 }
 
+interface EllipseModel {
+  type: 'ellipse';
+  x: number;
+  y: number;
+  radiusX: number;
+  radiusY: number;
+}
+
 interface VectorModel {
   type: 'vector';
   points: number[];
 }
 
-type ShapeModel = RectModel | VectorModel;
+type ShapeModel = RectModel | EllipseModel | VectorModel;
 
 interface OperationDispatcherProps {
   addShapes: (shapes: ShapeModel[]) => void;
@@ -161,6 +169,75 @@ const makeRectangleDispatcher = ({ addShapes }: OperationDispatcherProps): Opera
   });
 };// end makeRectangleDispatcher
 
+const makeEllipseDispatcher = ({ addShapes }: OperationDispatcherProps): OperationDispatcher => {
+  const [mouseDownCoords, setMouseDownCoords] = useState<EventCoords | null>(null);
+  const [mouseCoords, setMouseCoords] = useState<EventCoords | null>(null);
+
+  const handlePointerDown = (ev: Konva.KonvaEventObject<MouseEvent>) => {
+    const { offsetX, offsetY } = ev.evt;
+
+    setMouseDownCoords({ x: offsetX, y: offsetY });
+    setMouseCoords({ x: offsetX, y: offsetY });
+  };
+
+  const handlePointerMove = (ev: Konva.KonvaEventObject<MouseEvent>) => {
+    const { offsetX, offsetY } = ev.evt;
+
+    setMouseCoords({ x: offsetX, y: offsetY });
+  };
+
+  const handlePointerUp = (ev: Konva.KonvaEventObject<MouseEvent>) => {
+    if (mouseDownCoords !== null) {
+      const { offsetX: xRelease, offsetY: yRelease } = ev.evt;
+      const { x: xOrigin, y: yOrigin } = mouseDownCoords;
+
+      addShapes([{
+        type: 'ellipse',
+        x: xOrigin,
+        y: yOrigin,
+        radiusX: Math.abs(xRelease - xOrigin),
+        radiusY: Math.abs(yRelease - yOrigin)
+      }]);
+      setMouseDownCoords(null);
+    }
+  };
+
+  const getPreview = (): React.JSX.Element | null => {
+    if (mouseDownCoords && mouseCoords) {
+      const { x: xOrigin, y: yOrigin } = mouseDownCoords;
+      const { x: xCurr, y: yCurr } = mouseCoords;
+
+      return (
+        <Ellipse
+          x={xOrigin}
+          y={yOrigin}
+          radiusX={Math.abs(xCurr - xOrigin)}
+          radiusY={Math.abs(yCurr - yOrigin)}
+          fill="#ffaaaa"
+        />
+      );
+    } else {
+      return null;
+    }
+  };
+
+  const getTooltipText = () => {
+    if (mouseDownCoords) {
+      return 'Drag to desired shape, then release';
+    } else {
+      return 'Click to draw an ellipse';
+    }
+  };
+
+  return ({
+    handlePointerDown,
+    handlePointerMove,
+    handlePointerUp,
+    getPreview,
+    getTooltipText
+  });
+};// end makeEllipseDispatcher
+
 const makeVectorDispatcher = ({ addShapes }: OperationDispatcherProps): OperationDispatcher => {
   const [mouseDownCoords, setMouseDownCoords] = useState<EventCoords | null>(null);
   const [mouseCoords, setMouseCoords] = useState<EventCoords | null>(null);
@@ -241,7 +318,7 @@ const Canvas = (props: CanvasProps) => {
   const dispatcherMap = {
     'hand': defaultDispatcher,
     'rect': makeRectangleDispatcher({ addShapes }),
-    'ellipse': defaultDispatcher,
+    'ellipse': makeEllipseDispatcher({ addShapes }),
     'vector': makeVectorDispatcher({ addShapes })
   };
 
@@ -301,6 +378,21 @@ const Canvas = (props: CanvasProps) => {
                       key={idx}
                       points={points}
                       stroke="#000000"
+                    />
+                  );
+                }
+              case 'ellipse':
+                {
+                  const { x, y, radiusX, radiusY } = shape;
+
+                  return (
+                    <Ellipse
+                      key={idx}
+                      x={x}
+                      y={y}
+                      radiusX={radiusX}
+                      radiusY={radiusY}
+                      fill="red"
                     />
                   );
                 }
