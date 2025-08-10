@@ -34,14 +34,14 @@ const Whiteboard = () => {
   }
 
   return (
-    <main className="flex flex-col justify-center"> {/* Might not need this to be flex anymore */}
+    <main>
       {/* Header | TODO: separate into Header component */}
       <div className="fixed top-1 left-0 right-0 max-h-15 text-center shadow-md rounded-2xl mx-20 m-1 p-3 bg-stone-50"> 
         <h1 className="text-2xl font-bold">{title}</h1>
       </div>
 
       {/* Content */}
-      <div className="flex flex-1 justify-center items-center mt-20"> {/* Might not need this to be flex anymore */}
+      <div className="mt-20">
         {/* Toolbar */}
         <Toolbar 
           toolChoice={toolChoice}
