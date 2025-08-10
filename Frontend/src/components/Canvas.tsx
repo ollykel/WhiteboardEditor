@@ -42,28 +42,7 @@ interface VectorModel {
 
 type ShapeModel = RectModel | VectorModel;
 
-interface NilShapeState {
-  type: 'nil';
-}
-
-interface ShapePlacementState {
-  mouseDownCoords: EventCoords | null;
-  mouseCoords: EventCoords | null;
-}
-
-interface RectState extends ShapePlacementState {
-  type: 'rect';
-}
-
-interface VectorState extends ShapePlacementState {
-  type: 'vector';
-}
-
-type ShapeState = NilShapeState | RectState | VectorState;
-
 interface OperationDispatcherProps {
-  state: ShapeState;
-  setState: (stateSetter: ShapeState) => void;
   addShapes: (shapes: ShapeModel[]) => void;
 }
 
@@ -115,60 +94,48 @@ const makeMockDispatcher = (_props: OperationDispatcherProps): OperationDispatch
   });
 };
 
-const makeRectangleDispatcher = ({ state, setState, addShapes }: OperationDispatcherProps): OperationDispatcher => {
+const makeRectangleDispatcher = ({ addShapes }: OperationDispatcherProps): OperationDispatcher => {
+  const [mouseDownCoords, setMouseDownCoords] = useState<EventCoords | null>(null);
+  const [mouseCoords, setMouseCoords] = useState<EventCoords | null>(null);
+
   const handlePointerDown = (ev: Konva.KonvaEventObject<MouseEvent>) => {
     const { offsetX, offsetY } = ev.evt;
 
-    setState({
-      type: 'rect',
-      mouseDownCoords: ({ x: offsetX, y: offsetY }),
-      mouseCoords: ({ x: offsetX, y: offsetY })
-    });
+    setMouseDownCoords({ x: offsetX, y: offsetY });
+    setMouseCoords({ x: offsetX, y: offsetY });
   };
 
   const handlePointerMove = (ev: Konva.KonvaEventObject<MouseEvent>) => {
-    if (state.type === 'rect') {
-      const { offsetX, offsetY } = ev.evt;
+    const { offsetX, offsetY } = ev.evt;
 
-      setState({
-        ...state,
-        mouseCoords: ({ x: offsetX, y: offsetY })
-      });
-    }
+    setMouseCoords({ x: offsetX, y: offsetY });
   };
 
   const handlePointerUp = (ev: Konva.KonvaEventObject<MouseEvent>) => {
-    if (state.type === 'rect') {
+    if (mouseDownCoords !== null) {
       const { offsetX: xA, offsetY: yA } = ev.evt;
-      const { mouseDownCoords } = state;
+      const { x: xB, y: yB } = mouseDownCoords;
+      const xMin = Math.min(xA, xB);
+      const yMin = Math.min(yA, yB);
+      const width = Math.abs(xA - xB);
+      const height = Math.abs(yA - yB);
 
-      if (mouseDownCoords !== null) {
-        const { x: xB, y: yB } = mouseDownCoords;
-        const xMin = Math.min(xA, xB);
-        const yMin = Math.min(yA, yB);
-        const width = Math.abs(xA - xB);
-        const height = Math.abs(yA - yB);
-
-        addShapes([{ type: 'rect', x: xMin, y: yMin, width, height }]);
-      }
-
-      setState({
-        ...state,
-        mouseDownCoords: null
-      });
+      addShapes([{ type: 'rect', x: xMin, y: yMin, width, height }]);
+      setMouseDownCoords(null);
     }
   };
 
   const getPreview = (): React.JSX.Element | null => {
-    if (state.type === 'rect' && state.mouseDownCoords && state.mouseCoords) {
-      const { mouseDownCoords, mouseCoords } = state;
+    if (mouseDownCoords && mouseCoords) {
+      const { x: xA, y: yA } = mouseDownCoords;
+      const { x: xB, y: yB } = mouseCoords;
 
       return (
         <Rect
-          x={Math.min(mouseCoords.x, mouseDownCoords.x)}
-          y={Math.min(mouseCoords.y, mouseDownCoords.y)}
-          width={Math.abs(mouseCoords.x - mouseDownCoords.x)}
-          height={Math.abs(mouseCoords.y - mouseDownCoords.y)}
+          x={Math.min(xA, xB)}
+          y={Math.min(yA, yB)}
+          width={Math.abs(xA - xB)}
+          height={Math.abs(yA - yB)}
           fill="#ffaaaa"
         />
       );
@@ -178,7 +145,7 @@ const makeRectangleDispatcher = ({ state, setState, addShapes }: OperationDispat
   };
 
   const getTooltipText = () => {
-    if ((state.type === 'rect') && (state.mouseDownCoords)) {
+    if (mouseDownCoords) {
       return 'Drag to desired shape, then release';
     } else {
       return 'Click to draw a rectangle';
@@ -194,52 +161,38 @@ const makeRectangleDispatcher = ({ state, setState, addShapes }: OperationDispat
   });
 };// end makeRectangleDispatcher
 
-const makeVectorDispatcher = ({ state, setState, addShapes }: OperationDispatcherProps): OperationDispatcher => {
+const makeVectorDispatcher = ({ addShapes }: OperationDispatcherProps): OperationDispatcher => {
+  const [mouseDownCoords, setMouseDownCoords] = useState<EventCoords | null>(null);
+  const [mouseCoords, setMouseCoords] = useState<EventCoords | null>(null);
+
   const handlePointerDown = (ev: Konva.KonvaEventObject<MouseEvent>) => {
     const { offsetX, offsetY } = ev.evt;
 
-    setState({
-      type: 'vector',
-      mouseDownCoords: ({ x: offsetX, y: offsetY }),
-      mouseCoords: ({ x: offsetX, y: offsetY })
-    });
+    setMouseDownCoords({ x: offsetX, y: offsetY });
+    setMouseCoords({ x: offsetX, y: offsetY });
   };
 
   const handlePointerMove = (ev: Konva.KonvaEventObject<MouseEvent>) => {
-    if (state.type === 'vector') {
-      const { offsetX, offsetY } = ev.evt;
+    const { offsetX, offsetY } = ev.evt;
 
-      setState({
-        ...state,
-        mouseCoords: ({ x: offsetX, y: offsetY })
-      });
-    }
+    setMouseCoords({ x: offsetX, y: offsetY });
   };
 
   const handlePointerUp = (ev: Konva.KonvaEventObject<MouseEvent>) => {
-    if (state.type === 'vector') {
+    if (mouseDownCoords !== null) {
       const { offsetX: xA, offsetY: yA } = ev.evt;
-      const { mouseDownCoords } = state;
+      const { x: xB, y: yB } = mouseDownCoords;
 
-      if (mouseDownCoords !== null) {
-        const { x: xB, y: yB } = mouseDownCoords;
-
-        addShapes([{
-          type: 'vector',
-          points: [xA, yA, xB, yB]
-        }]);
-      }
-
-      setState({
-        ...state,
-        mouseDownCoords: null
-      });
+      addShapes([{
+        type: 'vector',
+        points: [xA, yA, xB, yB]
+      }]);
+      setMouseDownCoords(null);
     }
   };
 
   const getPreview = (): React.JSX.Element | null => {
-    if (state.type === 'vector' && state.mouseDownCoords && state.mouseCoords) {
-      const { mouseDownCoords, mouseCoords } = state;
+    if (mouseDownCoords && mouseCoords) {
       const { x: xA, y: yA } = mouseDownCoords;
       const { x: xB, y: yB } = mouseCoords;
 
@@ -255,7 +208,7 @@ const makeVectorDispatcher = ({ state, setState, addShapes }: OperationDispatche
   };
 
   const getTooltipText = () => {
-    if ((state.type === 'vector') && (state.mouseDownCoords)) {
+    if (mouseDownCoords) {
       return 'Drag to desired length, then release';
     } else {
       return 'Click to draw a vector';
@@ -276,7 +229,6 @@ const Canvas = (props: CanvasProps) => {
   const stageRef = useRef<any>(null);
   // for generating unique ids
   const [shapes, setShapes] = useState<ShapeModel[]>([]);
-  const [state, setState] = useState<ShapeState>(({ type: 'nil' }));
 
   const addShapes = (newShapes: ShapeModel[]) => {
     setShapes((currShapes) => [
@@ -284,21 +236,16 @@ const Canvas = (props: CanvasProps) => {
       ...newShapes
     ]);
   };
+  
+  const defaultDispatcher = makeMockDispatcher({ addShapes });
+  const dispatcherMap = {
+    'hand': defaultDispatcher,
+    'rect': makeRectangleDispatcher({ addShapes }),
+    'ellipse': defaultDispatcher,
+    'vector': makeVectorDispatcher({ addShapes })
+  };
 
-  const dispatcher = (() => {
-    switch (currentTool) {
-      case 'hand':
-        return makeMockDispatcher({ state, setState, addShapes });
-      case 'rect':
-        return makeRectangleDispatcher({ state, setState, addShapes });
-      case 'ellipse':
-        return makeMockDispatcher({ state, setState, addShapes });
-      case 'vector':
-        return makeVectorDispatcher({ state, setState, addShapes });
-      default:
-        return makeMockDispatcher({ state, setState, addShapes });
-    }
-  })();
+  const dispatcher = dispatcherMap[currentTool] || defaultDispatcher;
 
   const {
     handlePointerDown,
