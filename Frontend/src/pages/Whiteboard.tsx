@@ -4,6 +4,7 @@ import CanvasCard from "@/components/CanvasCard";
 import Toolbar from "@/components/Toolbar";
 
 import type { ToolChoice } from '@/components/Tool';
+import Header from '@/components/Header';
 
 // TODO: Swap out hardcoded placeholders with dynamic data
 const title = "My First Whiteboard";
@@ -29,17 +30,14 @@ const Whiteboard = () => {
         title: `Canvas ${titleChar}`,
       }
     ]);
-
-    canvases.forEach(c => console.log(c.id + c.title));
   }
 
   return (
     <main>
-      {/* Header | TODO: separate into Header component */}
-      <div className="fixed top-1 left-0 right-0 max-h-15 text-center shadow-md rounded-2xl mx-20 m-1 p-3 bg-stone-50"> 
-        <h1 className="text-2xl font-bold">{title}</h1>
-      </div>
-
+      {/* Header */}
+      <Header 
+        title={title}
+      />
       {/* Content */}
       <div className="mt-20">
         {/* Toolbar */}
