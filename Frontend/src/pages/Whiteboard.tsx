@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 
 import CanvasCard from "@/components/CanvasCard";
 import { getToolChoiceLabel } from '@/components/Tool';
@@ -37,12 +37,15 @@ const Whiteboard = () => {
     />
   );
 
+  const nextID = useRef(1);
+  const nextCanvasTitle = useRef(65);
+
   const handleAddCanvas = () => {
     setCanvases(prev => [
       ...prev,
       {
-        id: prev.length + 1,
-        title: `Canvas ${String.fromCharCode(65 + prev.length)}`,
+        id: nextID.current++,
+        title: `Canvas ${String.fromCharCode(nextCanvasTitle.current++)}`,
       }
     ]);
   }
