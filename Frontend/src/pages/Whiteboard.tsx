@@ -2,9 +2,9 @@ import { useState, useRef } from 'react';
 
 import CanvasCard from "@/components/CanvasCard";
 import Toolbar from "@/components/Toolbar";
+import Header from '@/components/Header';
 
 import type { ToolChoice } from '@/components/Tool';
-import Header from '@/components/Header';
 
 // TODO: Swap out hardcoded placeholders with dynamic data
 const title = "My First Whiteboard";
