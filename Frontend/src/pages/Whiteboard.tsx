@@ -26,6 +26,8 @@ const ToolbarButton = ({ label, variant, onClick }: ToolbarButtonProps): React.J
 
 const Whiteboard = () => {
   const [toolChoice, setToolChoice] = useState<ToolChoice>('rect');
+  const [canvases, setCanvases] = useState<{ id: number, title: string }[]>([{ id: 1, title: "Canvas A" }]);
+
 
   const renderToolChoice = (choice: ToolChoice): React.JSX.Element => (
     <ToolbarButton
@@ -34,6 +36,16 @@ const Whiteboard = () => {
       onClick={() => setToolChoice(choice)}
     />
   );
+
+  const handleAddCanvas = () => {
+    setCanvases(prev => [
+      ...prev,
+      {
+        id: prev.length + 1,
+        title: `Canvas ${String.fromCharCode(65 + prev.length)}`,
+      }
+    ]);
+  }
 
   return (
     <main className="flex flex-col justify-center"> {/* Might not need this to be flex anymore */}
@@ -51,40 +63,19 @@ const Whiteboard = () => {
 
           {/** Additional, non-tool choices **/}
           <ToolbarButton label="Import Image" variant="default" />
-          <ToolbarButton label="New Canvas" variant="default" />
+          <ToolbarButton label="New Canvas" variant="default" onClick={handleAddCanvas} />
         </aside>
         {/* Canvas Container */}
         <div className="flex flex-1 flex-row justify-center flex-wrap ml-40">
-          <CanvasCard
-            title="Canvas A"
-            width={512} height={512}
-            currentTool={toolChoice}
-          />
-          <CanvasCard
-            title="Canvas B"
-            width={512} height={512}
-            currentTool={toolChoice}
-          />
-          <CanvasCard
-            title="Canvas C"
-            width={512} height={512}
-            currentTool={toolChoice}
-          />
-          <CanvasCard
-            title="Canvas D"
-            width={512} height={512}
-            currentTool={toolChoice}
-          />
-          <CanvasCard
-            title="Canvas E"
-            width={512} height={512}
-            currentTool={toolChoice}
-          />
-          <CanvasCard
-            title="Canvas F"
-            width={512} height={512}
-            currentTool={toolChoice}
-          />
+          {canvases.map((canvas) => (
+            <CanvasCard
+              key={canvas.id}
+              title={canvas.title}
+              width={512}
+              height={512}
+              currentTool={toolChoice}
+            />
+          ))}
         </div>
       </div>
     </main>
