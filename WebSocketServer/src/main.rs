@@ -34,6 +34,7 @@ enum WebSocketMessage {
     ClientLogin { client_id: ClientIdType },
     ClientLogout { client_id: ClientIdType },
     CreateShape { client_id: ClientIdType, canvas_id: CanvasIdType, shape: ShapeModel },
+    CreateCanvas { client_id: ClientIdType, width: u64, height: u64 },
 }
 
 fn main() {

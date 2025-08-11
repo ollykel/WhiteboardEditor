@@ -58,6 +58,13 @@ export interface MessageCreateShape {
   shape: ShapeModel;
 }
 
+export interface MessageCreateCanvas {
+  type: "create_canvas";
+  clientId: ClientIdType;
+  width: number;
+  height: number;
+}
+
 // Tagged union of all possible client-server messages
 export type SocketMessage =
   MessageInitClient
