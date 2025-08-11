@@ -6,16 +6,16 @@ interface HeaderProps {
 
 function Header({ title }: HeaderProps) {
   return (
-    <div className="fixed top-1 left-0 right-0 max-h-15 shadow-md rounded-2xl mx-20 m-1 p-3 bg-stone-50"> 
+    <div className="fixed z-50 top-1 left-0 right-0 max-h-15 shadow-md rounded-2xl mx-20 m-1 p-3 bg-stone-50"> 
       <div className="relative flex items-center justify-center">
-        <div className="absolute left-4">
+        <div className="absolute left-2">
           <HeaderButton 
             onClick={() => console.log("Home clicked")}
             title="Home"
           /> {/* TODO: Implement home (dashboard) */}
         </div>
         <h1 className="text-2xl font-bold">{title}</h1>
-        <div className="absolute right-4">
+        <div className="absolute right-2">
           <HeaderButton 
             onClick={() => console.log("Share clicked")}
             title="Share"
