@@ -1,1 +1,5 @@
 node_modules
+
+# Signing certificate and key files
+*.pem
+*.csr
