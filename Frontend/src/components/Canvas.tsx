@@ -13,6 +13,7 @@ import Konva from 'konva';
 
 // -- local imports
 import type { ToolChoice } from '@/components/Tool';
+import type { ShapeModel } from '@/types/ShapeModel';
 
 export interface CanvasProps {
   width: number;
@@ -26,29 +27,6 @@ interface EventCoords {
   x: number;
   y: number;
 }
-
-interface RectModel {
-  type: 'rect';
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-}
-
-interface EllipseModel {
-  type: 'ellipse';
-  x: number;
-  y: number;
-  radiusX: number;
-  radiusY: number;
-}
-
-interface VectorModel {
-  type: 'vector';
-  points: number[];
-}
-
-type ShapeModel = RectModel | EllipseModel | VectorModel;
 
 interface OperationDispatcherProps {
   addShapes: (shapes: ShapeModel[]) => void;
