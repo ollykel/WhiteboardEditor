@@ -19,7 +19,7 @@ const tools: ToolChoice[] = ["hand", "vector", "rect", "ellipse"];
 const ToolbarButton = ({ label, variant, onClick }: ToolbarButtonProps): React.JSX.Element => (
   <button
     onClick={onClick}
-    className={`p-2 hover:cursor-pointer ${variant === 'selected' && 'bg-gray-400'} hover:bg-gray-200`}
+    className={`p-2 rounded-xl hover:cursor-pointer ${variant === 'selected' && 'bg-gray-400'} hover:bg-gray-200`}
   >
     {label}
   </button>
