@@ -1,1 +1,8 @@
 node_modules
+
+# .env file(s)
+*.env
+
+# Signing certificate and key files
+*.pem
+*.csr
