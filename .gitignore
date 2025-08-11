@@ -6,3 +6,6 @@ node_modules
 # Signing certificate and key files
 *.pem
 *.csr
+
+# Unwanted lock files (will be handled within Docker containers)
+Cargo.lock
