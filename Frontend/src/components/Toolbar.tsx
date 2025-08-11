@@ -35,7 +35,7 @@ function Toolbar({ toolChoice, onToolChange, onNewCanvas }: ToolbarProps) {
   );
 
   return (
-    <aside className="fixed top-1/2 -translate-y-1/2 left-2 max-w-40 flex flex-col flex-shrink-0 text-center p-4 m-1 rounded-2xl shadow-md  bg-stone-50">
+    <aside className="fixed z-50 top-1/2 -translate-y-1/2 left-2 max-w-40 flex flex-col flex-shrink-0 text-center p-4 m-1 rounded-2xl shadow-md  bg-stone-50">
       <h2 className="text-2xl font-bold mb-4">Tools</h2>
       {tools.map((tool) => renderToolChoice(tool))}
 
