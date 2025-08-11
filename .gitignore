@@ -9,3 +9,6 @@ node_modules
 
 # Unwanted lock files (will be handled within Docker containers)
 Cargo.lock
+
+# Build files
+/WebSocketServer/target/
