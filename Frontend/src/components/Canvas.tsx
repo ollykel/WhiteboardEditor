@@ -8,7 +8,7 @@
 // =============================================================================
 
 import { useState, useRef } from 'react';
-import { Stage, Layer, Rect, Line, Text } from 'react-konva';
+import { Stage, Layer, Rect, Ellipse, Line, Text } from 'react-konva';
 import Konva from 'konva';
 
 // -- local imports
@@ -35,12 +35,20 @@ interface RectModel {
   height: number;
 }
 
+interface EllipseModel {
+  type: 'ellipse';
+  x: number;
+  y: number;
+  radiusX: number;
+  radiusY: number;
+}
+
 interface VectorModel {
   type: 'vector';
   points: number[];
 }
 
-type ShapeModel = RectModel | VectorModel;
+type ShapeModel = RectModel | EllipseModel | VectorModel;
 
 interface OperationDispatcherProps {
   addShapes: (shapes: ShapeModel[]) => void;
@@ -70,6 +78,7 @@ interface OperationDispatcher {
   handlePointerMove: (ev: Konva.KonvaEventObject<MouseEvent>) => void;
   handlePointerUp: (ev: Konva.KonvaEventObject<MouseEvent>) => void;
   getPreview: () => React.JSX.Element | null;
+  renderShape: (key: string | number, model: ShapeModel) => React.JSX.Element | null;
   getTooltipText: () => string;
 }
 
@@ -90,6 +99,7 @@ const makeMockDispatcher = (_props: OperationDispatcherProps): OperationDispatch
       console.log('TODO: implement');
     },
     getPreview: () => null,
+    renderShape: (_key: string | number, _model: ShapeModel) => null,
     getTooltipText: () => "TODO: implement"
   });
 };
@@ -144,6 +154,26 @@ const makeRectangleDispatcher = ({ addShapes }: OperationDispatcherProps): Opera
     }
   };
 
+  const renderShape = (key: string | number, model: ShapeModel): React.JSX.Element | null => {
+    if (model.type !== 'rect') {
+      return null;
+    } else {
+      const { x, y, width, height } = model;
+
+      return (
+        <Rect
+          key={key}
+          x={x}
+          y={y}
+          width={width}
+          height={height}
+          fill="red"
+          shadowBlur={10}
+        />
+      );
+    }
+  };
+
   const getTooltipText = () => {
     if (mouseDownCoords) {
       return 'Drag to desired shape, then release';
@@ -157,9 +187,99 @@ const makeRectangleDispatcher = ({ addShapes }: OperationDispatcherProps): Opera
     handlePointerMove,
     handlePointerUp,
     getPreview,
+    renderShape,
     getTooltipText
   });
 };// end makeRectangleDispatcher
+
+const makeEllipseDispatcher = ({ addShapes }: OperationDispatcherProps): OperationDispatcher => {
+  const [mouseDownCoords, setMouseDownCoords] = useState<EventCoords | null>(null);
+  const [mouseCoords, setMouseCoords] = useState<EventCoords | null>(null);
+
+  const handlePointerDown = (ev: Konva.KonvaEventObject<MouseEvent>) => {
+    const { offsetX, offsetY } = ev.evt;
+
+    setMouseDownCoords({ x: offsetX, y: offsetY });
+    setMouseCoords({ x: offsetX, y: offsetY });
+  };
+
+  const handlePointerMove = (ev: Konva.KonvaEventObject<MouseEvent>) => {
+    const { offsetX, offsetY } = ev.evt;
+
+    setMouseCoords({ x: offsetX, y: offsetY });
+  };
+
+  const handlePointerUp = (ev: Konva.KonvaEventObject<MouseEvent>) => {
+    if (mouseDownCoords !== null) {
+      const { offsetX: xRelease, offsetY: yRelease } = ev.evt;
+      const { x: xOrigin, y: yOrigin } = mouseDownCoords;
+
+      addShapes([{
+        type: 'ellipse',
+        x: xOrigin,
+        y: yOrigin,
+        radiusX: Math.abs(xRelease - xOrigin),
+        radiusY: Math.abs(yRelease - yOrigin)
+      }]);
+      setMouseDownCoords(null);
+    }
+  };
+
+  const getPreview = (): React.JSX.Element | null => {
+    if (mouseDownCoords && mouseCoords) {
+      const { x: xOrigin, y: yOrigin } = mouseDownCoords;
+      const { x: xCurr, y: yCurr } = mouseCoords;
+
+      return (
+        <Ellipse
+          x={xOrigin}
+          y={yOrigin}
+          radiusX={Math.abs(xCurr - xOrigin)}
+          radiusY={Math.abs(yCurr - yOrigin)}
+          fill="#ffaaaa"
+        />
+      );
+    } else {
+      return null;
+    }
+  };
+
+  const renderShape = (key: string | number, model: ShapeModel): React.JSX.Element | null => {
+    if (model.type !== 'ellipse') {
+      return null;
+    } else {
+      const { x, y, radiusX, radiusY } = model;
+
+      return (
+        <Ellipse
+          key={key}
+          x={x}
+          y={y}
+          radiusX={radiusX}
+          radiusY={radiusY}
+          fill="red"
+        />
+      );
+    }
+  };
+
+  const getTooltipText = () => {
+    if (mouseDownCoords) {
+      return 'Drag to desired shape, then release';
+    } else {
+      return 'Click to draw an ellipse';
+    }
+  };
+
+  return ({
+    handlePointerDown,
+    handlePointerMove,
+    handlePointerUp,
+    getPreview,
+    renderShape,
+    getTooltipText
+  });
+};// end makeEllipseDispatcher
 
 const makeVectorDispatcher = ({ addShapes }: OperationDispatcherProps): OperationDispatcher => {
   const [mouseDownCoords, setMouseDownCoords] = useState<EventCoords | null>(null);
@@ -207,6 +327,22 @@ const makeVectorDispatcher = ({ addShapes }: OperationDispatcherProps): Operatio
     }
   };
 
+  const renderShape = (key: string | number, model: ShapeModel): React.JSX.Element | null => {
+    if (model.type !== 'vector') {
+      return null;
+    } else {
+      const { points } = model;
+
+      return (
+        <Line
+          key={key}
+          points={points}
+          stroke="#000000"
+        />
+      );
+    }
+  };
+
   const getTooltipText = () => {
     if (mouseDownCoords) {
       return 'Drag to desired length, then release';
@@ -220,6 +356,7 @@ const makeVectorDispatcher = ({ addShapes }: OperationDispatcherProps): Operatio
     handlePointerMove,
     handlePointerUp,
     getPreview,
+    renderShape,
     getTooltipText
   });
 };// end makeVectorDispatcher
@@ -241,7 +378,7 @@ const Canvas = (props: CanvasProps) => {
   const dispatcherMap = {
     'hand': defaultDispatcher,
     'rect': makeRectangleDispatcher({ addShapes }),
-    'ellipse': defaultDispatcher,
+    'ellipse': makeEllipseDispatcher({ addShapes }),
     'vector': makeVectorDispatcher({ addShapes })
   };
 
@@ -274,41 +411,11 @@ const Canvas = (props: CanvasProps) => {
 
         {/** Shapes **/}
         {
-          shapes.map((shape: ShapeModel, idx: number) => {
-            switch (shape.type) {
-              case 'rect':
-                {
-                  const { x, y, width, height } = shape;
-                  
-                  return (
-                    <Rect
-                      key={idx}
-                      x={x}
-                      y={y}
-                      width={width}
-                      height={height}
-                      fill="red"
-                      shadowBlur={10}
-                    />
-                  );
-                }
-              case 'vector':
-                {
-                  const { points } = shape;
+          shapes.filter((sh) => sh).map((shape: ShapeModel, idx: number) => {
+            const renderDispatcher = dispatcherMap[shape.type] || defaultDispatcher;
+            const { renderShape } = renderDispatcher;
 
-                  return (
-                    <Line
-                      key={idx}
-                      points={points}
-                      stroke="#000000"
-                    />
-                  );
-                }
-              default:
-                // TODO: make sure there is an implementation for each shape
-                // type
-                return null;
-            }
+            return renderShape(idx, shape);
           })
         }
       </Layer>
