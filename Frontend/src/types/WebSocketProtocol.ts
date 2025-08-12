@@ -61,6 +61,7 @@ export interface MessageCreateShape {
 export interface MessageCreateCanvas {
   type: "create_canvas";
   clientId: ClientIdType;
+  canvasId: CanvasIdType;
   width: number;
   height: number;
 }
@@ -70,4 +71,5 @@ export type SocketMessage =
   MessageInitClient
   | MessageClientLogin
   | MessageClientLogout
-  | MessageCreateShape;
+  | MessageCreateShape
+  | MessageCreateCanvas;

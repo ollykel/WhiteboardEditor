@@ -20,11 +20,11 @@ type CanvasIdType = i32;
 type WhiteboardIdType = i32;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(tag = "type", rename_all = "snake_case")]
+#[serde(tag = "type", rename_all = "snake_case", rename_all_fields="camelCase")]
 enum ShapeModel {
-    Rect { x: u64, y: u64, width: u64, height: u64 },
-    Ellipse { x: u64, y: u64, radius_x: u64, radius_y: u64 },
-    Vector { points: Vec<u64> },
+    Rect { x: f64, y: f64, width: f64, height: f64 },
+    Ellipse { x: f64, y: f64, radius_x: f64, radius_y: f64 },
+    Vector { points: Vec<f64> },
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -49,7 +49,7 @@ enum WebSocketMessage {
     ClientLogin { client_id: ClientIdType },
     ClientLogout { client_id: ClientIdType },
     CreateShape { client_id: ClientIdType, canvas_id: CanvasIdType, shape: ShapeModel },
-    CreateCanvas { client_id: ClientIdType, width: u64, height: u64 },
+    CreateCanvas { client_id: ClientIdType, canvas_id: CanvasIdType, width: u64, height: u64 },
 }
 
 #[derive(Clone)]
@@ -164,6 +164,8 @@ async fn handle_connection(ws: WebSocket, tx: broadcast::Sender<WebSocketMessage
         client_id
     };
 
+    println!("New client: {}", current_client_id);
+
     {
         // Add new client to active clients, notify other users that they have logged in
         let mut active_clients = active_clients.lock().await;
@@ -201,11 +203,17 @@ async fn handle_connection(ws: WebSocket, tx: broadcast::Sender<WebSocketMessage
 
         async move {
             while let Some(Ok(msg)) = user_ws_rx.next().await {
+                println!("Client {} sent message ...", current_client_id);
                 if let Ok(text_str) = msg.to_str() {
+                    println!("Raw message: {}", text_str);
+
                     if let Ok(mut client_msg) = serde_json::from_str::<WebSocketMessage>(text_str) {
+                        println!("Received message from client {}", current_client_id);
+
                         match client_msg {
                             WebSocketMessage::CreateShape { ref mut client_id, canvas_id, ref shape } => {
                                 let mut whiteboard = whiteboard_ref.lock().await;
+                                println!("Creating shape on canvas {} ...", canvas_id);
 
                                 match whiteboard.canvases.get_mut(canvas_id as usize) {
                                     None => {
@@ -221,7 +229,7 @@ async fn handle_connection(ws: WebSocket, tx: broadcast::Sender<WebSocketMessage
                                     }
                                 };
                             },
-                            WebSocketMessage::CreateCanvas { ref mut client_id, width, height } => {
+                            WebSocketMessage::CreateCanvas { ref mut client_id, ref mut canvas_id, width, height } => {
                                 let mut whiteboard = whiteboard_ref.lock().await;
                                 let new_canvas_id = whiteboard.canvases.len() as CanvasIdType;
 
@@ -234,6 +242,7 @@ async fn handle_connection(ws: WebSocket, tx: broadcast::Sender<WebSocketMessage
 
                                 // broadcast to all clients
                                 *client_id = current_client_id;
+                                *canvas_id = new_canvas_id;
                                 tx.send(client_msg).ok();
                             },
                             // do nothing for all other messages

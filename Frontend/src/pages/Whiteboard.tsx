@@ -5,10 +5,12 @@ import Toolbar from "@/components/Toolbar";
 import Header from '@/components/Header';
 
 import type { ToolChoice } from '@/components/Tool';
-import type { SocketMessage } from '@/types/WebSocketProtocol';
-
-// TODO: Swap out hardcoded placeholders with dynamic data
-const title = "My First Whiteboard";
+import type { ShapeModel } from '@/types/ShapeModel';
+import type {
+  SocketMessage,
+  CanvasData,
+  CanvasIdType
+} from '@/types/WebSocketProtocol';
 
 const getWebSocketUri = (): string => {
     const wsScheme = window.location.protocol === 'https:' ? 'wss' : 'ws';
@@ -18,9 +20,15 @@ const getWebSocketUri = (): string => {
 };
 
 const Whiteboard = () => {
-  const [toolChoice, setToolChoice] = useState<ToolChoice>('rect');
-  const [canvases, setCanvases] = useState<{ id: number, title: string }[]>([{ id: 1, title: "Canvas A" }]);
   const socketRef = useRef<WebSocket | null>(null);
+  const [title, setTitle] = useState<string>('Loading Whiteboard ...');
+  const [canvases, setCanvases] = useState<CanvasData[]>([]);
+  const [activeClients, setActiveClients] = useState<Set<number>>(new Set());
+  const [clientId, setClientId] = useState<number>(-1);
+  const [toolChoice, setToolChoice] = useState<ToolChoice>('rect');
+
+  // --- derived state
+  const isActive = socketRef.current !== null;
 
   // handles all web socket messages
   const handleMessage = (event: any): void => {
@@ -29,6 +37,76 @@ const Whiteboard = () => {
       console.log('Received:', msg);
 
       // TODO: handle each type of message
+      switch (msg.type) {
+        case 'init_client':
+          {
+            const { clientId: initClientId, activeClients: initActiveClients, whiteboard } = msg;
+            const { name, canvases: initCanvases } = whiteboard;
+
+            setTitle(name);
+            setClientId(initClientId);
+            setActiveClients(new Set(initActiveClients));
+            setCanvases(initCanvases);
+          }
+          break;
+        case 'client_login':
+          {
+            const { clientId } = msg;
+
+            setActiveClients((prev) => {
+              const next = new Set(prev.keys());
+
+              next.add(clientId);
+              return next;
+            });
+          }
+          break;
+        case 'client_logout':
+          {
+            const { clientId } = msg;
+
+            setActiveClients((prev) => {
+              const next = new Set(prev.keys());
+
+              next.delete(clientId);
+              return next;
+            });
+          }
+          break;
+        case 'create_shape':
+          {
+            const { canvasId, shape } = msg;
+
+            // TODO: account for canvasId possibly not being an index
+            setCanvases((prev) => {
+              const targetCanvas = prev[canvasId];
+              const { shapes: prevShapes } = targetCanvas;
+
+              return [
+                ...prev.slice(0, canvasId),
+                ({
+                  ...targetCanvas,
+                  shapes: [...prevShapes, shape]
+                }),
+                ...prev.slice(canvasId + 1)
+              ];
+            });
+          }
+          break;
+        case 'create_canvas':
+          {
+            const { canvasId, width, height } = msg;
+
+            // Just push it to the end for now
+            setCanvases((prev) => [
+              ...prev,
+              ({ id: canvasId, width, height, shapes: [] })
+            ]);
+          }
+          break;
+        default:
+          console.log('Message type unrecognized');
+      }// end switch (msg.type)
     } catch (e) {
       console.log('Failed to parse message:', e);
     }
@@ -50,24 +128,34 @@ const Whiteboard = () => {
     ws.onmessage = handleMessage;
   }, []);
 
-  const nextID = useRef(2);
-  const nextCanvasTitle = useRef(66);
-
   const handleNewCanvas = () => {
-    const titleChar = String.fromCharCode(nextCanvasTitle.current);
-    nextCanvasTitle.current += 1;
+    // Send message to server.
+    // Server will echo response back, and actually inserting the new canvas
+    // will be handled by handleMessage.
+    // TODO: allow setting custom canvas sizes
+    if (socketRef.current) {
+      socketRef.current.send(JSON.stringify({
+        type: 'create_canvas',
+        width: 512,
+        height: 512
+      }));
+    }
+  };
 
-    const idNum = nextID.current;
-    nextID.current += 1;
-
-    setCanvases(prev => [
-      ...prev,
-      {
-        id: idNum,
-        title: `Canvas ${titleChar}`,
-      }
-    ]);
-  }
+  const makeHandleAddShapes = (canvasId: CanvasIdType) => (shapes: ShapeModel[]) => {
+    if (socketRef.current) {
+      // TODO: modify backend to take multiple shapes (i.e. create_shapes)
+      for (const shape of shapes) {
+        console.log('Adding shape:', shape);
+        socketRef.current.send(JSON.stringify({
+          type: 'create_shape',
+          clientId,
+          canvasId,
+          shape
+        }));
+      }// end for (shape of shapes)
+    }
+  };
 
   return (
     <main>
@@ -75,7 +163,17 @@ const Whiteboard = () => {
       <Header 
         title={title}
       />
+      {
+        /** Display if socket not connected **/
+        (! isActive) && (
+          <p className="text-lg font-bold text-red-600">
+            Connecting ...
+          </p>
+        )
+      }
+
       {/* Content */}
+
       <div className="mt-20">
         {/* Toolbar */}
         <Toolbar 
@@ -85,12 +183,20 @@ const Whiteboard = () => {
         />
         {/* Canvas Container */}
         <div className="flex flex-1 flex-row justify-center flex-wrap ml-40">
-          {canvases.map((canvas) => (
+          {/* Display Active Clients */}
+          <div>
+            <span>Active user IDs: </span>
+            { [...activeClients.keys()].join(', ') }
+          </div>
+
+          {canvases.map(({ id: canvasId, width, height, shapes }: CanvasData) => (
             <CanvasCard
-              key={canvas.id}
-              title={canvas.title}
-              width={512}
-              height={512}
+              key={canvasId}
+              title={"TODO: store titles"}
+              width={width}
+              height={height}
+              shapes={shapes}
+              onAddShapes={makeHandleAddShapes(canvasId)}
               currentTool={toolChoice}
             />
           ))}

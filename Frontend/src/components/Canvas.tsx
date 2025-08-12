@@ -18,6 +18,8 @@ import type { ShapeModel } from '@/types/ShapeModel';
 export interface CanvasProps {
   width: number;
   height: number;
+  shapes: ShapeModel[];
+  onAddShapes: (shapes: ShapeModel[]) => void;
   currentTool: ToolChoice;
 }
 
@@ -340,17 +342,12 @@ const makeVectorDispatcher = ({ addShapes }: OperationDispatcherProps): Operatio
 };// end makeVectorDispatcher
 
 const Canvas = (props: CanvasProps) => {
-  const { width, height, currentTool } = props;
+  const { width, height, shapes, onAddShapes, currentTool } = props;
   const stageRef = useRef<any>(null);
-  // for generating unique ids
-  const [shapes, setShapes] = useState<ShapeModel[]>([]);
 
-  const addShapes = (newShapes: ShapeModel[]) => {
-    setShapes((currShapes) => [
-      ...currShapes,
-      ...newShapes
-    ]);
-  };
+  // In the future, we may wrap onAddShapes with some other logic.
+  // For now, it's just an alias.
+  const addShapes = onAddShapes;
   
   const defaultDispatcher = makeMockDispatcher({ addShapes });
   const dispatcherMap = {
