@@ -31,7 +31,7 @@ export interface WhiteboardData {
 }
 
 // Sent to an individual client to initialize the whiteboard on their end
-export interface MessageInitClient {
+export interface ServerMessageInitClient {
   type: "init_client";
   clientId: ClientIdType;
   activeClients: ClientIdType[];
@@ -39,26 +39,26 @@ export interface MessageInitClient {
 }
 
 // Notifies clients that a client has joined the session
-export interface MessageClientLogin {
+export interface ServerMessageClientLogin {
   type: "client_login";
   clientId: ClientIdType;
 }
 //
 // Notifies clients that a client has left the session
-export interface MessageClientLogout {
+export interface ServerMessageClientLogout {
   type: "client_logout";
   clientId: ClientIdType;
 }
 
 // Creates a new shape in a canvas
-export interface MessageCreateShape {
-  type: "create_shape";
+export interface ServerMessageCreateShapes {
+  type: "create_shapes";
   clientId: ClientIdType;
   canvasId: CanvasIdType;
-  shape: ShapeModel;
+  shapes: ShapeModel[];
 }
 
-export interface MessageCreateCanvas {
+export interface ServerMessageCreateCanvas {
   type: "create_canvas";
   clientId: ClientIdType;
   canvasId: CanvasIdType;
@@ -67,9 +67,28 @@ export interface MessageCreateCanvas {
 }
 
 // Tagged union of all possible client-server messages
-export type SocketMessage =
-  MessageInitClient
-  | MessageClientLogin
-  | MessageClientLogout
-  | MessageCreateShape
-  | MessageCreateCanvas;
+export type SocketServerMessage =
+  ServerMessageInitClient
+  | ServerMessageClientLogin
+  | ServerMessageClientLogout
+  | ServerMessageCreateShapes
+  | ServerMessageCreateCanvas;
+
+// Notify the server that the client has created a new shape.
+export interface ClientMessageCreateShapes {
+  type: "create_shapes";
+  canvasId: CanvasIdType;
+  shapes: ShapeModel[];
+}
+
+// Notify server that client has created a new canvas
+export interface ClientMessageCreateCanvas {
+  type: "create_canvas";
+  width: number;
+  height: number;
+}
+
+// Tagged union of all possible client-server messages
+export type SocketClientMessage =
+  ClientMessageCreateShapes
+  | ClientMessageCreateCanvas;

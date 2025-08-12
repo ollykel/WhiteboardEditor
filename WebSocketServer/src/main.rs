@@ -42,14 +42,21 @@ struct WhiteboardClientView {
     canvases: Vec<CanvasClientView>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize)]
 #[serde(tag = "type", rename_all = "snake_case", rename_all_fields="camelCase")]
-enum WebSocketMessage {
+enum ServerSocketMessage {
     InitClient { client_id: ClientIdType, active_clients: Vec<ClientIdType>, whiteboard: WhiteboardClientView },
     ClientLogin { client_id: ClientIdType },
     ClientLogout { client_id: ClientIdType },
-    CreateShape { client_id: ClientIdType, canvas_id: CanvasIdType, shape: ShapeModel },
+    CreateShapes { client_id: ClientIdType, canvas_id: CanvasIdType, shapes: Vec<ShapeModel> },
     CreateCanvas { client_id: ClientIdType, canvas_id: CanvasIdType, width: u64, height: u64 },
+}
+
+#[derive(Debug, Clone, Deserialize)]
+#[serde(tag = "type", rename_all = "snake_case", rename_all_fields="camelCase")]
+enum ClientSocketMessage {
+    CreateShapes { canvas_id: CanvasIdType, shapes: Vec<ShapeModel> },
+    CreateCanvas { width: u64, height: u64 }
 }
 
 #[derive(Clone)]
@@ -115,7 +122,7 @@ async fn main() {
 
     let active_clients = Arc::new(Mutex::new(HashSet::<ClientIdType>::new()));
 
-    let (tx, _rx) = broadcast::channel::<WebSocketMessage>(100);
+    let (tx, _rx) = broadcast::channel::<ServerSocketMessage>(100);
 
     let tx_filter = warp::any().map({
         let tx = tx.clone();
@@ -152,7 +159,7 @@ async fn main() {
     warp::serve(ws_route).run(addr).await;
 }// end async fn main()
 
-async fn handle_connection(ws: WebSocket, tx: broadcast::Sender<WebSocketMessage>, next_client_id: Arc<Mutex<ClientIdType>>, shared_whiteboard: Arc<Mutex<Whiteboard>>, active_clients: Arc<Mutex<HashSet<ClientIdType>>>) {
+async fn handle_connection(ws: WebSocket, tx: broadcast::Sender<ServerSocketMessage>, next_client_id: Arc<Mutex<ClientIdType>>, shared_whiteboard: Arc<Mutex<Whiteboard>>, active_clients: Arc<Mutex<HashSet<ClientIdType>>>) {
     let (mut user_ws_tx, mut user_ws_rx) = ws.split();
     let mut rx = tx.subscribe();
     let current_client_id = {
@@ -171,7 +178,7 @@ async fn handle_connection(ws: WebSocket, tx: broadcast::Sender<WebSocketMessage
         let mut active_clients = active_clients.lock().await;
 
         active_clients.insert(current_client_id);
-        tx.send(WebSocketMessage::ClientLogin{ client_id: current_client_id }).ok();
+        tx.send(ServerSocketMessage::ClientLogin{ client_id: current_client_id }).ok();
     }
 
     {
@@ -179,7 +186,7 @@ async fn handle_connection(ws: WebSocket, tx: broadcast::Sender<WebSocketMessage
         let whiteboard = shared_whiteboard.lock().await;
         let active_clients = active_clients.lock().await;
 
-        let init_msg = WebSocketMessage::InitClient {
+        let init_msg = ServerSocketMessage::InitClient {
             client_id: current_client_id,
             active_clients: active_clients.iter().map(|&val| val).collect(),
             whiteboard: whiteboard.to_client_view()
@@ -207,11 +214,11 @@ async fn handle_connection(ws: WebSocket, tx: broadcast::Sender<WebSocketMessage
                 if let Ok(text_str) = msg.to_str() {
                     println!("Raw message: {}", text_str);
 
-                    if let Ok(mut client_msg) = serde_json::from_str::<WebSocketMessage>(text_str) {
+                    if let Ok(client_msg) = serde_json::from_str::<ClientSocketMessage>(text_str) {
                         println!("Received message from client {}", current_client_id);
 
                         match client_msg {
-                            WebSocketMessage::CreateShape { ref mut client_id, canvas_id, ref shape } => {
+                            ClientSocketMessage::CreateShapes{ canvas_id, ref shapes } => {
                                 let mut whiteboard = whiteboard_ref.lock().await;
                                 println!("Creating shape on canvas {} ...", canvas_id);
 
@@ -221,15 +228,18 @@ async fn handle_connection(ws: WebSocket, tx: broadcast::Sender<WebSocketMessage
                                         todo!()
                                     },
                                     Some(canvas) => {
-                                        canvas.shapes.push(shape.clone());
+                                        canvas.shapes.extend_from_slice(shapes.as_slice());
 
                                         // broadcast to all clients
-                                        *client_id = current_client_id;
-                                        tx.send(client_msg).ok();
+                                        tx.send(ServerSocketMessage::CreateShapes{
+                                            client_id: current_client_id,
+                                            canvas_id: canvas_id,
+                                            shapes: shapes.clone()
+                                        }).ok();
                                     }
                                 };
                             },
-                            WebSocketMessage::CreateCanvas { ref mut client_id, ref mut canvas_id, width, height } => {
+                            ClientSocketMessage::CreateCanvas { width, height } => {
                                 let mut whiteboard = whiteboard_ref.lock().await;
                                 let new_canvas_id = whiteboard.canvases.len() as CanvasIdType;
 
@@ -241,9 +251,12 @@ async fn handle_connection(ws: WebSocket, tx: broadcast::Sender<WebSocketMessage
                                 });
 
                                 // broadcast to all clients
-                                *client_id = current_client_id;
-                                *canvas_id = new_canvas_id;
-                                tx.send(client_msg).ok();
+                                tx.send(ServerSocketMessage::CreateCanvas{
+                                    client_id: current_client_id,
+                                    canvas_id: new_canvas_id,
+                                    width: width,
+                                    height: height
+                                }).ok();
                             },
                             // do nothing for all other messages
                             _ => {}
@@ -265,7 +278,7 @@ async fn handle_connection(ws: WebSocket, tx: broadcast::Sender<WebSocketMessage
         let mut active_clients = active_clients.lock().await;
 
         active_clients.remove(&current_client_id);
-        tx.send(WebSocketMessage::ClientLogout{ client_id: current_client_id }).ok();
+        tx.send(ServerSocketMessage::ClientLogout{ client_id: current_client_id }).ok();
     }
 
     println!("Client {} disconnected", current_client_id);

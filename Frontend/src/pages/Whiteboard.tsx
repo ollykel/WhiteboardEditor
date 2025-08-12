@@ -7,7 +7,9 @@ import Header from '@/components/Header';
 import type { ToolChoice } from '@/components/Tool';
 import type { ShapeModel } from '@/types/ShapeModel';
 import type {
-  SocketMessage,
+  SocketServerMessage,
+  ClientMessageCreateShapes,
+  ClientMessageCreateCanvas,
   CanvasData,
   CanvasIdType
 } from '@/types/WebSocketProtocol';
@@ -31,9 +33,9 @@ const Whiteboard = () => {
   const isActive = socketRef.current !== null;
 
   // handles all web socket messages
-  const handleMessage = (event: any): void => {
+  const handleServerMessage = (event: any): void => {
     try {
-      const msg = JSON.parse(event.data) as SocketMessage;
+      const msg = JSON.parse(event.data) as SocketServerMessage;
       console.log('Received:', msg);
 
       // TODO: handle each type of message
@@ -73,9 +75,9 @@ const Whiteboard = () => {
             });
           }
           break;
-        case 'create_shape':
+        case 'create_shapes':
           {
-            const { canvasId, shape } = msg;
+            const { canvasId, shapes } = msg;
 
             // TODO: account for canvasId possibly not being an index
             setCanvases((prev) => {
@@ -86,7 +88,7 @@ const Whiteboard = () => {
                 ...prev.slice(0, canvasId),
                 ({
                   ...targetCanvas,
-                  shapes: [...prevShapes, shape]
+                  shapes: [...prevShapes, ...shapes]
                 }),
                 ...prev.slice(canvasId + 1)
               ];
@@ -105,7 +107,7 @@ const Whiteboard = () => {
           }
           break;
         default:
-          console.log('Message type unrecognized');
+          console.log('Server Message type unrecognized');
       }// end switch (msg.type)
     } catch (e) {
       console.log('Failed to parse message:', e);
@@ -125,39 +127,37 @@ const Whiteboard = () => {
       console.log(`Failed to establish web socket connection to ${wsUri}`);
       socketRef.current = null;
     };
-    ws.onmessage = handleMessage;
+    ws.onmessage = handleServerMessage;
   }, []);
 
   const handleNewCanvas = () => {
     // Send message to server.
     // Server will echo response back, and actually inserting the new canvas
-    // will be handled by handleMessage.
+    // will be handled by handleServerMessage.
     // TODO: allow setting custom canvas sizes
     if (socketRef.current) {
       // TODO: more permanent solution by creating separate client and server
       // messages for creating canvases
-      socketRef.current.send(JSON.stringify({
+      const createCanvasMsg : ClientMessageCreateCanvas = ({
         type: 'create_canvas',
-        clientId: -1,
-        canvasId: -1,
         width: 512,
         height: 512
-      }));
+      });
+
+      socketRef.current.send(JSON.stringify(createCanvasMsg));
     }
   };
 
   const makeHandleAddShapes = (canvasId: CanvasIdType) => (shapes: ShapeModel[]) => {
     if (socketRef.current) {
       // TODO: modify backend to take multiple shapes (i.e. create_shapes)
-      for (const shape of shapes) {
-        console.log('Adding shape:', shape);
-        socketRef.current.send(JSON.stringify({
-          type: 'create_shape',
-          clientId,
-          canvasId,
-          shape
-        }));
-      }// end for (shape of shapes)
+      const createShapesMsg: ClientMessageCreateShapes = ({
+        type: 'create_shapes',
+        canvasId,
+        shapes
+      });
+
+      socketRef.current.send(JSON.stringify(createShapesMsg));
     }
   };
 
@@ -185,25 +185,37 @@ const Whiteboard = () => {
           onToolChange={setToolChoice}
           onNewCanvas={handleNewCanvas}
         />
+
         {/* Canvas Container */}
-        <div className="flex flex-1 flex-row justify-center flex-wrap ml-40">
-          {/* Display Active Clients */}
-          <div>
-            <span>Active user IDs: </span>
-            { [...activeClients.keys()].join(', ') }
+        <div className="flex flex-col justify-center flex-wrap ml-40">
+          {/** Misc. info **/}
+
+          <div className="flex flex-col justify-center flex-wrap">
+            {/** Own Client ID **/}
+            <div>
+              <span>Client ID: </span> {clientId}
+            </div>
+
+            {/* Display Active Clients */}
+            <div>
+              <span>Active user IDs: </span>
+              { [...activeClients.keys()].join(', ') }
+            </div>
           </div>
 
-          {canvases.map(({ id: canvasId, width, height, shapes }: CanvasData) => (
-            <CanvasCard
-              key={canvasId}
-              title={"TODO: store titles"}
-              width={width}
-              height={height}
-              shapes={shapes}
-              onAddShapes={makeHandleAddShapes(canvasId)}
-              currentTool={toolChoice}
-            />
-          ))}
+          <div className="flex flex-1 flex-row justify-center flex-wrap">
+            {canvases.map(({ id: canvasId, width, height, shapes }: CanvasData) => (
+              <CanvasCard
+                key={canvasId}
+                title={"TODO: store titles"}
+                width={width}
+                height={height}
+                shapes={shapes}
+                onAddShapes={makeHandleAddShapes(canvasId)}
+                currentTool={toolChoice}
+              />
+            ))}
+          </div>
         </div>
       </div>
     </main>
