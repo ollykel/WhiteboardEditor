@@ -134,8 +134,12 @@ const Whiteboard = () => {
     // will be handled by handleMessage.
     // TODO: allow setting custom canvas sizes
     if (socketRef.current) {
+      // TODO: more permanent solution by creating separate client and server
+      // messages for creating canvases
       socketRef.current.send(JSON.stringify({
         type: 'create_canvas',
+        clientId: -1,
+        canvasId: -1,
         width: 512,
         height: 512
       }));
