@@ -18,6 +18,7 @@ export interface CanvasProps {
   width: number;
   height: number;
   currentTool: ToolChoice;
+  accessible: boolean;
 }
 
 // For starters, just assume all rectangles have uniform width, height, and
@@ -382,7 +383,14 @@ const Canvas = (props: CanvasProps) => {
     'vector': makeVectorDispatcher({ addShapes })
   };
 
-  const dispatcher = dispatcherMap[currentTool] || defaultDispatcher;
+  let dispatcher: OperationDispatcher;
+  // Block users that don't have access
+  if (!props.accessible) {
+    dispatcher = makeMockDispatcher({ addShapes });
+  }
+  else {
+    dispatcher = dispatcherMap[currentTool] || defaultDispatcher;
+  }
 
   const {
     handlePointerDown,

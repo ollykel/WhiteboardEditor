@@ -6,7 +6,7 @@ interface CanvasCardProps extends CanvasProps {
   title: string;
 }
 
-function CanvasCard({ title, width, height, currentTool }: CanvasCardProps) {
+function CanvasCard({ title, width, height, currentTool, accessible }: CanvasCardProps) {
   return (
     <div className="flex flex-col p-6">
       {/* Active Users */}
@@ -19,6 +19,7 @@ function CanvasCard({ title, width, height, currentTool }: CanvasCardProps) {
           width={width}
           height={height}
           currentTool={currentTool}
+          accessible={accessible}
         />
       </div>
       {/* Currently Drawing */}

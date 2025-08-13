@@ -11,7 +11,7 @@ const title = "My First Whiteboard";
 
 const Whiteboard = () => {
   const [toolChoice, setToolChoice] = useState<ToolChoice>('rect');
-  const [canvases, setCanvases] = useState<{ id: number, title: string }[]>([{ id: 1, title: "Canvas A" }]);
+  const [canvases, setCanvases] = useState<{ id: number, title: string, accessible: boolean }[]>([{ id: 1, title: "Canvas A", accessible: true }]);
 
   const nextID = useRef(2);
   const nextCanvasTitle = useRef(66);
@@ -28,6 +28,7 @@ const Whiteboard = () => {
       {
         id: idNum,
         title: `Canvas ${titleChar}`,
+        accessible: true,
       }
     ]);
   }
@@ -55,6 +56,7 @@ const Whiteboard = () => {
               width={512}
               height={512}
               currentTool={toolChoice}
+              accessible={canvas.accessible}
             />
           ))}
         </div>
