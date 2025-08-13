@@ -28,7 +28,7 @@ const Whiteboard = () => {
       {
         id: idNum,
         title: `Canvas ${titleChar}`,
-        accessible: true,
+        accessible: false,
       }
     ]);
   }
