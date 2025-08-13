@@ -13,8 +13,16 @@ services:
       WHITEBOARD_EDITOR_WS_PORT: ${WHITEBOARD_EDITOR_WS_PORT-4000}
     depends_on:
       - frontend
+      - web_socket_server
   
   frontend:
     # Frontend code to serve to client.
     # Built using Vite, served with nginx
     build: Frontend
+    depends_on:
+      - web_socket_server
+
+  web_socket_server:
+    # Handles web sockets for providing real-time interaction with clients.
+    # Built in Rust.
+    build: WebSocketServer
