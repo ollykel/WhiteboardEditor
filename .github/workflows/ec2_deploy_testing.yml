@@ -49,6 +49,7 @@ jobs:
         run: |
           echo "${PRIVATE_KEY}" > github-ec2.pem && chmod 400 github-ec2.pem
           ssh -o StrictHostKeyChecking=no -i github-ec2.pem "${USER}@${HOST}" "
+          eval `ssh-agent -s`
           if [[ ! -d \"${REPO_DIR}/.git\" ]]
           then
             git clone \"${REPO_URL}\" \"${REPO_DIR}\"
