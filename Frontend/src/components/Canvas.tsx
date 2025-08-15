@@ -21,7 +21,6 @@ export interface CanvasProps {
   shapes: ShapeModel[];
   onAddShapes: (shapes: ShapeModel[]) => void;
   currentTool: ToolChoice;
-  accessible: boolean;
 }
 
 // For starters, just assume all rectangles have uniform width, height, and
@@ -383,12 +382,14 @@ const Canvas = (props: CanvasProps) => {
   let dispatcher: OperationDispatcher;
 
   // Block users that don't have access
-  if (!props.accessible) {
-    dispatcher = makeInaccessibleDispatcher({ addShapes });
-  }
-  else {
-    dispatcher = dispatcherMap[currentTool] || defaultDispatcher;
-  }
+  // if (!props.accessible) {
+  //   dispatcher = makeInaccessibleDispatcher({ addShapes });
+  // }
+  // else {
+  //   dispatcher = dispatcherMap[currentTool] || defaultDispatcher;
+  // }
+
+  dispatcher = dispatcherMap[currentTool] || defaultDispatcher;
 
   const {
     handlePointerDown,
