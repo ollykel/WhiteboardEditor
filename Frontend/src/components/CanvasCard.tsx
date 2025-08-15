@@ -6,7 +6,9 @@ interface CanvasCardProps extends CanvasProps {
   title: string;
 }
 
-function CanvasCard({ title, width, height, currentTool, accessible }: CanvasCardProps) {
+function CanvasCard(props: CanvasCardProps) {
+  const { title } = props;
+
   return (
     <div className="flex flex-col p-6">
       {/* Active Users */}
@@ -15,12 +17,7 @@ function CanvasCard({ title, width, height, currentTool, accessible }: CanvasCar
       <div className="text-center p-4">{title}</div>
       {/* Konva Canvas */}
       <div className="border border-black">
-        <Canvas
-          width={width}
-          height={height}
-          currentTool={currentTool}
-          accessible={accessible}
-        />
+        <Canvas {...props} />
       </div>
       {/* Currently Drawing */}
       <div className="currently-drawing">Joe is drawing...</div>
