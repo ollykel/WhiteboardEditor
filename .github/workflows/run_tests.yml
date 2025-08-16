@@ -3,33 +3,24 @@ on:
   push:
     branches:
       - feat/lint_check
-  workflow_call:
-    secrets:
-      TEST_CR_URI:
-        description: "URL at which the container registry is located"
-        required: true
-      TEST_CR_PASS:
-        description: "Password with which to log into container registry"
-        required: true
-      TEST_CR_USERNAME:
-        description: "Username with which to log into container registry"
-        required: true
 jobs:
-  push_docker_images:
-    runs-on: ubuntu-latest
+  docker_images:
+    # ensure that all images can build, at a bare minimum
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v5
-      - name: Build Images
+      - name: build frontend
         run: |
-          docker compose build
-      - name: Publish Images
-        env:
-          CR_URI: ${{ secrets.TEST_CR_URI }}
-          CR_PASS: ${{ secrets.TEST_CR_PASS }}
-          CR_USERNAME: ${{ secrets.TEST_CR_USERNAME }}
-        run: |
-          # log into CR
-          printenv CR_PASS | docker login -u "${CR_USERNAME}" --password-stdin
+          docker compose build frontend
 
-          # publish to CR
-          docker compose publish "${CR_URI}:latest"
+          echo 'service "frontend" build successfully'
+      - name: build web_socket_server
+        run: |
+          docker compose build web_socket_server
+
+          echo 'service "web_socket_server" build successfully'
+      - name: build reverse_proxy
+        run: |
+          docker compose build reverse_proxy
+
+          echo 'service "reverse_proxy" build successfully'
