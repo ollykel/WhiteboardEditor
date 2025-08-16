@@ -1,0 +1,19 @@
+# Test web_socket_server service
+on:
+  push:
+    paths:
+      - 'WebSocketServer/**'
+      - 'docker-compose.yml'
+      - '.github/workflows/test_web_socket_server.yml'
+jobs:
+  test_build_web_socket_server:
+    # Ensure image builds
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v5
+      - name: build
+        # name sure the image builds, at a minimum
+        run: |
+          docker compose build web_socket_server
+
+          echo 'service "web_socket_server" built successfully'

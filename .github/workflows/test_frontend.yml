@@ -1,0 +1,38 @@
+# Test frontend service
+on:
+  push:
+    paths:
+      - 'Frontend/**'
+      - 'docker-compose.yml'
+      - '.github/workflows/test_frontend.yml'
+jobs:
+  test_lint_frontend:
+    # run linter
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v5
+      - name: install
+        run: |
+          # install dependencies via yarn
+          cd Frontend
+
+          yarn install
+
+          echo 'service "frontend" installed dependencies successfully'
+      - name: lint
+        run: |
+          cd Frontend
+
+          yarn run lint
+
+          echo 'service "frontend" linted successfully'
+
+  test_build_frontend:
+    # make sure image builds
+    runs-on: ubuntu-22.04
+    steps:
+      - name: build
+        run: |
+          docker compose build frontend
+
+          echo 'service "frontend" built successfully'
