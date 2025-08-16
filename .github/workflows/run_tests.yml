@@ -21,8 +21,6 @@ jobs:
       - uses: actions/checkout@v5
       - name: Build Images
         run: |
-          cd "/home/runner/work/${{ github.repository }}"
-
           docker compose build
       - name: Publish Images
         env:
@@ -34,6 +32,4 @@ jobs:
           printenv CR_PASS | docker login -u "${CR_USERNAME}" --password-stdin
 
           # publish to CR
-          cd "/home/runner/work/${{ github.repository }}"
-
           docker compose publish "${CR_URI}:latest"
