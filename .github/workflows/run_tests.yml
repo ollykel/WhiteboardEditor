@@ -4,23 +4,35 @@ on:
     branches:
       - feat/lint_check
 jobs:
-  docker_images:
-    # ensure that all images can build, at a bare minimum
+  test_frontend:
+    # test frontend image in isolation
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v5
-      - name: build frontend
+      - name: build
         run: |
           docker compose build frontend
 
-          echo 'service "frontend" build successfully'
-      - name: build web_socket_server
+          echo 'service "frontend" built successfully'
+
+  test_web_socket_server:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v5
+      - name: build
+        # name sure the image builds, at a minimum
         run: |
           docker compose build web_socket_server
 
-          echo 'service "web_socket_server" build successfully'
-      - name: build reverse_proxy
+          echo 'service "web_socket_server" built successfully'
+
+  test_reverse_proxy:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v5
+      - name: build
+        # name sure the image builds, at a minimum
         run: |
           docker compose build reverse_proxy
 
-          echo 'service "reverse_proxy" build successfully'
+          echo 'service "reverse_proxy" built successfully'
