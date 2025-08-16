@@ -6,7 +6,7 @@ on:
       - 'docker-compose.yml'
       - '.github/workflows/test_reverse_proxy.yml'
 jobs:
-  build:
+  test_build_reverse_proxy:
     # ensure the image builds successfully
     runs-on: ubuntu-22.04
     steps:

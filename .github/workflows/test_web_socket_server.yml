@@ -6,7 +6,7 @@ on:
       - 'docker-compose.yml'
       - '.github/workflows/test_web_socket_server.yml'
 jobs:
-  build:
+  test_build_web_socket_server:
     # Ensure image builds
     runs-on: ubuntu-22.04
     steps:
