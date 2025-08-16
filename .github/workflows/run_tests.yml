@@ -19,13 +19,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
-        with:
-          # Set dummy repository name here to future-proof this workflow (i.e.
-          # in case repository name changes).
-          repository: repo
       - name: Build Images
         run: |
-          cd /home/runner/work/repo/repo
+          cd "/home/runner/work/${{ github.repository }}"
 
           docker compose build
       - name: Publish Images
@@ -38,6 +34,6 @@ jobs:
           printenv CR_PASS | docker login -u "${CR_USERNAME}" --password-stdin
 
           # publish to CR
-          cd /home/runner/work/repo/repo
+          cd "/home/runner/work/${{ github.repository }}"
 
           docker compose publish "${CR_URI}:latest"
