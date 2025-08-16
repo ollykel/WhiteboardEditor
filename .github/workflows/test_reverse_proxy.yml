@@ -1,0 +1,19 @@
+# Test reverse_proxy service
+on:
+  push:
+    paths:
+      - 'ReverseProxy/**'
+      - 'docker-compose.yml'
+      - '.github/workflows/test_reverse_proxy.yml'
+jobs:
+  build:
+    # ensure the image builds successfully
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v5
+      - name: build
+        # name sure the image builds, at a minimum
+        run: |
+          docker compose build reverse_proxy
+
+          echo 'service "reverse_proxy" built successfully'
