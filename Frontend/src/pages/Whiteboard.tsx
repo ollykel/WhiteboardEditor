@@ -97,12 +97,11 @@ const Whiteboard = () => {
           break;
         case 'create_canvas':
           {
-            const { canvasId, width, height } = msg;
-
+            const { canvasId, width, height, allowedUsers = [] } = msg;
             // Just push it to the end for now
             setCanvases((prev) => [
               ...prev,
-              ({ id: canvasId, width, height, shapes: [], allowed_users: [] })
+              ({ id: canvasId, width, height, shapes: [], allowedUsers })
             ]);
           }
           break;
@@ -204,8 +203,8 @@ const Whiteboard = () => {
           </div>
 
           <div className="flex flex-1 flex-row justify-center flex-wrap">
-            {canvases.map(({ id: canvasId, width, height, shapes, allowed_users }: CanvasData) => {
-              const hasAccess = allowed_users.length === 0 || allowed_users.includes(clientId);
+            {canvases.map(({ id: canvasId, width, height, shapes, allowedUsers }: CanvasData) => {
+              const hasAccess = allowedUsers.length === 0 || allowedUsers.includes(clientId);
               return (
                 <CanvasCard
                   key={canvasId}

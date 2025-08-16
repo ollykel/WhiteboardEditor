@@ -22,7 +22,7 @@ export interface CanvasData {
   width: number;
   height: number;
   shapes: ShapeModel[];
-  allowed_users: ClientIdType[];
+  allowedUsers: ClientIdType[];
 }
 
 export interface WhiteboardData {
@@ -65,6 +65,7 @@ export interface ServerMessageCreateCanvas {
   canvasId: CanvasIdType;
   width: number;
   height: number;
+  allowedUsers: ClientIdType[];
 }
 
 // Tagged union of all possible client-server messages
