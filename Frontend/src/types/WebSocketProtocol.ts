@@ -22,6 +22,7 @@ export interface CanvasData {
   width: number;
   height: number;
   shapes: ShapeModel[];
+  allowed_users: ClientIdType[];
 }
 
 export interface WhiteboardData {

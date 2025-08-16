@@ -21,6 +21,7 @@ export interface CanvasProps {
   shapes: ShapeModel[];
   onAddShapes: (shapes: ShapeModel[]) => void;
   currentTool: ToolChoice;
+  disabled: boolean;
 }
 
 // For starters, just assume all rectangles have uniform width, height, and
@@ -89,22 +90,22 @@ const makeMockDispatcher = (_props: OperationDispatcherProps): OperationDispatch
 // Used for keeping users from accessing inaccessible canvases.
 //
 // =============================================================================
-// const makeInaccessibleDispatcher = (_props: OperationDispatcherProps): OperationDispatcher => {
-//   return ({
-//     handlePointerDown: (_ev: Konva.KonvaEventObject<MouseEvent>) => {
-//       console.log("You don't have access to this canvas");
-//     },
-//     handlePointerMove: (_ev: Konva.KonvaEventObject<MouseEvent>) => {
-//       console.log("You don't have access to this canvas");
-//     },
-//     handlePointerUp: (_ev: Konva.KonvaEventObject<MouseEvent>) => {
-//       console.log("You don't have access to this canvas");
-//     },
-//     getPreview: () => null,
-//     renderShape: (_key: string | number, _model: ShapeModel) => null,
-//     getTooltipText: () => "You don't have access to this canvas"
-//   });
-// };
+const makeInaccessibleDispatcher = (_props: OperationDispatcherProps): OperationDispatcher => {
+  return ({
+    handlePointerDown: (_ev: Konva.KonvaEventObject<MouseEvent>) => {
+      console.log("You don't have access to this canvas");
+    },
+    handlePointerMove: (_ev: Konva.KonvaEventObject<MouseEvent>) => {
+      console.log("You don't have access to this canvas");
+    },
+    handlePointerUp: (_ev: Konva.KonvaEventObject<MouseEvent>) => {
+      console.log("You don't have access to this canvas");
+    },
+    getPreview: () => null,
+    renderShape: (_key: string | number, _model: ShapeModel) => null,
+    getTooltipText: () => "You don't have access to this canvas"
+  });
+};
 
 const makeRectangleDispatcher = ({ addShapes }: OperationDispatcherProps): OperationDispatcher => {
   const [mouseDownCoords, setMouseDownCoords] = useState<EventCoords | null>(null);
@@ -364,7 +365,7 @@ const makeVectorDispatcher = ({ addShapes }: OperationDispatcherProps): Operatio
 };// end makeVectorDispatcher
 
 const Canvas = (props: CanvasProps) => {
-  const { width, height, shapes, onAddShapes, currentTool } = props;
+  const { width, height, shapes, onAddShapes, currentTool, disabled } = props;
   const stageRef = useRef<any>(null);
 
   // In the future, we may wrap onAddShapes with some other logic.
@@ -381,15 +382,11 @@ const Canvas = (props: CanvasProps) => {
 
   let dispatcher: OperationDispatcher;
 
-  // Block users that don't have access
-  // if (!props.accessible) {
-  //   dispatcher = makeInaccessibleDispatcher({ addShapes });
-  // }
-  // else {
-  //   dispatcher = dispatcherMap[currentTool] || defaultDispatcher;
-  // }
-
-  dispatcher = dispatcherMap[currentTool] || defaultDispatcher;
+  if (disabled) {
+    dispatcher = makeInaccessibleDispatcher({ addShapes });
+  } else {
+    dispatcher = dispatcherMap[currentTool] || defaultDispatcher;
+  }
 
   const {
     handlePointerDown,
