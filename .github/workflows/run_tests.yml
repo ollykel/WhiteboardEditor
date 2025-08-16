@@ -9,6 +9,21 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v5
+      - name: install
+        run: |
+          # install dependencies via yarn
+          cd Frontend
+
+          yarn install
+
+          echo 'service "frontend" installed dependencies successfully'
+      - name: lint
+        run: |
+          cd Frontend
+
+          yarn run lint
+
+          echo 'service "frontend" linted successfully'
       - name: build
         run: |
           docker compose build frontend
