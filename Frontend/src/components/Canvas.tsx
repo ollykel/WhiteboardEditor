@@ -89,22 +89,22 @@ const makeMockDispatcher = (_props: OperationDispatcherProps): OperationDispatch
 // Used for keeping users from accessing inaccessible canvases.
 //
 // =============================================================================
-const makeInaccessibleDispatcher = (_props: OperationDispatcherProps): OperationDispatcher => {
-  return ({
-    handlePointerDown: (_ev: Konva.KonvaEventObject<MouseEvent>) => {
-      console.log("You don't have access to this canvas");
-    },
-    handlePointerMove: (_ev: Konva.KonvaEventObject<MouseEvent>) => {
-      console.log("You don't have access to this canvas");
-    },
-    handlePointerUp: (_ev: Konva.KonvaEventObject<MouseEvent>) => {
-      console.log("You don't have access to this canvas");
-    },
-    getPreview: () => null,
-    renderShape: (_key: string | number, _model: ShapeModel) => null,
-    getTooltipText: () => "You don't have access to this canvas"
-  });
-};
+// const makeInaccessibleDispatcher = (_props: OperationDispatcherProps): OperationDispatcher => {
+//   return ({
+//     handlePointerDown: (_ev: Konva.KonvaEventObject<MouseEvent>) => {
+//       console.log("You don't have access to this canvas");
+//     },
+//     handlePointerMove: (_ev: Konva.KonvaEventObject<MouseEvent>) => {
+//       console.log("You don't have access to this canvas");
+//     },
+//     handlePointerUp: (_ev: Konva.KonvaEventObject<MouseEvent>) => {
+//       console.log("You don't have access to this canvas");
+//     },
+//     getPreview: () => null,
+//     renderShape: (_key: string | number, _model: ShapeModel) => null,
+//     getTooltipText: () => "You don't have access to this canvas"
+//   });
+// };
 
 const makeRectangleDispatcher = ({ addShapes }: OperationDispatcherProps): OperationDispatcher => {
   const [mouseDownCoords, setMouseDownCoords] = useState<EventCoords | null>(null);
