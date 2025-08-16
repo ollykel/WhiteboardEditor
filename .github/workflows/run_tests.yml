@@ -18,7 +18,7 @@ jobs:
   push_docker_images:
     runs-on: ubuntu-latest
     steps:
-      -uses: actions/checkout@v5
+      - uses: actions/checkout@v5
         with:
           # Set dummy repository name here to future-proof this workflow (i.e.
           # in case repository name changes).
