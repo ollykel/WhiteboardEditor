@@ -1,6 +1,6 @@
 import Dashboard from './pages/Dashboard';
 import Whiteboard from './pages/Whiteboard';
-import { Routes, Route, Link } from 'react-router';
+import { Routes, Route } from 'react-router';
 
 const App = () => {
   return (
