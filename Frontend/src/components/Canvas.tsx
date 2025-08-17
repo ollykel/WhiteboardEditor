@@ -62,12 +62,12 @@ interface OperationDispatcher {
   getTooltipText: () => string;
 }
 
-// === makeMockDispatcher ======================================================
+// === useMockDispatcher =======================================================
 //
 // Use as a dummy for unimplemented functionalities.
 //
 // =============================================================================
-const makeMockDispatcher = (_props: OperationDispatcherProps): OperationDispatcher => {
+const useMockDispatcher = (_props: OperationDispatcherProps): OperationDispatcher => {
   return ({
     handlePointerDown: (_ev: Konva.KonvaEventObject<MouseEvent>) => {
       console.log('TODO: implement');
@@ -84,7 +84,7 @@ const makeMockDispatcher = (_props: OperationDispatcherProps): OperationDispatch
   });
 };
 
-const makeRectangleDispatcher = ({ addShapes }: OperationDispatcherProps): OperationDispatcher => {
+const useRectangleDispatcher = ({ addShapes }: OperationDispatcherProps): OperationDispatcher => {
   const [mouseDownCoords, setMouseDownCoords] = useState<EventCoords | null>(null);
   const [mouseCoords, setMouseCoords] = useState<EventCoords | null>(null);
 
@@ -170,9 +170,9 @@ const makeRectangleDispatcher = ({ addShapes }: OperationDispatcherProps): Opera
     renderShape,
     getTooltipText
   });
-};// end makeRectangleDispatcher
+};// end useRectangleDispatcher
 
-const makeEllipseDispatcher = ({ addShapes }: OperationDispatcherProps): OperationDispatcher => {
+const useEllipseDispatcher = ({ addShapes }: OperationDispatcherProps): OperationDispatcher => {
   const [mouseDownCoords, setMouseDownCoords] = useState<EventCoords | null>(null);
   const [mouseCoords, setMouseCoords] = useState<EventCoords | null>(null);
 
@@ -259,9 +259,9 @@ const makeEllipseDispatcher = ({ addShapes }: OperationDispatcherProps): Operati
     renderShape,
     getTooltipText
   });
-};// end makeEllipseDispatcher
+};// end useEllipseDispatcher
 
-const makeVectorDispatcher = ({ addShapes }: OperationDispatcherProps): OperationDispatcher => {
+const useVectorDispatcher = ({ addShapes }: OperationDispatcherProps): OperationDispatcher => {
   const [mouseDownCoords, setMouseDownCoords] = useState<EventCoords | null>(null);
   const [mouseCoords, setMouseCoords] = useState<EventCoords | null>(null);
 
@@ -339,22 +339,22 @@ const makeVectorDispatcher = ({ addShapes }: OperationDispatcherProps): Operatio
     renderShape,
     getTooltipText
   });
-};// end makeVectorDispatcher
+};// end useVectorDispatcher
 
 const Canvas = (props: CanvasProps) => {
   const { width, height, shapes, onAddShapes, currentTool } = props;
-  const stageRef = useRef<any>(null);
+  const stageRef = useRef<Konva.Stage | null>(null);
 
   // In the future, we may wrap onAddShapes with some other logic.
   // For now, it's just an alias.
   const addShapes = onAddShapes;
   
-  const defaultDispatcher = makeMockDispatcher({ addShapes });
+  const defaultDispatcher = useMockDispatcher({ addShapes });
   const dispatcherMap = {
     'hand': defaultDispatcher,
-    'rect': makeRectangleDispatcher({ addShapes }),
-    'ellipse': makeEllipseDispatcher({ addShapes }),
-    'vector': makeVectorDispatcher({ addShapes })
+    'rect': useRectangleDispatcher({ addShapes }),
+    'ellipse': useEllipseDispatcher({ addShapes }),
+    'vector': useVectorDispatcher({ addShapes })
   };
 
   const dispatcher = dispatcherMap[currentTool] || defaultDispatcher;

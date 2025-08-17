@@ -33,7 +33,7 @@ const Whiteboard = () => {
   const isActive = socketRef.current !== null;
 
   // handles all web socket messages
-  const handleServerMessage = (event: any): void => {
+  const handleServerMessage = (event: MessageEvent): void => {
     try {
       const msg = JSON.parse(event.data) as SocketServerMessage;
       console.log('Received:', msg);
