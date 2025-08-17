@@ -9,7 +9,7 @@ function Dashboard() {
   const navigate = useNavigate();
 
   const createNewWhiteboard = () => {
-    navigate("/newWhiteboard");
+    navigate("/whiteboard/new");
   }
 
   return (

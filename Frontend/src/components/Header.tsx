@@ -10,6 +10,11 @@ function Header({ title }: HeaderProps) {
   const location = useLocation();
 
   const [isLoggedIn, setIsLoggedIn] = useState(true);
+
+  const handleLogOut = () => {
+    {/* TODO: Implement Log Out function */}
+    setIsLoggedIn(false);
+  }
   
   return (
     <div className="fixed z-50 top-1 left-0 right-0 max-h-15 shadow-md rounded-lg mx-20 m-1 p-3 bg-stone-50"> 
@@ -24,7 +29,6 @@ function Header({ title }: HeaderProps) {
         <h1 className="text-2xl font-bold">{title}</h1>
         
         <div className="absolute right-2">
-          {/* TODO: Implement Log Out function */}
           {location.pathname === "/dashboard" && (
             <div>
               {isLoggedIn ? (
@@ -34,7 +38,7 @@ function Header({ title }: HeaderProps) {
                     title="Settings"
                   />
                   <HeaderButton 
-                    onClick={() => console.log("Logged Out")}
+                    onClick={handleLogOut}
                     title="Log Out"
                   />
                 </div>
