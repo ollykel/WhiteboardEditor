@@ -6,10 +6,9 @@ const App = () => {
   return (
     <div>
       <Routes>
-        <Route />
+        <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/whiteboard/new" element={<Whiteboard />} />
       </Routes>
-      <Dashboard />
-      {/* <Whiteboard /> */}
     </div>
   );
 };
