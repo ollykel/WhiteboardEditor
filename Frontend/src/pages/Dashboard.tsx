@@ -6,12 +6,22 @@ function Dashboard() {
   const title: string = "<Whiteboard App>";
   const username: string = "<User>";
 
+  const createNewWhiteboard = () => {
+
+  }
+
   return (
     <div>
       <Header title={title}/>
-      <h1 className="mt-25 ml-10 text-4xl font-bold">
+      <h1 className="mt-25 text-4xl font-bold text-center">
         Welcome Back, {username}!
       </h1>
+      <button
+        onClick={createNewWhiteboard}
+        className="flex flex-col items-center justify-center ml-10 mt-10 p-4 shadow rounded-lg hover:bg-gray-200 hover:cursor-pointer bg-stone-50"
+      >
+        + New Whiteboard
+      </button>
       <YourWhiteboards />
       <SharedWhiteboards />
     </div>
