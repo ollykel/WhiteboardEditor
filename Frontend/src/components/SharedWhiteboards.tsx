@@ -6,7 +6,7 @@ function SharedWhiteboards() {
       <div className="text-2xl font-bold">
         Shared Whiteboards
       </div>
-      <WhiteboardCard />
+      <WhiteboardCard id="dummySharedID" /> {/* TODO: Map the list of shared whiteboards */}
     </div>
   );
 }
