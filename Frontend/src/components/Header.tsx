@@ -20,7 +20,9 @@ function Header({ title }: HeaderProps) {
             title="Home"
           />  {/* TODO: Implement home (dashboard) */}
         </div>
+
         <h1 className="text-2xl font-bold">{title}</h1>
+        
         <div className="absolute right-2">
           {/* TODO: Implement Log Out function */}
           {location.pathname === "/dashboard" && (
@@ -28,6 +30,7 @@ function Header({ title }: HeaderProps) {
               {isLoggedIn ? (
                 <div>
                   <HeaderButton 
+                    to="/settings"
                     title="Settings"
                   />
                   <HeaderButton 
@@ -49,7 +52,7 @@ function Header({ title }: HeaderProps) {
               )}
             </div>
           )}
-          {location.pathname === "/whiteboard/*" && (
+          {location.pathname.startsWith("/whiteboard/") && (
             <HeaderButton 
               onClick={() => console.log("Share clicked")}
               title="Share"

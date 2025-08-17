@@ -1,13 +1,15 @@
 import Header from "@/components/Header";
 import YourWhiteboards from "@/components/YourWhiteboards";
 import SharedWhiteboards from "@/components/SharedWhiteboards";
+import { useNavigate } from "react-router";
 
 function Dashboard() {
   const title: string = "<Whiteboard App>";
   const username: string = "<User>";
+  const navigate = useNavigate();
 
   const createNewWhiteboard = () => {
-
+    navigate("/newWhiteboard");
   }
 
   return (
