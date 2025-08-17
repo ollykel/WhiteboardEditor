@@ -20,6 +20,15 @@ function Header({ title }: HeaderProps) {
             onClick={() => console.log("Share clicked")}
             title="Share"
           /> {/* TODO: Implement sharing function */}
+          <HeaderButton 
+            title="Settings"
+          />
+          <HeaderButton 
+            title="Log In"
+          />
+          <HeaderButton 
+            title="Sign Up"
+          />
         </div>
       </div>
     </div>
