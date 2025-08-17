@@ -33,6 +33,7 @@ struct CanvasClientView {
     width: u64,
     height: u64,
     shapes: Vec<ShapeModel>,
+    allowedUsers: Vec<ClientIdType>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -49,7 +50,7 @@ enum ServerSocketMessage {
     ClientLogin { client_id: ClientIdType },
     ClientLogout { client_id: ClientIdType },
     CreateShapes { client_id: ClientIdType, canvas_id: CanvasIdType, shapes: Vec<ShapeModel> },
-    CreateCanvas { client_id: ClientIdType, canvas_id: CanvasIdType, width: u64, height: u64 },
+    CreateCanvas { client_id: ClientIdType, canvas_id: CanvasIdType, width: u64, height: u64, allowedUsers: Vec<ClientIdType> },
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -65,6 +66,7 @@ struct Canvas {
     width: u64,
     height: u64,
     shapes: Vec<ShapeModel>,
+    allowedUsers: Option<HashSet<ClientIdType>>, // None = open to all
 }
 
 impl Canvas {
@@ -76,6 +78,10 @@ impl Canvas {
             width: self.width,
             height: self.height,
             shapes: self.shapes.clone(),
+            allowedUsers: match &self.allowedUsers {
+                Some(set) => set.iter().copied().collect(),
+                None => vec![], // empty array means open to all
+            },
         }
     }// end pub fn to_client_view(&self) -> CanvasClientView
 }
@@ -101,6 +107,23 @@ impl Whiteboard {
     }// end pub fn to_client_view(&self) -> CanvasClientView
 }
 
+// === Program State ==============================================================================
+//
+// Holds all program state that a web socket connection may need to manipulate.
+//
+// Encapsulating all program state in a single thread-safe object allows for efficient testing and
+// passing of state between threads.
+//
+// ================================================================================================
+struct ProgramState {
+    tx: broadcast::Sender<ServerSocketMessage>,
+    next_client_id: Mutex<ClientIdType>,
+    whiteboard: Mutex<Whiteboard>,
+    active_clients: Mutex<HashSet<ClientIdType>>
+}
+
+type ProgramStateRef = Arc<ProgramState>;
+
 #[tokio::main]
 async fn main() {
     let port = 3000u16;
@@ -115,7 +138,8 @@ async fn main() {
                 id: 0,
                 width: 512,
                 height: 512,
-                shapes: Vec::<ShapeModel>::new()
+                shapes: Vec::<ShapeModel>::new(),
+                allowedUsers: None, // None means open to all users
             }
         ]
     }));
@@ -216,7 +240,7 @@ async fn handle_connection(ws: WebSocket, tx: broadcast::Sender<ServerSocketMess
 
                     if let Ok(client_msg) = serde_json::from_str::<ClientSocketMessage>(text_str) {
                         println!("Received message from client {}", current_client_id);
-
+                        
                         match client_msg {
                             ClientSocketMessage::CreateShapes{ canvas_id, ref shapes } => {
                                 let mut whiteboard = whiteboard_ref.lock().await;
@@ -242,12 +266,19 @@ async fn handle_connection(ws: WebSocket, tx: broadcast::Sender<ServerSocketMess
                             ClientSocketMessage::CreateCanvas { width, height } => {
                                 let mut whiteboard = whiteboard_ref.lock().await;
                                 let new_canvas_id = whiteboard.canvases.len() as CanvasIdType;
+                                let mut allowed = HashSet::new();
 
+                                // Initialize new canvas with only current user allowed to edit
+                                allowed.insert(current_client_id);
+
+                                let allowedUsersVec = allowed.iter().copied().collect::<Vec<_>>();
+                                
                                 whiteboard.canvases.push(Canvas{
                                     id: new_canvas_id,
                                     width: width,
                                     height: height,
-                                    shapes: Vec::<ShapeModel>::new()
+                                    shapes: Vec::<ShapeModel>::new(),
+                                    allowedUsers: Some(allowed),
                                 });
 
                                 // broadcast to all clients
@@ -255,11 +286,12 @@ async fn handle_connection(ws: WebSocket, tx: broadcast::Sender<ServerSocketMess
                                     client_id: current_client_id,
                                     canvas_id: new_canvas_id,
                                     width: width,
-                                    height: height
+                                    height: height,
+                                    allowedUsers: allowedUsersVec,
                                 }).ok();
                             },
                             // do nothing for all other messages
-                            _ => {}
+                            // _ => {}
                         }
                     }
                 }
