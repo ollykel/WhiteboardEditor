@@ -122,60 +122,41 @@ struct ProgramState {
     active_clients: Mutex<HashSet<ClientIdType>>
 }
 
-type ProgramStateRef = Arc<ProgramState>;
-
 #[tokio::main]
 async fn main() {
     let port = 3000u16;
-    let next_client_id: Arc<Mutex<ClientIdType>> = Arc::new(Mutex::new(0));
-
-    // start with a simple whiteboard with one blank canvas
-    let shared_whiteboard = Arc::new(Mutex::new(Whiteboard{
-        id: 0,
-        name: String::from("First Shared Whiteboard"),
-        canvases: vec![
-            Canvas{
-                id: 0,
-                width: 512,
-                height: 512,
-                shapes: Vec::<ShapeModel>::new(),
-                allowedUsers: None, // None means open to all users
-            }
-        ]
-    }));
-
-    let active_clients = Arc::new(Mutex::new(HashSet::<ClientIdType>::new()));
 
     let (tx, _rx) = broadcast::channel::<ServerSocketMessage>(100);
 
-    let tx_filter = warp::any().map({
-        let tx = tx.clone();
-        move || tx.clone()
+    let program_state_ref = Arc::new(ProgramState{
+        tx: tx.clone(),
+        next_client_id: Mutex::new(0),
+        whiteboard: Mutex::new(Whiteboard{
+            id: 0,
+            name: String::from("First Shared Whiteboard"),
+            canvases: vec![
+                Canvas{
+                    id: 0,
+                    width: 512,
+                    height: 512,
+                    shapes: Vec::<ShapeModel>::new(),
+                    allowedUsers: None, // None means open to all users
+                }
+            ]
+        }),
+        active_clients: Mutex::new(HashSet::<ClientIdType>::new())
     });
 
-    let next_client_id_filter = warp::any().map({
-        let next_client_id = Arc::clone(&next_client_id);
-        move || Arc::clone(&next_client_id)
-    });
-
-    let shared_whiteboard_filter = warp::any().map({
-        let shared_whiteboard = Arc::clone(&shared_whiteboard);
-        move || Arc::clone(&shared_whiteboard)
-    });
-
-    let active_clients_filter = warp::any().map({
-        let active_clients = Arc::clone(&active_clients);
-        move || Arc::clone(&active_clients)
+    let program_state_ref_filter = warp::any().map({
+        let program_state_ref = Arc::clone(&program_state_ref);
+        move || Arc::clone(&program_state_ref)
     });
 
     let ws_route = warp::path!("ws")
         .and(warp::ws())
-        .and(tx_filter)
-        .and(next_client_id_filter)
-        .and(shared_whiteboard_filter)
-        .and(active_clients_filter)
-        .map(|ws: warp::ws::Ws, tx, next_client_id, shared_whiteboard, active_clients| {
-            ws.on_upgrade(move |socket| handle_connection(socket, tx, next_client_id, shared_whiteboard, active_clients))
+        .and(program_state_ref_filter)
+        .map(|ws: warp::ws::Ws, program_state_ref| {
+            ws.on_upgrade(move |socket| handle_connection(socket, program_state_ref))
         });
 
     let addr: SocketAddr = ([0, 0, 0, 0], port).into();
@@ -183,11 +164,11 @@ async fn main() {
     warp::serve(ws_route).run(addr).await;
 }// end async fn main()
 
-async fn handle_connection(ws: WebSocket, tx: broadcast::Sender<ServerSocketMessage>, next_client_id: Arc<Mutex<ClientIdType>>, shared_whiteboard: Arc<Mutex<Whiteboard>>, active_clients: Arc<Mutex<HashSet<ClientIdType>>>) {
+async fn handle_connection(ws: WebSocket, program_state_ref: Arc<ProgramState>) {
     let (mut user_ws_tx, mut user_ws_rx) = ws.split();
-    let mut rx = tx.subscribe();
+    let mut rx = program_state_ref.tx.subscribe();
     let current_client_id = {
-        let mut next_client_id = next_client_id.lock().await;
+        let mut next_client_id = program_state_ref.next_client_id.lock().await;
         let client_id = *next_client_id;
 
         *next_client_id += 1;
@@ -199,16 +180,18 @@ async fn handle_connection(ws: WebSocket, tx: broadcast::Sender<ServerSocketMess
 
     {
         // Add new client to active clients, notify other users that they have logged in
-        let mut active_clients = active_clients.lock().await;
+        let mut active_clients = program_state_ref.active_clients.lock().await;
 
         active_clients.insert(current_client_id);
-        tx.send(ServerSocketMessage::ClientLogin{ client_id: current_client_id }).ok();
+        program_state_ref.tx.send(ServerSocketMessage::ClientLogin{
+            client_id: current_client_id
+        }).ok();
     }
 
     {
         // Send new client initialization message
-        let whiteboard = shared_whiteboard.lock().await;
-        let active_clients = active_clients.lock().await;
+        let whiteboard = program_state_ref.whiteboard.lock().await;
+        let active_clients = program_state_ref.active_clients.lock().await;
 
         let init_msg = ServerSocketMessage::InitClient {
             client_id: current_client_id,
@@ -229,8 +212,7 @@ async fn handle_connection(ws: WebSocket, tx: broadcast::Sender<ServerSocketMess
     });
 
     let recv_task = tokio::spawn({
-        let whiteboard_ref = Arc::clone(&shared_whiteboard);
-        let tx = tx.clone();
+        let program_state_ref = Arc::clone(&program_state_ref);
 
         async move {
             while let Some(Ok(msg)) = user_ws_rx.next().await {
@@ -243,7 +225,7 @@ async fn handle_connection(ws: WebSocket, tx: broadcast::Sender<ServerSocketMess
                         
                         match client_msg {
                             ClientSocketMessage::CreateShapes{ canvas_id, ref shapes } => {
-                                let mut whiteboard = whiteboard_ref.lock().await;
+                                let mut whiteboard = program_state_ref.whiteboard.lock().await;
                                 println!("Creating shape on canvas {} ...", canvas_id);
 
                                 match whiteboard.canvases.get_mut(canvas_id as usize) {
@@ -255,7 +237,7 @@ async fn handle_connection(ws: WebSocket, tx: broadcast::Sender<ServerSocketMess
                                         canvas.shapes.extend_from_slice(shapes.as_slice());
 
                                         // broadcast to all clients
-                                        tx.send(ServerSocketMessage::CreateShapes{
+                                        program_state_ref.tx.send(ServerSocketMessage::CreateShapes{
                                             client_id: current_client_id,
                                             canvas_id: canvas_id,
                                             shapes: shapes.clone()
@@ -264,7 +246,7 @@ async fn handle_connection(ws: WebSocket, tx: broadcast::Sender<ServerSocketMess
                                 };
                             },
                             ClientSocketMessage::CreateCanvas { width, height } => {
-                                let mut whiteboard = whiteboard_ref.lock().await;
+                                let mut whiteboard = program_state_ref.whiteboard.lock().await;
                                 let new_canvas_id = whiteboard.canvases.len() as CanvasIdType;
                                 let mut allowed = HashSet::new();
 
@@ -282,7 +264,7 @@ async fn handle_connection(ws: WebSocket, tx: broadcast::Sender<ServerSocketMess
                                 });
 
                                 // broadcast to all clients
-                                tx.send(ServerSocketMessage::CreateCanvas{
+                                program_state_ref.tx.send(ServerSocketMessage::CreateCanvas{
                                     client_id: current_client_id,
                                     canvas_id: new_canvas_id,
                                     width: width,
@@ -307,10 +289,10 @@ async fn handle_connection(ws: WebSocket, tx: broadcast::Sender<ServerSocketMess
     // Remove client from active clients, notify other clients of logout
     {
         // Add new client to active clients, notify other users that they have logged in
-        let mut active_clients = active_clients.lock().await;
+        let mut active_clients = program_state_ref.active_clients.lock().await;
 
         active_clients.remove(&current_client_id);
-        tx.send(ServerSocketMessage::ClientLogout{ client_id: current_client_id }).ok();
+        program_state_ref.tx.send(ServerSocketMessage::ClientLogout{ client_id: current_client_id }).ok();
     }
 
     println!("Client {} disconnected", current_client_id);
