@@ -125,7 +125,6 @@ struct ProgramState {
 #[tokio::main]
 async fn main() {
     let port = 3000u16;
-
     let (tx, _rx) = broadcast::channel::<ServerSocketMessage>(100);
 
     let program_state_ref = Arc::new(ProgramState{

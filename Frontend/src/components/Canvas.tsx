@@ -21,6 +21,7 @@ export interface CanvasProps {
   shapes: ShapeModel[];
   onAddShapes: (shapes: ShapeModel[]) => void;
   currentTool: ToolChoice;
+  disabled: boolean;
 }
 
 // For starters, just assume all rectangles have uniform width, height, and
@@ -81,6 +82,28 @@ const useMockDispatcher = (_props: OperationDispatcherProps): OperationDispatche
     getPreview: () => null,
     renderShape: (_key: string | number, _model: ShapeModel) => null,
     getTooltipText: () => "TODO: implement"
+  });
+};
+
+// === useInaccessibleDispatcher ===============================================
+//
+// Used for keeping users from accessing inaccessible canvases.
+//
+// =============================================================================
+const useInaccessibleDispatcher = (_props: OperationDispatcherProps): OperationDispatcher => {
+  return ({
+    handlePointerDown: (_ev: Konva.KonvaEventObject<MouseEvent>) => {
+      console.log("You don't have access to this canvas");
+    },
+    handlePointerMove: (_ev: Konva.KonvaEventObject<MouseEvent>) => {
+      console.log("You don't have access to this canvas");
+    },
+    handlePointerUp: (_ev: Konva.KonvaEventObject<MouseEvent>) => {
+      console.log("You don't have access to this canvas");
+    },
+    getPreview: () => null,
+    renderShape: (_key: string | number, _model: ShapeModel) => null,
+    getTooltipText: () => "You don't have access to this canvas"
   });
 };
 
@@ -342,7 +365,7 @@ const useVectorDispatcher = ({ addShapes }: OperationDispatcherProps): Operation
 };// end useVectorDispatcher
 
 const Canvas = (props: CanvasProps) => {
-  const { width, height, shapes, onAddShapes, currentTool } = props;
+  const { width, height, shapes, onAddShapes, currentTool, disabled } = props;
   const stageRef = useRef<Konva.Stage | null>(null);
 
   // In the future, we may wrap onAddShapes with some other logic.
@@ -357,7 +380,13 @@ const Canvas = (props: CanvasProps) => {
     'vector': useVectorDispatcher({ addShapes })
   };
 
-  const dispatcher = dispatcherMap[currentTool] || defaultDispatcher;
+  let dispatcher: OperationDispatcher;
+
+  if (disabled) {
+    dispatcher = useInaccessibleDispatcher({ addShapes });
+  } else {
+    dispatcher = dispatcherMap[currentTool] || defaultDispatcher;
+  }
 
   const {
     handlePointerDown,
