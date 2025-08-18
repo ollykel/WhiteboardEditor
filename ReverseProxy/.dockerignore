@@ -1,0 +1,7 @@
+# key and certificate files
+*.csr
+*.pem
+
+# Docker build files
+Dockerfile
+.dockerignore
