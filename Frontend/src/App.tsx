@@ -1,9 +1,14 @@
+import Dashboard from './pages/Dashboard';
 import Whiteboard from './pages/Whiteboard';
+import { Routes, Route } from 'react-router';
 
 const App = () => {
   return (
     <div>
-      <Whiteboard />
+      <Routes>
+        <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/whiteboard/new" element={<Whiteboard />} />
+      </Routes>
     </div>
   );
 };
