@@ -373,6 +373,8 @@ const Canvas = (props: CanvasProps) => {
   const addShapes = onAddShapes;
   
   const defaultDispatcher = useMockDispatcher({ addShapes });
+  const inaccessibleDispatcher = useInaccessibleDispatcher({ addShapes });
+
   const dispatcherMap = {
     'hand': defaultDispatcher,
     'rect': useRectangleDispatcher({ addShapes }),
@@ -383,7 +385,7 @@ const Canvas = (props: CanvasProps) => {
   let dispatcher: OperationDispatcher;
 
   if (disabled) {
-    dispatcher = useInaccessibleDispatcher({ addShapes });
+    dispatcher = inaccessibleDispatcher;
   } else {
     dispatcher = dispatcherMap[currentTool] || defaultDispatcher;
   }
