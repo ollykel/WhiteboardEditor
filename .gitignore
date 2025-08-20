@@ -1,7 +1,7 @@
 node_modules
 
 # .env file(s)
-*.env
+.env
 
 # Signing certificate and key files
 *.pem
