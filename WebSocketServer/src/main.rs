@@ -1,3 +1,5 @@
+// -- standard library imports
+
 use std::{
     sync::Arc,
     net::SocketAddr,
@@ -10,117 +12,16 @@ use futures::{
     StreamExt,
 };
 
+// -- third party imports
+
 use tokio::sync::broadcast;
 use serde::{Deserialize, Serialize};
 use warp::ws::{Message, WebSocket};
 use warp::Filter;
 
-type ClientIdType = i32;
-type CanvasIdType = i32;
-type WhiteboardIdType = i32;
+// -- local imports
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(tag = "type", rename_all = "snake_case", rename_all_fields="camelCase")]
-enum ShapeModel {
-    Rect { x: f64, y: f64, width: f64, height: f64 },
-    Ellipse { x: f64, y: f64, radius_x: f64, radius_y: f64 },
-    Vector { points: Vec<f64> },
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-struct CanvasClientView {
-    id: CanvasIdType,
-    width: u64,
-    height: u64,
-    shapes: Vec<ShapeModel>,
-    allowedUsers: Vec<ClientIdType>,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-struct WhiteboardClientView {
-    id: WhiteboardIdType,
-    name: String,
-    canvases: Vec<CanvasClientView>,
-}
-
-#[derive(Debug, Clone, Serialize)]
-#[serde(tag = "type", rename_all = "snake_case", rename_all_fields="camelCase")]
-enum ServerSocketMessage {
-    InitClient { client_id: ClientIdType, active_clients: Vec<ClientIdType>, whiteboard: WhiteboardClientView },
-    ClientLogin { client_id: ClientIdType },
-    ClientLogout { client_id: ClientIdType },
-    CreateShapes { client_id: ClientIdType, canvas_id: CanvasIdType, shapes: Vec<ShapeModel> },
-    CreateCanvas { client_id: ClientIdType, canvas_id: CanvasIdType, width: u64, height: u64, allowedUsers: Vec<ClientIdType> },
-}
-
-#[derive(Debug, Clone, Deserialize)]
-#[serde(tag = "type", rename_all = "snake_case", rename_all_fields="camelCase")]
-enum ClientSocketMessage {
-    CreateShapes { canvas_id: CanvasIdType, shapes: Vec<ShapeModel> },
-    CreateCanvas { width: u64, height: u64 }
-}
-
-#[derive(Clone)]
-struct Canvas {
-    id: CanvasIdType,
-    width: u64,
-    height: u64,
-    shapes: Vec<ShapeModel>,
-    allowedUsers: Option<HashSet<ClientIdType>>, // None = open to all
-}
-
-impl Canvas {
-    pub fn to_client_view(&self) -> CanvasClientView {
-        // At the moment, the client view is identical to the Canvas type itself, but this may not
-        // always be the case.
-        CanvasClientView {
-            id: self.id,
-            width: self.width,
-            height: self.height,
-            shapes: self.shapes.clone(),
-            allowedUsers: match &self.allowedUsers {
-                Some(set) => set.iter().copied().collect(),
-                None => vec![], // empty array means open to all
-            },
-        }
-    }// end pub fn to_client_view(&self) -> CanvasClientView
-}
-
-#[derive(Clone)]
-struct Whiteboard {
-    id: WhiteboardIdType,
-    name: String,
-    canvases: Vec<Canvas>,
-}
-
-impl Whiteboard {
-    pub fn to_client_view(&self) -> WhiteboardClientView {
-        // At the moment, the client view is identical to the Canvas type itself, but this may not
-        // always be the case.
-        WhiteboardClientView {
-            id: self.id,
-            name: self.name.clone(),
-            canvases: self.canvases.iter()
-                .map(|c| c.to_client_view())
-                .collect()
-        }
-    }// end pub fn to_client_view(&self) -> CanvasClientView
-}
-
-// === Program State ==============================================================================
-//
-// Holds all program state that a web socket connection may need to manipulate.
-//
-// Encapsulating all program state in a single thread-safe object allows for efficient testing and
-// passing of state between threads.
-//
-// ================================================================================================
-struct ProgramState {
-    tx: broadcast::Sender<ServerSocketMessage>,
-    next_client_id: Mutex<ClientIdType>,
-    whiteboard: Mutex<Whiteboard>,
-    active_clients: Mutex<HashSet<ClientIdType>>
-}
+use WebSocketServer::*;
 
 #[tokio::main]
 async fn main() {
