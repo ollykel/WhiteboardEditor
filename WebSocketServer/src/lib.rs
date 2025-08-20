@@ -4,11 +4,11 @@ use std::{
     collections::HashSet,
 };
 
+// -- third party imports
+
 use futures::{
     lock::Mutex,
 };
-
-// -- third party imports
 
 use tokio::sync::broadcast;
 use serde::{Deserialize, Serialize};
@@ -26,15 +26,17 @@ pub enum ShapeModel {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct CanvasClientView {
     pub id: CanvasIdType,
     pub width: u64,
     pub height: u64,
     pub shapes: Vec<ShapeModel>,
-    pub allowedUsers: Vec<ClientIdType>,
+    pub allowed_users: Vec<ClientIdType>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct WhiteboardClientView {
     pub id: WhiteboardIdType,
     pub name: String,
@@ -48,7 +50,7 @@ pub enum ServerSocketMessage {
     ClientLogin { client_id: ClientIdType },
     ClientLogout { client_id: ClientIdType },
     CreateShapes { client_id: ClientIdType, canvas_id: CanvasIdType, shapes: Vec<ShapeModel> },
-    CreateCanvas { client_id: ClientIdType, canvas_id: CanvasIdType, width: u64, height: u64, allowedUsers: Vec<ClientIdType> },
+    CreateCanvas { client_id: ClientIdType, canvas_id: CanvasIdType, width: u64, height: u64, allowed_users: Vec<ClientIdType> },
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -58,13 +60,14 @@ pub enum ClientSocketMessage {
     CreateCanvas { width: u64, height: u64 }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct Canvas {
     pub id: CanvasIdType,
     pub width: u64,
     pub height: u64,
     pub shapes: Vec<ShapeModel>,
-    pub allowedUsers: Option<HashSet<ClientIdType>>, // None = open to all
+    pub allowed_users: Option<HashSet<ClientIdType>>, // None = open to all
 }
 
 impl Canvas {
@@ -76,7 +79,7 @@ impl Canvas {
             width: self.width,
             height: self.height,
             shapes: self.shapes.clone(),
-            allowedUsers: match &self.allowedUsers {
+            allowed_users: match &self.allowed_users {
                 Some(set) => set.iter().copied().collect(),
                 None => vec![], // empty array means open to all
             },
@@ -84,7 +87,8 @@ impl Canvas {
     }// end pub fn to_client_view(&self) -> CanvasClientView
 }
 
-#[derive(Clone)]
+#[derive(Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct Whiteboard {
     pub id: WhiteboardIdType,
     pub name: String,

@@ -15,13 +15,12 @@ use futures::{
 // -- third party imports
 
 use tokio::sync::broadcast;
-use serde::{Deserialize, Serialize};
 use warp::ws::{Message, WebSocket};
 use warp::Filter;
 
 // -- local imports
 
-use WebSocketServer::*;
+use web_socket_server::*;
 
 #[tokio::main]
 async fn main() {
@@ -40,7 +39,7 @@ async fn main() {
                     width: 512,
                     height: 512,
                     shapes: Vec::<ShapeModel>::new(),
-                    allowedUsers: None, // None means open to all users
+                    allowed_users: None, // None means open to all users
                 }
             ]
         }),
@@ -153,14 +152,14 @@ async fn handle_connection(ws: WebSocket, program_state_ref: Arc<ProgramState>) 
                                 // Initialize new canvas with only current user allowed to edit
                                 allowed.insert(current_client_id);
 
-                                let allowedUsersVec = allowed.iter().copied().collect::<Vec<_>>();
+                                let allowed_users_vec = allowed.iter().copied().collect::<Vec<_>>();
                                 
                                 whiteboard.canvases.push(Canvas{
                                     id: new_canvas_id,
                                     width: width,
                                     height: height,
                                     shapes: Vec::<ShapeModel>::new(),
-                                    allowedUsers: Some(allowed),
+                                    allowed_users: Some(allowed),
                                 });
 
                                 // broadcast to all clients
@@ -169,7 +168,7 @@ async fn handle_connection(ws: WebSocket, program_state_ref: Arc<ProgramState>) 
                                     canvas_id: new_canvas_id,
                                     width: width,
                                     height: height,
-                                    allowedUsers: allowedUsersVec,
+                                    allowed_users: allowed_users_vec,
                                 }).ok();
                             },
                             // do nothing for all other messages

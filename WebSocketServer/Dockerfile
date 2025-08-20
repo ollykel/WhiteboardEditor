@@ -54,8 +54,8 @@ RUN apt-get update && apt-get install -y ca-certificates && rm -rf /var/lib/apt/
 RUN useradd -m appuser
 
 # Copy compiled binary
-COPY --from=builder /app/target/release/WebSocketServer /usr/local/bin/WebSocketServer
+COPY --from=builder /app/target/release/web_socket_server /usr/local/bin/web_socket_server
 
 USER appuser
 EXPOSE 3000
-ENTRYPOINT ["/usr/local/bin/WebSocketServer"]
+ENTRYPOINT ["/usr/local/bin/web_socket_server"]
