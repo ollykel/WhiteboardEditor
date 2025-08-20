@@ -35,4 +35,4 @@ services:
     build: WebSocketServer
     environment:
       # Make sure to set MONGO_URI in .env
-      MONGO_URI: ${MONGO_URI}
+      MONGO_URI: ${WHITEBOARD_EDITOR_MONGO_URI}
