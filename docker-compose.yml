@@ -33,6 +33,6 @@ services:
     # Handles web sockets for providing real-time interaction with clients.
     # Built in Rust.
     build: WebSocketServer
-    env:
+    environment:
       # Make sure to set MONGO_URI in .env
       MONGO_URI: ${MONGO_URI}
