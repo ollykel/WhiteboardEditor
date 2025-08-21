@@ -202,3 +202,40 @@ pub async fn handle_client_message(program_state: &ProgramState, current_client_
         })
     }
 }// end handle_client_message
+
+// -- Begin tests
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn handle_invalid_client_message() {
+        // not even valid json
+        let program_state = ProgramState{
+            whiteboard: Mutex::new(Whiteboard{
+                id: 0,
+                name: String::from("Test"),
+                canvases: vec![]
+            }),
+            active_clients: Mutex::new(HashSet::new())
+        };
+        let test_client_id = 0;
+        let client_msg_s = "This is not valid json";
+
+        let resp = handle_client_message(&program_state, test_client_id, client_msg_s).await;
+
+        match resp {
+            None => panic!("Expected some client message, got None"),
+            Some(server_msg) => match server_msg {
+                ServerSocketMessage::IndividualError { client_id, .. } => {
+                    if client_id != test_client_id {
+                        panic!("Expected client_id = {}; got {}", test_client_id, client_id);
+                    } else {
+                        // success
+                    }
+                },
+                _ => panic!("Expected ServerSocketMessage::IndividualError, got {:?}", server_msg)
+            }
+        };
+    }
+}
