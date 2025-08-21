@@ -27,35 +27,37 @@ async fn main() {
     let port = 3000u16;
     let (tx, _rx) = broadcast::channel::<ServerSocketMessage>(100);
 
-    let program_state_ref = Arc::new(ProgramState{
+    let connection_state_ref = Arc::new(ConnectionState{
         tx: tx.clone(),
         next_client_id: Mutex::new(0),
-        whiteboard: Mutex::new(Whiteboard{
-            id: 0,
-            name: String::from("First Shared Whiteboard"),
-            canvases: vec![
-                Canvas{
-                    id: 0,
-                    width: 512,
-                    height: 512,
-                    shapes: Vec::<ShapeModel>::new(),
-                    allowed_users: None, // None means open to all users
-                }
-            ]
-        }),
-        active_clients: Mutex::new(HashSet::<ClientIdType>::new())
+        program_state: ProgramState{
+            whiteboard: Mutex::new(Whiteboard{
+                id: 0,
+                name: String::from("First Shared Whiteboard"),
+                canvases: vec![
+                    Canvas{
+                        id: 0,
+                        width: 512,
+                        height: 512,
+                        shapes: Vec::<ShapeModel>::new(),
+                        allowed_users: None, // None means open to all users
+                    }
+                ]
+            }),
+            active_clients: Mutex::new(HashSet::<ClientIdType>::new())
+        }
     });
 
-    let program_state_ref_filter = warp::any().map({
-        let program_state_ref = Arc::clone(&program_state_ref);
-        move || Arc::clone(&program_state_ref)
+    let connection_state_ref_filter = warp::any().map({
+        let connection_state_ref = Arc::clone(&connection_state_ref);
+        move || Arc::clone(&connection_state_ref)
     });
 
     let ws_route = warp::path!("ws")
         .and(warp::ws())
-        .and(program_state_ref_filter)
-        .map(|ws: warp::ws::Ws, program_state_ref| {
-            ws.on_upgrade(move |socket| handle_connection(socket, program_state_ref))
+        .and(connection_state_ref_filter)
+        .map(|ws: warp::ws::Ws, connection_state_ref| {
+            ws.on_upgrade(move |socket| handle_connection(socket, connection_state_ref))
         });
 
     let addr: SocketAddr = ([0, 0, 0, 0], port).into();
@@ -63,11 +65,11 @@ async fn main() {
     warp::serve(ws_route).run(addr).await;
 }// end async fn main()
 
-async fn handle_connection(ws: WebSocket, program_state_ref: Arc<ProgramState>) {
+async fn handle_connection(ws: WebSocket, connection_state_ref: Arc<ConnectionState>) {
     let (mut user_ws_tx, mut user_ws_rx) = ws.split();
-    let mut rx = program_state_ref.tx.subscribe();
+    let mut rx = connection_state_ref.tx.subscribe();
     let current_client_id = {
-        let mut next_client_id = program_state_ref.next_client_id.lock().await;
+        let mut next_client_id = connection_state_ref.next_client_id.lock().await;
         let client_id = *next_client_id;
 
         *next_client_id += 1;
@@ -79,18 +81,24 @@ async fn handle_connection(ws: WebSocket, program_state_ref: Arc<ProgramState>) 
 
     {
         // Add new client to active clients, notify other users that they have logged in
-        let mut active_clients = program_state_ref.active_clients.lock().await;
+        let mut active_clients = connection_state_ref
+            .program_state
+            .active_clients.lock().await;
 
         active_clients.insert(current_client_id);
-        program_state_ref.tx.send(ServerSocketMessage::ClientLogin{
+        connection_state_ref.tx.send(ServerSocketMessage::ClientLogin{
             client_id: current_client_id
         }).ok();
     }
 
     {
         // Send new client initialization message
-        let whiteboard = program_state_ref.whiteboard.lock().await;
-        let active_clients = program_state_ref.active_clients.lock().await;
+        let whiteboard = connection_state_ref
+            .program_state
+            .whiteboard.lock().await;
+        let active_clients = connection_state_ref
+            .program_state
+            .active_clients.lock().await;
 
         let init_msg = ServerSocketMessage::InitClient {
             client_id: current_client_id,
@@ -120,7 +128,7 @@ async fn handle_connection(ws: WebSocket, program_state_ref: Arc<ProgramState>) 
     });
 
     let recv_task = tokio::spawn({
-        let program_state_ref = Arc::clone(&program_state_ref);
+        let connection_state_ref = Arc::clone(&connection_state_ref);
 
         async move {
             while let Some(Ok(msg)) = user_ws_rx.next().await {
@@ -128,10 +136,10 @@ async fn handle_connection(ws: WebSocket, program_state_ref: Arc<ProgramState>) 
                 if let Ok(msg_s) = msg.to_str() {
                     println!("Raw message: {}", msg_s);
 
-                    let resp = handle_client_message(Arc::clone(&program_state_ref), current_client_id, msg_s).await;
+                    let resp = handle_client_message(Arc::clone(&connection_state_ref), current_client_id, msg_s).await;
 
                     if let Some(resp) = resp {
-                        program_state_ref.tx.send(resp).ok();
+                        connection_state_ref.tx.send(resp).ok();
                     }
                 }
             }
@@ -146,10 +154,12 @@ async fn handle_connection(ws: WebSocket, program_state_ref: Arc<ProgramState>) 
     // Remove client from active clients, notify other clients of logout
     {
         // Add new client to active clients, notify other users that they have logged in
-        let mut active_clients = program_state_ref.active_clients.lock().await;
+        let mut active_clients = connection_state_ref
+            .program_state
+            .active_clients.lock().await;
 
         active_clients.remove(&current_client_id);
-        program_state_ref.tx.send(ServerSocketMessage::ClientLogout{ client_id: current_client_id }).ok();
+        connection_state_ref.tx.send(ServerSocketMessage::ClientLogout{ client_id: current_client_id }).ok();
     }
 
     println!("Client {} disconnected", current_client_id);
