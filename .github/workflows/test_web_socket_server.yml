@@ -34,6 +34,9 @@ jobs:
     needs: build_and_push_web_socket_server
     container:
       image: ghcr.io/${{ github.repository_owner }}/web_socket_server_builder:latest
+    defaults:
+      run:
+        working-directory: /app
     steps:
       - name: Run Cargo Tests
         run: cargo test
