@@ -29,10 +29,22 @@ services:
     depends_on:
       - web_socket_server
 
+  web_socket_server_builder:
+    # Builds WebSocketServer
+    build:
+      context: WebSocketServer
+      target: builder
+    image: whiteboard_editor_web_socket_server_builder:${WHITEBOARD_EDITOR_TAG-latest}
+
   web_socket_server:
     # Handles web sockets for providing real-time interaction with clients.
+    # Contains lightweight runtime environment with only the compiled,
+    # executable binary generated from WebSocketServer.
     # Built in Rust.
-    build: WebSocketServer
+    build:
+      context: WebSocketServer
+      target: final
+    image: whiteboard_editor_web_socket_server:${WHITEBOARD_EDITOR_TAG-latest}
     environment:
       # Make sure to set MONGO_URI in .env
       MONGO_URI: ${WHITEBOARD_EDITOR_MONGO_URI}

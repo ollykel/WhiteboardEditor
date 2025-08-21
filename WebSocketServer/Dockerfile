@@ -45,7 +45,7 @@ COPY --from=cacher /usr/local/cargo /usr/local/cargo
 RUN cargo build --release
 
 # ---- Stage 4: Minimal runtime ----
-FROM debian:trixie-slim
+FROM debian:trixie-slim AS final
 
 # Install minimal runtime dependencies
 RUN apt-get update && apt-get install -y ca-certificates && rm -rf /var/lib/apt/lists/*
