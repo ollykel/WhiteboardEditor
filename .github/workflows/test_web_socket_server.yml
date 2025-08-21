@@ -6,14 +6,31 @@ on:
       - 'docker-compose.yml'
       - '.github/workflows/test_web_socket_server.yml'
 jobs:
-  test_build_web_socket_server:
-    # Ensure image builds
-    runs-on: ubuntu-22.04
+  build_and_push_web_socket_server:
+    # Build web_socket_server_builder and push to container registry
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v5
       - name: build
-        # name sure the image builds, at a minimum
+        run: docker compose build web_socket_server_builder
+      - name: push
+        env:
+          CR_USER: ${{ github.actor }}
+          CR_PASS: ${{ secrets.GITHUB_TOKEN }}
+          WHITEBOARD_EDITOR_CR_URI: ghcr.io/${{ github.repository_owner }}
+          WHITEBOARD_EDITOR_TAG: latest
         run: |
-          docker compose build web_socket_server
+          # Log into container registry
+          printenv CR_PASS | docker login ghcr.io -u "${CR_USER}" --password-stdin
+          docker compose push web_socket_server_builder
 
-          echo 'service "web_socket_server" built successfully'
+  run_tests_web_socket_server:
+    # Pulls web_socket_server_builder image from container registry and runs
+    # unit tests.
+    runs-on: ubuntu-24.04
+    needs: build_and_push_web_socket_server
+    container:
+      image: ghcr.io/${{ github.repository_owner }}/web_socket_server_builder:latest
+    steps:
+      - name: Run Cargo Tests
+        run: cargo test
