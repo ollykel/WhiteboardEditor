@@ -136,7 +136,11 @@ async fn handle_connection(ws: WebSocket, connection_state_ref: Arc<ConnectionSt
                 if let Ok(msg_s) = msg.to_str() {
                     println!("Raw message: {}", msg_s);
 
-                    let resp = handle_client_message(Arc::clone(&connection_state_ref), current_client_id, msg_s).await;
+                    let resp = handle_client_message(
+                        &connection_state_ref.program_state,
+                        current_client_id,
+                        msg_s
+                    ).await;
 
                     if let Some(resp) = resp {
                         connection_state_ref.tx.send(resp).ok();

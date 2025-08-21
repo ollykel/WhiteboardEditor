@@ -1,7 +1,6 @@
 // -- standard library imports
 
 use std::{
-    sync::Arc,
     collections::HashSet,
 };
 
@@ -138,19 +137,17 @@ pub struct ConnectionState {
 
 // Handle raw messages from clients.
 // Input parameter is a string to enable testing on all possible inputs.
-// @param connection_state_ref     -- Arc reference to current program state
+// @param program_state         -- Current program state
 // @param current_client_id     -- ID of sending client
 // @param client_msg_s          -- Content of client message
 // @return                      -- (Optional) Message to send to clients, if any
-pub async fn handle_client_message(connection_state_ref: Arc<ConnectionState>, current_client_id: ClientIdType, client_msg_s: &str) -> Option<ServerSocketMessage> {
+pub async fn handle_client_message(program_state: &ProgramState, current_client_id: ClientIdType, client_msg_s: &str) -> Option<ServerSocketMessage> {
     if let Ok(client_msg) = serde_json::from_str::<ClientSocketMessage>(client_msg_s) {
         println!("Received message from client {}", current_client_id);
         
         match client_msg {
             ClientSocketMessage::CreateShapes{ canvas_id, ref shapes } => {
-                let mut whiteboard = connection_state_ref
-                    .program_state
-                    .whiteboard.lock().await;
+                let mut whiteboard = program_state.whiteboard.lock().await;
                 println!("Creating shape on canvas {} ...", canvas_id);
 
                 match whiteboard.canvases.get_mut(canvas_id as usize) {
@@ -170,9 +167,7 @@ pub async fn handle_client_message(connection_state_ref: Arc<ConnectionState>, c
                 }
             },
             ClientSocketMessage::CreateCanvas { width, height } => {
-                let mut whiteboard = connection_state_ref
-                    .program_state
-                    .whiteboard.lock().await;
+                let mut whiteboard = program_state.whiteboard.lock().await;
                 let new_canvas_id = whiteboard.canvases.len() as CanvasIdType;
                 let mut allowed = HashSet::new();
 
