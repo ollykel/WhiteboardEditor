@@ -12,6 +12,9 @@ jobs:
     steps:
       - uses: actions/checkout@v5
       - name: build
+        env:
+          WHITEBOARD_EDITOR_CR_URI: ghcr.io/${{ github.repository_owner }}
+          WHITEBOARD_EDITOR_TAG: latest
         run: docker compose build web_socket_server_builder
       - name: push
         env:
