@@ -50,3 +50,8 @@ services:
     environment:
       # Make sure to set MONGO_URI in .env
       MONGO_URI: ${WHITEBOARD_EDITOR_MONGO_URI}
+  
+  rest_api:
+    # Handles RESTful operations on database
+    build: RestAPI
+    image: ${WHITEBOARD_EDITOR_CR_URI-whiteboard_editor}/rest_api:${WHITEBOARD_EDITOR_TAG-latest}
