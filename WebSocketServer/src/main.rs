@@ -103,9 +103,18 @@ async fn handle_connection(ws: WebSocket, program_state_ref: Arc<ProgramState>) 
 
     let send_task = tokio::spawn(async move {
         while let Ok(msg) = rx.recv().await {
-            let json = serde_json::to_string(&msg).unwrap();
-            if user_ws_tx.send(Message::text(json)).await.is_err() {
-                break;
+            if let ServerSocketMessage::IndividualError { client_id, .. } = msg {
+                if client_id == current_client_id {
+                    let json = serde_json::to_string(&msg).unwrap();
+                    if user_ws_tx.send(Message::text(json)).await.is_err() {
+                        break;
+                    }
+                }
+            } else {
+                let json = serde_json::to_string(&msg).unwrap();
+                if user_ws_tx.send(Message::text(json)).await.is_err() {
+                    break;
+                }
             }
         }
     });
@@ -116,64 +125,13 @@ async fn handle_connection(ws: WebSocket, program_state_ref: Arc<ProgramState>) 
         async move {
             while let Some(Ok(msg)) = user_ws_rx.next().await {
                 println!("Client {} sent message ...", current_client_id);
-                if let Ok(text_str) = msg.to_str() {
-                    println!("Raw message: {}", text_str);
+                if let Ok(msg_s) = msg.to_str() {
+                    println!("Raw message: {}", msg_s);
 
-                    if let Ok(client_msg) = serde_json::from_str::<ClientSocketMessage>(text_str) {
-                        println!("Received message from client {}", current_client_id);
-                        
-                        match client_msg {
-                            ClientSocketMessage::CreateShapes{ canvas_id, ref shapes } => {
-                                let mut whiteboard = program_state_ref.whiteboard.lock().await;
-                                println!("Creating shape on canvas {} ...", canvas_id);
+                    let resp = handle_client_message(Arc::clone(&program_state_ref), current_client_id, msg_s).await;
 
-                                match whiteboard.canvases.get_mut(canvas_id as usize) {
-                                    None => {
-                                        // TODO: send an error handling message
-                                        todo!()
-                                    },
-                                    Some(canvas) => {
-                                        canvas.shapes.extend_from_slice(shapes.as_slice());
-
-                                        // broadcast to all clients
-                                        program_state_ref.tx.send(ServerSocketMessage::CreateShapes{
-                                            client_id: current_client_id,
-                                            canvas_id: canvas_id,
-                                            shapes: shapes.clone()
-                                        }).ok();
-                                    }
-                                };
-                            },
-                            ClientSocketMessage::CreateCanvas { width, height } => {
-                                let mut whiteboard = program_state_ref.whiteboard.lock().await;
-                                let new_canvas_id = whiteboard.canvases.len() as CanvasIdType;
-                                let mut allowed = HashSet::new();
-
-                                // Initialize new canvas with only current user allowed to edit
-                                allowed.insert(current_client_id);
-
-                                let allowed_users_vec = allowed.iter().copied().collect::<Vec<_>>();
-                                
-                                whiteboard.canvases.push(Canvas{
-                                    id: new_canvas_id,
-                                    width: width,
-                                    height: height,
-                                    shapes: Vec::<ShapeModel>::new(),
-                                    allowed_users: Some(allowed),
-                                });
-
-                                // broadcast to all clients
-                                program_state_ref.tx.send(ServerSocketMessage::CreateCanvas{
-                                    client_id: current_client_id,
-                                    canvas_id: new_canvas_id,
-                                    width: width,
-                                    height: height,
-                                    allowed_users: allowed_users_vec,
-                                }).ok();
-                            },
-                            // do nothing for all other messages
-                            // _ => {}
-                        }
+                    if let Some(resp) = resp {
+                        program_state_ref.tx.send(resp).ok();
                     }
                 }
             }
