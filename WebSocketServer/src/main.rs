@@ -1,3 +1,5 @@
+// -- standard library imports
+
 use std::{
     sync::Arc,
     net::SocketAddr,
@@ -10,152 +12,52 @@ use futures::{
     StreamExt,
 };
 
+// -- third party imports
+
 use tokio::sync::broadcast;
-use serde::{Deserialize, Serialize};
 use warp::ws::{Message, WebSocket};
 use warp::Filter;
 
-type ClientIdType = i32;
-type CanvasIdType = i32;
-type WhiteboardIdType = i32;
+// -- local imports
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(tag = "type", rename_all = "snake_case", rename_all_fields="camelCase")]
-enum ShapeModel {
-    Rect { x: f64, y: f64, width: f64, height: f64 },
-    Ellipse { x: f64, y: f64, radius_x: f64, radius_y: f64 },
-    Vector { points: Vec<f64> },
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-struct CanvasClientView {
-    id: CanvasIdType,
-    width: u64,
-    height: u64,
-    shapes: Vec<ShapeModel>,
-    allowedUsers: Vec<ClientIdType>,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-struct WhiteboardClientView {
-    id: WhiteboardIdType,
-    name: String,
-    canvases: Vec<CanvasClientView>,
-}
-
-#[derive(Debug, Clone, Serialize)]
-#[serde(tag = "type", rename_all = "snake_case", rename_all_fields="camelCase")]
-enum ServerSocketMessage {
-    InitClient { client_id: ClientIdType, active_clients: Vec<ClientIdType>, whiteboard: WhiteboardClientView },
-    ClientLogin { client_id: ClientIdType },
-    ClientLogout { client_id: ClientIdType },
-    CreateShapes { client_id: ClientIdType, canvas_id: CanvasIdType, shapes: Vec<ShapeModel> },
-    CreateCanvas { client_id: ClientIdType, canvas_id: CanvasIdType, width: u64, height: u64, allowedUsers: Vec<ClientIdType> },
-}
-
-#[derive(Debug, Clone, Deserialize)]
-#[serde(tag = "type", rename_all = "snake_case", rename_all_fields="camelCase")]
-enum ClientSocketMessage {
-    CreateShapes { canvas_id: CanvasIdType, shapes: Vec<ShapeModel> },
-    CreateCanvas { width: u64, height: u64 }
-}
-
-#[derive(Clone)]
-struct Canvas {
-    id: CanvasIdType,
-    width: u64,
-    height: u64,
-    shapes: Vec<ShapeModel>,
-    allowedUsers: Option<HashSet<ClientIdType>>, // None = open to all
-}
-
-impl Canvas {
-    pub fn to_client_view(&self) -> CanvasClientView {
-        // At the moment, the client view is identical to the Canvas type itself, but this may not
-        // always be the case.
-        CanvasClientView {
-            id: self.id,
-            width: self.width,
-            height: self.height,
-            shapes: self.shapes.clone(),
-            allowedUsers: match &self.allowedUsers {
-                Some(set) => set.iter().copied().collect(),
-                None => vec![], // empty array means open to all
-            },
-        }
-    }// end pub fn to_client_view(&self) -> CanvasClientView
-}
-
-#[derive(Clone)]
-struct Whiteboard {
-    id: WhiteboardIdType,
-    name: String,
-    canvases: Vec<Canvas>,
-}
-
-impl Whiteboard {
-    pub fn to_client_view(&self) -> WhiteboardClientView {
-        // At the moment, the client view is identical to the Canvas type itself, but this may not
-        // always be the case.
-        WhiteboardClientView {
-            id: self.id,
-            name: self.name.clone(),
-            canvases: self.canvases.iter()
-                .map(|c| c.to_client_view())
-                .collect()
-        }
-    }// end pub fn to_client_view(&self) -> CanvasClientView
-}
-
-// === Program State ==============================================================================
-//
-// Holds all program state that a web socket connection may need to manipulate.
-//
-// Encapsulating all program state in a single thread-safe object allows for efficient testing and
-// passing of state between threads.
-//
-// ================================================================================================
-struct ProgramState {
-    tx: broadcast::Sender<ServerSocketMessage>,
-    next_client_id: Mutex<ClientIdType>,
-    whiteboard: Mutex<Whiteboard>,
-    active_clients: Mutex<HashSet<ClientIdType>>
-}
+use web_socket_server::*;
 
 #[tokio::main]
 async fn main() {
     let port = 3000u16;
     let (tx, _rx) = broadcast::channel::<ServerSocketMessage>(100);
 
-    let program_state_ref = Arc::new(ProgramState{
+    let connection_state_ref = Arc::new(ConnectionState{
         tx: tx.clone(),
         next_client_id: Mutex::new(0),
-        whiteboard: Mutex::new(Whiteboard{
-            id: 0,
-            name: String::from("First Shared Whiteboard"),
-            canvases: vec![
-                Canvas{
-                    id: 0,
-                    width: 512,
-                    height: 512,
-                    shapes: Vec::<ShapeModel>::new(),
-                    allowedUsers: None, // None means open to all users
-                }
-            ]
-        }),
-        active_clients: Mutex::new(HashSet::<ClientIdType>::new())
+        program_state: ProgramState{
+            whiteboard: Mutex::new(Whiteboard{
+                id: 0,
+                name: String::from("First Shared Whiteboard"),
+                canvases: vec![
+                    Canvas{
+                        id: 0,
+                        width: 512,
+                        height: 512,
+                        shapes: Vec::<ShapeModel>::new(),
+                        allowed_users: None, // None means open to all users
+                    }
+                ]
+            }),
+            active_clients: Mutex::new(HashSet::<ClientIdType>::new())
+        }
     });
 
-    let program_state_ref_filter = warp::any().map({
-        let program_state_ref = Arc::clone(&program_state_ref);
-        move || Arc::clone(&program_state_ref)
+    let connection_state_ref_filter = warp::any().map({
+        let connection_state_ref = Arc::clone(&connection_state_ref);
+        move || Arc::clone(&connection_state_ref)
     });
 
     let ws_route = warp::path!("ws")
         .and(warp::ws())
-        .and(program_state_ref_filter)
-        .map(|ws: warp::ws::Ws, program_state_ref| {
-            ws.on_upgrade(move |socket| handle_connection(socket, program_state_ref))
+        .and(connection_state_ref_filter)
+        .map(|ws: warp::ws::Ws, connection_state_ref| {
+            ws.on_upgrade(move |socket| handle_connection(socket, connection_state_ref))
         });
 
     let addr: SocketAddr = ([0, 0, 0, 0], port).into();
@@ -163,11 +65,11 @@ async fn main() {
     warp::serve(ws_route).run(addr).await;
 }// end async fn main()
 
-async fn handle_connection(ws: WebSocket, program_state_ref: Arc<ProgramState>) {
+async fn handle_connection(ws: WebSocket, connection_state_ref: Arc<ConnectionState>) {
     let (mut user_ws_tx, mut user_ws_rx) = ws.split();
-    let mut rx = program_state_ref.tx.subscribe();
+    let mut rx = connection_state_ref.tx.subscribe();
     let current_client_id = {
-        let mut next_client_id = program_state_ref.next_client_id.lock().await;
+        let mut next_client_id = connection_state_ref.next_client_id.lock().await;
         let client_id = *next_client_id;
 
         *next_client_id += 1;
@@ -179,18 +81,24 @@ async fn handle_connection(ws: WebSocket, program_state_ref: Arc<ProgramState>) 
 
     {
         // Add new client to active clients, notify other users that they have logged in
-        let mut active_clients = program_state_ref.active_clients.lock().await;
+        let mut active_clients = connection_state_ref
+            .program_state
+            .active_clients.lock().await;
 
         active_clients.insert(current_client_id);
-        program_state_ref.tx.send(ServerSocketMessage::ClientLogin{
+        connection_state_ref.tx.send(ServerSocketMessage::ClientLogin{
             client_id: current_client_id
         }).ok();
     }
 
     {
         // Send new client initialization message
-        let whiteboard = program_state_ref.whiteboard.lock().await;
-        let active_clients = program_state_ref.active_clients.lock().await;
+        let whiteboard = connection_state_ref
+            .program_state
+            .whiteboard.lock().await;
+        let active_clients = connection_state_ref
+            .program_state
+            .active_clients.lock().await;
 
         let init_msg = ServerSocketMessage::InitClient {
             client_id: current_client_id,
@@ -203,77 +111,39 @@ async fn handle_connection(ws: WebSocket, program_state_ref: Arc<ProgramState>) 
 
     let send_task = tokio::spawn(async move {
         while let Ok(msg) = rx.recv().await {
-            let json = serde_json::to_string(&msg).unwrap();
-            if user_ws_tx.send(Message::text(json)).await.is_err() {
-                break;
+            if let ServerSocketMessage::IndividualError { client_id, .. } = msg {
+                if client_id == current_client_id {
+                    let json = serde_json::to_string(&msg).unwrap();
+                    if user_ws_tx.send(Message::text(json)).await.is_err() {
+                        break;
+                    }
+                }
+            } else {
+                let json = serde_json::to_string(&msg).unwrap();
+                if user_ws_tx.send(Message::text(json)).await.is_err() {
+                    break;
+                }
             }
         }
     });
 
     let recv_task = tokio::spawn({
-        let program_state_ref = Arc::clone(&program_state_ref);
+        let connection_state_ref = Arc::clone(&connection_state_ref);
 
         async move {
             while let Some(Ok(msg)) = user_ws_rx.next().await {
                 println!("Client {} sent message ...", current_client_id);
-                if let Ok(text_str) = msg.to_str() {
-                    println!("Raw message: {}", text_str);
+                if let Ok(msg_s) = msg.to_str() {
+                    println!("Raw message: {}", msg_s);
 
-                    if let Ok(client_msg) = serde_json::from_str::<ClientSocketMessage>(text_str) {
-                        println!("Received message from client {}", current_client_id);
-                        
-                        match client_msg {
-                            ClientSocketMessage::CreateShapes{ canvas_id, ref shapes } => {
-                                let mut whiteboard = program_state_ref.whiteboard.lock().await;
-                                println!("Creating shape on canvas {} ...", canvas_id);
+                    let resp = handle_client_message(
+                        &connection_state_ref.program_state,
+                        current_client_id,
+                        msg_s
+                    ).await;
 
-                                match whiteboard.canvases.get_mut(canvas_id as usize) {
-                                    None => {
-                                        // TODO: send an error handling message
-                                        todo!()
-                                    },
-                                    Some(canvas) => {
-                                        canvas.shapes.extend_from_slice(shapes.as_slice());
-
-                                        // broadcast to all clients
-                                        program_state_ref.tx.send(ServerSocketMessage::CreateShapes{
-                                            client_id: current_client_id,
-                                            canvas_id: canvas_id,
-                                            shapes: shapes.clone()
-                                        }).ok();
-                                    }
-                                };
-                            },
-                            ClientSocketMessage::CreateCanvas { width, height } => {
-                                let mut whiteboard = program_state_ref.whiteboard.lock().await;
-                                let new_canvas_id = whiteboard.canvases.len() as CanvasIdType;
-                                let mut allowed = HashSet::new();
-
-                                // Initialize new canvas with only current user allowed to edit
-                                allowed.insert(current_client_id);
-
-                                let allowedUsersVec = allowed.iter().copied().collect::<Vec<_>>();
-                                
-                                whiteboard.canvases.push(Canvas{
-                                    id: new_canvas_id,
-                                    width: width,
-                                    height: height,
-                                    shapes: Vec::<ShapeModel>::new(),
-                                    allowedUsers: Some(allowed),
-                                });
-
-                                // broadcast to all clients
-                                program_state_ref.tx.send(ServerSocketMessage::CreateCanvas{
-                                    client_id: current_client_id,
-                                    canvas_id: new_canvas_id,
-                                    width: width,
-                                    height: height,
-                                    allowedUsers: allowedUsersVec,
-                                }).ok();
-                            },
-                            // do nothing for all other messages
-                            // _ => {}
-                        }
+                    if let Some(resp) = resp {
+                        connection_state_ref.tx.send(resp).ok();
                     }
                 }
             }
@@ -288,10 +158,12 @@ async fn handle_connection(ws: WebSocket, program_state_ref: Arc<ProgramState>) 
     // Remove client from active clients, notify other clients of logout
     {
         // Add new client to active clients, notify other users that they have logged in
-        let mut active_clients = program_state_ref.active_clients.lock().await;
+        let mut active_clients = connection_state_ref
+            .program_state
+            .active_clients.lock().await;
 
         active_clients.remove(&current_client_id);
-        program_state_ref.tx.send(ServerSocketMessage::ClientLogout{ client_id: current_client_id }).ok();
+        connection_state_ref.tx.send(ServerSocketMessage::ClientLogout{ client_id: current_client_id }).ok();
     }
 
     println!("Client {} disconnected", current_client_id);
