@@ -3,7 +3,17 @@ import 'dotenv/config';
 import express from 'express';
 import mongoose from 'mongoose';
 
-// Connect to MongoDB
+// === Routers =================================================================
+//
+// =============================================================================
+import healthRouter from './routes/health';
+
+// All services should serve on port 3000.
+// Reverse proxy will handle routing appropriate requests to this service.
+const PORT = 3000;
+const API_VERSION = 'v1';
+
+// Configure MongoDB connection
 const MONGO_URI = process.env.MONGO_URI;
 
 if (! MONGO_URI) {
@@ -16,21 +26,8 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// All services should serve on port 3000.
-// Reverse proxy will handle routing appropriate requests to this service.
-const PORT = 3000;
-const API_VERSION = 'v1';
-
-// === Health Check ============================================================
-//
-// Basic check to ensure service is running.
-//
-// =============================================================================
-app.get(`/api/${API_VERSION}/health`, (_req, res) => {
-  res.status(200).json({
-    message: "service healthy"
-  });
-});
+// Mount routers
+app.use(`/api/${API_VERSION}/health`, healthRouter);
 
 mongoose.connect(MONGO_URI)
 .then(() => {
