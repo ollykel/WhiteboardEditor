@@ -1,4 +1,6 @@
 import Header from "@/components/Header";
+import LoginForm from "@/components/LoginForm";
+import SignupForm from "@/components/SignupForm";
 
 interface UserAuthProps {
   action: string;
@@ -20,7 +22,15 @@ function UserAuth({ action }: UserAuthProps) {
   }
 
   return (
-    <Header title={title}/>
+    <div>
+      <Header title={title}/>
+  
+      {action === "login" ? (
+        <LoginForm />
+      ) : (
+        <SignupForm />
+      )}
+    </div>
   );
 }
 
