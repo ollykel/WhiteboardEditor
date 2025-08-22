@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from 'react-router';
 
 import AuthInput from "./AuthInput";
 
@@ -12,6 +13,8 @@ function AuthForm({ initialAction }: AuthFormProps) {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
 
+  const navigate = useNavigate();
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault;
     if (action === "login") {
@@ -19,6 +22,17 @@ function AuthForm({ initialAction }: AuthFormProps) {
     }
     else {
       console.log("User signed upwith ", {email, password});
+    }
+  }
+
+  const handleToggle = () => {
+    if (action === "login") {
+      setAction("signup");
+      navigate("/signup");
+    }
+    else {
+      setAction("login");
+      navigate("/login");
     }
   }
 
@@ -54,11 +68,23 @@ function AuthForm({ initialAction }: AuthFormProps) {
         )}
         <button
           type="submit"
-          className="w-full font-medium py-2 mt-4 rounded-lg hover:bg-gray-200"
+          className="w-full font-medium py-2 my-2 rounded-lg bg-gray-100 hover:bg-gray-200 hover:cursor-pointer shadow-md"
         >
           {action === "login" ? "Log In" : "Sign Up"}
         </button>
       </form>
+
+      <div className="flex justify-center mt-4 pt-6 border-t-1 border-gray-400">
+        <div className="p-2">
+          {action === "login" ? "New to Whiteboard?" : "Already have an account?"}
+        </div>
+        <button 
+          onClick={handleToggle}
+          className=" font-medium rounded-lg px-4 bg-gray-100 hover:bg-gray-200 hover:cursor-pointer shadow-md"
+        >
+          {action === "login" ? "Create a New Account!" : "Log In"}
+        </button>
+      </div>
     </div>
   );
 }
