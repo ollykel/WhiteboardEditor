@@ -5,7 +5,19 @@ interface UserAuthProps {
 }
 
 function UserAuth({ action }: UserAuthProps) {
-  let title = action === "log in" ? "Log In" : "Create an Account";
+  let title = "";
+  
+  switch (action) {
+    case "signin":
+      title = "Sign In";
+      break;
+    case "signup":
+      title = "Create an Account";
+      break;
+    default:
+      title = "Unknown Page";
+      break;
+  }
 
   return (
     <Header title={title}/>

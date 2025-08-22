@@ -23,7 +23,7 @@ function Header({ title }: HeaderProps) {
           <HeaderButton 
             to="/dashboard"
             title="Home"
-          />  {/* TODO: Implement home (dashboard) */}
+          />
         </div>
 
         <h1 className="text-2xl font-bold">{title}</h1>
@@ -45,8 +45,8 @@ function Header({ title }: HeaderProps) {
               ) : (
                 <div>
                   <HeaderButton 
-                    to="/login"
-                    title="Log In"
+                    to="/signin"
+                    title="Sign In"
                   />
                   <HeaderButton 
                     to="/signup"
