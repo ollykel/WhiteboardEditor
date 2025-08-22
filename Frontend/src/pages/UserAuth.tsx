@@ -8,8 +8,8 @@ function UserAuth({ action }: UserAuthProps) {
   let title = "";
   
   switch (action) {
-    case "signin":
-      title = "Sign In";
+    case "login":
+      title = "Log In";
       break;
     case "signup":
       title = "Create an Account";

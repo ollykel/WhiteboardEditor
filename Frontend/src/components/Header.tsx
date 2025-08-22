@@ -45,8 +45,8 @@ function Header({ title }: HeaderProps) {
               ) : (
                 <div>
                   <HeaderButton 
-                    to="/signin"
-                    title="Sign In"
+                    to="/login"
+                    title="Log In"
                   />
                   <HeaderButton 
                     to="/signup"
