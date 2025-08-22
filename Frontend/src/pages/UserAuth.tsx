@@ -24,12 +24,15 @@ function UserAuth({ action }: UserAuthProps) {
   return (
     <div>
       <Header title={title}/>
-  
-      {action === "login" ? (
-        <LoginForm />
-      ) : (
-        <SignupForm />
-      )}
+      <div className="flex justify-center items-center min-h-screen">
+        <div className="rounded-lg shadow-md bg-stone-50 p-10">
+          {action === "login" ? (
+            <LoginForm />
+          ) : (
+            <SignupForm />
+          )}
+        </div>
+      </div>
     </div>
   );
 }
