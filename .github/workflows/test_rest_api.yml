@@ -1,0 +1,18 @@
+# Test rest_api service
+on:
+  push:
+    paths:
+      - 'RestAPI/**'
+      - 'docker-compose.yml'
+      - '.github/workflows/test_rest_api.yml'
+jobs:
+  test_build_rest_api:
+    # make sure image builds
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+      - name: build
+        run: |
+          docker compose build rest_api
+
+          echo 'service "rest_api" built successfully'

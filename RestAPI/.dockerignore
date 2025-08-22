@@ -1,0 +1,10 @@
+# Docker artifacts
+Dockerfile
+.dockerignore
+
+# Git artifacts
+.gitignore
+
+# npm artifacts
+node_modules/
+dist/
