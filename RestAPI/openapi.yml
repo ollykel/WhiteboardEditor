@@ -1,0 +1,137 @@
+openapi: 3.0.4
+info:
+  title: Whiteboard Editor API
+  description: API for the Whiteboard Editor
+  version: 0.1.0
+
+servers:
+  - url: https://localhost:8080/api/v1
+    description: Development url for the Whiteboard Editor API.
+
+paths:
+  /auth/login:
+    post:
+      summary: Generate a new JWT authentication token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - $ref: '#/components/schemas/AuthByEmailRequest'
+                - $ref: '#/components/schemas/AuthByUsernameRequest'
+              discriminator:
+                propertyName: authSource
+                mapping:
+                  email: '#/components/schemas/AuthByEmailRequest'
+                  username: '#/components/schemas/AuthByUsernameRequest'
+      responses:
+        '200':
+          description: Authentication successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+                    description: JWT access token
+                    example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+                required:
+                  - token
+        '401':
+          description: Invalid credentials
+
+  /users:
+    post:
+      summary: Create a new user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateUserRequest'
+      responses:
+        '201':
+          description: Indicates that the new user has been created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '400':
+          description: New user could not be created due to invalid input.
+
+components:
+  schemas:
+    AuthByEmailRequest:
+      type: object
+      properties:
+        authSource:
+          type: string
+          enum: [email]
+        email:
+          type: string
+          format: email
+          example: tester@example.com
+        password:
+          type: string
+          format: password
+          example: password123
+      required:
+        - authSource
+        - email
+        - password
+
+    AuthByUsernameRequest:
+      type: object
+      properties:
+        authSource:
+          type: string
+          enum: [username]
+        username:
+          type: string
+          example: tester
+        password:
+          type: string
+          format: password
+          example: password123
+      required:
+        - authSource
+        - username
+        - password
+    User:
+      type: object
+      properties:
+        _id:
+          type: string
+          description: MongoDB ObjectId
+          example: 64b2f4f1a3c2c8e4a7d3f111
+        username:
+          type: string
+          example: johndoe
+        email:
+          type: string
+          format: email
+          example: johndoe@example.com
+      required:
+        - _id
+        - username
+        - email
+    CreateUserRequest:
+      type: object
+      properties:
+        username:
+          type: string
+          example: johndoe
+        email:
+          type: string
+          format: email
+          example: johndoe@example.com
+        password:
+          type: string
+          format: password
+          example: secret123
+      required:
+        - username
+        - email
+        - password
