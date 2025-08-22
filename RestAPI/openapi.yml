@@ -41,6 +41,8 @@ paths:
                   - token
         '401':
           description: Invalid credentials
+        '500':
+          description: Token signing error
 
   /users:
     post:
