@@ -1,10 +1,21 @@
-import { Schema, model, Document } from "mongoose";
+import { Schema, model, Document, Types } from "mongoose";
 
+// === IUser ===================================================================
+//
+// Non-confidential user data.
+//
+// =============================================================================
 export interface IUser extends Document {
+  _id: Types.ObjectId;
   username: string;
   email: string;
 }
 
+// === IUserFull ===============================================================
+//
+// Full user data, including password hash.
+//
+// =============================================================================
 export interface IUserFull extends IUser {
   passwordHashed: string;
 }

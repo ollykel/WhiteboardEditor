@@ -8,6 +8,7 @@ import mongoose from 'mongoose';
 // =============================================================================
 import healthRouter from './routes/health';
 import usersRouter from './routes/users';
+import authRouter from './routes/auth';
 
 // All services should serve on port 3000.
 // Reverse proxy will handle routing appropriate requests to this service.
@@ -30,6 +31,7 @@ app.use(express.json());
 // Mount routers
 app.use(`/api/${API_VERSION}/health`, healthRouter);
 app.use(`/api/${API_VERSION}/users`, usersRouter);
+app.use(`/api/${API_VERSION}/auth`, authRouter);
 
 mongoose.connect(MONGO_URI)
 .then(() => {

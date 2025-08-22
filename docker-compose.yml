@@ -56,5 +56,7 @@ services:
     build: RestAPI
     image: ${WHITEBOARD_EDITOR_CR_URI-whiteboard_editor}/rest_api:${WHITEBOARD_EDITOR_TAG-latest}
     environment:
-      # Make sure to set MONGO_URI in .env
+      # make sure to set values in .env
       MONGO_URI: ${WHITEBOARD_EDITOR_MONGO_URI}
+      JWT_SECRET: ${WHITEBOARD_EDITOR_JWT_SECRET}
+      JWT_EXPIRATION_SECS: ${WHITEBOARD_EDITOR_JWT_EXPIRATION_SECS}
