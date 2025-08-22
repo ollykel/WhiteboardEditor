@@ -17,7 +17,7 @@ function AuthForm({ initialAction }: AuthFormProps) {
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault;
+    e.preventDefault();
 
     const endpoint = action === "login" ? "/login" : "/signup";
 
