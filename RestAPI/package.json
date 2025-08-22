@@ -4,7 +4,9 @@
   "main": "main.ts",
   "license": "MIT",
   "dependencies": {
+    "@types/bcrypt": "^6.0.0",
     "@types/mongoose": "^5.11.97",
+    "bcrypt": "^6.0.0",
     "cors": "^2.8.5",
     "dotenv": "^17.2.1",
     "express": "^5.1.0",
