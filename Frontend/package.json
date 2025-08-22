@@ -12,6 +12,7 @@
   "dependencies": {
     "@tailwindcss/vite": "^4.1.11",
     "@types/node": "^24.2.1",
+    "axios": "^1.11.0",
     "konva": "^9.3.22",
     "path": "^0.12.7",
     "react": "^19.1.0",

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from 'react-router';
 
 import AuthInput from "./AuthInput";
+import axios from "axios";
 
 interface AuthFormProps {
   initialAction: "login" | "signup";
@@ -15,13 +16,20 @@ function AuthForm({ initialAction }: AuthFormProps) {
 
   const navigate = useNavigate();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault;
-    if (action === "login") {
-      console.log("User logged in with ", {email, password});
-    }
-    else {
-      console.log("User signed upwith ", {email, password});
+
+    const endpoint = action === "login" ? "/login" : "/signup";
+
+    // TODO: Refactor to match with backend convention
+    try {
+      const res = await axios.post(endpoint, {
+        email: email,
+        password: password,
+      });
+      console.log(res);
+    } catch (err) {
+      console.log(err);
     }
   }
 
@@ -37,7 +45,7 @@ function AuthForm({ initialAction }: AuthFormProps) {
   }
 
   return (
-    <div className="flex flex-col min-w-60 w-95">
+    <div className="flex flex-col min-w-60 w-120">
       <h1 className="text-2xl font-bold text-center mb-6">
         {action === "login" ? "Welcome Back!" : "Welcome to <Whiteboard App>!"}
       </h1>
@@ -76,7 +84,7 @@ function AuthForm({ initialAction }: AuthFormProps) {
 
       <div className="flex justify-center mt-4 pt-6 border-t-1 border-gray-400">
         <div className="p-2">
-          {action === "login" ? "New to Whiteboard?" : "Already have an account?"}
+          {action === "login" ? "New to <Whiteboard App>?" : "Already have an account?"}
         </div>
         <button 
           onClick={handleToggle}
