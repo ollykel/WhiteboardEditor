@@ -1,36 +1,19 @@
 import Header from "@/components/Header";
-import LoginForm from "@/components/LoginForm";
-import SignupForm from "@/components/SignupForm";
+import AuthForm from "@/components/AuthForm";
 
 interface UserAuthProps {
-  action: string;
+  action: "login" | "signup";
 }
 
 function UserAuth({ action }: UserAuthProps) {
-  let title = "";
-  
-  switch (action) {
-    case "login":
-      title = "Log In";
-      break;
-    case "signup":
-      title = "Create an Account";
-      break;
-    default:
-      title = "Unknown Page";
-      break;
-  }
+  const title = action === "login" ? "Log In" : "Create an Account";
 
   return (
     <div>
       <Header title={title}/>
       <div className="flex justify-center items-center min-h-screen">
         <div className="rounded-lg shadow-md bg-stone-50 p-10">
-          {action === "login" ? (
-            <LoginForm />
-          ) : (
-            <SignupForm />
-          )}
+          <AuthForm initialAction={action}/>
         </div>
       </div>
     </div>
