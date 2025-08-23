@@ -1,8 +1,10 @@
 import { Request, Response } from "express";
+import { Types } from "mongoose";
 
 // --- local imports
 import { Whiteboard } from '../models/Whiteboard';
 
+import { IWhiteboard } from '../models/Whiteboard';
 import type {
   AuthorizedRequestBody
 } from '../models/Auth';
@@ -10,6 +12,10 @@ import type {
 export interface CreateWhiteboardRequest extends AuthorizedRequestBody {
   name: string;
 }
+
+export const getWhiteboardsByOwner = async (ownerId: Types.ObjectId): Promise<IWhiteboard[]> => {
+  return await Whiteboard.find({ owner: ownerId });
+};// end getWhiteboardsByOwner
 
 export const createWhiteboard = async (
   req: Request<{}, any, CreateWhiteboardRequest, {}>,

@@ -6,6 +6,7 @@
 // =============================================================================
 
 import { Request, Response, NextFunction } from "express";
+import { Types } from "mongoose";
 import jwt from "jsonwebtoken";
 
 import type {
@@ -37,7 +38,7 @@ export const authenticateJWT = async (
   try {
     const payload = jwt.verify(token, JWT_SECRET) as AuthPayload;
     const authUser = ({
-      id: payload.sub
+      id: new Types.ObjectId(payload.sub)
     });
 
     // attach user id to request body for controllers
