@@ -9,3 +9,6 @@ node_modules
 
 # Build files
 /WebSocketServer/target/
+
+# Mac file(s)
+.DS_Store
