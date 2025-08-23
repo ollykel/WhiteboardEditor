@@ -22,8 +22,8 @@ function AuthForm({ initialAction }: AuthFormProps) {
 
     const endpoint = 
       action === "login" 
-      ? "api/v1/auth/login" 
-      : "api/v1/users";
+      ? "http://localhost:8080/api/v1/auth/login" 
+      : "http://localhost:8080/api/v1/users";
 
     const payload = 
       action === "login"
