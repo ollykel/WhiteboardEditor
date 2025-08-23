@@ -63,7 +63,50 @@ paths:
         '400':
           description: New user could not be created due to invalid input.
 
+  /whiteboards:
+    post:
+      summary: Create a new whiteboard
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateWhiteboardRequest'
+      responses:
+        '201':
+          description: Indicates that the new whiteboard has been created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Whiteboard'
+        '400':
+          description: New whiteboard could not be created due to invalid input.
+
+  /whiteboards/own:
+    get:
+      summary: Get user's own whiteboards
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Request successful
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Whiteboard'
+        '403':
+          description: Not authorized
+
 components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
   schemas:
     AuthByEmailRequest:
       type: object
@@ -137,3 +180,75 @@ components:
         - username
         - email
         - password
+    Canvas:
+      type: object
+      properties:
+        _id:
+          type: string
+          description: Unique ID of the canvas
+        width:
+          type: integer
+          description: Width of the canvas in pixels
+        height:
+          type: integer
+          description: Height of the canvas in pixels
+        time_created:
+          type: string
+          format: date-time
+        time_last_modified:
+          type: string
+          format: date-time
+        editors:
+          type: array
+          items:
+            type: string
+            description: User ID of an editor
+      required:
+        - _id
+        - width
+        - height
+        - time_created
+        - time_last_modified
+        - editors
+
+    Whiteboard:
+      type: object
+      properties:
+        _id:
+          type: string
+          description: Unique ID of the whiteboard
+        name:
+          type: string
+          description: Name/title of the whiteboard
+        time_created:
+          type: string
+          format: date-time
+          description: Timestamp of creation
+        canvases:
+          type: array
+          items:
+            $ref: '#/components/schemas/Canvas'
+        owner:
+          type: string
+          description: User ID of the owner
+        shared_users:
+          type: array
+          items:
+            type: string
+            description: User IDs of users with shared access
+      required:
+        - _id
+        - name
+        - time_created
+        - canvases
+        - owner
+        - shared_users
+
+    CreateWhiteboardRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          example: First Whiteboard
+      required:
+        - name
