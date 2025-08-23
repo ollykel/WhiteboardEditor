@@ -19,7 +19,7 @@ function AuthForm({ initialAction }: AuthFormProps) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    const endpoint = action === "login" ? "/auth/login" : "/";
+    const endpoint = action === "login" ? "api/v1/auth/login" : "api/v1/auth/users";
 
     // TODO: Refactor to match with backend convention
     try {
