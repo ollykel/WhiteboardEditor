@@ -11,6 +11,7 @@ interface AuthFormProps {
 function AuthForm({ initialAction }: AuthFormProps) {
   const [action, setAction] = useState(initialAction);
   const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
 
@@ -19,15 +20,19 @@ function AuthForm({ initialAction }: AuthFormProps) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    const endpoint = action === "login" ? "api/v1/auth/login" : "api/v1/auth/users";
+    const endpoint = 
+      action === "login" 
+      ? "api/v1/auth/login" 
+      : "api/v1/users";
 
-    // TODO: Refactor to match with backend convention
+    const payload = 
+      action === "login"
+      ? { email, password }
+      : { email, username, password };
+
     try {
-      const res = await axios.post(endpoint, {
-        email: email,
-        password: password,
-      });
-      console.log(res);
+      const res = await axios.post(endpoint, payload);
+      console.log(res.data);
     } catch (err) {
       console.log(err);
     }
@@ -57,6 +62,13 @@ function AuthForm({ initialAction }: AuthFormProps) {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           placeholder="you@example.com"
+        />
+        <AuthInput 
+          name="Username"
+          type="text"
+          value={username}
+          onChange={(e) => setUsername(e.target.value)}
+          placeholder="yourname"
         />
         <AuthInput
           name="Password"
