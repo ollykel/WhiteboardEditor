@@ -1,5 +1,9 @@
 import { Schema, model, Document, Types } from "mongoose";
 
+import type {
+  AuthorizedRequestBody
+} from './Auth';
+
 // === IUser ===================================================================
 //
 // Non-confidential user data.
@@ -20,9 +24,13 @@ export interface IUserFull extends IUser {
   passwordHashed: string;
 }
 
-export interface CreateUserRequest extends IUser {
+export interface CreateUserRequest extends Omit<IUser, '_id'> {
   password: string;
 }
+
+export type PatchUserData = Partial<CreateUserRequest>;
+
+export type PatchUserRequest = AuthorizedRequestBody & PatchUserData;
 
 const userSchema = new Schema<IUserFull>({
   username: { type: String, required: true, unique: true },

@@ -1,8 +1,25 @@
 import { Request, Response } from "express";
-import { User } from "../models/User";
+import { Types } from "mongoose";
 import bcrypt from "bcrypt";
 
-import type { CreateUserRequest } from '../models/User';
+import type {
+  Result
+} from '../utils';
+
+import {
+  User,
+  IUser,
+  IUserFull,
+  PatchUserData
+} from "../models/User";
+
+import type {
+  CreateUserRequest,
+} from '../models/User';
+
+export const getUser = async (userId: Types.ObjectId): Promise<IUserFull | null> => {
+  return await User.findOne({ _id: userId });
+};// end getUser
 
 export const createUser = async (
   req: Request<{}, {}, CreateUserRequest>,
@@ -24,4 +41,71 @@ export const createUser = async (
   } catch (err: any) {
     res.status(400).json({ error: err.message });
   }
+};
+
+export interface PatchUserOkResult {
+  type: 'ok';
+  data: IUser;
+}
+
+export interface PatchUserErrorResult {
+  type: 'error';
+  message: string;
+}
+
+export type PatchUserResult = PatchUserOkResult | PatchUserErrorResult;
+
+export const patchUser = async (user: IUserFull, patchData: PatchUserData): Promise<PatchUserResult> => {
+  try {
+    const patchDataLocal = { ...patchData };
+    const passwordHashed = patchDataLocal.password ? 
+      await bcrypt.hash(patchDataLocal.password, 10)
+    : user.passwordHashed;
+
+    if (patchDataLocal.password) {
+      delete patchDataLocal.password;
+    }
+
+    user.set({
+      ...patchDataLocal,
+      passwordHashed
+    });
+
+    const res = await user.save();
+
+    return ({
+      type: 'ok',
+      data: res
+    });
+  } catch (err: any) {
+    return ({
+      type: 'error',
+      message: `${err}`
+    });
+  }
+};
+
+export const deleteUser = async (userId: Types.ObjectId): Promise<Result<IUserFull, string>> => {
+  try {
+    const deletedUser = await User.findOne({ _id: userId });
+
+    if (! deletedUser) {
+      return ({
+        result: 'err',
+        err: 'No such user found'
+      });
+    } else {
+      await deletedUser.deleteOne();
+
+      return ({
+        result: 'ok',
+        data: deletedUser
+      });
+    }
+  } catch (err: any) {
+    return ({
+      result: 'err',
+      err: `${err}`
+    });
+  };
 };
