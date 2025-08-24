@@ -1,8 +1,14 @@
 import { Request, Response } from "express";
-import { User } from "../models/User";
+import { Types } from "mongoose";
 import bcrypt from "bcrypt";
 
+import { User, IUser } from "../models/User";
+
 import type { CreateUserRequest } from '../models/User';
+
+export const getUser = async (userId: Types.ObjectId): Promise<IUser | null> => {
+  return await User.findOne({ _id: userId });
+};// end getUser
 
 export const createUser = async (
   req: Request<{}, {}, CreateUserRequest>,
