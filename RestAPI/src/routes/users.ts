@@ -2,7 +2,8 @@ import { Request, Response, Router } from "express";
 
 import {
   getUser,
-  createUser
+  createUser,
+  patchUser
 } from "../controllers/users";
 
 import {
@@ -12,6 +13,10 @@ import {
 import type {
   AuthorizedRequestBody
 } from "../models/Auth";
+
+import type {
+  PatchUserRequest
+} from "../models/User";
 
 const router = Router();
 
@@ -39,6 +44,36 @@ router.get("/me", async (
     });
   } else {
     res.status(200).json(user);
+  }
+});
+
+// === PATCH /users/me =========================================================
+//
+// Update one or more fields in the authenticated user's data.
+//
+// =============================================================================
+router.patch("/me", async (
+  req: Request<{}, any, PatchUserRequest>,
+  res: Response
+) => {
+  const { authUser } = req.body;
+  const patchData: Partial<PatchUserRequest> = ({ ...req.body });
+  const { id: userId } = authUser;
+  const user = await getUser(userId);
+
+  if (! user) {
+    res.status(400).json({
+      message: `Could not find user with id ${userId}`
+    });
+  } else {
+    delete patchData.authUser;
+    const patchUserRes = await patchUser(user, patchData);
+
+    if (patchUserRes.type === 'error') {
+      res.status(400).json({ message: patchUserRes.message });
+    } else {
+      res.status(201).json(patchUserRes.data);
+    }
   }
 });
 
