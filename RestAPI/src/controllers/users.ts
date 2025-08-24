@@ -2,6 +2,10 @@ import { Request, Response } from "express";
 import { Types } from "mongoose";
 import bcrypt from "bcrypt";
 
+import type {
+  Result
+} from '../utils';
+
 import {
   User,
   IUser,
@@ -79,4 +83,29 @@ export const patchUser = async (user: IUserFull, patchData: PatchUserData): Prom
       message: `${err}`
     });
   }
+};
+
+export const deleteUser = async (userId: Types.ObjectId): Promise<Result<IUserFull, string>> => {
+  try {
+    const deletedUser = await User.findOne({ _id: userId });
+
+    if (! deletedUser) {
+      return ({
+        result: 'err',
+        err: 'No such user found'
+      });
+    } else {
+      await deletedUser.deleteOne();
+
+      return ({
+        result: 'ok',
+        data: deletedUser
+      });
+    }
+  } catch (err: any) {
+    return ({
+      result: 'err',
+      err: `${err}`
+    });
+  };
 };

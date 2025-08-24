@@ -3,7 +3,8 @@ import { Request, Response, Router } from "express";
 import {
   getUser,
   createUser,
-  patchUser
+  patchUser,
+  deleteUser
 } from "../controllers/users";
 
 import {
@@ -74,6 +75,26 @@ router.patch("/me", async (
     } else {
       res.status(201).json(patchUserRes.data);
     }
+  }
+});
+
+// === DELETE /users/me ========================================================
+//
+// Deletes the user's own account.
+// 
+// =============================================================================
+router.delete('/me', async (
+  req: Request<{}, any, AuthorizedRequestBody>,
+  res: Response
+) => {
+  const { authUser } = req.body;
+  const { id: userId } = authUser;
+  const resp = await deleteUser(userId);
+
+  if (resp.result === 'err') {
+    res.status(400).json({ message: resp.err });
+  } else {
+    res.status(200).json(resp.data);
   }
 });
 
