@@ -25,9 +25,11 @@ function AuthForm({ initialAction }: AuthFormProps) {
       ? "http://localhost:8080/api/v1/auth/login" 
       : "http://localhost:8080/api/v1/users";
 
+    const authSource = "email";
+
     const payload = 
       action === "login"
-      ? { email, password }
+      ? { authSource, email, password }
       : { email, username, password };
 
     try {
@@ -63,13 +65,15 @@ function AuthForm({ initialAction }: AuthFormProps) {
           onChange={(e) => setEmail(e.target.value)}
           placeholder="you@example.com"
         />
-        <AuthInput 
-          name="Username"
-          type="text"
-          value={username}
-          onChange={(e) => setUsername(e.target.value)}
-          placeholder="yourname"
-        />
+        {action === "signup" && (
+          <AuthInput 
+            name="Username"
+            type="text"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            placeholder="yourname"
+          />
+        )}
         <AuthInput
           name="Password"
           type="password"

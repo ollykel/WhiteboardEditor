@@ -35,11 +35,11 @@ export const login = async (req: Request<{}, {}, AuthRequest>, res: Response) =>
       }
     })();
 
-    if (!user) return res.status(401).json({ error: "Invalid credentials" });
+    if (!user) return res.status(401).json({ error: "Invalid credentials, user not found" });
 
     // Check password
     const valid = await bcrypt.compare(password, user.passwordHashed);
-    if (!valid) return res.status(401).json({ error: "Invalid credentials" });
+    if (!valid) return res.status(401).json({ error: "Invalid credentials, incorrect password" });
 
     // Sign JWT with user._id as claim
     return jwt.sign(
