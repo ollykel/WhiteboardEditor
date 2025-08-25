@@ -60,7 +60,7 @@ jobs:
           do
             echo "Attempt ${attempt} to connect to rest api ..."
 
-            if curl -i "http://localhost:3001/api/v1/health"
+            if curl -i "http://127.0.0.1:3001/api/v1/health"
             then
               echo "Successfully connected to rest api server"
               exit 0
