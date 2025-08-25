@@ -51,7 +51,7 @@ jobs:
         run: |
           printenv TEST_ENV > .env
       - name: docker compose up
-        run: docker compose up --build -d rest_api
+        run: docker compose -p ${{ github.job }} up --build -d rest_api
       - name: Wait for RestAPI to be ready
         env:
           NUM_RETRIES: 20
@@ -98,4 +98,4 @@ jobs:
           docker compose -p ${{ github.job }} down -v
       - name: Tear down docker compose
         if: always()
-        run: docker compose down
+        run: docker compose -p ${{ github.job }} down
