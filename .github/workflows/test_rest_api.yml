@@ -5,7 +5,6 @@ on:
       - 'RestAPI/**'
       - 'docker-compose.yml'
       - '.github/workflows/test_rest_api.yml'
-      - '.github/actions/set_up_rest_api_testdb/action.yaml'
 jobs:
   test_build_rest_api:
     # make sure image builds
@@ -27,7 +26,12 @@ jobs:
         # check out repo
       - uses: actions/checkout@v5
         # set up test database
-      - uses: ./.github/actions/set_up_rest_api_testdb
+      - name: Start test database
+        shell: bash
+        run: |
+          cd RestAPI/test/database
+
+          docker compose -p ${{ github.job }} up --build -d
       - name: Set up test env
         env:
           TEST_ENV: |
@@ -64,6 +68,13 @@ jobs:
           echo "Result of API call:"
 
           cat results.txt
+      - name: Teat down test database
+        if: always()
+        shell: bash
+        run: |
+          cd RestAPI/test/database
+
+          docker compose -p ${{ github.job }} down -v
       - name: Tear down docker compose
         if: always()
         run: docker compose down
