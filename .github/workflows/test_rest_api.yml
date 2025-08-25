@@ -52,6 +52,8 @@ jobs:
           printenv TEST_ENV > .env
       - name: docker compose up
         run: docker compose up --build -d rest_api
+      - name: Print RestAPI logs
+        run: docker compose logs rest_api
       - name: Create user
         env:
           CREATE_USER_DATA: |
