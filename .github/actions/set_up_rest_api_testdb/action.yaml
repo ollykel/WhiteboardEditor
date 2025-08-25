@@ -1,0 +1,15 @@
+name: "Set Up Test Environment"
+description: "Spin up and tear down docker-compose test environment"
+runs:
+  using: "composite"
+  steps:
+    - name: Start docker compose
+      shell: bash
+      run: |
+        docker compose -p ${{ github.job }} up --build -d
+
+    - name: Tear down docker compose
+      if: always()
+      shell: bash
+      run: |
+        docker compose -p ${{ github.job }} down -v

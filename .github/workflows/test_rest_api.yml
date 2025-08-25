@@ -16,3 +16,50 @@ jobs:
           docker compose build rest_api
 
           echo 'service "rest_api" built successfully'
+  test_create_user:
+    # test creating a new user
+    runs-on: ubuntu-24.04
+    steps:
+        # install dependencies
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get install curl
+        # check out repo
+      - uses: actions/checkout@v5
+        # set up test database
+      - uses: ./.github/actions/set_up_rest_api_testdb
+      - name: Set up test env
+        environment:
+          TEST_ENV: |
+            # Secret for signing JSON Web Tokens (JWTs)
+            # Should be at least 64 characters in length
+            WHITEBOARD_EDITOR_JWT_SECRET=2KUU6DNUY6XGBL2NQFXDXGGVOJ63A75RYSZ5SKD3PMYPCXC6L3I3WRDZER5JA4GC2SOQ2K6W66JUQ3XMM3QT6PXC4UKAFXDDDIIRP4A=
+
+            # URI to access Mongo database
+            # Format: mongodb+srv://<USER>:<PASSWORD>@<URL>/<DATABASE>
+            WHITEBOARD_EDITOR_MONGO_URI=mongo://localhost:27017/testdb
+
+            # Number of seconds before a jwt expires
+            WHITEBOARD_EDITOR_JWT_EXPIRATION_SECS=999999999
+
+            # To set exposed port for testing
+            WHITEBOARD_EDITOR_WEB_SOCKET_PORT=3001
+        run: |
+          printenv TEST_ENV > .env
+      - name: docker compose up
+        run: docker compose up --build -d rest_api
+      - name: Create user
+        run: |
+          curl -i -H 'Content-Type: application/json' -d'{
+            "username": "tester_alpha",
+            "email": "tester_alpha@example.com",
+            "password": "password123"
+          }' -o result.txt 'http://localhost:3001/api/v1/users'
+          # TODO: actually validate the result
+      - name: Display results
+        run: |
+          echo "Result of API call:"
+
+          cat results.txt
+      - name: Tear down docker compose
+        if: always()
+        run: docker compose down
