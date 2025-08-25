@@ -63,7 +63,7 @@ jobs:
           do
             echo "Attempt ${attempt} to connect to rest api ..."
 
-            if docker compose -p ${{ github.job }} exec rest_api curl -i "http://localhost:3000/api/v1/health"
+            if curl -i "http://localhost:3001/api/v1/health"
             then
               echo "Successfully connected to rest api server"
               exit 0
@@ -85,13 +85,13 @@ jobs:
               "password": "password123"
             }
         run: |
-          docker compose -p ${{ github.job }} exec rest_api curl -i -H 'Content-Type: application/json' -d"${CREATE_USER_DATA}" -o result.txt 'http://localhost:3000/api/v1/users'
+          curl -i -H 'Content-Type: application/json' -d"${CREATE_USER_DATA}" -o result.txt 'http://localhost:3001/api/v1/users'
           # TODO: actually validate the result
       - name: Display results
         run: |
           echo "Result of API call:"
 
-          cat results.txt
+          cat result.txt
       - name: Tear down test database
         if: always()
         shell: bash
