@@ -6,10 +6,14 @@ runs:
     - name: Start docker compose
       shell: bash
       run: |
+        cd RestAPI/test/database
+
         docker compose -p ${{ github.job }} up --build -d
 
     - name: Tear down docker compose
       if: always()
       shell: bash
       run: |
+        cd RestAPI/test/database
+
         docker compose -p ${{ github.job }} down -v
