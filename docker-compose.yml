@@ -69,3 +69,15 @@ services:
     ports:
       # exposed for testing purposes
       - ${WHITEBOARD_EDITOR_REST_API_PORT-3003}:3000
+
+  test_db:
+    # Should only be used for testing purposes
+    # Volume is not saved between runs, so any data created during the lifetime
+    # of a container will be lost on shutdown.
+    #
+    # To access during testing, set the value of WHITEBOARD_EDITOR_MONGO_URI to
+    # mongodb://test_db:27017/testdb
+    image: mongo:8.0
+    volumes:
+      # initialization script
+      - ./TestDatabase/init-db.js:/docker-entrypoint-initdb.d/init-db.js:ro
