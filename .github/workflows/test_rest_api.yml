@@ -42,7 +42,7 @@ jobs:
             WHITEBOARD_EDITOR_JWT_EXPIRATION_SECS=999999999
 
             # To set exposed port for testing
-            WHITEBOARD_EDITOR_WEB_SOCKET_PORT=3001
+            WHITEBOARD_EDITOR_REST_API_PORT=3001
         run: |
           printenv TEST_ENV > .env
       - name: docker compose up
