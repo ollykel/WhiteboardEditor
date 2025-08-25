@@ -28,7 +28,7 @@ jobs:
         # set up test database
       - uses: ./.github/actions/set_up_rest_api_testdb
       - name: Set up test env
-        environment:
+        env:
           TEST_ENV: |
             # Secret for signing JSON Web Tokens (JWTs)
             # Should be at least 64 characters in length
