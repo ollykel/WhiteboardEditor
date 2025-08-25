@@ -50,6 +50,8 @@ jobs:
             WHITEBOARD_EDITOR_REST_API_PORT=3001
         run: |
           printenv TEST_ENV > .env
+      - name: Show contents of .env
+        run: cat .env
       - name: docker compose up
         run: docker compose up --build -d rest_api
       - name: Wait for RestAPI to be ready
