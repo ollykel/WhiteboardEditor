@@ -41,7 +41,7 @@ jobs:
 
             # URI to access Mongo database
             # Format: mongodb+srv://<USER>:<PASSWORD>@<URL>/<DATABASE>
-            WHITEBOARD_EDITOR_MONGO_URI=mongo://127.0.0.1:27017/testdb
+            WHITEBOARD_EDITOR_MONGO_URI=mongodb://127.0.0.1:27017/testdb
 
             # Number of seconds before a jwt expires
             WHITEBOARD_EDITOR_JWT_EXPIRATION_SECS=999999999
