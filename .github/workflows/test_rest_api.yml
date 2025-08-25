@@ -52,6 +52,23 @@ jobs:
           printenv TEST_ENV > .env
       - name: docker compose up
         run: docker compose up --build -d rest_api
+      - name: Wait for RestAPI to be ready
+        env:
+          NUM_RETRIES: 20
+        run: |
+          for attempt in $(seq ${NUM_RETRIES})
+          do
+            echo "Attempt ${attempt} to connect to rest api ..."
+
+            if curl -i "http://localhost:3001/api/v1/health"
+            then
+              echo "Successfully connected to rest api server"
+              exit 0
+            fi
+          done
+
+          echo "Failed to connnect to rest api server after ${NUM_RETRIES} retries"
+          exit 1
       - name: Print RestAPI logs
         run: docker compose logs rest_api
       - name: Create user
