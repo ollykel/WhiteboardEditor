@@ -5,6 +5,7 @@ on:
       - 'RestAPI/**'
       - 'docker-compose.yml'
       - '.github/workflows/test_rest_api.yml'
+      - '.github/actions/set_up_rest_api_testdb/action.yaml'
 jobs:
   test_build_rest_api:
     # make sure image builds
