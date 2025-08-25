@@ -65,6 +65,8 @@ jobs:
               echo "Successfully connected to rest api server"
               exit 0
             fi
+
+            sleep 1
           done
 
           echo "Failed to connnect to rest api server after ${NUM_RETRIES} retries"
