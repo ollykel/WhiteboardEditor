@@ -1,8 +1,0 @@
-name: whiteboard_editor_test_database
-services:
-  database:
-    image: mongo:8.0
-    ports:
-      - "27017:27017"
-    volumes:
-      - ./init-db.js:/docker-entrypoint-initdb.d/init-db.js:ro
