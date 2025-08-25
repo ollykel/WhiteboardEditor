@@ -29,9 +29,7 @@ jobs:
       - name: Start test database
         shell: bash
         run: |
-          cd RestAPI/test/database
-
-          docker compose -p ${{ github.job }} up --build -d
+          docker compose -p ${{ github.job }} up --build -d test_db
       - name: Set up test env
         env:
           TEST_ENV: |
@@ -41,7 +39,7 @@ jobs:
 
             # URI to access Mongo database
             # Format: mongodb+srv://<USER>:<PASSWORD>@<URL>/<DATABASE>
-            WHITEBOARD_EDITOR_MONGO_URI=mongodb://127.0.0.1:27017/testdb
+            WHITEBOARD_EDITOR_MONGO_URI=mongodb://test_db:27017/testdb
 
             # Number of seconds before a jwt expires
             WHITEBOARD_EDITOR_JWT_EXPIRATION_SECS=999999999
@@ -94,13 +92,11 @@ jobs:
           echo "Result of API call:"
 
           cat results.txt
-      - name: Teat down test database
+      - name: Tear down test database
         if: always()
         shell: bash
         run: |
-          cd RestAPI/test/database
-
-          docker compose -p ${{ github.job }} down -v
+          docker compose -p ${{ github.job }} down -v test_db
       - name: Tear down docker compose
         if: always()
         run: docker compose -p ${{ github.job }} down
