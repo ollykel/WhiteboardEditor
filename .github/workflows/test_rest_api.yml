@@ -41,7 +41,7 @@ jobs:
 
             # URI to access Mongo database
             # Format: mongodb+srv://<USER>:<PASSWORD>@<URL>/<DATABASE>
-            WHITEBOARD_EDITOR_MONGO_URI=mongo://localhost:27017/testdb
+            WHITEBOARD_EDITOR_MONGO_URI=mongo://127.0.0.1:27017/testdb
 
             # Number of seconds before a jwt expires
             WHITEBOARD_EDITOR_JWT_EXPIRATION_SECS=999999999
@@ -61,7 +61,7 @@ jobs:
               "password": "password123"
             }
         run: |
-          curl -i -H 'Content-Type: application/json' -d"${CREATE_USER_DATA}" -o result.txt 'http://localhost:3001/api/v1/users'
+          curl -i -H 'Content-Type: application/json' -d"${CREATE_USER_DATA}" -o result.txt 'http://127.0.0.1:3001/api/v1/users'
           # TODO: actually validate the result
       - name: Display results
         run: |
