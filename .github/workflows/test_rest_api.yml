@@ -52,6 +52,11 @@ jobs:
           printenv TEST_ENV > .env
       - name: docker compose up
         run: docker compose -p ${{ github.job }} up --build -d rest_api
+      - name: Print rest api initial logs
+        run: |
+          sleep 3
+
+          docker compose -p ${{ github.job }} logs rest_api
       - name: Wait for RestAPI to be ready
         env:
           NUM_RETRIES: 20
