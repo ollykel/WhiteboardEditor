@@ -53,7 +53,7 @@ jobs:
 
           docker compose -p ${{ github.job }} logs rest_api
       - name: Run supertest
-        run: docker compose -p ${{ github.job }} exec yarn run test
+        run: docker compose -p ${{ github.job }} exec rest_api yarn run test
       - name: Tear down test database
         if: always()
         shell: bash
