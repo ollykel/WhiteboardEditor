@@ -1,20 +1,10 @@
-import cors from 'cors';
 import 'dotenv/config';
-import express from 'express';
 import mongoose from 'mongoose';
 
-// === Routers =================================================================
-//
-// =============================================================================
-import healthRouter from './routes/health';
-import usersRouter from './routes/users';
-import authRouter from './routes/auth';
-import whiteboardsRouter from './routes/whiteboards';
+import app from './app';
 
-// All services should serve on port 3000.
-// Reverse proxy will handle routing appropriate requests to this service.
+// --- All services should internally serve on port 3000.
 const PORT = 3000;
-const API_VERSION = 'v1';
 
 // Configure MongoDB connection
 const MONGO_URI = process.env.MONGO_URI;
@@ -24,22 +14,13 @@ if (! MONGO_URI) {
   process.exit(1);
 }
 
-const app = express();
-
-app.use(cors());
-app.use(express.json());
-
-// Mount routers
-app.use(`/api/${API_VERSION}/health`, healthRouter);
-app.use(`/api/${API_VERSION}/users`, usersRouter);
-app.use(`/api/${API_VERSION}/auth`, authRouter);
-app.use(`/api/${API_VERSION}/whiteboards`, whiteboardsRouter);
-
+// Connect to database
 mongoose.connect(MONGO_URI)
 .then(() => {
   // Only start listening once the database connection has been established
   console.log('Connected to database successfully');
 
+  // Start listening
   app.listen(PORT, () => {
     console.log(`REST API server listening on port ${PORT} ...`);
   });
