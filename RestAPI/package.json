@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "main": "main.ts",
   "license": "MIT",
+  "scripts": {
+    "test": "jest"
+  },
   "dependencies": {
     "@types/bcrypt": "^6.0.0",
     "@types/mongoose": "^5.11.97",
