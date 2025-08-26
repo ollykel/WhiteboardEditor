@@ -39,7 +39,7 @@ describe("Users API", () => {
   });
 
   // Attempt unauthenticated /api/v*/users/me call, which should be forbidden
-  it("should not allow an authenticated user to view GET /users/me", async () => {
+  it("should not allow an unauthenticated user to view GET /users/me", async () => {
     await request(app)
       .get("/api/v1/users/me")
       .expect(401);
