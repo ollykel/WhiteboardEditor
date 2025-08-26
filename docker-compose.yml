@@ -30,6 +30,9 @@ services:
     image: ${WHITEBOARD_EDITOR_CR_URI-whiteboard_editor}/frontend:${WHITEBOARD_EDITOR_TAG-latest}
     depends_on:
       - web_socket_server
+    ports:
+      # exposed for testing purposes
+      - ${WHITEBOARD_EDITOR_FRONTEND_PORT-3001}:3000
 
   web_socket_server_builder:
     # Builds WebSocketServer
@@ -50,6 +53,9 @@ services:
     environment:
       # Make sure to set MONGO_URI in .env
       MONGO_URI: ${WHITEBOARD_EDITOR_MONGO_URI}
+    ports:
+      # exposed for testing purposes
+      - ${WHITEBOARD_EDITOR_WEB_SOCKET_PORT-3002}:3000
   
   rest_api:
     # Handles RESTful operations on database
@@ -60,3 +66,18 @@ services:
       MONGO_URI: ${WHITEBOARD_EDITOR_MONGO_URI}
       JWT_SECRET: ${WHITEBOARD_EDITOR_JWT_SECRET}
       JWT_EXPIRATION_SECS: ${WHITEBOARD_EDITOR_JWT_EXPIRATION_SECS}
+    ports:
+      # exposed for testing purposes
+      - ${WHITEBOARD_EDITOR_REST_API_PORT-3003}:3000
+
+  test_db:
+    # Should only be used for testing purposes
+    # Volume is not saved between runs, so any data created during the lifetime
+    # of a container will be lost on shutdown.
+    #
+    # To access during testing, set the value of WHITEBOARD_EDITOR_MONGO_URI to
+    # mongodb://test_db:27017/testdb
+    image: mongo:8.0
+    volumes:
+      # initialization script
+      - ./TestDatabase/init-db.js:/docker-entrypoint-initdb.d/init-db.js:ro
