@@ -1,11 +1,15 @@
+import { useNavigate } from "react-router";
+
 import Header from "@/components/Header";
 import YourWhiteboards from "@/components/YourWhiteboards";
 import SharedWhiteboards from "@/components/SharedWhiteboards";
-import { useNavigate } from "react-router";
+import { useUser } from "../AuthContext";
+
+import type { User } from "../types/UserAuth";
 
 function Dashboard() {
   const title: string = "<Whiteboard App>";
-  const username: string = "<User>";
+  const user: User = useUser().user;
   const navigate = useNavigate();
 
   const createNewWhiteboard = () => {
@@ -16,7 +20,7 @@ function Dashboard() {
     <div>
       <Header title={title}/>
       <h1 className="mt-25 text-4xl font-bold text-center">
-        Welcome Back, {username}!
+        Welcome Back, {user?.username}!
       </h1>
       <button
         onClick={createNewWhiteboard}
