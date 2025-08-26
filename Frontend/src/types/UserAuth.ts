@@ -1,12 +1,12 @@
 type User = {
-  id: string;
+  _id: string;
   username: string;
   email: string;
 } | null;
 
-type UserContextType = {
+type AuthContextType = {
   user: User;
   setUser: (user: User) => void;
 }
 
-export type { User, UserContextType };
+export type { User, AuthContextType };

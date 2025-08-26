@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { useNavigate } from 'react-router';
+import axios from "axios";
 
 import AuthInput from "./AuthInput";
-import axios from "axios";
+import { useUser } from "../AuthContext";
 
 interface AuthFormProps {
   initialAction: "login" | "signup";
@@ -20,11 +21,14 @@ function AuthForm({ initialAction }: AuthFormProps) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    const { setUser } = useUser(): void;
+
     const endpoint = 
       action === "login" 
       ? "http://localhost:8080/api/v1/auth/login" 
       : "http://localhost:8080/api/v1/users";
 
+    // TODO: Make this dynamic to handle either email or username
     const authSource = "email";
 
     const payload = 
@@ -35,6 +39,8 @@ function AuthForm({ initialAction }: AuthFormProps) {
     try {
       const res = await axios.post(endpoint, payload);
       console.log(res.data);
+
+      setUser(res.data.user);
     } catch (err) {
       console.log(err);
     }
