@@ -11,11 +11,16 @@ db = db.getSiblingDB("testdb"); // create/use "testdb"
 
 // --- Create Users ---
 const users = [
-  { username: "alice", email: "alice@example.com", passwordHashed: "hashed_pw1" },
-  { username: "bob", email: "bob@example.com", passwordHashed: "hashed_pw2" },
-  { username: "carol", email: "carol@example.com", passwordHashed: "hashed_pw3" },
-  { username: "dave", email: "dave@example.com", passwordHashed: "hashed_pw4" },
-  { username: "eve", email: "eve@example.com", passwordHashed: "hashed_pw5" },
+  // password: password123
+  { username: "alice", email: "alice@example.com", passwordHashed: "$2b$10$lE4PvWzGiI.hKlq98/EFW.9QSKDDkq.O/WHvMjeMvheUiDxE2pzgW" },
+  // password: password456
+  { username: "bob", email: "bob@example.com", passwordHashed: "$2b$10$uLkhrYaddxeki7BymA4MdeqLtWgIRKjcQvgJvSbNhx1FQrWTJO8/2" },
+  // password: password789
+  { username: "carol", email: "carol@example.com", passwordHashed: "$2b$10$DQXE2KyaqWw3xS6wf.tdn.BRh0s7MXrhpHhibzFZ0fUqsnowBYcGq" },
+  // password: password101
+  { username: "dave", email: "dave@example.com", passwordHashed: "$2b$10$cGyV5HrtmrLGBr/6tU32/OsfmIFbPu28EzV6td0C9aRHfVCNs5d2e" },
+  // password: weakpassword
+  { username: "eve", email: "eve@example.com", passwordHashed: "$2b$10$ihPYYk6dgK/OwTMkBOnlXe9UDcSHNvYSWQe5N0oM11TPwle7EJrH2" },
 ];
 
 db.Users.insertMany(users);
