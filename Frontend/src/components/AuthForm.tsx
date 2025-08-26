@@ -39,10 +39,26 @@ function AuthForm({ initialAction }: AuthFormProps) {
 
     try {
       const res = await axios.post(endpoint, payload);
-      console.log(res.data);
+      const { token } = await res.data;
+      console.log(token);
+      localStorage.setItem("token", token);
 
+      // TODO: Make consistent with axios (separate API file?)
+      const meRes = await fetch("http://localhost:8080/api/v1/users/me", {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      console.log(meRes);
+
+      if (!meRes.ok) {
+        console.error("Failed to fetch user info");
+        return;
+      }
+
+      const user = await meRes.json();
+
+      setUser(user);
       navigate("/dashboard");
-      setUser(res.data.user);
     } catch (err) {
       console.log(err);
     }
