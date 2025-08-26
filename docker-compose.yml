@@ -66,6 +66,8 @@ services:
       MONGO_URI: ${WHITEBOARD_EDITOR_MONGO_URI}
       JWT_SECRET: ${WHITEBOARD_EDITOR_JWT_SECRET}
       JWT_EXPIRATION_SECS: ${WHITEBOARD_EDITOR_JWT_EXPIRATION_SECS}
+    depends_on:
+      - test_db
     ports:
       # exposed for testing purposes
       - ${WHITEBOARD_EDITOR_REST_API_PORT-3003}:3000
