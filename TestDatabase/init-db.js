@@ -23,9 +23,9 @@ const users = [
   { username: "eve", email: "eve@example.com", passwordHashed: "$2b$10$ihPYYk6dgK/OwTMkBOnlXe9UDcSHNvYSWQe5N0oM11TPwle7EJrH2" },
 ];
 
-db.Users.insertMany(users);
+db.users.insertMany(users);
 
-const insertedUsers = db.Users.find().toArray();
+const insertedUsers = db.users.find().toArray();
 
 // --- Create Whiteboards ---
 const whiteboards = [
@@ -61,6 +61,6 @@ const whiteboards = [
   },
 ];
 
-db.Whiteboards.insertMany(whiteboards);
+db.whiteboards.insertMany(whiteboards);
 
 print("Database initialized with test users and whiteboards.");

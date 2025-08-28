@@ -35,7 +35,7 @@ describe("Whiteboards API", () => {
 
   it("should create a new whiteboard for an authenticated user", async () => {
     const jwtSecret = process.env.JWT_SECRET;
-    const userCollection = mongoose.connection.collection('Users');
+    const userCollection = mongoose.connection.collection('users');
 
     const user = await userCollection.findOne({ username: 'alice' });
 
@@ -48,39 +48,33 @@ describe("Whiteboards API", () => {
     }
 
     // Generate signed JWT
-    jwt.sign(
+    const authToken = jwt.sign(
       { sub: user._id.toString() },   // sub = subject claim
       jwtSecret,
-      { expiresIn: 999999999 },
-      async (err, authToken) => {
-        if (err) {
-          fail(`Failed to sign jwt token: ${err}`);
-        } else {
-          // -- Create whiteboard
-          const wbRes = await request(app)
-            .post("/api/v1/whiteboards")
-            .set("Authorization", `Bearer ${authToken}`)
-            .send({
-              name: "Alice's Whiteboard"
-            })
-            .expect(201);
-
-          // Verify response body
-          expect(wbRes.body).toHaveProperty("_id");
-          expect(wbRes.body).toHaveProperty("name", "Alice's Whiteboard");
-          expect(wbRes.body).toHaveProperty("owner");
-          expect(wbRes.body).toHaveProperty("shared_users");
-          expect(Array.isArray(wbRes.body.shared_users)).toBe(true);
-        }
-      }
+      { expiresIn: 999999999 }
     );
 
+    // -- Create whiteboard
+    const wbRes = await request(app)
+      .post("/api/v1/whiteboards")
+      .set("Authorization", `Bearer ${authToken}`)
+      .send({
+        name: "Alice's Whiteboard"
+      })
+      .expect(201);
+
+    // Verify response body
+    expect(wbRes.body).toHaveProperty("_id");
+    expect(wbRes.body).toHaveProperty("name", "Alice's Whiteboard");
+    expect(wbRes.body).toHaveProperty("owner");
+    expect(wbRes.body).toHaveProperty("shared_users");
+    expect(Array.isArray(wbRes.body.shared_users)).toBe(true);
   });
 
   it("should allow an authenticated user to share their whiteboard", async () => {
     const jwtSecret = process.env.JWT_SECRET;
-    const userCollection = mongoose.connection.collection('Users');
-    const whiteboardCollection = mongoose.connection.collection('Whiteboards');
+    const userCollection = mongoose.connection.collection('users');
+    const whiteboardCollection = mongoose.connection.collection('whiteboards');
 
     const whiteboard = await whiteboardCollection.findOne({ name: "Project Alpha"});
     const owner = await userCollection.findOne({ username: 'alice' });
@@ -96,38 +90,72 @@ describe("Whiteboards API", () => {
       return;
     }
 
+    const targetUrl = `/api/v1/whiteboards/${whiteboard._id}/share`;
+
+    console.log('Target url:', targetUrl);
+
     // Generate signed JWT
-    jwt.sign(
+    const authToken = jwt.sign(
       { sub: owner._id.toString() },   // sub = subject claim
       jwtSecret,
-      { expiresIn: 999999999 },
-      async (err, authToken) => {
-        if (err) {
-          fail(`Failed to sign jwt token: ${err}`);
-        } else {
-          // -- Share whiteboard
-          const wbRes = await request(app)
-            .post(`/api/v1/whiteboards/${whiteboard._id}/share`)
-            .set("Authorization", `Bearer ${authToken}`)
-            .send({
-              users: [sharee._id]
-            })
-            .expect(200);
-
-            expect(wbRes.body).toHaveProperty('_id');
-            expect(wbRes.body).toHaveProperty('name');
-            expect(wbRes.body).toHaveProperty('time_created');
-            expect(wbRes.body).toHaveProperty('canvases');
-            expect(wbRes.body).toHaveProperty('owner');
-            expect(wbRes.body).toHaveProperty('shared_users');
-            expect(Array.isArray(wbRes.body.shared_users)).toBe(true);
-
-            if (wbRes.body.shared_users) {
-              expect(wbRes.body.shared_users).toBe([sharee._id]);
-            }
-        }
-      }
+      { expiresIn: 999999999 }
     );
 
+    // -- Share whiteboard
+    const wbRes = await request(app)
+      .post(targetUrl)
+      .set("Authorization", `Bearer ${authToken}`)
+      .send({
+        users: [sharee._id]
+      })
+      .expect(200);
+
+      expect(wbRes.body).toHaveProperty('_id');
+      expect(wbRes.body).toHaveProperty('name');
+      expect(wbRes.body).toHaveProperty('time_created');
+      expect(wbRes.body).toHaveProperty('canvases');
+      expect(wbRes.body).toHaveProperty('owner');
+      expect(wbRes.body).toHaveProperty('shared_users');
+      expect(Array.isArray(wbRes.body.shared_users)).toBe(true);
+
+      if (wbRes.body.shared_users) {
+        expect(wbRes.body.shared_users).toEqual([sharee._id.toString()]);
+      }
+  });
+
+  it("should not allow a user to share a whiteboard they don't own", async () => {
+    const jwtSecret = process.env.JWT_SECRET;
+    const userCollection = mongoose.connection.collection('users');
+    const whiteboardCollection = mongoose.connection.collection('whiteboards');
+
+    const whiteboard = await whiteboardCollection.findOne({ name: "Project Beta"});
+    const owner = await userCollection.findOne({ username: 'alice' });
+    const sharee = await userCollection.findOne({ username: 'bob' });
+
+    expect(jwtSecret).not.toBeNull();
+    expect(owner).not.toBeNull();
+    expect(sharee).not.toBeNull();
+    expect(whiteboard).not.toBeNull();
+
+    // to please TypeScript
+    if ((! jwtSecret) || (! owner) || (! sharee) || (! whiteboard)) {
+      return;
+    }
+
+    // Generate signed JWT
+    const authToken = jwt.sign(
+      { sub: owner._id.toString() },   // sub = subject claim
+      jwtSecret,
+      { expiresIn: 999999999 }
+    );
+
+    // -- Share whiteboard
+    await request(app)
+      .post(`/api/v1/whiteboards/${whiteboard._id}/share`)
+      .set("Authorization", `Bearer ${authToken}`)
+      .send({
+        users: [sharee._id]
+      })
+      .expect(403);
   });
 });
