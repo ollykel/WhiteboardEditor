@@ -4,13 +4,15 @@ import type {
   AuthorizedRequestBody
 } from './Auth';
 
+export type UserIdType = Types.ObjectId;
+
 // === IUser ===================================================================
 //
 // Non-confidential user data.
 //
 // =============================================================================
 export interface IUser extends Document {
-  _id: Types.ObjectId;
+  _id: UserIdType;
   username: string;
   email: string;
 }
