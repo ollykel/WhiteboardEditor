@@ -1,5 +1,11 @@
 import { Schema, Types, Document, model } from "mongoose";
 
+import type {
+  UserIdType
+} from './User';
+
+export type WhiteboardIdType = Types.ObjectId;
+
 export interface ICanvas extends Document {
   width: number;
   height: number;
@@ -17,11 +23,12 @@ export const canvasSchema = new Schema<ICanvas>({
 });
 
 export interface IWhiteboard extends Document {
+  _id: WhiteboardIdType;
   name: string;
   time_created: Date;
   canvases: ICanvas[];
-  owner: Types.ObjectId;        // reference to User
-  shared_users: Types.ObjectId[]; // references to Users
+  owner: UserIdType;        // reference to User
+  shared_users: UserIdType[]; // references to Users
 }
 
 const whiteboardSchema = new Schema<IWhiteboard>({

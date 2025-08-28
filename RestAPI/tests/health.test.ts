@@ -8,7 +8,7 @@ import request from "supertest";
 import app from "../src/app";
 import mongoose from 'mongoose';
 
-const MONGO_URI = process.env.MONGO_URI;
+const MONGO_URI = 'mongodb://test_db:27017/testdb';
 
 if (! MONGO_URI) {
   console.error('ERROR: unset env var MONGO_URI');
