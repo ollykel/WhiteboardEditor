@@ -71,6 +71,7 @@ router.post(
         case "forbidden":
           return res.status(403).json({ error: "You do not own this whiteboard" });
         default:
+          console.error('Unexpected error:', result);
           return res.status(500).json({ error: "Unexpected error" });
       }
     } catch (err: any) {
