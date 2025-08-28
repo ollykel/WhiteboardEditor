@@ -159,7 +159,7 @@ describe("Whiteboards API", () => {
       .expect(403);
   });
 
-  it("should not allow a user to share a whiteboard with a malforemd user ID", async () => {
+  it("should not allow a user to share a whiteboard with user with a malformed user ID", async () => {
     const jwtSecret = process.env.JWT_SECRET;
     const userCollection = mongoose.connection.collection('users');
     const whiteboardCollection = mongoose.connection.collection('whiteboards');
@@ -190,6 +190,41 @@ describe("Whiteboards API", () => {
       .send({
         // Not a real id
         users: ['zzzzzzz']
+      })
+      .expect(400);
+  });
+
+  it("should not allow a user to share a whiteboard with a user that doesn't exist", async () => {
+    const jwtSecret = process.env.JWT_SECRET;
+    const userCollection = mongoose.connection.collection('users');
+    const whiteboardCollection = mongoose.connection.collection('whiteboards');
+
+    const whiteboard = await whiteboardCollection.findOne({ name: "Project Alpha"});
+    const owner = await userCollection.findOne({ username: 'alice' });
+
+    expect(jwtSecret).not.toBeNull();
+    expect(owner).not.toBeNull();
+    expect(whiteboard).not.toBeNull();
+
+    // to please TypeScript
+    if ((! jwtSecret) || (! owner) || (! whiteboard)) {
+      return;
+    }
+
+    // Generate signed JWT
+    const authToken = jwt.sign(
+      { sub: owner._id.toString() },   // sub = subject claim
+      jwtSecret,
+      { expiresIn: 999999999 }
+    );
+
+    // -- Share whiteboard
+    await request(app)
+      .post(`/api/v1/whiteboards/${whiteboard._id}/share`)
+      .set("Authorization", `Bearer ${authToken}`)
+      .send({
+        // With timestamp at beginning of unix epoch
+        users: ['000000018ab18fedd089b041']
       })
       .expect(400);
   });
