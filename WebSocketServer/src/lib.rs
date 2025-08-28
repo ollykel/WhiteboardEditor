@@ -2,6 +2,7 @@
 
 use std::{
     collections::HashSet,
+    convert::TryInto
 };
 
 // -- third party imports
@@ -51,6 +52,7 @@ pub enum ServerSocketMessage {
     ClientLogout { client_id: ClientIdType },
     CreateShapes { client_id: ClientIdType, canvas_id: CanvasIdType, shapes: Vec<ShapeModel> },
     CreateCanvas { client_id: ClientIdType, canvas_id: CanvasIdType, width: u64, height: u64, allowed_users: Vec<ClientIdType> },
+    SetCanvasAllowedUsers { canvas_id: CanvasIdType, allowed_users: Option<Vec<ClientIdType>> },
     IndividualError { client_id: ClientIdType, message: String },
     BroadcastError { message: String },
 }
@@ -59,7 +61,8 @@ pub enum ServerSocketMessage {
 #[serde(tag = "type", rename_all = "snake_case", rename_all_fields="camelCase")]
 pub enum ClientSocketMessage {
     CreateShapes { canvas_id: CanvasIdType, shapes: Vec<ShapeModel> },
-    CreateCanvas { width: u64, height: u64 }
+    CreateCanvas { width: u64, height: u64 },
+    SetCanvasAllowedUsers { canvas_id: CanvasIdType, allowed_users: Option<Vec<ClientIdType>> },
 }
 
 #[derive(Clone, Serialize)]
@@ -191,6 +194,38 @@ pub async fn handle_client_message(program_state: &ProgramState, current_client_
                     height: height,
                     allowed_users: allowed_users_vec,
                 })
+            },
+            ClientSocketMessage::SetCanvasAllowedUsers { canvas_id, allowed_users } => {
+                let mut whiteboard = program_state.whiteboard.lock().await;
+
+                // --- ensure the canvas id is valid
+                match TryInto::<usize>::try_into(canvas_id) {
+                    Err(_) =>  Some(ServerSocketMessage::IndividualError{
+                        client_id: current_client_id,
+                        message: format!("invalid canvas id ({})", canvas_id)
+                    }),
+                    Ok(canvas_id_idx) => {
+                        match whiteboard.canvases.get_mut(canvas_id_idx) {
+                            None => Some(ServerSocketMessage::IndividualError{
+                                client_id: current_client_id,
+                                message: format!("invalid canvas id ({})", canvas_id_idx)
+                            }),
+                            Some(canvas) => {
+                                // --- update canvas state locally
+                                canvas.allowed_users = match allowed_users {
+                                    None => None,
+                                    Some(ref allowed_users_vec) => Some(allowed_users_vec.iter().map(|v| *v).collect())
+                                };
+
+                                // --- broadcast state change to client
+                                Some(ServerSocketMessage::SetCanvasAllowedUsers{
+                                    canvas_id: canvas_id,
+                                    allowed_users: allowed_users.clone()
+                                })
+                            }
+                        }// end match whiteboard.canvases.get_mut(canvas_id)
+                    }
+                }
             },
         }
     } else {
