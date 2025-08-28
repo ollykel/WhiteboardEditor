@@ -159,7 +159,7 @@ describe("Whiteboards API", () => {
       .expect(403);
   });
 
-  it("should not allow a user to share a whiteboard with a user that doesn't exist", async () => {
+  it("should not allow a user to share a whiteboard with a malforemd user ID", async () => {
     const jwtSecret = process.env.JWT_SECRET;
     const userCollection = mongoose.connection.collection('users');
     const whiteboardCollection = mongoose.connection.collection('whiteboards');
