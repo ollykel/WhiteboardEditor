@@ -1,4 +1,4 @@
-import { useState, createContext, useContext, type ReactNode } from 'react';
+import { useState, createContext, type ReactNode } from 'react';
 
 import type { User, AuthContextType } from './types/UserAuth';
 
@@ -14,12 +14,4 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 }
 
-export function useUser(): AuthContextType {
-  const context = useContext(AuthContext);
-
-  if (!context) {
-    throw new Error("useUser must be used within an AuthProvider")
-  }
-
-  return context;
-}
+export default AuthContext;

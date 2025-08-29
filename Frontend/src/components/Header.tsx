@@ -1,7 +1,7 @@
 import HeaderButton from './HeaderButton';
 import { useLocation, useNavigate } from 'react-router';
 import { useState } from 'react';
-import { useUser } from '../AuthContext';
+import { useUser } from '../hooks/useUser';
 
 import { X } from 'lucide-react';
 

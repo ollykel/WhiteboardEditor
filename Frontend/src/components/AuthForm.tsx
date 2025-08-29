@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router';
 import axios from "axios";
 
 import AuthInput from "./AuthInput";
-import { useUser } from "../AuthContext";
+import { useUser } from "../hooks/useUser";
 
 interface AuthFormProps {
   initialAction: "login" | "signup";
