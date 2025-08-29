@@ -3,7 +3,6 @@ import { useState, useRef, useEffect } from 'react';
 import CanvasCard from "@/components/CanvasCard";
 import Toolbar from "@/components/Toolbar";
 import Header from '@/components/Header';
-
 import type { ToolChoice } from '@/components/Tool';
 import type { ShapeModel } from '@/types/ShapeModel';
 import type {
@@ -30,7 +29,7 @@ const Whiteboard = () => {
   const [toolChoice, setToolChoice] = useState<ToolChoice>('rect');
 
   // --- derived state
-  const isActive = socketRef.current !== null;
+  const isActive = socketRef.current !== null
 
   // handles all web socket messages
   const handleServerMessage = (event: MessageEvent): void => {
@@ -176,10 +175,9 @@ const Whiteboard = () => {
       }
 
       {/* Content */}
-
       <div className="mt-20">
         {/* Toolbar */}
-        <Toolbar 
+        <Toolbar
           toolChoice={toolChoice}
           onToolChange={setToolChoice}
           onNewCanvas={handleNewCanvas}

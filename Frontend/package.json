@@ -11,9 +11,12 @@
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.1.11",
+    "@tanstack/react-form": "^1.19.3",
+    "@tanstack/react-query": "^5.85.5",
     "@types/node": "^24.2.1",
     "axios": "^1.11.0",
     "konva": "^9.3.22",
+    "lucide-react": "^0.542.0",
     "path": "^0.12.7",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
