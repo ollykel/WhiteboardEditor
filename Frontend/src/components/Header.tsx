@@ -1,6 +1,5 @@
 import HeaderButton from './HeaderButton';
 import { useLocation, useNavigate } from 'react-router';
-import { useState } from 'react';
 import { useUser } from '../hooks/useUser';
 
 interface HeaderProps {
@@ -10,11 +9,11 @@ interface HeaderProps {
 function Header({ title }: HeaderProps) {
   const location = useLocation();
   const navigate = useNavigate();
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const { setUser } = useUser();
+  const { user, setUser } = useUser();
+
+  const isLoggedIn = !!user;
 
   const handleLogOut = () => {
-    setIsLoggedIn(false);
     setUser(null);
     navigate("/login");
   }
@@ -24,7 +23,7 @@ function Header({ title }: HeaderProps) {
       <div className="relative flex items-center justify-center">
         <div className="absolute left-2">
           <HeaderButton 
-            to= {isLoggedIn ? "/dashboard" : "/login"}
+            to={isLoggedIn ? "/dashboard" : "/login"}
             title="Home"
           />
         </div>
