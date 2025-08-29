@@ -63,7 +63,7 @@ const AccountSettings = ({
                   <AvatarImage src="/placeholder-avatar.jpg" />
                   <AvatarFallback className="text-lg">JD</AvatarFallback>
                 </Avatar>
-                <div className="space-y-2">
+                <div className="space-y-2 flex flex-col">
                   <Button variant="outline" size="sm" className="gap-2">
                     <Camera className="w-4 h-4" />
                     Change Photo
