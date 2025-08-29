@@ -3,6 +3,7 @@ import { useState, useRef, useEffect } from 'react';
 import CanvasCard from "@/components/CanvasCard";
 import Toolbar from "@/components/Toolbar";
 import Header from '@/components/Header';
+import { useUser } from '@/hooks/useUser';
 import type { ToolChoice } from '@/components/Tool';
 import type { ShapeModel } from '@/types/ShapeModel';
 import type {
@@ -22,6 +23,7 @@ const getWebSocketUri = (): string => {
 
 const Whiteboard = () => {
   const socketRef = useRef<WebSocket | null>(null);
+  const { user } = useUser();
   const [title, setTitle] = useState<string>('Loading Whiteboard ...');
   const [canvases, setCanvases] = useState<CanvasData[]>([]);
   const [activeClients, setActiveClients] = useState<Set<number>>(new Set());
@@ -190,12 +192,12 @@ const Whiteboard = () => {
           <div className="flex flex-col justify-center flex-wrap">
             {/** Own Client ID **/}
             <div>
-              <span>Client ID: </span> {clientId}
+              <span>Username: </span> {user?.username}
             </div>
 
             {/* Display Active Clients */}
             <div>
-              <span>Active user IDs: </span>
+              <span>Active users: </span>
               { [...activeClients.keys()].join(', ') }
             </div>
           </div>
