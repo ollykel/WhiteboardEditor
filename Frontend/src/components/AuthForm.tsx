@@ -22,8 +22,7 @@ function AuthForm({ initialAction }: AuthFormProps) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    const endpoint = 
-      action === "login" ? "/auth/login" : "/users";
+    const endpoint = action === "login" ? "/auth/login" : "/users";
 
     // TODO: Make this dynamic to handle either email or username
     const authSource = "email";
@@ -35,13 +34,10 @@ function AuthForm({ initialAction }: AuthFormProps) {
 
     try {
       const res = await api.post(endpoint, payload);
-      const { token } = res.data;
+      const { user, token } = res.data;
 
       localStorage.setItem("token", token);
-
-      const meRes = await api.get("/users/me");
-      setUser(meRes.data);
-
+      setUser(user);
       navigate("/dashboard");
     } catch (err) {
       console.log(err);
