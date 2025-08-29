@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { useNavigate } from 'react-router';
-import axios from "axios";
 
 import AuthInput from "./AuthInput";
 import { useUser } from "../hooks/useUser";
+import api from '../api/axios';
 
 interface AuthFormProps {
   initialAction: "login" | "signup";
@@ -25,9 +25,7 @@ function AuthForm({ initialAction }: AuthFormProps) {
     const { setUser } = useUser();
 
     const endpoint = 
-      action === "login" 
-      ? "http://localhost:8080/api/v1/auth/login" 
-      : "http://localhost:8080/api/v1/users";
+      action === "login" ? "/auth/login" : "/users";
 
     // TODO: Make this dynamic to handle either email or username
     const authSource = "email";
@@ -38,26 +36,14 @@ function AuthForm({ initialAction }: AuthFormProps) {
       : { email, username, password };
 
     try {
-      const res = await axios.post(endpoint, payload);
-      const { token } = await res.data;
-      console.log(token);
+      const res = await api.post(endpoint, payload);
+      const { token } = res.data;
+
       localStorage.setItem("token", token);
 
-      // TODO: Make consistent with axios (separate API file?)
-      const meRes = await fetch("http://localhost:8080/api/v1/users/me", {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const meRes = await api.get("/users/me");
+      setUser(meRes.data);
 
-      console.log(meRes);
-
-      if (!meRes.ok) {
-        console.error("Failed to fetch user info");
-        return;
-      }
-
-      const user = await meRes.json();
-
-      setUser(user);
       navigate("/dashboard");
     } catch (err) {
       console.log(err);
@@ -65,12 +51,7 @@ function AuthForm({ initialAction }: AuthFormProps) {
   }
 
   const handleToggle = () => {
-    if (action === "login") {
-      navigate("/signup");
-    }
-    else {
-      navigate("/login");
-    }
+    navigate(action === "login" ? "/signup" : "/login");
   }
 
   return (
