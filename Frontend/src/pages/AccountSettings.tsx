@@ -21,7 +21,7 @@ const AccountSettings = ({
   const { Modal, openModal, closeModal } = useModal({
     width: "28rem",
     height: "auto",
-    closeOnOutsideClick: false,
+    closeOnOutsideClick: true,
   });
 
   const handleDeleteClick = () => {
