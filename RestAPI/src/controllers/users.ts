@@ -61,7 +61,14 @@ export const createUser = async (
     // --- Automatically log in user via service ---
     try {
       const loginResult = await loginService("username", username, password);
-      return res.status(201).json(loginResult);
+      return res.status(201).json({
+        user: {
+          _id: user._id,
+          email: user.email,
+          username: user.username,
+        },
+        token: loginResult.token
+      });
     } catch (err: any) {
       console.error("Login after signup failed: ", err);   
       return res.status(201).json({ user: { _id: user._id, email, password }, token: null })   
