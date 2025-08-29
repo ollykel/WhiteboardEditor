@@ -33,9 +33,12 @@ describe("Users API", () => {
       })
       .expect(201);
 
-    expect(res.body).toHaveProperty("_id");
-    expect(res.body.username).toBe("tester_beta");
-    expect(res.body.email).toBe("tester_beta@example.com");
+    expect(res.body.user).toHaveProperty("_id");
+    expect(res.body.user.username).toBe("tester_beta");
+    expect(res.body.user.email).toBe("tester_beta@example.com");
+
+    expect(res.body).toHaveProperty("token");
+    expect(typeof res.body.token).toBe("string");
   });
 
   // Attempt unauthenticated /api/v*/users/me call, which should be forbidden

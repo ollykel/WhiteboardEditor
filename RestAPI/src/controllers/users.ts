@@ -17,6 +17,8 @@ import type {
   CreateUserRequest,
 } from '../models/User';
 
+import { loginService } from "../services/loginService";
+
 export const getUser = async (userId: Types.ObjectId): Promise<IUserFull | null> => {
   return await User.findOne({ _id: userId });
 };// end getUser
@@ -26,10 +28,28 @@ export const createUser = async (
   res: Response
 ) => {
   try {
-    const { username, email, password } = req.body;
+    const { email, username, password } = req.body;
 
+    // --- Validate input ---
+    if (!email || !username || !password) {
+      return res.status(400).json({ error: "Email, username, and password are required."});
+    }
+
+    // --- Check for existing user ---
+    const existingEmail = await User.findOne({ email });
+    if (existingEmail) {
+      return res.status(400).json({ error: "Email already in use." });
+    }
+
+    const existingUser = await User.findOne({ username });
+    if (existingUser) {
+      return res.status(400).json({ error: "Username already in use." });
+    }
+
+    // --- Hash password ---
     const hashed = await bcrypt.hash(password, 10);
 
+    // --- Create user ---
     const user = new User({
       username,
       email,
@@ -37,9 +57,26 @@ export const createUser = async (
     });
 
     await user.save();
-    res.status(201).json(user);
+
+    // --- Automatically log in user via service ---
+    try {
+      const loginResult = await loginService("username", username, password);
+      return res.status(201).json({
+        user: {
+          _id: user._id,
+          email: user.email,
+          username: user.username,
+        },
+        token: loginResult.token
+      });
+    } catch (err: any) {
+      console.error("Login after signup failed: ", err);   
+      return res.status(201).json({ user: { _id: user._id, email, password }, token: null })   
+    }
+    
   } catch (err: any) {
-    res.status(400).json({ error: err.message });
+    console.error("Create user failed: ", err);
+    return res.status(500).json({ error: "Internal server error" });
   }
 };
 

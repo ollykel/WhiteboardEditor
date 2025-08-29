@@ -2,29 +2,29 @@ import { useState } from "react";
 import { useNavigate } from 'react-router';
 
 import AuthInput from "./AuthInput";
-import axios from "axios";
+import { useUser } from "../hooks/useUser";
+import api from '../api/axios';
 
 interface AuthFormProps {
   initialAction: "login" | "signup";
 }
 
 function AuthForm({ initialAction }: AuthFormProps) {
-  const [action, setAction] = useState(initialAction);
   const [email, setEmail] = useState("");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
 
   const navigate = useNavigate();
+  const { setUser } = useUser();
+  const action = initialAction;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    const endpoint = 
-      action === "login" 
-      ? "http://localhost:8080/api/v1/auth/login" 
-      : "http://localhost:8080/api/v1/users";
+    const endpoint = action === "login" ? "/auth/login" : "/users";
 
+    // TODO: Make this dynamic to handle either email or username
     const authSource = "email";
 
     const payload = 
@@ -33,22 +33,19 @@ function AuthForm({ initialAction }: AuthFormProps) {
       : { email, username, password };
 
     try {
-      const res = await axios.post(endpoint, payload);
-      console.log(res.data);
+      const res = await api.post(endpoint, payload);
+      const { user, token } = res.data;
+
+      localStorage.setItem("token", token);
+      setUser(user);
+      navigate("/dashboard");
     } catch (err) {
       console.log(err);
     }
   }
 
   const handleToggle = () => {
-    if (action === "login") {
-      setAction("signup");
-      navigate("/signup");
-    }
-    else {
-      setAction("login");
-      navigate("/login");
-    }
+    navigate(action === "login" ? "/signup" : "/login");
   }
 
   return (
@@ -57,6 +54,7 @@ function AuthForm({ initialAction }: AuthFormProps) {
         {action === "login" ? "Welcome Back!" : "Welcome to <Whiteboard App>!"}
       </h1>
 
+      {/* Entry Form */}
       <form onSubmit={handleSubmit} className="space-y-4">
         <AuthInput
           name="Email"
@@ -98,6 +96,7 @@ function AuthForm({ initialAction }: AuthFormProps) {
         </button>
       </form>
 
+      {/* Toggle Login/Signup */}
       <div className="flex justify-center mt-4 pt-6 border-t-1 border-gray-400">
         <div className="p-2">
           {action === "login" ? "New to <Whiteboard App>?" : "Already have an account?"}
