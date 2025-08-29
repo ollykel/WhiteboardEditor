@@ -3,7 +3,7 @@ import { useNavigate } from "react-router";
 import Header from "@/components/Header";
 import YourWhiteboards from "@/components/YourWhiteboards";
 import SharedWhiteboards from "@/components/SharedWhiteboards";
-import { useUser } from "../AuthContext";
+import { useUser } from "../hooks/useUser";
 
 import type { User } from "../types/UserAuth";
 
