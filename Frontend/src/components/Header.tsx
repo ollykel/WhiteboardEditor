@@ -4,7 +4,7 @@ import { useState } from 'react';
 
 import { X } from 'lucide-react';
 
-import { useModal } from '@/components/Modal';
+import { useModal } from '@/hooks/useModal';
 import ShareWhiteboardForm from '@/components/ShareWhiteboardForm';
 import type { ShareWhiteboardFormData } from '@/components/ShareWhiteboardForm';
 
@@ -26,7 +26,7 @@ function Header({ title }: HeaderProps) {
     Modal: ShareModal,
     openModal: openShareModal,
     closeModal: closeShareModal
-  } = useModal();
+  } = useModal('10em', '20em', true);
   
   return (
     <div className="fixed z-50 top-1 left-0 right-0 max-h-15 shadow-md rounded-lg mx-20 m-1 p-3 bg-stone-50"> 
@@ -46,8 +46,8 @@ function Header({ title }: HeaderProps) {
               {isLoggedIn ? (
                 <div>
                   <HeaderButton 
-                    to="/settings"
-                    title="Settings"
+                    to="/account"
+                    title="Account Settings"
                   />
                   <HeaderButton 
                     onClick={handleLogOut}
@@ -79,7 +79,7 @@ function Header({ title }: HeaderProps) {
                 title="Share"
               /> 
 
-              <ShareModal width="20em" height="10em" zIndex={100}>
+              <ShareModal>
                 <div className="flex flex-col">
                   <button
                     onClick={closeShareModal}

@@ -6,7 +6,7 @@
 // =============================================================================
 
 // --- local imports
-import type { ShapeModel } from '@/types/ShapeModel';
+import type { ShapeModel } from 'types/ShapeModel';
 
 // The unique identifier for clients within a web socket session.
 export type ClientIdType = number;

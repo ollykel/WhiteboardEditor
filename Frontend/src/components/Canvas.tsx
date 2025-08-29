@@ -13,7 +13,7 @@ import Konva from 'konva';
 
 // -- local imports
 import type { ToolChoice } from '@/components/Tool';
-import type { ShapeModel } from '@/types/ShapeModel';
+import type { ShapeModel } from 'types/ShapeModel';
 
 export interface CanvasProps {
   width: number;

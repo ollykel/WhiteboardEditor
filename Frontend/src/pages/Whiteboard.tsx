@@ -4,14 +4,14 @@ import CanvasCard from "@/components/CanvasCard";
 import Toolbar from "@/components/Toolbar";
 import Header from '@/components/Header';
 import type { ToolChoice } from '@/components/Tool';
-import type { ShapeModel } from '@/types/ShapeModel';
+import type { ShapeModel } from 'types/ShapeModel';
 import type {
   SocketServerMessage,
   ClientMessageCreateShapes,
   ClientMessageCreateCanvas,
   CanvasData,
   CanvasIdType
-} from '@/types/WebSocketProtocol';
+} from 'types/WebSocketProtocol';
 
 const getWebSocketUri = (): string => {
     const wsScheme = window.location.protocol === 'https:' ? 'wss' : 'ws';
