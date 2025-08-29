@@ -2,6 +2,12 @@ import HeaderButton from './HeaderButton';
 import { useLocation } from 'react-router';
 import { useState } from 'react';
 
+import { X } from 'lucide-react';
+
+import { useModal } from '@/components/Modal';
+import ShareWhiteboardForm from '@/components/ShareWhiteboardForm';
+import type { ShareWhiteboardFormData } from '@/components/ShareWhiteboardForm';
+
 interface HeaderProps {
   title: string;
 }
@@ -15,6 +21,12 @@ function Header({ title }: HeaderProps) {
     {/* TODO: Implement Log Out function */}
     setIsLoggedIn(false);
   }
+
+  const {
+    Modal: ShareModal,
+    openModal: openShareModal,
+    closeModal: closeShareModal
+  } = useModal();
   
   return (
     <div className="fixed z-50 top-1 left-0 right-0 max-h-15 shadow-md rounded-lg mx-20 m-1 p-3 bg-stone-50"> 
@@ -57,10 +69,37 @@ function Header({ title }: HeaderProps) {
             </div>
           )}
           {location.pathname.startsWith("/whiteboard/") && (
-            <HeaderButton 
-              onClick={() => console.log("Share clicked")}
-              title="Share"
-            /> 
+            <div>
+              <HeaderButton 
+                onClick={() => {
+                  console.log("Share clicked");
+
+                  openShareModal();
+                }}
+                title="Share"
+              /> 
+
+              <ShareModal width="20em" height="10em" zIndex={100}>
+                <div className="flex flex-col">
+                  <button
+                    onClick={closeShareModal}
+                    className="flex flex-row justify-end hover:cursor-pointer"
+                  >
+                    <X />
+                  </button>
+
+                  <h2 className="text-md font-bold text-center">Share Whiteboard</h2>
+
+                  <ShareWhiteboardForm
+                    shareLink="https://example.link/asfasdfasdf"
+                    onSubmit={(data: ShareWhiteboardFormData) => {
+                      console.log('Share request:', data);
+                      closeShareModal();
+                    }}
+                  />
+                </div>
+              </ShareModal>
+            </div>
           )} {/* TODO: Implement sharing function */}
         </div>
       </div>
