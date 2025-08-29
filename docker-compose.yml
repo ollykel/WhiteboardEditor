@@ -67,7 +67,8 @@ services:
       JWT_SECRET: ${WHITEBOARD_EDITOR_JWT_SECRET}
       JWT_EXPIRATION_SECS: ${WHITEBOARD_EDITOR_JWT_EXPIRATION_SECS}
     depends_on:
-      - test_db
+      test_db:
+        condition: service_healthy
     ports:
       # exposed for testing purposes
       - ${WHITEBOARD_EDITOR_REST_API_PORT-3003}:3000
@@ -83,3 +84,9 @@ services:
     volumes:
       # initialization script
       - ./TestDatabase/init-db.js:/docker-entrypoint-initdb.d/init-db.js:ro
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
