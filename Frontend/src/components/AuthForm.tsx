@@ -10,7 +10,6 @@ interface AuthFormProps {
 }
 
 function AuthForm({ initialAction }: AuthFormProps) {
-  const [action, setAction] = useState(initialAction);
   const [email, setEmail] = useState("");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -18,6 +17,7 @@ function AuthForm({ initialAction }: AuthFormProps) {
 
   const navigate = useNavigate();
   const { setUser } = useUser();
+  const action = initialAction;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -66,11 +66,9 @@ function AuthForm({ initialAction }: AuthFormProps) {
 
   const handleToggle = () => {
     if (action === "login") {
-      setAction("signup");
       navigate("/signup");
     }
     else {
-      setAction("login");
       navigate("/login");
     }
   }
@@ -81,6 +79,7 @@ function AuthForm({ initialAction }: AuthFormProps) {
         {action === "login" ? "Welcome Back!" : "Welcome to <Whiteboard App>!"}
       </h1>
 
+      {/* Entry Form */}
       <form onSubmit={handleSubmit} className="space-y-4">
         <AuthInput
           name="Email"
@@ -122,6 +121,7 @@ function AuthForm({ initialAction }: AuthFormProps) {
         </button>
       </form>
 
+      {/* Toggle Login/Signup */}
       <div className="flex justify-center mt-4 pt-6 border-t-1 border-gray-400">
         <div className="p-2">
           {action === "login" ? "New to <Whiteboard App>?" : "Already have an account?"}

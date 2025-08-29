@@ -1,6 +1,7 @@
 import HeaderButton from './HeaderButton';
-import { useLocation } from 'react-router';
+import { useLocation, useNavigate } from 'react-router';
 import { useState } from 'react';
+import { useUser } from '../AuthContext';
 
 import { X } from 'lucide-react';
 
@@ -14,12 +15,14 @@ interface HeaderProps {
 
 function Header({ title }: HeaderProps) {
   const location = useLocation();
-
-  const [isLoggedIn, setIsLoggedIn] = useState(true);
+  const navigate = useNavigate();
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const { setUser } = useUser();
 
   const handleLogOut = () => {
-    {/* TODO: Implement Log Out function */}
     setIsLoggedIn(false);
+    setUser(null);
+    navigate("/login");
   }
 
   const {
@@ -33,7 +36,7 @@ function Header({ title }: HeaderProps) {
       <div className="relative flex items-center justify-center">
         <div className="absolute left-2">
           <HeaderButton 
-            to="/dashboard"
+            to= {isLoggedIn ? "/dashboard" : "/login"}
             title="Home"
           />
         </div>
