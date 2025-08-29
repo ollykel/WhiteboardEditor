@@ -58,7 +58,7 @@ export const createUser = async (
 
     await user.save();
 
-    // --- Automatically log in user via service
+    // --- Automatically log in user via service ---
     try {
       const loginResult = await loginService("username", username, password);
       return res.status(201).json(loginResult);
