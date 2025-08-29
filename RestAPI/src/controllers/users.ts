@@ -64,7 +64,7 @@ export const createUser = async (
       return res.status(201).json(loginResult);
     } catch (err: any) {
       console.error("Login after signup failed: ", err);   
-      return res.status(201).json({ user: { id: user._id, email, password }, token: null })   
+      return res.status(201).json({ user: { _id: user._id, email, password }, token: null })   
     }
     
   } catch (err: any) {
