@@ -37,13 +37,10 @@ function AuthForm({ initialAction }: AuthFormProps) {
 
     try {
       const res = await api.post(endpoint, payload);
-      const { token } = res.data;
+      const { user, token } = res.data;
 
       localStorage.setItem("token", token);
-
-      const meRes = await api.get("/users/me");
-      setUser(meRes.data);
-
+      setUser(user);
       navigate("/dashboard");
     } catch (err) {
       console.log(err);
