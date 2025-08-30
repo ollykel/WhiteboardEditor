@@ -43,66 +43,64 @@ function Header({ title }: HeaderProps) {
         <h1 className="text-2xl font-bold">{title}</h1>
         
         <div className="absolute right-2">
-          {location.pathname === "/dashboard" && (
-            <div>
-              {isLoggedIn ? (
-                <div>
-                  <HeaderButton 
-                    to="/account"
-                    title="Account Settings"
-                  />
-                  <HeaderButton 
-                    onClick={handleLogOut}
-                    title="Log Out"
-                  />
-                </div>
-              ) : (
-                <div>
-                  <HeaderButton 
-                    to="/login"
-                    title="Log In"
-                  />
-                  <HeaderButton 
-                    to="/signup"
-                    title="Sign Up"
-                  />
-                </div>
-              )}
-            </div>
-          )}
-          {location.pathname.startsWith("/whiteboard/") && (
-            <div>
-              <HeaderButton 
-                onClick={() => {
-                  console.log("Share clicked");
+          <div>
+            {isLoggedIn ? (
+              <div>
+                <HeaderButton 
+                  to="/account"
+                  title="Account Settings"
+                />
+                <HeaderButton 
+                  onClick={handleLogOut}
+                  title="Log Out"
+                />
+              </div>
+            ) : (
+              <div>
+                <HeaderButton 
+                  to="/login"
+                  title="Log In"
+                />
+                <HeaderButton 
+                  to="/signup"
+                  title="Sign Up"
+                />
+              </div>
+            )}
+            {location.pathname.startsWith("/whiteboard/") && (
+              <div>
+                <HeaderButton 
+                  onClick={() => {
+                    console.log("Share clicked");
 
-                  openShareModal();
-                }}
-                title="Share"
-              /> 
+                    openShareModal();
+                  }}
+                  title="Share"
+                /> 
 
-              <ShareModal>
-                <div className="flex flex-col">
-                  <button
-                    onClick={closeShareModal}
-                    className="flex flex-row justify-end hover:cursor-pointer"
-                  >
-                    <X />
-                  </button>
+                <ShareModal>
+                  <div className="flex flex-col">
+                    <button
+                      onClick={closeShareModal}
+                      className="flex flex-row justify-end hover:cursor-pointer"
+                    >
+                      <X />
+                    </button>
 
-                  <h2 className="text-md font-bold text-center">Share Whiteboard</h2>
+                    <h2 className="text-md font-bold text-center">Share Whiteboard</h2>
 
-                  <ShareWhiteboardForm
-                    shareLink="https://example.link/asfasdfasdf"
-                    onSubmit={(data: ShareWhiteboardFormData) => {
-                      console.log('Share request:', data);
-                      closeShareModal();
-                    }}
-                  />
-                </div>
-              </ShareModal>
-            </div>
-          )} {/* TODO: Implement sharing function */}
+                    <ShareWhiteboardForm
+                      shareLink="https://example.link/asfasdfasdf"
+                      onSubmit={(data: ShareWhiteboardFormData) => {
+                        console.log('Share request:', data);
+                        closeShareModal();
+                      }}
+                    />
+                  </div>
+                </ShareModal>
+              </div>
+            )} {/* TODO: Implement sharing function */}
+          </div>
         </div>
       </div>
     </div>
