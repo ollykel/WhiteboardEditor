@@ -8,13 +8,9 @@
 // --- local imports
 import type { ShapeModel } from '@/types/ShapeModel';
 
-// The unique identifier for clients within a web socket session.
-export type ClientIdType = number;
 
-// Unique identifier for each canvas within a whiteboard
+export type Username = string;
 export type CanvasIdType = number;
-
-// Unique identifier for each whiteboard
 export type WhiteboardIdType = number;
 
 export interface CanvasData {
@@ -22,7 +18,7 @@ export interface CanvasData {
   width: number;
   height: number;
   shapes: ShapeModel[];
-  allowedUsers: ClientIdType[];
+  allowedUsers: Username[];
 }
 
 export interface WhiteboardData {
@@ -34,38 +30,44 @@ export interface WhiteboardData {
 // Sent to an individual client to initialize the whiteboard on their end
 export interface ServerMessageInitClient {
   type: "init_client";
-  clientId: ClientIdType;
-  activeClients: ClientIdType[];
+  username: Username;
+  activeUsers: Username[];
   whiteboard: WhiteboardData;
 }
 
 // Notifies clients that a client has joined the session
 export interface ServerMessageClientLogin {
   type: "client_login";
-  clientId: ClientIdType;
+  username: Username;
 }
 //
 // Notifies clients that a client has left the session
 export interface ServerMessageClientLogout {
   type: "client_logout";
-  clientId: ClientIdType;
+  username: Username;
 }
 
 // Creates a new shape in a canvas
 export interface ServerMessageCreateShapes {
   type: "create_shapes";
-  clientId: ClientIdType;
+  username: Username;
   canvasId: CanvasIdType;
   shapes: ShapeModel[];
 }
 
 export interface ServerMessageCreateCanvas {
   type: "create_canvas";
-  clientId: ClientIdType;
+  username: Username;
   canvasId: CanvasIdType;
   width: number;
   height: number;
-  allowedUsers: ClientIdType[];
+  allowedUsers: Username[];
+}
+
+// Broadcasts the full list of active users
+export interface ServerMessageActiveUsersUpdate {
+  type: "active_users_update";
+  activeUsers: Username[];
 }
 
 // Tagged union of all possible client-server messages
@@ -74,7 +76,14 @@ export type SocketServerMessage =
   | ServerMessageClientLogin
   | ServerMessageClientLogout
   | ServerMessageCreateShapes
-  | ServerMessageCreateCanvas;
+  | ServerMessageCreateCanvas
+  | ServerMessageActiveUsersUpdate;
+
+// Register username on connect
+export interface ClientMessageRegister {
+  type: "register";
+  username: Username;
+}
 
 // Notify the server that the client has created a new shape.
 export interface ClientMessageCreateShapes {
@@ -92,5 +101,6 @@ export interface ClientMessageCreateCanvas {
 
 // Tagged union of all possible client-server messages
 export type SocketClientMessage =
-  ClientMessageCreateShapes
+  ClientMessageRegister
+  | ClientMessageCreateShapes
   | ClientMessageCreateCanvas;
