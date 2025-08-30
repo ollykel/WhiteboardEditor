@@ -3,7 +3,7 @@ import { useState, useRef, useEffect } from 'react';
 import CanvasCard from "@/components/CanvasCard";
 import Toolbar from "@/components/Toolbar";
 import Header from '@/components/Header';
-import CreateCanvasMenu from '@/components/CreateCanvasMenu';
+// import CreateCanvasMenu from '@/components/CreateCanvasMenu';
 import type { ToolChoice } from '@/components/Tool';
 import type { ShapeModel } from '@/types/ShapeModel';
 import type {
