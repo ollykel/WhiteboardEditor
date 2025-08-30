@@ -13,7 +13,8 @@ use futures::{
 use tokio::sync::broadcast;
 use serde::{Deserialize, Serialize};
 
-pub type ClientIdType = i32;
+pub type ClientIdType = i32; // Still used for internal tracking, but not exposed to client
+pub type Username = String;
 pub type CanvasIdType = i32;
 pub type WhiteboardIdType = i32;
 
@@ -32,7 +33,7 @@ pub struct CanvasClientView {
     pub width: u64,
     pub height: u64,
     pub shapes: Vec<ShapeModel>,
-    pub allowed_users: Vec<ClientIdType>,
+    pub allowed_users: Vec<Username>, // usernames instead of client IDs
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -46,18 +47,21 @@ pub struct WhiteboardClientView {
 #[derive(Debug, Clone, Serialize)]
 #[serde(tag = "type", rename_all = "snake_case", rename_all_fields="camelCase")]
 pub enum ServerSocketMessage {
-    InitClient { client_id: ClientIdType, active_clients: Vec<ClientIdType>, whiteboard: WhiteboardClientView },
-    ClientLogin { client_id: ClientIdType },
-    ClientLogout { client_id: ClientIdType },
-    CreateShapes { client_id: ClientIdType, canvas_id: CanvasIdType, shapes: Vec<ShapeModel> },
-    CreateCanvas { client_id: ClientIdType, canvas_id: CanvasIdType, width: u64, height: u64, allowed_users: Vec<ClientIdType> },
-    IndividualError { client_id: ClientIdType, message: String },
+    InitClient { username: Username, active_users: Vec<Username>, whiteboard: WhiteboardClientView },
+    ClientLogin { username: Username },
+    ClientLogout { username: Username },
+    ActiveUsersUpdate { active_users: Vec<Username> },
+    CreateShapes { username: Username, canvas_id: CanvasIdType, shapes: Vec<ShapeModel> },
+    CreateCanvas { username: Username, canvas_id: CanvasIdType, width: u64, height: u64, allowed_users: Vec<Username> },
+    IndividualError { username: Username, message: String },
     BroadcastError { message: String },
 }
 
 #[derive(Debug, Clone, Deserialize)]
 #[serde(tag = "type", rename_all = "snake_case", rename_all_fields="camelCase")]
 pub enum ClientSocketMessage {
+    // First message sent by client after connecting
+    Register { username: Username },
     CreateShapes { canvas_id: CanvasIdType, shapes: Vec<ShapeModel> },
     CreateCanvas { width: u64, height: u64 }
 }
@@ -69,24 +73,22 @@ pub struct Canvas {
     pub width: u64,
     pub height: u64,
     pub shapes: Vec<ShapeModel>,
-    pub allowed_users: Option<HashSet<ClientIdType>>, // None = open to all
+    pub allowed_users: Option<HashSet<Username>>, // None = open to all
 }
 
 impl Canvas {
     pub fn to_client_view(&self) -> CanvasClientView {
-        // At the moment, the client view is identical to the Canvas type itself, but this may not
-        // always be the case.
         CanvasClientView {
             id: self.id,
             width: self.width,
             height: self.height,
             shapes: self.shapes.clone(),
             allowed_users: match &self.allowed_users {
-                Some(set) => set.iter().copied().collect(),
-                None => vec![], // empty array means open to all
+                Some(set) => set.iter().cloned().collect(),
+                None => vec![],
             },
         }
-    }// end pub fn to_client_view(&self) -> CanvasClientView
+    }
 }
 
 #[derive(Clone, Serialize)]
@@ -111,7 +113,7 @@ impl Whiteboard {
     }// end pub fn to_client_view(&self) -> CanvasClientView
 }
 
-// === Program State ==============================================================================
+// === Program State ============================================================================== 
 //
 // Holds all program state that a web socket connection may need to manipulate.
 //
@@ -119,9 +121,11 @@ impl Whiteboard {
 // passing of state between threads.
 //
 // ================================================================================================
+use std::collections::HashMap;
 pub struct ProgramState {
     pub whiteboard: Mutex<Whiteboard>,
-    pub active_clients: Mutex<HashSet<ClientIdType>>
+    pub active_users: Mutex<HashSet<Username>>, // Set of usernames
+    pub client_usernames: Mutex<HashMap<ClientIdType, Username>>, // Map client ID to username
 }
 
 // === Connection State ===========================================================================
@@ -142,14 +146,19 @@ pub struct ConnectionState {
 // @param client_msg_s          -- Content of client message
 // @return                      -- (Optional) Message to send to clients, if any
 pub async fn handle_client_message(program_state: &ProgramState, current_client_id: ClientIdType, client_msg_s: &str) -> Option<ServerSocketMessage> {
+    use std::collections::HashSet;
+    use serde_json::Value;
+    // Look up username for this client
+    let username = {
+        let client_usernames = program_state.client_usernames.lock().await;
+        client_usernames.get(&current_client_id).cloned().unwrap_or_else(|| "unknown".to_string())
+    };
     if let Ok(client_msg) = serde_json::from_str::<ClientSocketMessage>(client_msg_s) {
-        println!("Received message from client {}", current_client_id);
-        
+        println!("Received message from client {} (username: {})", current_client_id, username);
         match client_msg {
             ClientSocketMessage::CreateShapes{ canvas_id, ref shapes } => {
                 let mut whiteboard = program_state.whiteboard.lock().await;
                 println!("Creating shape on canvas {} ...", canvas_id);
-
                 match whiteboard.canvases.get_mut(canvas_id as usize) {
                     None => {
                         // TODO: send an error handling message
@@ -157,9 +166,8 @@ pub async fn handle_client_message(program_state: &ProgramState, current_client_
                     },
                     Some(canvas) => {
                         canvas.shapes.extend_from_slice(shapes.as_slice());
-
                         Some(ServerSocketMessage::CreateShapes{
-                            client_id: current_client_id,
+                            username: username.clone(),
                             canvas_id: canvas_id,
                             shapes: shapes.clone()
                         })
@@ -170,12 +178,8 @@ pub async fn handle_client_message(program_state: &ProgramState, current_client_
                 let mut whiteboard = program_state.whiteboard.lock().await;
                 let new_canvas_id = whiteboard.canvases.len() as CanvasIdType;
                 let mut allowed = HashSet::new();
-
-                // Initialize new canvas with only current user allowed to edit
-                allowed.insert(current_client_id);
-
-                let allowed_users_vec = allowed.iter().copied().collect::<Vec<_>>();
-                
+                allowed.insert(username.clone());
+                let allowed_users_vec = allowed.iter().cloned().collect::<Vec<_>>();
                 whiteboard.canvases.push(Canvas{
                     id: new_canvas_id,
                     width: width,
@@ -183,21 +187,23 @@ pub async fn handle_client_message(program_state: &ProgramState, current_client_
                     shapes: Vec::<ShapeModel>::new(),
                     allowed_users: Some(allowed),
                 });
-
                 Some(ServerSocketMessage::CreateCanvas{
-                    client_id: current_client_id,
+                    username: username.clone(),
                     canvas_id: new_canvas_id,
                     width: width,
                     height: height,
                     allowed_users: allowed_users_vec,
                 })
             },
+            ClientSocketMessage::Register { .. } => {
+                // Registration is handled in connection setup, ignore here
+                None
+            }
         }
     } else {
         println!("ERROR: invalid client message: {}", client_msg_s);
-
         Some(ServerSocketMessage::IndividualError{
-            client_id: current_client_id,
+            username: username,
             message: String::from("invalid client message")
         })
     }
