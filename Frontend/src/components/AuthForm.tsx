@@ -22,8 +22,6 @@ function AuthForm({ initialAction }: AuthFormProps) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    const { setUser } = useUser();
-
     const endpoint = 
       action === "login" ? "/auth/login" : "/users";
 
