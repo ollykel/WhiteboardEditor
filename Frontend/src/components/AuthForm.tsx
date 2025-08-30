@@ -17,6 +17,7 @@ function AuthForm({ initialAction }: AuthFormProps) {
   const [confirmPassword, setConfirmPassword] = useState("");
 
   const navigate = useNavigate();
+  const { setUser } = useUser();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -40,6 +41,7 @@ function AuthForm({ initialAction }: AuthFormProps) {
       const res = await axios.post(endpoint, payload);
       console.log(res.data);
 
+      navigate("/dashboard");
       setUser(res.data.user);
     } catch (err) {
       console.log(err);
