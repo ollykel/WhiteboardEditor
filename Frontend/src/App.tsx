@@ -4,6 +4,10 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import Dashboard from './pages/Dashboard';
 import Whiteboard from './pages/Whiteboard';
 import UserAuth from './pages/UserAuth';
+<<<<<<< HEAD
+import AccountSettings from './pages/AccountSettings';
+
+import { AuthProvider } from './AuthContext';
 import AccountSettings from './pages/AccountSettings';
 
 const App = () => {
