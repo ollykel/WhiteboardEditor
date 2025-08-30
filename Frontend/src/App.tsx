@@ -12,14 +12,16 @@ const App = () => {
   return (
     <div>
       <QueryClientProvider client={queryClient}>
-        <Routes>
-          <Route path="/" element={<Dashboard />} />
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/login" element={<UserAuth action="login"/>} />
-          <Route path="/signup" element={<UserAuth action="signup"/>} />
-          <Route path="/account" element={<AccountSettings />} />
-          <Route path="/whiteboard/new" element={<Whiteboard />} />
-        </Routes>
+        <AuthProvider>
+          <Routes>
+            <Route path="/" element={<Dashboard />} />
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/login" element={<UserAuth action="login"/>} />
+            <Route path="/signup" element={<UserAuth action="signup"/>} />
+            <Route path="/account" element={<AccountSettings />} />
+            <Route path="/whiteboard/new" element={<Whiteboard />} />
+          </Routes>
+        </AuthProvider>
       </QueryClientProvider>
     </div>
   );
