@@ -3,7 +3,7 @@
 use std::{
     sync::Arc,
     net::SocketAddr,
-    collections::{HashSet, HashMap},
+    collections::HashSet,
 };
 
 use futures::{
@@ -44,8 +44,7 @@ async fn main() {
                     }
                 ]
             }),
-            active_users: Mutex::new(HashSet::new()),
-            client_usernames: Mutex::new(HashMap::new()),
+            active_clients: Mutex::new(HashSet::<ClientIdType>::new())
         }
     });
 
@@ -72,69 +71,48 @@ async fn handle_connection(ws: WebSocket, connection_state_ref: Arc<ConnectionSt
     let current_client_id = {
         let mut next_client_id = connection_state_ref.next_client_id.lock().await;
         let client_id = *next_client_id;
+
         *next_client_id += 1;
+
         client_id
     };
 
-    // === 1. Wait for Register message ===
-    let username: String = loop {
-        if let Some(Ok(msg)) = user_ws_rx.next().await {
-            if let Ok(msg_s) = msg.to_str() {
-                if let Ok(client_msg) = serde_json::from_str::<ClientSocketMessage>(msg_s) {
-                    if let ClientSocketMessage::Register { username } = client_msg {
-                        break username;
-                    }
-                }
-            }
-        } else {
-            // Connection closed before registration
-            return;
-        }
-    };
+    println!("New client: {}", current_client_id);
 
-    println!("New client: {} (username: {})", current_client_id, username);
+    {
+        // Add new client to active clients, notify other users that they have logged in
+        let mut active_clients = connection_state_ref
+            .program_state
+            .active_clients.lock().await;
 
-    // === 2. Store username in state ===
-    {
-        let mut client_usernames = connection_state_ref.program_state.client_usernames.lock().await;
-        client_usernames.insert(current_client_id, username.clone());
-    }
-    {
-        let mut active_users = connection_state_ref.program_state.active_users.lock().await;
-        active_users.insert(username.clone());
-    }
-
-    // === 3. Broadcast login ===
-    connection_state_ref.tx.send(ServerSocketMessage::ClientLogin {
-        username: username.clone(),
-    }).ok();
-    // Broadcast full active user list
-    {
-        let active_users = connection_state_ref.program_state.active_users.lock().await;
-        connection_state_ref.tx.send(ServerSocketMessage::ActiveUsersUpdate {
-            active_users: active_users.iter().cloned().collect(),
+        active_clients.insert(current_client_id);
+        connection_state_ref.tx.send(ServerSocketMessage::ClientLogin{
+            client_id: current_client_id
         }).ok();
     }
 
-    // === 4. Send InitClient message ===
     {
-        let whiteboard = connection_state_ref.program_state.whiteboard.lock().await;
-        let active_users = connection_state_ref.program_state.active_users.lock().await;
+        // Send new client initialization message
+        let whiteboard = connection_state_ref
+            .program_state
+            .whiteboard.lock().await;
+        let active_clients = connection_state_ref
+            .program_state
+            .active_clients.lock().await;
+
         let init_msg = ServerSocketMessage::InitClient {
-            username: username.clone(),
-            active_users: active_users.iter().cloned().collect(),
-            whiteboard: whiteboard.to_client_view(),
+            client_id: current_client_id,
+            active_clients: active_clients.iter().map(|&val| val).collect(),
+            whiteboard: whiteboard.to_client_view()
         };
+
         let _ = user_ws_tx.send(Message::text(serde_json::to_string(&init_msg).unwrap())).await;
     }
 
-    // === 5. Spawn send/receive tasks ===
-    let username_send = username.clone();
     let send_task = tokio::spawn(async move {
         while let Ok(msg) = rx.recv().await {
-            // Only send IndividualError if for this username
-            if let ServerSocketMessage::IndividualError { ref username, .. } = msg {
-                if username == &username_send {
+            if let ServerSocketMessage::IndividualError { client_id, .. } = msg {
+                if client_id == current_client_id {
                     let json = serde_json::to_string(&msg).unwrap();
                     if user_ws_tx.send(Message::text(json)).await.is_err() {
                         break;
@@ -151,26 +129,21 @@ async fn handle_connection(ws: WebSocket, connection_state_ref: Arc<ConnectionSt
 
     let recv_task = tokio::spawn({
         let connection_state_ref = Arc::clone(&connection_state_ref);
-        let username = username.clone();
+
         async move {
             while let Some(Ok(msg)) = user_ws_rx.next().await {
+                println!("Client {} sent message ...", current_client_id);
                 if let Ok(msg_s) = msg.to_str() {
-                    // Ignore Register messages after the first
-                    if let Ok(ClientSocketMessage::Register { .. }) = serde_json::from_str::<ClientSocketMessage>(msg_s) {
-                        continue;
-                    }
-                    let client_usernames = connection_state_ref.program_state.client_usernames.lock().await;
-                    let client_id = client_usernames.iter().find_map(|(id, name)| if name == &username { Some(*id) } else { None });
-                    drop(client_usernames);
-                    if let Some(client_id) = client_id {
-                        let resp = handle_client_message(
-                            &connection_state_ref.program_state,
-                            client_id,
-                            msg_s
-                        ).await;
-                        if let Some(resp) = resp {
-                            connection_state_ref.tx.send(resp).ok();
-                        }
+                    println!("Raw message: {}", msg_s);
+
+                    let resp = handle_client_message(
+                        &connection_state_ref.program_state,
+                        current_client_id,
+                        msg_s
+                    ).await;
+
+                    if let Some(resp) = resp {
+                        connection_state_ref.tx.send(resp).ok();
                     }
                 }
             }
@@ -182,22 +155,16 @@ async fn handle_connection(ws: WebSocket, connection_state_ref: Arc<ConnectionSt
         _ = recv_task => {},
     }
 
-    // === 6. Remove user from state and broadcast logout ===
+    // Remove client from active clients, notify other clients of logout
     {
-        let mut active_users = connection_state_ref.program_state.active_users.lock().await;
-        active_users.remove(&username);
+        // Add new client to active clients, notify other users that they have logged in
+        let mut active_clients = connection_state_ref
+            .program_state
+            .active_clients.lock().await;
+
+        active_clients.remove(&current_client_id);
+        connection_state_ref.tx.send(ServerSocketMessage::ClientLogout{ client_id: current_client_id }).ok();
     }
-    {
-        let mut client_usernames = connection_state_ref.program_state.client_usernames.lock().await;
-        client_usernames.retain(|_, name| name != &username);
-    }
-    connection_state_ref.tx.send(ServerSocketMessage::ClientLogout { username: username.clone() }).ok();
-    // Broadcast full active user list after logout
-    {
-        let active_users = connection_state_ref.program_state.active_users.lock().await;
-        connection_state_ref.tx.send(ServerSocketMessage::ActiveUsersUpdate {
-            active_users: active_users.iter().cloned().collect(),
-        }).ok();
-    }
-    println!("Client {} (username: {}) disconnected", current_client_id, username);
-}
+
+    println!("Client {} disconnected", current_client_id);
+}// end handle_connection

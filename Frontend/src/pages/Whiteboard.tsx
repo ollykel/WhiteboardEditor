@@ -3,7 +3,6 @@ import { useState, useRef, useEffect } from 'react';
 import CanvasCard from "@/components/CanvasCard";
 import Toolbar from "@/components/Toolbar";
 import Header from '@/components/Header';
-import { useUser } from '@/hooks/useUser';
 import type { ToolChoice } from '@/components/Tool';
 import type { ShapeModel } from '@/types/ShapeModel';
 import type {
@@ -23,11 +22,10 @@ const getWebSocketUri = (): string => {
 
 const Whiteboard = () => {
   const socketRef = useRef<WebSocket | null>(null);
-  const { user } = useUser();
   const [title, setTitle] = useState<string>('Loading Whiteboard ...');
   const [canvases, setCanvases] = useState<CanvasData[]>([]);
-  const [activeUsers, setActiveUsers] = useState<Set<string>>(new Set());
-  const [username, setUsername] = useState<string>('');
+  const [activeClients, setActiveClients] = useState<Set<number>>(new Set());
+  const [clientId, setClientId] = useState<number>(-1);
   const [toolChoice, setToolChoice] = useState<ToolChoice>('rect');
 
   // --- derived state
@@ -39,52 +37,76 @@ const Whiteboard = () => {
       const msg = JSON.parse(event.data) as SocketServerMessage;
       console.log('Received:', msg);
 
+      // TODO: handle each type of message
       switch (msg.type) {
-        case 'init_client': {
-          const { username: myUsername, activeUsers: initActiveUsers, whiteboard } = msg;
-          const { name, canvases: initCanvases } = whiteboard;
-          setTitle(name);
-          setUsername(myUsername);
-          setActiveUsers(new Set(initActiveUsers));
-          setCanvases(initCanvases);
-        } break;
-        case 'active_users_update': {
-          const { activeUsers } = msg;
-          setActiveUsers(new Set(activeUsers));
-        } break;
-        case 'client_login': {
-          // No longer needed for updating activeUsers, but can be used for notifications
-        } break;
-        case 'client_logout': {
-          // No longer needed for updating activeUsers, but can be used for notifications
-        } break;
-        case 'create_shapes': {
-          const { canvasId, shapes } = msg;
-          setCanvases((prev) => {
-            const idx = prev.findIndex(c => c.id === canvasId);
-            if (idx === -1) return prev;
-            const targetCanvas = prev[idx];
-            const { shapes: prevShapes } = targetCanvas;
-            return [
-              ...prev.slice(0, idx),
-              ({
-                ...targetCanvas,
-                shapes: [...prevShapes, ...shapes]
-              }),
-              ...prev.slice(idx + 1)
-            ];
-          });
-        } break;
-        case 'create_canvas': {
-          const { canvasId, width, height, allowedUsers = [] } = msg;
-          setCanvases((prev) => [
-            ...prev,
-            ({ id: canvasId, width, height, shapes: [], allowedUsers })
-          ]);
-        } break;
+        case 'init_client':
+          {
+            const { clientId: initClientId, activeClients: initActiveClients, whiteboard } = msg;
+            const { name, canvases: initCanvases } = whiteboard;
+
+            setTitle(name);
+            setClientId(initClientId);
+            setActiveClients(new Set(initActiveClients));
+            setCanvases(initCanvases);
+          }
+          break;
+        case 'client_login':
+          {
+            const { clientId } = msg;
+
+            setActiveClients((prev) => {
+              const next = new Set(prev.keys());
+
+              next.add(clientId);
+              return next;
+            });
+          }
+          break;
+        case 'client_logout':
+          {
+            const { clientId } = msg;
+
+            setActiveClients((prev) => {
+              const next = new Set(prev.keys());
+
+              next.delete(clientId);
+              return next;
+            });
+          }
+          break;
+        case 'create_shapes':
+          {
+            const { canvasId, shapes } = msg;
+
+            // TODO: account for canvasId possibly not being an index
+            setCanvases((prev) => {
+              const targetCanvas = prev[canvasId];
+              const { shapes: prevShapes } = targetCanvas;
+
+              return [
+                ...prev.slice(0, canvasId),
+                ({
+                  ...targetCanvas,
+                  shapes: [...prevShapes, ...shapes]
+                }),
+                ...prev.slice(canvasId + 1)
+              ];
+            });
+          }
+          break;
+        case 'create_canvas':
+          {
+            const { canvasId, width, height, allowedUsers = [] } = msg;
+            // Just push it to the end for now
+            setCanvases((prev) => [
+              ...prev,
+              ({ id: canvasId, width, height, shapes: [], allowedUsers })
+            ]);
+          }
+          break;
         default:
           console.log('Server Message type unrecognized');
-      }
+      }// end switch (msg.type)
     } catch (e) {
       console.log('Failed to parse message:', e);
     }
@@ -98,23 +120,13 @@ const Whiteboard = () => {
     ws.onopen = () => {
       console.log(`Established web socket connection to ${wsUri}`);
       socketRef.current = ws;
-      // Send Register message with username
-      if (user?.username) {
-        ws.send(JSON.stringify({ type: 'register', username: user.username }));
-      }
     };
     ws.onerror = () => {
       console.log(`Failed to establish web socket connection to ${wsUri}`);
       socketRef.current = null;
     };
     ws.onmessage = handleServerMessage;
-    // Cleanup on unmount
-    return () => {
-      ws.close();
-    };
-    // Only run on mount
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.username]);
+  }, []);
 
   const handleNewCanvas = () => {
     // Send message to server.
@@ -176,18 +188,21 @@ const Whiteboard = () => {
           {/** Misc. info **/}
 
           <div className="flex flex-col justify-center flex-wrap">
+            {/** Own Client ID **/}
             <div>
-              <span>Username: </span> {user?.username}
+              <span>Client ID: </span> {clientId}
             </div>
+
+            {/* Display Active Clients */}
             <div>
-              <span>Active users: </span>
-              {[...activeUsers].join(', ')}
+              <span>Active user IDs: </span>
+              { [...activeClients.keys()].join(', ') }
             </div>
           </div>
 
           <div className="flex flex-1 flex-row justify-center flex-wrap">
             {canvases.map(({ id: canvasId, width, height, shapes, allowedUsers }: CanvasData) => {
-              const hasAccess = allowedUsers.length === 0 || allowedUsers.includes(username);
+              const hasAccess = allowedUsers.length === 0 || allowedUsers.includes(clientId);
               return (
                 <CanvasCard
                   key={canvasId}
