@@ -16,12 +16,20 @@ import type {
 } from "../models/Auth";
 
 import type {
-  PatchUserRequest
+  PatchUserRequest,
+  CreateUserRequest
 } from "../models/User";
 
 const router = Router();
 
-router.post("/", createUser);
+router.post("/", async (
+  req: Request<{}, {}, CreateUserRequest>,
+  res: Response
+) => {
+    // TODO: secure logging to scrub credentials
+    console.log('Received POST /users:', req.body);
+    await createUser(req, res);
+});
 
 // --- Routes below are authenticated
 router.use(authenticateJWT);
