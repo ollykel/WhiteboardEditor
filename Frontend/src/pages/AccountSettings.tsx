@@ -2,6 +2,7 @@ import { useContext, useState } from "react";
 import { useForm } from "@tanstack/react-form";
 import AuthContext from "@/AuthContext";
 import { useModal } from "@/components/Modal";
+import api from '@/api/axios';
 
 export default function AccountSettings() {
   const { user, setUser } = useContext(AuthContext)!;
@@ -15,16 +16,13 @@ export default function AccountSettings() {
     },
     onSubmit: async ({ value }) => {
       try {
-        const res = await fetch("/api/v1/users/me", {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            username: value.username,
-            profilePicture,
-          }),
+        const res = await api.patch("/users/me", {
+          username: value.username,
+          profilePicture,
         });
-        if (res.ok) {
-          const updated = await res.json();
+
+        if (res.status === 201) {
+          const updated = res.data;
           setUser(updated);
           alert("Profile updated successfully!");
         }
@@ -43,17 +41,14 @@ export default function AccountSettings() {
     },
     onSubmit: async ({ value }) => {
       try {
-        const res = await fetch("/api/v1/users/me", {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
+        const res = await api.patch("/users/me", {
             email: value.email,
             password: value.newPassword,
-            passwordConfirm: value.currentPassword,
-          }),
+            passwordConfirm: value.currentPassword
         });
-        if (res.ok) {
-          const updated = await res.json();
+
+        if (res.status === 201) {
+          const updated = res.data;
           setUser(updated);
           alert("Security settings updated successfully!");
         }
@@ -67,12 +62,11 @@ export default function AccountSettings() {
     defaultValues: { password: "" },
     onSubmit: async ({ value }) => {
       try {
-        const res = await fetch("/api/v1/users/me", {
-          method: "DELETE",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ password: value.password }),
+        const res = await api.patch("/users/me", {
+          password: value.password
         });
-        if (res.ok) {
+
+        if (res.status === 201) {
           setUser(null);
           localStorage.removeItem("user");
           alert("Account deleted successfully");
@@ -94,10 +88,13 @@ export default function AccountSettings() {
 
   return (
     <div className="p-6 space-y-6">
+      <h1 className="text-center text-4xl font-bold font-mono">Account Settings</h1>
       {/* Basic Info */}
       <div className="border rounded-lg p-6">
-        <h2 className="text-lg font-semibold mb-4">Basic Information</h2>
-        <form onSubmit={profileForm.handleSubmit} className="space-y-4">
+        <form onSubmit={(ev: React.FormEvent<HTMLFormElement>) => {
+          ev.preventDefault();
+          profileForm.handleSubmit(ev);
+        }} className="space-y-4">
           <div className="flex items-center space-x-4">
             {profilePicture ? (
               <img src={profilePicture} alt="Profile" className="w-16 h-16 rounded-full" />
@@ -132,7 +129,10 @@ export default function AccountSettings() {
       {/* Security Settings */}
       <div className="border rounded-lg p-6">
         <h2 className="text-lg font-semibold mb-4">Security Settings</h2>
-        <form onSubmit={securityForm.handleSubmit} className="space-y-4">
+        <form onSubmit={(ev: React.FormEvent<HTMLFormElement>) => {
+          ev.preventDefault();
+          securityForm.handleSubmit(ev);
+        }} className="space-y-4">
           <securityForm.Field name="email">
             {(field) => (
               <>
