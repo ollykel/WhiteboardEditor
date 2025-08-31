@@ -43,12 +43,11 @@ function Header({ title }: HeaderProps) {
         <h1 className="text-2xl font-bold">{title}</h1>
         
         <div className="absolute right-2">
-          {location.pathname === "/dashboard" && (
             <div>
               {isLoggedIn ? (
                 <div>
                   <HeaderButton 
-                    to="/settings"
+                    to="/account"
                     title="Settings"
                   />
                   <HeaderButton 
@@ -69,7 +68,6 @@ function Header({ title }: HeaderProps) {
                 </div>
               )}
             </div>
-          )}
           {location.pathname.startsWith("/whiteboard/") && (
             <div>
               <HeaderButton 
