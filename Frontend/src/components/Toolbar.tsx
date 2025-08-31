@@ -1,11 +1,12 @@
 import { getToolChoiceLabel } from '@/components/Tool';
-
+import PopoverMenu from '@/components/PopoverMenu'
+import CreateCanvasMenu from '@/components/CreateCanvasMenu'
 import type { ToolChoice } from '@/components/Tool';
 
 interface ToolbarProps {
   toolChoice: ToolChoice;
   onToolChange: (choice: ToolChoice) => void;
-  onNewCanvas: () => void;
+  onNewCanvas: (name: string, allowedUsers: string[]) => void;
 }
 
 interface ToolbarButtonProps {
@@ -41,7 +42,11 @@ function Toolbar({ toolChoice, onToolChange, onNewCanvas }: ToolbarProps) {
 
       {/** Additional, non-tool choices **/}
       <ToolbarButton label="Import Image" variant="default" />
-      <ToolbarButton label="New Canvas" variant="default" onClick={onNewCanvas} />
+      <PopoverMenu
+        trigger={<ToolbarButton label="New Canvas" variant="default" />}
+      >
+        <CreateCanvasMenu onCreate={onNewCanvas} />
+      </PopoverMenu>
     </aside>
   )
 }

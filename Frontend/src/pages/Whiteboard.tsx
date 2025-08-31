@@ -3,7 +3,6 @@ import { useState, useRef, useEffect } from 'react';
 import CanvasCard from "@/components/CanvasCard";
 import Toolbar from "@/components/Toolbar";
 import Header from '@/components/Header';
-// import CreateCanvasMenu from '@/components/CreateCanvasMenu';
 import type { ToolChoice } from '@/components/Tool';
 import type { ShapeModel } from '@/types/ShapeModel';
 import type {
@@ -129,7 +128,7 @@ const Whiteboard = () => {
     ws.onmessage = handleServerMessage;
   }, []);
 
-  const handleNewCanvas = () => {
+  const handleNewCanvas = (name: string, allowedUsers: string[]) => {
     // Send message to server.
     // Server will echo response back, and actually inserting the new canvas
     // will be handled by handleServerMessage.
@@ -140,7 +139,9 @@ const Whiteboard = () => {
       const createCanvasMsg : ClientMessageCreateCanvas = ({
         type: 'create_canvas',
         width: 512,
-        height: 512
+        height: 512,
+        name,
+        allowedUsers,
       });
 
       socketRef.current.send(JSON.stringify(createCanvasMsg));
