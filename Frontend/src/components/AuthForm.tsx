@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 import AuthInput from "./AuthInput";
 import { useUser } from "../hooks/useUser";
@@ -15,9 +15,14 @@ function AuthForm({ initialAction }: AuthFormProps) {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
 
+  const location = useLocation();
+  const searchParams = new URLSearchParams(location.search);
   const navigate = useNavigate();
   const { setUser } = useUser();
   const action = initialAction;
+  const redirectUrl = searchParams.has('redirect') ?
+    decodeURIComponent(searchParams.get('redirect') || '')
+    : '/dashboard';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -38,7 +43,7 @@ function AuthForm({ initialAction }: AuthFormProps) {
 
       localStorage.setItem("token", token);
       setUser(user);
-      navigate("/dashboard");
+      navigate(redirectUrl);
     } catch (err) {
       console.log(err);
     }
