@@ -5,6 +5,11 @@ on:
       - 'ReverseProxy/**'
       - 'docker-compose.yml'
       - '.github/workflows/test_reverse_proxy.yml'
+  pull_request:
+    paths:
+      - 'ReverseProxy/**'
+      - 'docker-compose.yml'
+      - '.github/workflows/test_reverse_proxy.yml'
 jobs:
   test_build_reverse_proxy:
     # ensure the image builds successfully
