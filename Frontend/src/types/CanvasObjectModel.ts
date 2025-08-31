@@ -1,21 +1,22 @@
-// === ShapeModel ==============================================================
+// === CanvasObjectModel =======================================================
 //
 // Different types of shapes that can be drawn within a Canvas.
 //
 // =============================================================================
 
-export interface RectModel {
-  type: 'rect';
+export interface ShapeModelBase {
   x: number;
   y: number;
+}
+
+export interface RectModel extends ShapeModelBase {
+  type: 'rect';
   width: number;
   height: number;
 }
 
-export interface EllipseModel {
+export interface EllipseModel extends ShapeModelBase {
   type: 'ellipse';
-  x: number;
-  y: number;
   radiusX: number;
   radiusY: number;
 }
@@ -25,4 +26,4 @@ export interface VectorModel {
   points: number[];
 }
 
-export type ShapeModel = RectModel | EllipseModel | VectorModel;
+export type CanvasObjectModel = RectModel | EllipseModel | VectorModel;

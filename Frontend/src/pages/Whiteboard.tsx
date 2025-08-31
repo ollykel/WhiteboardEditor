@@ -4,7 +4,7 @@ import CanvasCard from "@/components/CanvasCard";
 import Toolbar from "@/components/Toolbar";
 import Header from '@/components/Header';
 import type { ToolChoice } from '@/components/Tool';
-import type { ShapeModel } from '@/types/ShapeModel';
+import type { CanvasObjectModel } from '@/types/CanvasObjectModel';
 import type {
   SocketServerMessage,
   ClientMessageCreateShapes,
@@ -148,7 +148,7 @@ const Whiteboard = () => {
     }
   };
 
-  const makeHandleAddShapes = (canvasId: CanvasIdType) => (shapes: ShapeModel[]) => {
+  const makeHandleAddShapes = (canvasId: CanvasIdType) => (shapes: CanvasObjectModel[]) => {
     if (socketRef.current) {
       // TODO: modify backend to take multiple shapes (i.e. create_shapes)
       const createShapesMsg: ClientMessageCreateShapes = ({

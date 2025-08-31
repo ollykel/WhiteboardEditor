@@ -13,13 +13,13 @@ import Konva from 'konva';
 
 // -- local imports
 import type { ToolChoice } from '@/components/Tool';
-import type { ShapeModel } from '@/types/ShapeModel';
+import type { CanvasObjectModel } from '@/types/CanvasObjectModel';
 
 export interface CanvasProps {
   width: number;
   height: number;
-  shapes: ShapeModel[];
-  onAddShapes: (shapes: ShapeModel[]) => void;
+  shapes: CanvasObjectModel[];
+  onAddShapes: (shapes: CanvasObjectModel[]) => void;
   currentTool: ToolChoice;
   disabled: boolean;
 }
@@ -32,7 +32,7 @@ interface EventCoords {
 }
 
 interface OperationDispatcherProps {
-  addShapes: (shapes: ShapeModel[]) => void;
+  addShapes: (shapes: CanvasObjectModel[]) => void;
 }
 
 // === interface OperationDispatcher ===========================================
@@ -59,7 +59,7 @@ interface OperationDispatcher {
   handlePointerMove: (ev: Konva.KonvaEventObject<MouseEvent>) => void;
   handlePointerUp: (ev: Konva.KonvaEventObject<MouseEvent>) => void;
   getPreview: () => React.JSX.Element | null;
-  renderShape: (key: string | number, model: ShapeModel) => React.JSX.Element | null;
+  renderShape: (key: string | number, model: CanvasObjectModel) => React.JSX.Element | null;
   getTooltipText: () => string;
 }
 
@@ -80,7 +80,7 @@ const useMockDispatcher = (_props: OperationDispatcherProps): OperationDispatche
       console.log('TODO: implement');
     },
     getPreview: () => null,
-    renderShape: (_key: string | number, _model: ShapeModel) => null,
+    renderShape: (_key: string | number, _model: CanvasObjectModel) => null,
     getTooltipText: () => "TODO: implement"
   });
 };
@@ -102,7 +102,7 @@ const useInaccessibleDispatcher = (_props: OperationDispatcherProps): OperationD
       console.log("You don't have access to this canvas");
     },
     getPreview: () => null,
-    renderShape: (_key: string | number, _model: ShapeModel) => null,
+    renderShape: (_key: string | number, _model: CanvasObjectModel) => null,
     getTooltipText: () => "You don't have access to this canvas"
   });
 };
@@ -157,7 +157,7 @@ const useRectangleDispatcher = ({ addShapes }: OperationDispatcherProps): Operat
     }
   };
 
-  const renderShape = (key: string | number, model: ShapeModel): React.JSX.Element | null => {
+  const renderShape = (key: string | number, model: CanvasObjectModel): React.JSX.Element | null => {
     if (model.type !== 'rect') {
       return null;
     } else {
@@ -247,7 +247,7 @@ const useEllipseDispatcher = ({ addShapes }: OperationDispatcherProps): Operatio
     }
   };
 
-  const renderShape = (key: string | number, model: ShapeModel): React.JSX.Element | null => {
+  const renderShape = (key: string | number, model: CanvasObjectModel): React.JSX.Element | null => {
     if (model.type !== 'ellipse') {
       return null;
     } else {
@@ -330,7 +330,7 @@ const useVectorDispatcher = ({ addShapes }: OperationDispatcherProps): Operation
     }
   };
 
-  const renderShape = (key: string | number, model: ShapeModel): React.JSX.Element | null => {
+  const renderShape = (key: string | number, model: CanvasObjectModel): React.JSX.Element | null => {
     if (model.type !== 'vector') {
       return null;
     } else {
@@ -417,7 +417,7 @@ const Canvas = (props: CanvasProps) => {
 
         {/** Shapes **/}
         {
-          shapes.filter((sh) => sh).map((shape: ShapeModel, idx: number) => {
+          shapes.filter((sh) => sh).map((shape: CanvasObjectModel, idx: number) => {
             const renderDispatcher = dispatcherMap[shape.type] || defaultDispatcher;
             const { renderShape } = renderDispatcher;
 
