@@ -15,6 +15,7 @@ export interface IUser extends Document {
   _id: UserIdType;
   username: string;
   email: string;
+  profilePicture?: string;
 }
 
 // === IUserFull ===============================================================
@@ -38,6 +39,7 @@ const userSchema = new Schema<IUserFull>({
   username: { type: String, required: true, unique: true },
   email:    { type: String, required: true, unique: true },
   passwordHashed: { type: String, required: true },
+  profilePicture: { type: String, required: false },
 });
 
 // Ensure sensitive fields are excluded from API responses
