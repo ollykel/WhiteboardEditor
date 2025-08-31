@@ -128,7 +128,7 @@ const Whiteboard = () => {
     ws.onmessage = handleServerMessage;
   }, []);
 
-  const handleNewCanvas = () => {
+  const handleNewCanvas = (name: string, allowedUsers: string[]) => {
     // Send message to server.
     // Server will echo response back, and actually inserting the new canvas
     // will be handled by handleServerMessage.
@@ -139,7 +139,9 @@ const Whiteboard = () => {
       const createCanvasMsg : ClientMessageCreateCanvas = ({
         type: 'create_canvas',
         width: 512,
-        height: 512
+        height: 512,
+        name,
+        allowedUsers,
       });
 
       socketRef.current.send(JSON.stringify(createCanvasMsg));

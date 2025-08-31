@@ -1,11 +1,14 @@
-import { getToolChoiceLabel } from '@/components/Tool';
+import React from 'react';
 
+import { getToolChoiceLabel } from '@/components/Tool';
+import PopoverMenu from '@/components/PopoverMenu'
+import CreateCanvasMenu from '@/components/CreateCanvasMenu'
 import type { ToolChoice } from '@/components/Tool';
 
 interface ToolbarProps {
   toolChoice: ToolChoice;
   onToolChange: (choice: ToolChoice) => void;
-  onNewCanvas: () => void;
+  onNewCanvas: (name: string, allowedUsers: string[]) => void;
 }
 
 interface ToolbarButtonProps {
@@ -16,13 +19,16 @@ interface ToolbarButtonProps {
 }
 const tools: ToolChoice[] = ["hand", "vector", "rect", "ellipse"];
 
-const ToolbarButton = ({ label, variant, onClick }: ToolbarButtonProps): React.JSX.Element => (
-  <button
-    onClick={onClick}
-    className={`p-2 rounded-xl hover:cursor-pointer ${variant === 'selected' && 'bg-gray-400'} hover:bg-gray-200`}
-  >
-    {label}
-  </button>
+const ToolbarButton = React.forwardRef<HTMLButtonElement, ToolbarButtonProps>(
+  ({ label, variant, onClick }, ref) => (
+    <button
+      ref={ref}
+      onClick={onClick}
+      className={`p-2 rounded-xl hover:cursor-pointer ${variant === 'selected' && 'bg-gray-400'} hover:bg-gray-200`}
+    >
+      {label}
+    </button>
+  )
 );
 
 function Toolbar({ toolChoice, onToolChange, onNewCanvas }: ToolbarProps) {
@@ -41,7 +47,11 @@ function Toolbar({ toolChoice, onToolChange, onNewCanvas }: ToolbarProps) {
 
       {/** Additional, non-tool choices **/}
       <ToolbarButton label="Import Image" variant="default" />
-      <ToolbarButton label="New Canvas" variant="default" onClick={onNewCanvas} />
+      <PopoverMenu
+        trigger={<ToolbarButton label="New Canvas" variant="default" />}
+      >
+        <CreateCanvasMenu onCreate={onNewCanvas} />
+      </PopoverMenu>
     </aside>
   )
 }
