@@ -19,7 +19,7 @@ function Dashboard() {
   return (
     <div>
       <Header title={title}/>
-      <h1 className="mt-25 text-4xl font-bold text-center">
+      <h1 className="text-4xl font-bold text-center">
         Welcome Back, {user?.username}!
       </h1>
       <button
