@@ -5,6 +5,11 @@ on:
       - 'WebSocketServer/**'
       - 'docker-compose.yml'
       - '.github/workflows/test_web_socket_server.yml'
+  pull_request:
+    paths:
+      - 'WebSocketServer/**'
+      - 'docker-compose.yml'
+      - '.github/workflows/test_web_socket_server.yml'
 jobs:
   build_and_push_web_socket_server:
     # Build web_socket_server_builder and push to container registry

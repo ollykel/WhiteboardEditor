@@ -5,6 +5,11 @@ on:
       - 'Frontend/**'
       - 'docker-compose.yml'
       - '.github/workflows/test_frontend.yml'
+  pull_request:
+    paths:
+      - 'Frontend/**'
+      - 'docker-compose.yml'
+      - '.github/workflows/test_frontend.yml'
 jobs:
   test_lint_frontend:
     # run linter
