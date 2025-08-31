@@ -89,7 +89,7 @@ export interface ClientMessageCreateCanvas {
   width: number;
   height: number;
   name?: string;
-  allowedUsers?: String[];
+  allowedUsers?: string[];
 }
 
 // Tagged union of all possible client-server messages
