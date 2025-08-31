@@ -1,6 +1,6 @@
 import { useContext, useState } from "react";
 import { useForm } from "@tanstack/react-form";
-import AuthContext from "@/AuthContext";
+import AuthContext from "@/context/AuthContext";
 import { useModal } from "@/components/Modal";
 import Header from "@/components/Header";
 import api from '@/api/axios';

@@ -1,11 +1,11 @@
 import { Routes, Route } from 'react-router';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
-import Dashboard from './pages/Dashboard';
-import Whiteboard from './pages/Whiteboard';
-import UserAuth from './pages/UserAuth';
-import AccountSettings from './pages/AccountSettings';
-import { AuthProvider } from './AuthContext';
+import Dashboard from '@/pages/Dashboard';
+import Whiteboard from '@/pages/Whiteboard';
+import UserAuth from '@/pages/UserAuth';
+import AccountSettings from '@/pages/AccountSettings';
+import { AuthProvider } from '@/context/AuthContext';
 
 const App = () => {
   const queryClient = new QueryClient();
