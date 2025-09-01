@@ -7,13 +7,16 @@
 //
 // =============================================================================
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useReducer } from 'react';
 import { Stage, Layer, Rect, Ellipse, Line, Text } from 'react-konva';
 import Konva from 'konva';
 
 // -- local imports
 import type { ToolChoice } from '@/components/Tool';
-import type { CanvasObjectModel } from '@/types/CanvasObjectModel';
+import type {
+  CanvasObjectModel,
+  ShapeModelBase
+} from '@/types/CanvasObjectModel';
 
 export interface CanvasProps {
   width: number;
@@ -31,7 +34,33 @@ interface EventCoords {
   y: number;
 }
 
+// === ShapeAttributesState ====================================================
+//
+// Defines the basic attributes newly drawn shapes will have.
+//
+// =============================================================================
+type ShapeAttributesState = ShapeModelBase;
+
+type ShapeAttributesAction = 
+  | { type: 'SET_FILL_COLOR'; payload: string }
+  | { type: 'SET_STROKE_COLOR'; payload: string }
+  | { type: 'SET_STROKE_WIDTH'; payload: number };
+
+const shapeAttributesReducer = (state: ShapeAttributesState, action: ShapeAttributesAction) => {
+  switch (action.type) {
+    case 'SET_FILL_COLOR':
+      return ({ ...state, fillColor: action.payload });
+    case 'SET_STROKE_COLOR':
+      return ({ ...state, strokeColor: action.payload });
+    case 'SET_STROKE_WIDTH':
+      return ({ ...state, strokeWidth: action.payload });
+    default:
+      return state;
+  }// end switch (action.type)
+};
+
 interface OperationDispatcherProps {
+  shapeAttributes: ShapeAttributesState;
   addShapes: (shapes: CanvasObjectModel[]) => void;
 }
 
@@ -59,12 +88,14 @@ interface OperationDispatcher {
   handlePointerMove: (ev: Konva.KonvaEventObject<MouseEvent>) => void;
   handlePointerUp: (ev: Konva.KonvaEventObject<MouseEvent>) => void;
   getPreview: () => React.JSX.Element | null;
-  renderShape: (key: string | number, model: CanvasObjectModel) => React.JSX.Element | null;
+  renderShape: (
+    key: string | number,
+    model: CanvasObjectModel
+  ) => React.JSX.Element | null;
   getTooltipText: () => string;
 }
 
 // === useMockDispatcher =======================================================
-//
 // Use as a dummy for unimplemented functionalities.
 //
 // =============================================================================
@@ -80,7 +111,10 @@ const useMockDispatcher = (_props: OperationDispatcherProps): OperationDispatche
       console.log('TODO: implement');
     },
     getPreview: () => null,
-    renderShape: (_key: string | number, _model: CanvasObjectModel) => null,
+    renderShape: (
+      _key: string | number,
+      _model: CanvasObjectModel
+    ) => null,
     getTooltipText: () => "TODO: implement"
   });
 };
@@ -102,12 +136,15 @@ const useInaccessibleDispatcher = (_props: OperationDispatcherProps): OperationD
       console.log("You don't have access to this canvas");
     },
     getPreview: () => null,
-    renderShape: (_key: string | number, _model: CanvasObjectModel) => null,
+    renderShape: (
+      _key: string | number,
+      _model: CanvasObjectModel
+    ) => null,
     getTooltipText: () => "You don't have access to this canvas"
   });
 };
 
-const useRectangleDispatcher = ({ addShapes }: OperationDispatcherProps): OperationDispatcher => {
+const useRectangleDispatcher = ({ shapeAttributes, addShapes }: OperationDispatcherProps): OperationDispatcher => {
   const [mouseDownCoords, setMouseDownCoords] = useState<EventCoords | null>(null);
   const [mouseCoords, setMouseCoords] = useState<EventCoords | null>(null);
 
@@ -133,7 +170,14 @@ const useRectangleDispatcher = ({ addShapes }: OperationDispatcherProps): Operat
       const width = Math.abs(xA - xB);
       const height = Math.abs(yA - yB);
 
-      addShapes([{ type: 'rect', x: xMin, y: yMin, width, height }]);
+      addShapes([{
+        type: 'rect',
+        ...shapeAttributes,
+        x: xMin,
+        y: yMin,
+        width,
+        height
+      }]);
       setMouseDownCoords(null);
     }
   };
@@ -157,11 +201,22 @@ const useRectangleDispatcher = ({ addShapes }: OperationDispatcherProps): Operat
     }
   };
 
-  const renderShape = (key: string | number, model: CanvasObjectModel): React.JSX.Element | null => {
+  const renderShape = (
+    key: string | number,
+    model: CanvasObjectModel
+  ): React.JSX.Element | null => {
     if (model.type !== 'rect') {
       return null;
     } else {
-      const { x, y, width, height } = model;
+      const {
+        x,
+        y,
+        fillColor,
+        strokeColor,
+        strokeWidth,
+        width,
+        height
+      } = model;
 
       return (
         <Rect
@@ -170,8 +225,9 @@ const useRectangleDispatcher = ({ addShapes }: OperationDispatcherProps): Operat
           y={y}
           width={width}
           height={height}
-          fill="red"
-          shadowBlur={10}
+          fill={fillColor}
+          stroke={strokeColor}
+          strokeWidth={strokeWidth}
         />
       );
     }
@@ -195,7 +251,7 @@ const useRectangleDispatcher = ({ addShapes }: OperationDispatcherProps): Operat
   });
 };// end useRectangleDispatcher
 
-const useEllipseDispatcher = ({ addShapes }: OperationDispatcherProps): OperationDispatcher => {
+const useEllipseDispatcher = ({ shapeAttributes, addShapes }: OperationDispatcherProps): OperationDispatcher => {
   const [mouseDownCoords, setMouseDownCoords] = useState<EventCoords | null>(null);
   const [mouseCoords, setMouseCoords] = useState<EventCoords | null>(null);
 
@@ -219,10 +275,11 @@ const useEllipseDispatcher = ({ addShapes }: OperationDispatcherProps): Operatio
 
       addShapes([{
         type: 'ellipse',
+        ...shapeAttributes,
         x: xOrigin,
         y: yOrigin,
         radiusX: Math.abs(xRelease - xOrigin),
-        radiusY: Math.abs(yRelease - yOrigin)
+        radiusY: Math.abs(yRelease - yOrigin),
       }]);
       setMouseDownCoords(null);
     }
@@ -247,11 +304,14 @@ const useEllipseDispatcher = ({ addShapes }: OperationDispatcherProps): Operatio
     }
   };
 
-  const renderShape = (key: string | number, model: CanvasObjectModel): React.JSX.Element | null => {
+  const renderShape = (
+    key: string | number,
+    model: CanvasObjectModel
+  ): React.JSX.Element | null => {
     if (model.type !== 'ellipse') {
       return null;
     } else {
-      const { x, y, radiusX, radiusY } = model;
+      const { x, y, radiusX, radiusY, fillColor, strokeColor, strokeWidth } = model;
 
       return (
         <Ellipse
@@ -260,7 +320,9 @@ const useEllipseDispatcher = ({ addShapes }: OperationDispatcherProps): Operatio
           y={y}
           radiusX={radiusX}
           radiusY={radiusY}
-          fill="red"
+          fill={fillColor}
+          stroke={strokeColor}
+          strokeWidth={strokeWidth}
         />
       );
     }
@@ -284,7 +346,7 @@ const useEllipseDispatcher = ({ addShapes }: OperationDispatcherProps): Operatio
   });
 };// end useEllipseDispatcher
 
-const useVectorDispatcher = ({ addShapes }: OperationDispatcherProps): OperationDispatcher => {
+const useVectorDispatcher = ({ shapeAttributes, addShapes }: OperationDispatcherProps): OperationDispatcher => {
   const [mouseDownCoords, setMouseDownCoords] = useState<EventCoords | null>(null);
   const [mouseCoords, setMouseCoords] = useState<EventCoords | null>(null);
 
@@ -308,6 +370,7 @@ const useVectorDispatcher = ({ addShapes }: OperationDispatcherProps): Operation
 
       addShapes([{
         type: 'vector',
+        ...shapeAttributes,
         points: [xA, yA, xB, yB]
       }]);
       setMouseDownCoords(null);
@@ -330,17 +393,21 @@ const useVectorDispatcher = ({ addShapes }: OperationDispatcherProps): Operation
     }
   };
 
-  const renderShape = (key: string | number, model: CanvasObjectModel): React.JSX.Element | null => {
+  const renderShape = (
+    key: string | number,
+    model: CanvasObjectModel
+  ): React.JSX.Element | null => {
     if (model.type !== 'vector') {
       return null;
     } else {
-      const { points } = model;
+      const { strokeColor, strokeWidth, points } = model;
 
       return (
         <Line
           key={key}
           points={points}
-          stroke="#000000"
+          stroke={strokeColor}
+          strokeWidth={strokeWidth}
         />
       );
     }
@@ -368,18 +435,41 @@ const Canvas = (props: CanvasProps) => {
   const { width, height, shapes, onAddShapes, currentTool, disabled } = props;
   const stageRef = useRef<Konva.Stage | null>(null);
 
+  const [shapeAttributesState] = useReducer(shapeAttributesReducer, {
+    x: 0,
+    y: 0,
+    fillColor: '#999999',
+    strokeColor: '#000000',
+    strokeWidth: 1
+  });
+
   // In the future, we may wrap onAddShapes with some other logic.
   // For now, it's just an alias.
   const addShapes = onAddShapes;
   
-  const defaultDispatcher = useMockDispatcher({ addShapes });
-  const inaccessibleDispatcher = useInaccessibleDispatcher({ addShapes });
+  const defaultDispatcher = useMockDispatcher({
+    shapeAttributes: shapeAttributesState,
+    addShapes
+  });
+  const inaccessibleDispatcher = useInaccessibleDispatcher({
+    shapeAttributes: shapeAttributesState,
+    addShapes
+  });
 
   const dispatcherMap = {
     'hand': defaultDispatcher,
-    'rect': useRectangleDispatcher({ addShapes }),
-    'ellipse': useEllipseDispatcher({ addShapes }),
-    'vector': useVectorDispatcher({ addShapes })
+    'rect': useRectangleDispatcher({
+      shapeAttributes: shapeAttributesState,
+      addShapes
+    }),
+    'ellipse': useEllipseDispatcher({
+      shapeAttributes: shapeAttributesState,
+      addShapes
+    }),
+    'vector': useVectorDispatcher({
+      shapeAttributes: shapeAttributesState,
+      addShapes
+    })
   };
 
   let dispatcher: OperationDispatcher;

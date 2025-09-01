@@ -4,9 +4,18 @@
 //
 // =============================================================================
 
-export interface ShapeModelBase {
+// i.e.
+export type ShapeColor = string;
+
+export interface CanvasObjectBase {
+  strokeColor: ShapeColor;
+  strokeWidth: number;
+}
+
+export interface ShapeModelBase extends CanvasObjectBase {
   x: number;
   y: number;
+  fillColor: ShapeColor;
 }
 
 export interface RectModel extends ShapeModelBase {
@@ -21,7 +30,7 @@ export interface EllipseModel extends ShapeModelBase {
   radiusY: number;
 }
 
-export interface VectorModel {
+export interface VectorModel extends CanvasObjectBase {
   type: 'vector';
   points: number[];
 }
