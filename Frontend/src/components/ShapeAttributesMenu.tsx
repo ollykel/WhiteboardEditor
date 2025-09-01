@@ -1,12 +1,12 @@
 // -- local imports
-import {
+import type {
   ShapeAttributesState,
   ShapeAttributesAction
 } from '@/reducers/shapeAttributesReducer';
 
 export interface ShapeAttributesMenuProps {
   attributes: ShapeAttributesState;
-  dispatch: Dispatch<ShapeAttributesAction>;
+  dispatch: React.Dispatch<ShapeAttributesAction>;
 }
 
 const ShapeAttributesMenu = (props: ShapeAttributesMenuProps) => {

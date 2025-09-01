@@ -5,11 +5,8 @@
 //
 // =============================================================================
 
-// -- std imports
-import { useReducer } from 'react';
-
 // -- local imports
-import { ShapeModelBase } from '@/types/CanvasObjectModel';
+import type { ShapeModelBase } from '@/types/CanvasObjectModel';
 
 // === ShapeAttributesState ====================================================
 //
