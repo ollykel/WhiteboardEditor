@@ -1,0 +1,70 @@
+// -- local imports
+import {
+  ShapeAttributesState,
+  ShapeAttributesAction
+} from '@/reducers/shapeAttributesReducer';
+
+export interface ShapeAttributesMenuProps {
+  attributes: ShapeAttributesState;
+  dispatch: Dispatch<ShapeAttributesAction>;
+}
+
+const ShapeAttributesMenu = (props: ShapeAttributesMenuProps) => {
+  const { attributes, dispatch } = props;
+  const { strokeWidth, strokeColor, fillColor } = attributes;
+
+  // This isn't a proper form, since there's nothing to submit.
+  // Updates are dispatched every time an input is changed.
+  const onChangeStrokeWidth = (ev: React.ChangeEvent<HTMLInputElement>) => {
+    ev.preventDefault();
+    dispatch({ type: 'SET_STROKE_WIDTH', payload: parseInt(ev.target.value) });
+  };
+
+  const onChangeStrokeColor = (ev: React.ChangeEvent<HTMLInputElement>) => {
+    ev.preventDefault();
+    dispatch({ type: 'SET_STROKE_COLOR', payload: ev.target.value.toString() });
+  };
+
+  const onChangeFillColor = (ev: React.ChangeEvent<HTMLInputElement>) => {
+    ev.preventDefault();
+    dispatch({ type: 'SET_FILL_COLOR', payload: ev.target.value.toString() });
+  };
+
+  return (
+    <form
+      onSubmit={(ev: React.FormEvent<HTMLFormElement>) => {
+        ev.preventDefault();
+      }}
+      className="flex flex-col"
+    >
+      {/** stroke width **/}
+      <label>Stroke Width</label>
+      <input
+        name="stroke-width"
+        type="number"
+        min={1}
+        step={0.5}
+        value={strokeWidth}
+        onChange={onChangeStrokeWidth}
+      />
+      {/** stroke color **/}
+      <label>Stroke Color</label>
+      <input
+        name="stroke-color"
+        type="color"
+        value={strokeColor}
+        onChange={onChangeStrokeColor}
+      />
+      {/** fill color **/}
+      <label>Fill Color</label>
+      <input
+        name="fill-color"
+        type="color"
+        value={fillColor}
+        onChange={onChangeFillColor}
+      />
+    </form>
+  );
+};// end ShapeAttributesMenu
+
+export default ShapeAttributesMenu;
