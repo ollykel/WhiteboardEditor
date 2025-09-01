@@ -23,6 +23,9 @@ import type {
   OperationDispatcher,
   OperationDispatcherProps
 } from '@/types/OperationDispatcher';
+import type {
+  EventCoords
+} from '@/types/EventCoords';
 
 export interface CanvasProps {
   width: number;
@@ -32,11 +35,6 @@ export interface CanvasProps {
   shapeAttributes: ShapeAttributesState;
   currentTool: ToolChoice;
   disabled: boolean;
-}
-
-interface EventCoords {
-  x: number;
-  y: number;
 }
 
 // === useMockDispatcher =======================================================
