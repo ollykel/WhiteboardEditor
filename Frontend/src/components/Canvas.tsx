@@ -7,8 +7,8 @@
 //
 // =============================================================================
 
-import { useState, useRef } from 'react';
-import { Stage, Layer, Line, Text } from 'react-konva';
+import { useRef } from 'react';
+import { Stage, Layer, Text } from 'react-konva';
 import Konva from 'konva';
 
 // -- local imports
@@ -21,17 +21,14 @@ import type {
 } from '@/reducers/shapeAttributesReducer';
 import type {
   OperationDispatcher,
-  OperationDispatcherProps
 } from '@/types/OperationDispatcher';
-import type {
-  EventCoords
-} from '@/types/EventCoords';
 
 // -- dispatchers
 import useMockDispatcher from '@/dispatchers/useMockDispatcher';
 import useInaccessibleDispatcher from '@/dispatchers/useInaccessibleDispatcher';
 import useRectangleDispatcher from '@/dispatchers/useRectangleDispatcher';
 import useEllipseDispatcher from '@/dispatchers/useEllipseDispatcher';
+import useVectorDispatcher from '@/dispatchers/useVectorDispatcher';
 
 export interface CanvasProps {
   width: number;
@@ -42,91 +39,6 @@ export interface CanvasProps {
   currentTool: ToolChoice;
   disabled: boolean;
 }
-
-const useVectorDispatcher = ({ shapeAttributes, addShapes }: OperationDispatcherProps): OperationDispatcher => {
-  const [mouseDownCoords, setMouseDownCoords] = useState<EventCoords | null>(null);
-  const [mouseCoords, setMouseCoords] = useState<EventCoords | null>(null);
-
-  const handlePointerDown = (ev: Konva.KonvaEventObject<MouseEvent>) => {
-    const { offsetX, offsetY } = ev.evt;
-
-    setMouseDownCoords({ x: offsetX, y: offsetY });
-    setMouseCoords({ x: offsetX, y: offsetY });
-  };
-
-  const handlePointerMove = (ev: Konva.KonvaEventObject<MouseEvent>) => {
-    const { offsetX, offsetY } = ev.evt;
-
-    setMouseCoords({ x: offsetX, y: offsetY });
-  };
-
-  const handlePointerUp = (ev: Konva.KonvaEventObject<MouseEvent>) => {
-    if (mouseDownCoords !== null) {
-      const { offsetX: xA, offsetY: yA } = ev.evt;
-      const { x: xB, y: yB } = mouseDownCoords;
-
-      addShapes([{
-        type: 'vector',
-        ...shapeAttributes,
-        points: [xA, yA, xB, yB]
-      }]);
-      setMouseDownCoords(null);
-    }
-  };
-
-  const getPreview = (): React.JSX.Element | null => {
-    if (mouseDownCoords && mouseCoords) {
-      const { x: xA, y: yA } = mouseDownCoords;
-      const { x: xB, y: yB } = mouseCoords;
-
-      return (
-        <Line
-          points={[xA, yA, xB, yB]}
-          stroke="#888888"
-        />
-      );
-    } else {
-      return null;
-    }
-  };
-
-  const renderShape = (
-    key: string | number,
-    model: CanvasObjectModel
-  ): React.JSX.Element | null => {
-    if (model.type !== 'vector') {
-      return null;
-    } else {
-      const { strokeColor, strokeWidth, points } = model;
-
-      return (
-        <Line
-          key={key}
-          points={points}
-          stroke={strokeColor}
-          strokeWidth={strokeWidth}
-        />
-      );
-    }
-  };
-
-  const getTooltipText = () => {
-    if (mouseDownCoords) {
-      return 'Drag to desired length, then release';
-    } else {
-      return 'Click to draw a vector';
-    }
-  };
-
-  return ({
-    handlePointerDown,
-    handlePointerMove,
-    handlePointerUp,
-    getPreview,
-    renderShape,
-    getTooltipText
-  });
-};// end useVectorDispatcher
 
 const Canvas = (props: CanvasProps) => {
   const {
