@@ -8,6 +8,7 @@
 // =============================================================================
 
 import { useState, useRef, useReducer } from 'react';
+import type { Dispatch } from 'react';
 import { Stage, Layer, Rect, Ellipse, Line, Text } from 'react-konva';
 import Konva from 'konva';
 
@@ -431,7 +432,7 @@ const useVectorDispatcher = ({ shapeAttributes, addShapes }: OperationDispatcher
 
 interface ShapeAttributesMenuProps {
   attributes: ShapeAttributesState;
-  dispatch: (action: ShapeAttributesAction) => void;
+  dispatch: Dispatch<ShapeAttributesAction>;
 }
 
 const ShapeAttributesMenu = (props: ShapeAttributesMenuProps) => {
@@ -496,7 +497,7 @@ const Canvas = (props: CanvasProps) => {
   const { width, height, shapes, onAddShapes, currentTool, disabled } = props;
   const stageRef = useRef<Konva.Stage | null>(null);
 
-  const [shapeAttributesState, dispatchShapeAttributes] = useReducer<ShapeAttributesState>(shapeAttributesReducer, {
+  const [shapeAttributesState, dispatchShapeAttributes] = useReducer(shapeAttributesReducer, {
     x: 0,
     y: 0,
     fillColor: '#999999',
