@@ -71,7 +71,8 @@ const useVectorDispatcher = ({ shapeAttributes, addShapes }: OperationDispatcher
 
   const renderShape = (
     key: string | number,
-    model: CanvasObjectModel
+    model: CanvasObjectModel,
+    isDraggable: boolean
   ): React.JSX.Element | null => {
     if (model.type !== 'vector') {
       return null;
@@ -84,6 +85,7 @@ const useVectorDispatcher = ({ shapeAttributes, addShapes }: OperationDispatcher
           points={points}
           stroke={strokeColor}
           strokeWidth={strokeWidth}
+          draggable={isDraggable}
         />
       );
     }

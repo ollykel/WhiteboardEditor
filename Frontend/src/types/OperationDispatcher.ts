@@ -34,7 +34,8 @@ export interface OperationDispatcher {
   getPreview: () => React.JSX.Element | null;
   renderShape: (
     key: string | number,
-    model: CanvasObjectModel
+    model: CanvasObjectModel,
+    isDraggable: boolean
   ) => React.JSX.Element | null;
   getTooltipText: () => string;
 }// end interface OperationDispatcher

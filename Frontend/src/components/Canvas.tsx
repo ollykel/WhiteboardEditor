@@ -7,7 +7,9 @@
 //
 // =============================================================================
 
-import { useRef } from 'react';
+import {
+  useRef,
+} from 'react';
 import { Stage, Layer, Text } from 'react-konva';
 import Konva from 'konva';
 
@@ -97,6 +99,9 @@ const Canvas = (props: CanvasProps) => {
     getTooltipText
   } = dispatcher;
 
+  // TODO: delegate draggability to tool definitions
+  const areShapesDraggable = (currentTool === 'hand');
+
   return (
     <>
       <Stage
@@ -121,7 +126,7 @@ const Canvas = (props: CanvasProps) => {
               const renderDispatcher = dispatcherMap[shape.type] || defaultDispatcher;
               const { renderShape } = renderDispatcher;
 
-              return renderShape(idx, shape);
+              return renderShape(idx, shape, areShapesDraggable);
             })
           }
         </Layer>

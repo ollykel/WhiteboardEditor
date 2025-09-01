@@ -77,7 +77,8 @@ const useEllipseDispatcher = ({ shapeAttributes, addShapes }: OperationDispatche
 
   const renderShape = (
     key: string | number,
-    model: CanvasObjectModel
+    model: CanvasObjectModel,
+    isDraggable: boolean
   ): React.JSX.Element | null => {
     if (model.type !== 'ellipse') {
       return null;
@@ -94,6 +95,7 @@ const useEllipseDispatcher = ({ shapeAttributes, addShapes }: OperationDispatche
           fill={fillColor}
           stroke={strokeColor}
           strokeWidth={strokeWidth}
+          draggable={isDraggable}
         />
       );
     }

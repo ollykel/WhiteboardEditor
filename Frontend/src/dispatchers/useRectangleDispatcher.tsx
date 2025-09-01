@@ -81,7 +81,8 @@ const useRectangleDispatcher = ({ shapeAttributes, addShapes }: OperationDispatc
 
   const renderShape = (
     key: string | number,
-    model: CanvasObjectModel
+    model: CanvasObjectModel,
+    isDraggable: boolean
   ): React.JSX.Element | null => {
     if (model.type !== 'rect') {
       return null;
@@ -106,6 +107,7 @@ const useRectangleDispatcher = ({ shapeAttributes, addShapes }: OperationDispatc
           fill={fillColor}
           stroke={strokeColor}
           strokeWidth={strokeWidth}
+          draggable={isDraggable}
         />
       );
     }
