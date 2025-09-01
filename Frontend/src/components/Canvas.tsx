@@ -29,6 +29,7 @@ import type {
 
 // -- dispatchers
 import useMockDispatcher from '@/dispatchers/useMockDispatcher';
+import useInaccessibleDispatcher from '@/dispatchers/useInaccessibleDispatcher';
 
 export interface CanvasProps {
   width: number;
@@ -39,31 +40,6 @@ export interface CanvasProps {
   currentTool: ToolChoice;
   disabled: boolean;
 }
-
-// === useInaccessibleDispatcher ===============================================
-//
-// Used for keeping users from accessing inaccessible canvases.
-//
-// =============================================================================
-const useInaccessibleDispatcher = (_props: OperationDispatcherProps): OperationDispatcher => {
-  return ({
-    handlePointerDown: (_ev: Konva.KonvaEventObject<MouseEvent>) => {
-      console.log("You don't have access to this canvas");
-    },
-    handlePointerMove: (_ev: Konva.KonvaEventObject<MouseEvent>) => {
-      console.log("You don't have access to this canvas");
-    },
-    handlePointerUp: (_ev: Konva.KonvaEventObject<MouseEvent>) => {
-      console.log("You don't have access to this canvas");
-    },
-    getPreview: () => null,
-    renderShape: (
-      _key: string | number,
-      _model: CanvasObjectModel
-    ) => null,
-    getTooltipText: () => "You don't have access to this canvas"
-  });
-};
 
 const useRectangleDispatcher = ({ shapeAttributes, addShapes }: OperationDispatcherProps): OperationDispatcher => {
   const [mouseDownCoords, setMouseDownCoords] = useState<EventCoords | null>(null);
