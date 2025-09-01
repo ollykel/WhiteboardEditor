@@ -27,8 +27,6 @@ export interface CanvasProps {
   disabled: boolean;
 }
 
-// For starters, just assume all rectangles have uniform width, height, and
-// color.
 interface EventCoords {
   x: number;
   y: number;
