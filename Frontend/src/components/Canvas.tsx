@@ -429,11 +429,74 @@ const useVectorDispatcher = ({ shapeAttributes, addShapes }: OperationDispatcher
   });
 };// end useVectorDispatcher
 
+interface ShapeAttributesMenuProps {
+  attributes: ShapeAttributesState;
+  dispatch: (action: ShapeAttributesAction) => void;
+}
+
+const ShapeAttributesMenu = (props: ShapeAttributesMenuProps) => {
+  const { attributes, dispatch } = props;
+  const { strokeWidth, strokeColor, fillColor } = attributes;
+
+  // This isn't a proper form, since there's nothing to submit.
+  // Updates are dispatched every time an input is changed.
+  const onChangeStrokeWidth = (ev: React.ChangeEvent<HTMLInputElement>) => {
+    ev.preventDefault();
+    dispatch({ type: 'SET_STROKE_WIDTH', payload: parseInt(ev.target.value) });
+  };
+
+  const onChangeStrokeColor = (ev: React.ChangeEvent<HTMLInputElement>) => {
+    ev.preventDefault();
+    dispatch({ type: 'SET_STROKE_COLOR', payload: ev.target.value.toString() });
+  };
+
+  const onChangeFillColor = (ev: React.ChangeEvent<HTMLInputElement>) => {
+    ev.preventDefault();
+    dispatch({ type: 'SET_FILL_COLOR', payload: ev.target.value.toString() });
+  };
+
+  return (
+    <form
+      onSubmit={(ev: React.FormEvent<HTMLFormElement>) => {
+        ev.preventDefault();
+      }}
+      className="flex flex-col"
+    >
+      {/** stroke width **/}
+      <label>Stroke Width</label>
+      <input
+        name="stroke-width"
+        type="number"
+        min={1}
+        step={0.5}
+        value={strokeWidth}
+        onChange={onChangeStrokeWidth}
+      />
+      {/** stroke color **/}
+      <label>Stroke Color</label>
+      <input
+        name="stroke-color"
+        type="color"
+        value={strokeColor}
+        onChange={onChangeStrokeColor}
+      />
+      {/** fill color **/}
+      <label>Fill Color</label>
+      <input
+        name="fill-color"
+        type="color"
+        value={fillColor}
+        onChange={onChangeFillColor}
+      />
+    </form>
+  );
+};
+
 const Canvas = (props: CanvasProps) => {
   const { width, height, shapes, onAddShapes, currentTool, disabled } = props;
   const stageRef = useRef<Konva.Stage | null>(null);
 
-  const [shapeAttributesState] = useReducer(shapeAttributesReducer, {
+  const [shapeAttributesState, dispatchShapeAttributes] = useReducer<ShapeAttributesState>(shapeAttributesReducer, {
     x: 0,
     y: 0,
     fillColor: '#999999',
@@ -487,33 +550,40 @@ const Canvas = (props: CanvasProps) => {
   } = dispatcher;
 
   return (
-    <Stage
-      ref={stageRef}
-      width={width}
-      height={height}
-      onPointerdown={handlePointerDown}
-      onPointermove={handlePointerMove}
-      onPointerup={handlePointerUp}
-    >
-      <Layer>
-        <Text
-          text={getTooltipText()}
-          fontSize={15}
-        />
-        {/** Preview Shape **/}
-        {getPreview()}
+    <>
+      {/** TODO: move to separate file, delegate to somewhere else in Whiteboard **/}
+      <ShapeAttributesMenu
+        attributes={shapeAttributesState}
+        dispatch={dispatchShapeAttributes}
+      />
+      <Stage
+        ref={stageRef}
+        width={width}
+        height={height}
+        onPointerdown={handlePointerDown}
+        onPointermove={handlePointerMove}
+        onPointerup={handlePointerUp}
+      >
+        <Layer>
+          <Text
+            text={getTooltipText()}
+            fontSize={15}
+          />
+          {/** Preview Shape **/}
+          {getPreview()}
 
-        {/** Shapes **/}
-        {
-          shapes.filter((sh) => sh).map((shape: CanvasObjectModel, idx: number) => {
-            const renderDispatcher = dispatcherMap[shape.type] || defaultDispatcher;
-            const { renderShape } = renderDispatcher;
+          {/** Shapes **/}
+          {
+            shapes.filter((sh) => sh).map((shape: CanvasObjectModel, idx: number) => {
+              const renderDispatcher = dispatcherMap[shape.type] || defaultDispatcher;
+              const { renderShape } = renderDispatcher;
 
-            return renderShape(idx, shape);
-          })
-        }
-      </Layer>
-    </Stage>
+              return renderShape(idx, shape);
+            })
+          }
+        </Layer>
+      </Stage>
+    </>
   );
 };
 
