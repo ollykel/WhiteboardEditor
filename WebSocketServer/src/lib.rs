@@ -20,9 +20,9 @@ pub type WhiteboardIdType = i32;
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "snake_case", rename_all_fields="camelCase")]
 pub enum ShapeModel {
-    Rect { x: f64, y: f64, width: f64, height: f64 },
-    Ellipse { x: f64, y: f64, radius_x: f64, radius_y: f64 },
-    Vector { points: Vec<f64> },
+    Rect { x: f64, y: f64, width: f64, height: f64, stroke_width: f64, stroke_color: String, fill_color: String },
+    Ellipse { x: f64, y: f64, radius_x: f64, radius_y: f64, stroke_width: f64, stroke_color: String, fill_color: String },
+    Vector { points: Vec<f64>, stroke_width: f64, stroke_color: String },
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

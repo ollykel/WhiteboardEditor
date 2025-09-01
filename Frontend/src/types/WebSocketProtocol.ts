@@ -6,7 +6,7 @@
 // =============================================================================
 
 // --- local imports
-import type { ShapeModel } from '@/types/ShapeModel';
+import type { CanvasObjectModel } from '@/types/CanvasObjectModel';
 
 // The unique identifier for clients within a web socket session.
 export type ClientIdType = number;
@@ -21,7 +21,7 @@ export interface CanvasData {
   id: CanvasIdType;
   width: number;
   height: number;
-  shapes: ShapeModel[];
+  shapes: CanvasObjectModel[];
   allowedUsers: ClientIdType[];
 }
 
@@ -56,7 +56,7 @@ export interface ServerMessageCreateShapes {
   type: "create_shapes";
   clientId: ClientIdType;
   canvasId: CanvasIdType;
-  shapes: ShapeModel[];
+  shapes: CanvasObjectModel[];
 }
 
 export interface ServerMessageCreateCanvas {
@@ -80,7 +80,7 @@ export type SocketServerMessage =
 export interface ClientMessageCreateShapes {
   type: "create_shapes";
   canvasId: CanvasIdType;
-  shapes: ShapeModel[];
+  shapes: CanvasObjectModel[];
 }
 
 // Notify server that client has created a new canvas
