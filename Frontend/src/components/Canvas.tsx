@@ -8,7 +8,7 @@
 // =============================================================================
 
 import { useState, useRef } from 'react';
-import { Stage, Layer, Rect, Ellipse, Line, Text } from 'react-konva';
+import { Stage, Layer, Ellipse, Line, Text } from 'react-konva';
 import Konva from 'konva';
 
 // -- local imports
@@ -30,6 +30,7 @@ import type {
 // -- dispatchers
 import useMockDispatcher from '@/dispatchers/useMockDispatcher';
 import useInaccessibleDispatcher from '@/dispatchers/useInaccessibleDispatcher';
+import useRectangleDispatcher from '@/dispatchers/useRectangleDispatcher';
 
 export interface CanvasProps {
   width: number;
@@ -40,113 +41,6 @@ export interface CanvasProps {
   currentTool: ToolChoice;
   disabled: boolean;
 }
-
-const useRectangleDispatcher = ({ shapeAttributes, addShapes }: OperationDispatcherProps): OperationDispatcher => {
-  const [mouseDownCoords, setMouseDownCoords] = useState<EventCoords | null>(null);
-  const [mouseCoords, setMouseCoords] = useState<EventCoords | null>(null);
-
-  const handlePointerDown = (ev: Konva.KonvaEventObject<MouseEvent>) => {
-    const { offsetX, offsetY } = ev.evt;
-
-    setMouseDownCoords({ x: offsetX, y: offsetY });
-    setMouseCoords({ x: offsetX, y: offsetY });
-  };
-
-  const handlePointerMove = (ev: Konva.KonvaEventObject<MouseEvent>) => {
-    const { offsetX, offsetY } = ev.evt;
-
-    setMouseCoords({ x: offsetX, y: offsetY });
-  };
-
-  const handlePointerUp = (ev: Konva.KonvaEventObject<MouseEvent>) => {
-    if (mouseDownCoords !== null) {
-      const { offsetX: xA, offsetY: yA } = ev.evt;
-      const { x: xB, y: yB } = mouseDownCoords;
-      const xMin = Math.min(xA, xB);
-      const yMin = Math.min(yA, yB);
-      const width = Math.abs(xA - xB);
-      const height = Math.abs(yA - yB);
-
-      addShapes([{
-        type: 'rect',
-        ...shapeAttributes,
-        x: xMin,
-        y: yMin,
-        width,
-        height
-      }]);
-      setMouseDownCoords(null);
-    }
-  };
-
-  const getPreview = (): React.JSX.Element | null => {
-    if (mouseDownCoords && mouseCoords) {
-      const { x: xA, y: yA } = mouseDownCoords;
-      const { x: xB, y: yB } = mouseCoords;
-
-      return (
-        <Rect
-          x={Math.min(xA, xB)}
-          y={Math.min(yA, yB)}
-          width={Math.abs(xA - xB)}
-          height={Math.abs(yA - yB)}
-          fill="#ffaaaa"
-        />
-      );
-    } else {
-      return null;
-    }
-  };
-
-  const renderShape = (
-    key: string | number,
-    model: CanvasObjectModel
-  ): React.JSX.Element | null => {
-    if (model.type !== 'rect') {
-      return null;
-    } else {
-      const {
-        x,
-        y,
-        fillColor,
-        strokeColor,
-        strokeWidth,
-        width,
-        height
-      } = model;
-
-      return (
-        <Rect
-          key={key}
-          x={x}
-          y={y}
-          width={width}
-          height={height}
-          fill={fillColor}
-          stroke={strokeColor}
-          strokeWidth={strokeWidth}
-        />
-      );
-    }
-  };
-
-  const getTooltipText = () => {
-    if (mouseDownCoords) {
-      return 'Drag to desired shape, then release';
-    } else {
-      return 'Click to draw a rectangle';
-    }
-  };
-
-  return ({
-    handlePointerDown,
-    handlePointerMove,
-    handlePointerUp,
-    getPreview,
-    renderShape,
-    getTooltipText
-  });
-};// end useRectangleDispatcher
 
 const useEllipseDispatcher = ({ shapeAttributes, addShapes }: OperationDispatcherProps): OperationDispatcher => {
   const [mouseDownCoords, setMouseDownCoords] = useState<EventCoords | null>(null);
