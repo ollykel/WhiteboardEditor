@@ -1,8 +1,11 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useReducer } from 'react';
 
 import CanvasCard from "@/components/CanvasCard";
+import Sidebar from "@/components/Sidebar";
 import Toolbar from "@/components/Toolbar";
+import ShapeAttributesMenu from "@/components/ShapeAttributesMenu";
 import Header from '@/components/Header';
+import shapeAttributesReducer from '@/reducers/shapeAttributesReducer';
 import type { ToolChoice } from '@/components/Tool';
 import type { CanvasObjectModel } from '@/types/CanvasObjectModel';
 import type {
@@ -27,6 +30,13 @@ const Whiteboard = () => {
   const [activeClients, setActiveClients] = useState<Set<number>>(new Set());
   const [clientId, setClientId] = useState<number>(-1);
   const [toolChoice, setToolChoice] = useState<ToolChoice>('rect');
+  const [shapeAttributesState, dispatchShapeAttributes] = useReducer(shapeAttributesReducer, {
+    x: 0,
+    y: 0,
+    fillColor: '#999999',
+    strokeColor: '#000000',
+    strokeWidth: 1
+  });
 
   // --- derived state
   const isActive = socketRef.current !== null
@@ -178,12 +188,22 @@ const Whiteboard = () => {
 
       {/* Content */}
       <div className="mt-20">
-        {/* Toolbar */}
-        <Toolbar
-          toolChoice={toolChoice}
-          onToolChange={setToolChoice}
-          onNewCanvas={handleNewCanvas}
-        />
+        {/* Left-hand sidebar for toolbar and menus */}
+        <Sidebar side="left">
+          {/* Toolbar */}
+          <Toolbar
+            toolChoice={toolChoice}
+            onToolChange={setToolChoice}
+            onNewCanvas={handleNewCanvas}
+          />
+
+          {/** Shape Attributes Menu **/}
+          <ShapeAttributesMenu
+            attributes={shapeAttributesState}
+            dispatch={dispatchShapeAttributes}
+          />
+        </Sidebar>
+
 
         {/* Canvas Container */}
         <div className="flex flex-col justify-center flex-wrap ml-40">
@@ -213,6 +233,7 @@ const Whiteboard = () => {
                   height={height}
                   shapes={shapes}
                   onAddShapes={makeHandleAddShapes(canvasId)}
+                  shapeAttributes={shapeAttributesState}
                   currentTool={toolChoice}
                   disabled={!hasAccess}
                 />

@@ -31,39 +31,43 @@ const ShapeAttributesMenu = (props: ShapeAttributesMenuProps) => {
   };
 
   return (
-    <form
-      onSubmit={(ev: React.FormEvent<HTMLFormElement>) => {
-        ev.preventDefault();
-      }}
-      className="flex flex-col"
-    >
-      {/** stroke width **/}
-      <label>Stroke Width</label>
-      <input
-        name="stroke-width"
-        type="number"
-        min={1}
-        step={0.5}
-        value={strokeWidth}
-        onChange={onChangeStrokeWidth}
-      />
-      {/** stroke color **/}
-      <label>Stroke Color</label>
-      <input
-        name="stroke-color"
-        type="color"
-        value={strokeColor}
-        onChange={onChangeStrokeColor}
-      />
-      {/** fill color **/}
-      <label>Fill Color</label>
-      <input
-        name="fill-color"
-        type="color"
-        value={fillColor}
-        onChange={onChangeFillColor}
-      />
-    </form>
+    <div className="max-w-40 flex flex-col flex-shrink-0 text-center p-4 m-1 rounded-2xl shadow-md bg-stone-50">
+      <h2 className="text-xl font-bold mb-2">Shape Attributes</h2>
+      <form
+        onSubmit={(ev: React.FormEvent<HTMLFormElement>) => {
+          ev.preventDefault();
+        }}
+        className="flex flex-col"
+      >
+        {/** stroke width **/}
+        <label>Stroke Width</label>
+        <input
+          name="stroke-width"
+          type="number"
+          min={1}
+          step={0.5}
+          value={strokeWidth}
+          onChange={onChangeStrokeWidth}
+          className="rounded-lg border-gray-50"
+        />
+        {/** stroke color **/}
+        <label>Stroke Color</label>
+        <input
+          name="stroke-color"
+          type="color"
+          value={strokeColor}
+          onChange={onChangeStrokeColor}
+        />
+        {/** fill color **/}
+        <label>Fill Color</label>
+        <input
+          name="fill-color"
+          type="color"
+          value={fillColor}
+          onChange={onChangeFillColor}
+        />
+      </form>
+    </div>
   );
 };// end ShapeAttributesMenu
 

@@ -18,12 +18,18 @@ import type {
   CanvasObjectModel,
   ShapeModelBase
 } from '@/types/CanvasObjectModel';
+import shapeAttributesReducer from '@/reducers/shapeAttributesReducer';
+import type {
+  ShapeAttributesState,
+  ShapeAttributesAction
+} from '@/reducers/shapeAttributesReducer';
 
 export interface CanvasProps {
   width: number;
   height: number;
   shapes: CanvasObjectModel[];
   onAddShapes: (shapes: CanvasObjectModel[]) => void;
+  shapeAttributes: ShapeAttributesState;
   currentTool: ToolChoice;
   disabled: boolean;
 }
@@ -32,31 +38,6 @@ interface EventCoords {
   x: number;
   y: number;
 }
-
-// === ShapeAttributesState ====================================================
-//
-// Defines the basic attributes newly drawn shapes will have.
-//
-// =============================================================================
-type ShapeAttributesState = ShapeModelBase;
-
-type ShapeAttributesAction = 
-  | { type: 'SET_FILL_COLOR'; payload: string }
-  | { type: 'SET_STROKE_COLOR'; payload: string }
-  | { type: 'SET_STROKE_WIDTH'; payload: number };
-
-const shapeAttributesReducer = (state: ShapeAttributesState, action: ShapeAttributesAction) => {
-  switch (action.type) {
-    case 'SET_FILL_COLOR':
-      return ({ ...state, fillColor: action.payload });
-    case 'SET_STROKE_COLOR':
-      return ({ ...state, strokeColor: action.payload });
-    case 'SET_STROKE_WIDTH':
-      return ({ ...state, strokeWidth: action.payload });
-    default:
-      return state;
-  }// end switch (action.type)
-};
 
 interface OperationDispatcherProps {
   shapeAttributes: ShapeAttributesState;
@@ -494,42 +475,42 @@ const ShapeAttributesMenu = (props: ShapeAttributesMenuProps) => {
 };
 
 const Canvas = (props: CanvasProps) => {
-  const { width, height, shapes, onAddShapes, currentTool, disabled } = props;
+  const {
+    width,
+    height,
+    shapes,
+    onAddShapes,
+    shapeAttributes,
+    currentTool,
+    disabled
+  } = props;
   const stageRef = useRef<Konva.Stage | null>(null);
-
-  const [shapeAttributesState, dispatchShapeAttributes] = useReducer(shapeAttributesReducer, {
-    x: 0,
-    y: 0,
-    fillColor: '#999999',
-    strokeColor: '#000000',
-    strokeWidth: 1
-  });
 
   // In the future, we may wrap onAddShapes with some other logic.
   // For now, it's just an alias.
   const addShapes = onAddShapes;
   
   const defaultDispatcher = useMockDispatcher({
-    shapeAttributes: shapeAttributesState,
+    shapeAttributes,
     addShapes
   });
   const inaccessibleDispatcher = useInaccessibleDispatcher({
-    shapeAttributes: shapeAttributesState,
+    shapeAttributes,
     addShapes
   });
 
   const dispatcherMap = {
     'hand': defaultDispatcher,
     'rect': useRectangleDispatcher({
-      shapeAttributes: shapeAttributesState,
+      shapeAttributes,
       addShapes
     }),
     'ellipse': useEllipseDispatcher({
-      shapeAttributes: shapeAttributesState,
+      shapeAttributes,
       addShapes
     }),
     'vector': useVectorDispatcher({
-      shapeAttributes: shapeAttributesState,
+      shapeAttributes,
       addShapes
     })
   };
@@ -552,11 +533,6 @@ const Canvas = (props: CanvasProps) => {
 
   return (
     <>
-      {/** TODO: move to separate file, delegate to somewhere else in Whiteboard **/}
-      <ShapeAttributesMenu
-        attributes={shapeAttributesState}
-        dispatch={dispatchShapeAttributes}
-      />
       <Stage
         ref={stageRef}
         width={width}
