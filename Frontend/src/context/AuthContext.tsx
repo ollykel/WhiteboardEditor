@@ -7,7 +7,15 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 const LS_KEY_USER = 'user';
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(localStorage.getItem(LS_KEY_USER));
+  const [user, setUser] = useState<User | null>((): User => {
+    const val = localStorage.getItem(LS_KEY_USER);
+
+    if (! val) {
+      return null;
+    } else {
+      return JSON.parse(val);
+    }
+  });
 
   // Save user to localStorage whenever user changes
   useEffect(() => {
