@@ -17,6 +17,16 @@
 //  rectangle).
 //
 // =============================================================================
+
+// -- third-party imports
+import Konva from 'konva';
+import type {
+  CanvasObjectModel
+} from '@/types/CanvasObjectModel';
+import type {
+  ShapeAttributesState
+} from '@/reducers/shapeAttributesReducer';
+
 export interface OperationDispatcher {
   handlePointerDown: (ev: Konva.KonvaEventObject<MouseEvent>) => void;
   handlePointerMove: (ev: Konva.KonvaEventObject<MouseEvent>) => void;
