@@ -46,6 +46,8 @@ export interface WhiteboardData extends WhiteboardAttribs {
   canvases: CanvasData[];
 }
 
+export type WhiteboardRecord = WhiteboardAttribs;
+
 // Sent to an individual client to initialize the whiteboard on their end
 export interface ServerMessageInitClient {
   type: "init_client";
