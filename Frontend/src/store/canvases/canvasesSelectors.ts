@@ -18,5 +18,5 @@ export const selectObjectsForCanvas = (state: RootState, canvasId: CanvasKeyType
 
 export const selectCanvasWithObjects = createSelector(
   [selectCanvasById, selectObjectsForCanvas],
-  (canvas, objects) => ({ ...canvas, shapes: objects })
+  (canvas, objects) => canvas ? ({ ...canvas, shapes: objects }) : null
 );
