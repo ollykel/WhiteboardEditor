@@ -23,7 +23,7 @@ export interface CanvasObjectBase {
 // Include unique identifiers for storage within state management.
 //
 // =============================================================================
-export type CanvasObjectKeyType = [WhiteboardIdType, CanvasIdType, CanvasObjectKeyType];
+export type CanvasObjectKeyType = [WhiteboardIdType, CanvasIdType, CanvasObjectIdType];
 
 export interface CanvasObjectRecord extends CanvasObjectBase {
   id: CanvasObjectIdType;
