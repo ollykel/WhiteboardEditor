@@ -25,8 +25,8 @@ export interface CanvasObjectBase {
 // =============================================================================
 export interface CanvasObjectRecord extends CanvasObjectBase {
   id: CanvasObjectIdType;
-  whiteboardId: WhiteboardIdType;
   canvasId: CanvasIdType;
+  whiteboardId: WhiteboardIdType;
 }
 
 export interface ShapeModelAttributes {

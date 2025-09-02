@@ -13,7 +13,7 @@ const canvasObjectsSlice = createSlice({
   name: 'canvasObjects',
   initialState: {} as Record<CanvasObjectIdType, CanvasObjectRecord>,
   reducers: {
-    setCanvasObjects(state, action: PayloadAction<CanvasObjectRecord>) {
+    setCanvasObjects(state, action: PayloadAction<CanvasObjectRecord[]>) {
 
       return {
         ...state,

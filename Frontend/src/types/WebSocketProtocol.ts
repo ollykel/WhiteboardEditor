@@ -17,17 +17,25 @@ export type CanvasIdType = number;
 // Unique identifier for each whiteboard
 export type WhiteboardIdType = number;
 
-export interface CanvasData {
+export interface CanvasAttribs {
   id: CanvasIdType;
   width: number;
   height: number;
+}
+
+// Contains nested data
+export interface CanvasData extends CanvasAttribs {
   shapes: CanvasObjectModel[];
   allowedUsers: ClientIdType[];
 }
 
-export interface WhiteboardData {
+export interface WhiteboardAttribs {
   id: WhiteboardIdType;
   name: string;
+}
+
+// Contains nested data
+export interface WhiteboardData extends WhiteboardAttribs {
   canvases: CanvasData[];
 }
 
