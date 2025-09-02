@@ -4,19 +4,38 @@
 //
 // =============================================================================
 
-// i.e.
+import type {
+  WhiteboardIdType,
+  CanvasIdType
+} from '@/types/WebSocketProtocol';
+
 export type ShapeColor = string;
+
+export type CanvasObjectIdType = number;
 
 export interface CanvasObjectBase {
   strokeColor: ShapeColor;
   strokeWidth: number;
 }
 
-export interface ShapeModelBase extends CanvasObjectBase {
+// === CanvasObjectRecord ======================================================
+//
+// Include unique identifiers for storage within state management.
+//
+// =============================================================================
+export interface CanvasObjectRecord extends CanvasObjectBase {
+  id: CanvasObjectIdType;
+  whiteboardId: WhiteboardIdType;
+  canvasId: CanvasIdType;
+}
+
+export interface ShapeModelAttributes {
   x: number;
   y: number;
   fillColor: ShapeColor;
 }
+
+export type ShapeModelBase = CanvasObjectRecord & ShapeModelAttributes;
 
 export interface RectModel extends ShapeModelBase {
   type: 'rect';
@@ -30,7 +49,7 @@ export interface EllipseModel extends ShapeModelBase {
   radiusY: number;
 }
 
-export interface VectorModel extends CanvasObjectBase {
+export interface VectorModel extends CanvasObjectRecord {
   type: 'vector';
   points: number[];
 }
