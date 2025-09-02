@@ -3,12 +3,14 @@ import { configureStore } from '@reduxjs/toolkit'
 import canvasObjectsReducer from './canvasObjects/canvasObjectsSlice';
 import canvasObjectsByCanvasReducer from './canvasObjects/canvasObjectsByCanvasSlice';
 import canvasesReducer from './canvases/canvasesSlice';
+import whiteboardsReducer from './whiteboards/whiteboardsSlice';
 
 export const store = configureStore({
   reducer: {
     canvasObjects: canvasObjectsReducer,
     canvasObjectsByCanvas: canvasObjectsByCanvasReducer,
-    canvases: canvasesReducer
+    canvases: canvasesReducer,
+    whiteboards: whiteboardsReducer
   }
 });
 
