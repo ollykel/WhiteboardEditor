@@ -29,6 +29,13 @@ export interface CanvasData extends CanvasAttribs {
   allowedUsers: ClientIdType[];
 }
 
+// Ensure unique id by including whiteboard id
+export type CanvasKeyType = [WhiteboardIdType, CanvasIdType];
+
+export interface CanvasRecord extends CanvasAttribs {
+  whiteboardId: WhiteboardIdType;
+}
+
 export interface WhiteboardAttribs {
   id: WhiteboardIdType;
   name: string;
