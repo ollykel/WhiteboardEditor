@@ -6,12 +6,13 @@ import {
 // -- local imports
 import type {
   CanvasObjectRecord,
-  CanvasObjectIdType
+  CanvasObjectKeyType
 } from '@/types/CanvasObjectModel';
 
 const canvasObjectsSlice = createSlice({
   name: 'canvasObjects',
-  initialState: {} as Record<CanvasObjectIdType, CanvasObjectRecord>,
+  // Will store data in a <whiteboard_id, canvas_id, object_id> => CanvasObjectRecord format
+  initialState: {} as Record<string, CanvasObjectRecord>,
   reducers: {
     setCanvasObjects(state, action: PayloadAction<CanvasObjectRecord[]>) {
 
@@ -19,14 +20,18 @@ const canvasObjectsSlice = createSlice({
         ...state,
         // Store [object_id, object] pairs, then turn them into an object to
         // append to the existing state.
-        ...Object.fromEntries(action.payload.map((record) => [record.id, record]))
+        ...Object.fromEntries(action.payload.map((record) => [
+          // unique id
+          [record.whiteboardId, record.canvasId, record.id].toString(),
+          record
+        ]))
       };
     },
-    removeCanvasObjects(state, action: PayloadAction<CanvasObjectIdType[]>) {
+    removeCanvasObjects(state, action: PayloadAction<CanvasObjectKeyType[]>) {
       const out = { ...state };
 
       for (const id of action.payload) {
-        delete out[id];
+        delete out[id.toString()];
       }
 
       return out;
