@@ -34,6 +34,6 @@ export const addCanvasObjects = (
 
   dispatch(setCanvasObjects(canvasObjectRecords));
   dispatch(addObjectsByCanvas({
-    [canvasId]: canvasObjectRecords
+    [canvasId]: canvasObjects.map(obj => [whiteboardId, canvasId, obj.id])
   }));
 };
