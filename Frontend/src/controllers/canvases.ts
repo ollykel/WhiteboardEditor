@@ -25,7 +25,7 @@ import {
 
 import {
   addCanvasesByWhiteboard
-} from '@/stores/canvases/canvasesByWhiteboardsSlice';
+} from '@/store/canvases/canvasesByWhiteboardSlice';
 
 import {
   normalizeCanvas
@@ -44,5 +44,8 @@ export const addCanvas = (
 
   dispatch(setCanvases(canvases));
   dispatch(setCanvasObjects(canvasObjects));
-  dispatch(setObjectsByCanvas(canvasObjectsByCanvas));
+  dispatch(addObjectsByCanvas(canvasObjectsByCanvas));
+  dispatch(addCanvasesByWhiteboard({
+    [whiteboardId]: [[whiteboardId, canvas.id]]
+  }));
 };
