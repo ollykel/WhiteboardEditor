@@ -5,20 +5,34 @@ import {
 
 // -- local imports
 import type {
-  WhiteboardIdType
+  WhiteboardIdType,
+  CanvasKeyType
 } from '@/types/WebSocketProtocol';
 
 const canvasesByWhiteboardSlice = createSlice({
   name: 'canvasesByWhiteboard',
   // Will store data in a <whiteboard_id> => CanvasKeyType[] format
-  initialState: {} as Record<string, string[]>,
+  initialState: {} as Record<string, CanvasKeyType[]>,
   reducers: {
-    setCanvasesByWhiteboard(state, action: PayloadAction<Record<string, string[]>>) {
+    setCanvasesByWhiteboard(state, action: PayloadAction<Record<string, CanvasKeyType[]>>) {
 
       return {
         ...state,
         ...action.payload
       };
+    },
+    addCanvasesByWhiteboard(state, action: PayloadAction<Record<string, CanvasKeyType[]>>) {
+      const out = { ...state };
+
+      Object.entries(action.payload).forEach(([id, records]) => {
+        if (id.toString() in state) {
+          out[id] = [...state[id], ...records];
+        } else {
+          out[id] = records;
+        }
+      });
+
+      return out;
     },
     removeCanvasesByWhiteboard(state, action: PayloadAction<WhiteboardIdType[]>) {
       const out = { ...state };
@@ -39,6 +53,7 @@ const canvasesByWhiteboardSlice = createSlice({
 
 export const {
   setCanvasesByWhiteboard,
+  addCanvasesByWhiteboard,
   removeCanvasesByWhiteboard
 } = canvasesByWhiteboardSlice.actions;
 

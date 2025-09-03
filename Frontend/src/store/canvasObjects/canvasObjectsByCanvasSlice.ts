@@ -8,17 +8,33 @@ import type {
   CanvasKeyType
 } from '@/types/WebSocketProtocol';
 
+import type {
+  CanvasObjectKeyType
+} from '@/types/CanvasObjectModel';
+
 const canvasObjectsByCanvasSlice = createSlice({
   name: 'canvasObjectsByCanvas',
   // Will store data in a <whiteboard_id, canvas_id, object_id> => CanvasObjectRecord format
-  initialState: {} as Record<string, string[]>,
+  initialState: {} as Record<string, CanvasObjectKeyType[]>,
   reducers: {
-    setObjectsByCanvas(state, action: PayloadAction<Record<string, string[]>>) {
-
+    setObjectsByCanvas(state, action: PayloadAction<Record<string, CanvasObjectKeyType[]>>) {
       return {
         ...state,
         ...action.payload
       };
+    },
+    addObjectsByCanvas(state, action: PayloadAction<Record<string, CanvasObjectKeyType[]>>) {
+      const out = { ...state };
+
+      Object.entries(action.payload).forEach(([id, records]) => {
+        if (id.toString() in state) {
+          out[id] = [...state[id], ...records];
+        } else {
+          out[id] = records;
+        }
+      });
+
+      return out;
     },
     removeObjectsByCanvas(state, action: PayloadAction<CanvasKeyType[]>) {
       const out = { ...state };
@@ -39,6 +55,7 @@ const canvasObjectsByCanvasSlice = createSlice({
 
 export const {
   setObjectsByCanvas,
+  addObjectsByCanvas,
   removeObjectsByCanvas
 } = canvasObjectsByCanvasSlice.actions;
 
