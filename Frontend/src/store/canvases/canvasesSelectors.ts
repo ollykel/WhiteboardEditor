@@ -11,6 +11,11 @@ import type {
   WhiteboardIdType
 } from '@/types/WebSocketProtocol';
 
+import type {
+  CanvasObjectRecord,
+  CanvasObjectModel
+} from '@/types/CanvasObjectModel';
+
 export const selectCanvasById = (state: RootState, canvasId: CanvasKeyType): CanvasRecord | null => (
   state.canvases[canvasId.toString()] || null
 );
@@ -39,8 +44,22 @@ export const selectCanvasesWithObjectsByWhiteboardId = (state: RootState, whiteb
       } else {
         return ({
           id, width, height,
-          shapes: state.canvasObjectsByCanvas[canvasKey.toString()]
-            ?.map(objectKey => state.canvasObjects[objectKey.toString()]) ?? [],
+          shapes: Object.fromEntries(state.canvasObjectsByCanvas[canvasKey.toString()]
+            .map(canvasObjectKey => {
+              if (! (canvasObjectKey in state.canvasObjects)) {
+                return null;
+              } else {
+                const canvasObjectRecord = state.canvasObjects[canvasObjectKey];
+                const { id } = canvasObjectRecord;
+                const out: Partial<CanvasObjectRecord> = { ...canvasObjectRecord };
+
+                delete out.id;
+
+                return [id, out as CanvasObjectModel];
+              }
+            })
+            .filter(entry => !!entry)
+          ),
           allowedUsers: state.allowedUsersByCanvas[canvasKey.toString()] || []
         });
       }

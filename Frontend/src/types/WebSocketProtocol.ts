@@ -7,6 +7,7 @@
 
 // --- local imports
 import type {
+  CanvasObjectIdType,
   CanvasObjectModel,
   CanvasObjectRecord
 } from '@/types/CanvasObjectModel';
@@ -28,7 +29,7 @@ export interface CanvasAttribs {
 
 // Contains nested data
 export interface CanvasData extends CanvasAttribs {
-  shapes: CanvasObjectRecord[];
+  shapes: Record<CanvasObjectIdType, CanvasObjectModel>,
   allowedUsers: ClientIdType[];
 }
 
@@ -76,7 +77,7 @@ export interface ServerMessageCreateShapes {
   type: "create_shapes";
   clientId: ClientIdType;
   canvasId: CanvasIdType;
-  shapes: CanvasObjectRecord[];
+  shapes: Record<CanvasObjectIdType, CanvasObjectRecord>;
 }
 
 export interface ServerMessageCreateCanvas {

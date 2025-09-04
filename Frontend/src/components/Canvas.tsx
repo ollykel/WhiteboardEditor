@@ -16,6 +16,7 @@ import Konva from 'konva';
 // -- local imports
 import type { ToolChoice } from '@/components/Tool';
 import type {
+  CanvasObjectIdType,
   CanvasObjectModel
 } from '@/types/CanvasObjectModel';
 import type {
@@ -35,7 +36,7 @@ import useVectorDispatcher from '@/dispatchers/useVectorDispatcher';
 export interface CanvasProps {
   width: number;
   height: number;
-  shapes: CanvasObjectModel[];
+  shapes: Record<CanvasObjectIdType, CanvasObjectModel>;
   onAddShapes: (shapes: CanvasObjectModel[]) => void;
   shapeAttributes: ShapeAttributesState;
   currentTool: ToolChoice;
@@ -122,11 +123,11 @@ const Canvas = (props: CanvasProps) => {
 
           {/** Shapes **/}
           {
-            shapes.filter((sh) => sh).map((shape: CanvasObjectModel, idx: number) => {
+            Object.entries(shapes).filter(([_id, sh]) => !!sh).map(([id, shape]) => {
               const renderDispatcher = dispatcherMap[shape.type] || defaultDispatcher;
               const { renderShape } = renderDispatcher;
 
-              return renderShape(idx, shape, areShapesDraggable);
+              return renderShape(id, shape, areShapesDraggable);
             })
           }
         </Layer>

@@ -188,7 +188,7 @@ const Whiteboard = () => {
                 id: canvasId,
                 width,
                 height,
-                shapes: [],
+                shapes: {},
                 allowedUsers
               }));
             }

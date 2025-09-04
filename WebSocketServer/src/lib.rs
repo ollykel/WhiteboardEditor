@@ -1,7 +1,10 @@
 // -- standard library imports
 
 use std::{
-    collections::HashSet,
+    collections::{
+        HashSet,
+        HashMap,
+    }
 };
 
 // -- third party imports
@@ -22,7 +25,6 @@ pub type WhiteboardIdType = i32;
 #[serde(tag = "type", rename_all = "snake_case", rename_all_fields="camelCase")]
 pub enum ShapeModel {
     Rect {
-        id: Option<CanvasObjectIdType>,
         x: f64,
         y: f64,
         width: f64,
@@ -55,7 +57,7 @@ pub struct CanvasClientView {
     pub id: CanvasIdType,
     pub width: u64,
     pub height: u64,
-    pub shapes: Vec<ShapeModel>,
+    pub shapes: HashMap<CanvasObjectIdType, ShapeModel>,
     pub allowed_users: Vec<ClientIdType>,
 }
 
@@ -73,7 +75,8 @@ pub enum ServerSocketMessage {
     InitClient { client_id: ClientIdType, active_clients: Vec<ClientIdType>, whiteboard: WhiteboardClientView },
     ClientLogin { client_id: ClientIdType },
     ClientLogout { client_id: ClientIdType },
-    CreateShapes { client_id: ClientIdType, canvas_id: CanvasIdType, shapes: Vec<ShapeModel> },
+    CreateShapes { client_id: ClientIdType, canvas_id: CanvasIdType, shapes: HashMap<CanvasObjectIdType, ShapeModel> },
+    UpdateShapes { client_id: ClientIdType, canvas_id: CanvasIdType, shapes: HashMap<CanvasObjectIdType, ShapeModel> },
     CreateCanvas { client_id: ClientIdType, canvas_id: CanvasIdType, width: u64, height: u64, allowed_users: Vec<ClientIdType> },
     IndividualError { client_id: ClientIdType, message: String },
     BroadcastError { message: String },
@@ -83,6 +86,7 @@ pub enum ServerSocketMessage {
 #[serde(tag = "type", rename_all = "snake_case", rename_all_fields="camelCase")]
 pub enum ClientSocketMessage {
     CreateShapes { canvas_id: CanvasIdType, shapes: Vec<ShapeModel> },
+    UpdateShapes { canvas_id: CanvasIdType, shapes: HashMap<CanvasObjectIdType, ShapeModel> },
     CreateCanvas { width: u64, height: u64 }
 }
 
@@ -92,7 +96,7 @@ pub struct Canvas {
     pub id: CanvasIdType,
     pub width: u64,
     pub height: u64,
-    pub shapes: Vec<ShapeModel>,
+    pub shapes: HashMap<CanvasObjectIdType, ShapeModel>,
     pub next_shape_id: CanvasObjectIdType,
     pub allowed_users: Option<HashSet<ClientIdType>>, // None = open to all
 }
@@ -181,23 +185,45 @@ pub async fn handle_client_message(program_state: &ProgramState, current_client_
                         todo!()
                     },
                     Some(canvas) => {
-                        let mut new_shapes = shapes.clone();
+                        let mut new_shapes = HashMap::<CanvasObjectIdType, ShapeModel>::new();
 
-                        for (idx, shape) in new_shapes.iter_mut().enumerate() {
-                            match shape {
-                                ShapeModel::Rect { id, .. }
-                                | ShapeModel::Ellipse { id, .. }
-                                | ShapeModel::Vector { id, .. } => {
-                                    *id = Some(canvas.next_shape_id + (idx as i32));
-                                }
-                            };
+                        for shape in shapes.iter() {
+                            let obj_id = canvas.next_shape_id;
+
+                            new_shapes.insert(obj_id, shape.clone());
+                            canvas.shapes.insert(obj_id, shape.clone());
+                            canvas.next_shape_id += 1;
                         }// end for (idx, &mut shape) in new_shapes.iter_mut().enumerate()
 
-                        canvas.shapes.extend_from_slice(new_shapes.as_slice());
-
-                        canvas.next_shape_id += shapes.len() as i32;
-
                         Some(ServerSocketMessage::CreateShapes{
+                            client_id: current_client_id,
+                            canvas_id: canvas_id,
+                            shapes: new_shapes
+                        })
+                    }
+                }
+            },
+            ClientSocketMessage::UpdateShapes{ canvas_id, ref shapes } => {
+                let mut whiteboard = program_state.whiteboard.lock().await;
+                println!("Creating shape on canvas {} ...", canvas_id);
+
+                match whiteboard.canvases.get_mut(canvas_id as usize) {
+                    None => {
+                        // TODO: send an error handling message
+                        todo!()
+                    },
+                    Some(canvas) => {
+                        let mut new_shapes = shapes.clone();
+
+                        for (obj_id, shape) in shapes.iter() {
+                            if ! canvas.shapes.contains_key(obj_id) {
+                                new_shapes.remove(obj_id);
+                            } else {
+                                canvas.shapes.insert(*obj_id, shape.clone());
+                            }
+                        }// end for (&obj_id, &shape) in shapes.iter_mut()
+
+                        Some(ServerSocketMessage::UpdateShapes{
                             client_id: current_client_id,
                             canvas_id: canvas_id,
                             shapes: new_shapes
@@ -219,7 +245,7 @@ pub async fn handle_client_message(program_state: &ProgramState, current_client_
                     id: new_canvas_id,
                     width: width,
                     height: height,
-                    shapes: Vec::<ShapeModel>::new(),
+                    shapes: HashMap::<CanvasObjectIdType, ShapeModel>::new(),
                     next_shape_id: 0,
                     allowed_users: Some(allowed),
                 });
