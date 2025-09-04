@@ -12,13 +12,15 @@ import type {
 const canvasesByWhiteboardSlice = createSlice({
   name: 'canvasesByWhiteboard',
   // Will store data in a <whiteboard_id> => CanvasKeyType[] format
-  initialState: {} as Record<string, CanvasKeyType[]>,
+  initialState: {} as Record<string, string[]>,
   reducers: {
     setCanvasesByWhiteboard(state, action: PayloadAction<Record<string, CanvasKeyType[]>>) {
 
       return {
         ...state,
-        ...action.payload
+        ...Object.fromEntries(Object.entries(action.payload).map(([k, v]) => [
+          k, v.map(canvasKey => canvasKey.toString())
+        ]))
       };
     },
     addCanvasesByWhiteboard(state, action: PayloadAction<Record<string, CanvasKeyType[]>>) {
@@ -26,9 +28,10 @@ const canvasesByWhiteboardSlice = createSlice({
 
       Object.entries(action.payload).forEach(([id, records]) => {
         if (id.toString() in state) {
-          out[id] = [...state[id], ...records];
+          // need to filter out duplicate records
+          out[id] = [...new Set([...state[id], ...records.map(canvasKey => canvasKey.toString())])];
         } else {
-          out[id] = records;
+          out[id] = records.map(canvasKey => canvasKey.toString());
         }
       });
 

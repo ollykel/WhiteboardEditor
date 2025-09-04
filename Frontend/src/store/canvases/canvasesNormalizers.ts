@@ -1,18 +1,19 @@
 
 import type {
   WhiteboardIdType,
+  CanvasKeyType,
   CanvasData,
   CanvasRecord
 } from '@/types/WebSocketProtocol';
 
 import type {
   CanvasObjectKeyType,
-  CanvasObjectModel
+  CanvasObjectRecordFull
 } from '@/types/CanvasObjectModel';
 
 export interface CanvasNormal {
   canvases: CanvasRecord[];
-  canvasObjects: CanvasObjectModel[];
+  canvasObjects: CanvasObjectRecordFull[];
   canvasObjectsByCanvas: Record<string, CanvasObjectKeyType[]>;
 }
 
@@ -27,12 +28,16 @@ export const normalizeCanvas = (
   canvas: CanvasData
 ): CanvasNormal => {
   const { id, width, height } = canvas;
+  const canvasKey: CanvasKeyType = [whiteboardId, id];
+  const canvasObjects = canvas.shapes.map(sh => ({
+    ...sh, canvasId: id, whiteboardId
+  }));
 
   return ({
     canvases: [({ id, whiteboardId, width, height })],
-    canvasObjects: canvas.shapes,
+    canvasObjects,
     canvasObjectsByCanvas: {
-      [id.toString()]: canvas.shapes.map((sh) => [whiteboardId, id, sh.id])
+      [canvasKey.toString()]: canvasObjects.map((sh) => [whiteboardId, id, sh.id])
     }
   });
 };

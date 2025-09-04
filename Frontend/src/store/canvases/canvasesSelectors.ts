@@ -5,11 +5,9 @@ import type {
 } from '@/store';
 
 import type {
-  CanvasKeyType
-} from '@/types/WebSocketProtocol';
-
-import type {
   CanvasRecord,
+  CanvasData,
+  CanvasKeyType,
   WhiteboardIdType
 } from '@/types/WebSocketProtocol';
 
@@ -30,3 +28,23 @@ export const selectCanvasWithObjects = createSelector(
   (canvas, objects) => canvas ? ({ ...canvas, shapes: objects }) : null
 );
 
+export const selectCanvasesWithObjectsByWhiteboardId = (state: RootState, whiteboardId: WhiteboardIdType): CanvasData[] => (
+  state.canvasesByWhiteboard[whiteboardId]
+    ?.map((canvasKey: CanvasKeyType) => {
+      const canvas = state.canvases[canvasKey.toString()];
+      const { id, width, height } = canvas;
+
+      if (! canvas) {
+        return null;
+      } else {
+        return ({
+          id, width, height,
+          shapes: state.canvasObjectsByCanvas[canvasKey.toString()]
+            ?.map(objectKey => state.canvasObjects[objectKey.toString()]) ?? [],
+          allowedUsers: state.allowedUsersByCanvas[canvasKey.toString()] || []
+        });
+      }
+    })
+    .filter(canvas => !!canvas)
+    ?? []
+);

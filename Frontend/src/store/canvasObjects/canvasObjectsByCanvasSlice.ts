@@ -12,15 +12,20 @@ import type {
   CanvasObjectKeyType
 } from '@/types/CanvasObjectModel';
 
+// In reality, the string represents a CanvasKeyType
+export type CanvasObjectsByCanvasState = Record<string, string[]>;
+
 const canvasObjectsByCanvasSlice = createSlice({
   name: 'canvasObjectsByCanvas',
-  // Will store data in a <whiteboard_id, canvas_id, object_id> => CanvasObjectRecord format
-  initialState: {} as Record<string, CanvasObjectKeyType[]>,
+  // Will store data in a <whiteboard_id, canvas_id, object_id> => CanvasObjectModel[] format
+  initialState: {} as CanvasObjectsByCanvasState,
   reducers: {
     setObjectsByCanvas(state, action: PayloadAction<Record<string, CanvasObjectKeyType[]>>) {
       return {
         ...state,
-        ...action.payload
+        ...Object.fromEntries(Object.entries(action.payload).map(([k, v]) => [
+          k, v.map(objectKey => objectKey.toString())
+        ]))
       };
     },
     addObjectsByCanvas(state, action: PayloadAction<Record<string, CanvasObjectKeyType[]>>) {
@@ -28,9 +33,9 @@ const canvasObjectsByCanvasSlice = createSlice({
 
       Object.entries(action.payload).forEach(([id, records]) => {
         if (id.toString() in state) {
-          out[id] = [...state[id], ...records];
+          out[id] = [...new Set([...state[id], ...records.map(objectKey => objectKey.toString())])];
         } else {
-          out[id] = records;
+          out[id] = records.map(objectKey => objectKey.toString());
         }
       });
 
