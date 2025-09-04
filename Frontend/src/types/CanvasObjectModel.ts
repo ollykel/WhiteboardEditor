@@ -25,8 +25,11 @@ export interface CanvasObjectBase {
 // =============================================================================
 export type CanvasObjectKeyType = [WhiteboardIdType, CanvasIdType, CanvasObjectIdType];
 
-export interface CanvasObjectRecord extends CanvasObjectBase {
+export interface ObjectID {
   id: CanvasObjectIdType;
+}
+
+export interface ObjectUID extends ObjectID {
   canvasId: CanvasIdType;
   whiteboardId: WhiteboardIdType;
 }
@@ -37,7 +40,7 @@ export interface ShapeModelAttributes {
   fillColor: ShapeColor;
 }
 
-export type ShapeModelBase = CanvasObjectRecord & ShapeModelAttributes;
+export type ShapeModelBase = CanvasObjectBase & ShapeModelAttributes;
 
 export interface RectModel extends ShapeModelBase {
   type: 'rect';
@@ -45,15 +48,26 @@ export interface RectModel extends ShapeModelBase {
   height: number;
 }
 
+export type RectRecord = RectModel & ObjectID;
+export type RectRecordFull = RectModel & ObjectUID;
+
 export interface EllipseModel extends ShapeModelBase {
   type: 'ellipse';
   radiusX: number;
   radiusY: number;
 }
 
-export interface VectorModel extends CanvasObjectRecord {
+export type EllipseRecord = EllipseModel & ObjectID;
+export type EllipseRecordFull = EllipseModel & ObjectUID;
+
+export interface VectorModel extends CanvasObjectBase {
   type: 'vector';
   points: number[];
 }
 
+export type VectorRecord = VectorModel & ObjectID;
+export type VectorRecordFull = VectorModel & ObjectUID;
+
 export type CanvasObjectModel = RectModel | EllipseModel | VectorModel;
+export type CanvasObjectRecord = RectRecord | EllipseRecord | VectorRecord;
+export type CanvasObjectRecordFull = RectRecordFull | EllipseRecordFull | VectorRecordFull;

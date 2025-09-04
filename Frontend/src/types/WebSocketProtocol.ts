@@ -6,7 +6,10 @@
 // =============================================================================
 
 // --- local imports
-import type { CanvasObjectModel } from '@/types/CanvasObjectModel';
+import type {
+  CanvasObjectModel,
+  CanvasObjectRecord
+} from '@/types/CanvasObjectModel';
 
 // The unique identifier for clients within a web socket session.
 export type ClientIdType = number;
@@ -25,7 +28,7 @@ export interface CanvasAttribs {
 
 // Contains nested data
 export interface CanvasData extends CanvasAttribs {
-  shapes: CanvasObjectModel[];
+  shapes: CanvasObjectRecord[];
   allowedUsers: ClientIdType[];
 }
 
@@ -73,7 +76,7 @@ export interface ServerMessageCreateShapes {
   type: "create_shapes";
   clientId: ClientIdType;
   canvasId: CanvasIdType;
-  shapes: CanvasObjectModel[];
+  shapes: CanvasObjectRecord[];
 }
 
 export interface ServerMessageCreateCanvas {
