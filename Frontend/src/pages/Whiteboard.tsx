@@ -2,11 +2,11 @@ import {
   useState,
   useRef,
   useEffect,
-  useReducer,
-  createContext
+  useReducer
 } from 'react';
 
 import {
+<<<<<<< HEAD
   useSelector
 } from 'react-redux';
 
@@ -29,6 +29,10 @@ import {
 import {
   selectCanvasesWithObjectsByWhiteboardId
 } from '@/store/canvases/canvasesSelectors';
+
+import {
+  WhiteboardProvider
+} from "@/context/WhiteboardContext";
 
 import CanvasCard from "@/components/CanvasCard";
 import Sidebar from "@/components/Sidebar";
@@ -227,80 +231,90 @@ const Whiteboard = () => {
   };
 
   return (
-    <WhiteboardContext.Provider value={{ toolChoice }}>
-      <main>
-        {/* Header */}
-        <Header 
-          title={title}
-        />
-        {
-          /** Display if socket not connected **/
-          (! isActive) && (
-            <p className="text-lg font-bold text-red-600">
-              Connecting ...
-            </p>
-          )
-        }
+    <main>
+      {/* Header */}
+      <Header 
+        title={title}
+      />
+      {
+        /** Display if socket not connected **/
+        (! isActive) && (
+          <p className="text-lg font-bold text-red-600">
+            Connecting ...
+          </p>
+        )
+      }
 
-        {/* Content */}
-        <div className="mt-20">
-          {/* Left-hand sidebar for toolbar and menus */}
-          <Sidebar side="left">
-            {/* Toolbar */}
-            <Toolbar
-              toolChoice={toolChoice}
-              onToolChange={setToolChoice}
-              onNewCanvas={handleNewCanvas}
-            />
+      {/* Content */}
+      <div className="mt-20">
+        {/* Left-hand sidebar for toolbar and menus */}
+        <Sidebar side="left">
+          {/* Toolbar */}
+          <Toolbar
+            toolChoice={toolChoice}
+            onToolChange={setToolChoice}
+            onNewCanvas={handleNewCanvas}
+          />
 
-            {/** Shape Attributes Menu **/}
-            <ShapeAttributesMenu
-              attributes={shapeAttributesState}
-              dispatch={dispatchShapeAttributes}
-            />
-          </Sidebar>
+          {/** Shape Attributes Menu **/}
+          <ShapeAttributesMenu
+            attributes={shapeAttributesState}
+            dispatch={dispatchShapeAttributes}
+          />
+        </Sidebar>
 
 
-          {/* Canvas Container */}
-          <div className="flex flex-col justify-center flex-wrap ml-40">
-            {/** Misc. info **/}
+        {/* Canvas Container */}
+        <div className="flex flex-col justify-center flex-wrap ml-40">
+          {/** Misc. info **/}
 
-            <div className="flex flex-col justify-center flex-wrap">
-              {/** Own Client ID **/}
-              <div>
-                <span>Client ID: </span> {clientId}
-              </div>
-
-              {/* Display Active Clients */}
-              <div>
-                <span>Active user IDs: </span>
-                { [...activeClients.keys()].join(', ') }
-              </div>
+          <div className="flex flex-col justify-center flex-wrap">
+            {/** Own Client ID **/}
+            <div>
+              <span>Client ID: </span> {clientId}
             </div>
 
-            <div className="flex flex-1 flex-row justify-center flex-wrap">
-              {canvases.map(({ id: canvasId, width, height, shapes, allowedUsers }: CanvasData) => {
-                const hasAccess = allowedUsers.length === 0 || allowedUsers.includes(clientId);
-                return (
-                  <CanvasCard
-                    key={canvasId}
-                    title={"TODO: store titles"}
-                    width={width}
-                    height={height}
-                    shapes={shapes}
-                    onAddShapes={makeHandleAddShapes(canvasId)}
-                    shapeAttributes={shapeAttributesState}
-                    currentTool={toolChoice}
-                    disabled={!hasAccess}
-                  />
-                );
-              })}
+            {/* Display Active Clients */}
+            <div>
+              <span>Active user IDs: </span>
+              { [...activeClients.keys()].join(', ') }
             </div>
           </div>
-        </div>
-      </main>
-    </WhiteboardContext.Provider>
-  );
-}
 
-export default Whiteboard;
+          <div className="flex flex-1 flex-row justify-center flex-wrap">
+            {canvases.map(({ id: canvasId, width, height, shapes, allowedUsers }: CanvasData) => {
+              const hasAccess = allowedUsers.length === 0 || allowedUsers.includes(clientId);
+              return (
+                <CanvasCard
+                  key={canvasId}
+                  title={"TODO: store titles"}
+                  width={width}
+                  height={height}
+                  shapes={shapes}
+                  onAddShapes={makeHandleAddShapes(canvasId)}
+                  shapeAttributes={shapeAttributesState}
+                  currentTool={toolChoice}
+                  disabled={!hasAccess}
+                />
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    </main>
+  );
+};// end Whiteboard
+
+const WrappedWhiteboard = () => {
+  const [currentTool, setCurrentTool] = useState<ToolChoice>('hand');
+  return (
+    <WhiteboardProvider
+      currentTool={currentTool}
+      setCurrentTool={setCurrentTool}
+    >
+      <Whiteboard />
+    </WhiteboardProvider>
+  );
+};// end WrappedWhiteboard
+
+export default WrappedWhiteboard;
