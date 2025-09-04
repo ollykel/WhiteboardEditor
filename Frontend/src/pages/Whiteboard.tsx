@@ -6,6 +6,30 @@ import {
   createContext
 } from 'react';
 
+import {
+  useSelector
+} from 'react-redux';
+
+// -- program state
+import {
+  store,
+  type RootState
+} from '@/store';
+
+import {
+  addWhiteboard,
+  addCanvasObjects,
+  addCanvas
+} from '@/controllers';
+
+import {
+  selectWhiteboardById
+} from '@/store/whiteboards/whiteboardsSelectors';
+
+import {
+  selectCanvasesWithObjectsByWhiteboardId
+} from '@/store/canvases/canvasesSelectors';
+
 import CanvasCard from "@/components/CanvasCard";
 import Sidebar from "@/components/Sidebar";
 import Toolbar from "@/components/Toolbar";
@@ -19,7 +43,9 @@ import type {
   ClientMessageCreateShapes,
   ClientMessageCreateCanvas,
   CanvasData,
-  CanvasIdType
+  CanvasIdType,
+  WhiteboardIdType,
+  WhiteboardAttribs
 } from '@/types/WebSocketProtocol';
 
 const getWebSocketUri = (): string => {
@@ -30,12 +56,26 @@ const getWebSocketUri = (): string => {
 };
 
 const Whiteboard = () => {
+  // Inputs:
+  //  - whiteboard id
+  //  - list of canvases
+  //  - tool choice
+
+  // -- references
   const socketRef = useRef<WebSocket | null>(null);
-  const [title, setTitle] = useState<string>('Loading Whiteboard ...');
-  const [canvases, setCanvases] = useState<CanvasData[]>([]);
-  const [activeClients, setActiveClients] = useState<Set<number>>(new Set());
+
+  // -- managed state
   const [clientId, setClientId] = useState<number>(-1);
+  const [activeClients, setActiveClients] = useState<Set<number>>(new Set());
   const [toolChoice, setToolChoice] = useState<ToolChoice>('rect');
+  const [whiteboardId, setWhiteboardId] = useState<WhiteboardIdType>(-1);
+  const whiteboardIdRef = useRef<WhiteboardIdType>(whiteboardId);
+
+  // dirty trick to keep whiteboardIdRef in-sync with whiteboardId
+  useEffect(() => {
+    whiteboardIdRef.current = whiteboardId;
+  }, [whiteboardId]);
+
   const [shapeAttributesState, dispatchShapeAttributes] = useReducer(shapeAttributesReducer, {
     x: 0,
     y: 0,
@@ -43,118 +83,36 @@ const Whiteboard = () => {
     strokeColor: '#000000',
     strokeWidth: 1
   });
+
   const WhiteboardContext = createContext({
     toolChoice
   });
 
+  const currWhiteboard: WhiteboardAttribs | null = useSelector((state: RootState) => (
+    selectWhiteboardById(state, whiteboardId))
+  );
+
+  console.log('Current Whiteboard:', currWhiteboard);
+
+  const canvases: CanvasData[] = useSelector((state: RootState) => {
+    console.log('Current State:', state);
+    return selectCanvasesWithObjectsByWhiteboardId(state, whiteboardId)
+  });
+
+  // TODO: remove debug
+  console.log('Canvases:', canvases);
+
   // --- derived state
-  const isActive = socketRef.current !== null
+  const title = currWhiteboard?.name ?? 'Loading whiteboard ...';
+  const isActive = !!socketRef.current;
 
-  // handles all web socket messages
-  const handleServerMessage = (event: MessageEvent): void => {
-    try {
-      const msg = JSON.parse(event.data) as SocketServerMessage;
-      console.log('Received:', msg);
-
-      // TODO: handle each type of message
-      switch (msg.type) {
-        case 'init_client':
-          {
-            const { clientId: initClientId, activeClients: initActiveClients, whiteboard } = msg;
-            const { name, canvases: initCanvases } = whiteboard;
-
-            setTitle(name);
-            setClientId(initClientId);
-            setActiveClients(new Set(initActiveClients));
-            setCanvases(initCanvases);
-          }
-          break;
-        case 'client_login':
-          {
-            const { clientId } = msg;
-
-            setActiveClients((prev) => {
-              const next = new Set(prev.keys());
-
-              next.add(clientId);
-              return next;
-            });
-          }
-          break;
-        case 'client_logout':
-          {
-            const { clientId } = msg;
-
-            setActiveClients((prev) => {
-              const next = new Set(prev.keys());
-
-              next.delete(clientId);
-              return next;
-            });
-          }
-          break;
-        case 'create_shapes':
-          {
-            const { canvasId, shapes } = msg;
-
-            // TODO: account for canvasId possibly not being an index
-            setCanvases((prev) => {
-              const targetCanvas = prev[canvasId];
-              const { shapes: prevShapes } = targetCanvas;
-
-              return [
-                ...prev.slice(0, canvasId),
-                ({
-                  ...targetCanvas,
-                  shapes: [...prevShapes, ...shapes]
-                }),
-                ...prev.slice(canvasId + 1)
-              ];
-            });
-          }
-          break;
-        case 'create_canvas':
-          {
-            const { canvasId, width, height, allowedUsers = [] } = msg;
-            // Just push it to the end for now
-            setCanvases((prev) => [
-              ...prev,
-              ({ id: canvasId, width, height, shapes: [], allowedUsers })
-            ]);
-          }
-          break;
-        default:
-          console.log('Server Message type unrecognized');
-      }// end switch (msg.type)
-    } catch (e) {
-      console.log('Failed to parse message:', e);
-    }
-  };
-
-  // Set up web socket connection
-  useEffect(() => {
-    const wsUri = getWebSocketUri();
-    const ws = new WebSocket(wsUri);
-
-    ws.onopen = () => {
-      console.log(`Established web socket connection to ${wsUri}`);
-      socketRef.current = ws;
-    };
-    ws.onerror = () => {
-      console.log(`Failed to establish web socket connection to ${wsUri}`);
-      socketRef.current = null;
-    };
-    ws.onmessage = handleServerMessage;
-  }, []);
-
+  // --- misc functions
   const handleNewCanvas = (name: string, allowedUsers: string[]) => {
     // Send message to server.
     // Server will echo response back, and actually inserting the new canvas
     // will be handled by handleServerMessage.
     // TODO: allow setting custom canvas sizes
     if (socketRef.current) {
-      // TODO: more permanent solution by creating separate client and server
-      // messages for creating canvases
       const createCanvasMsg : ClientMessageCreateCanvas = ({
         type: 'create_canvas',
         width: 512,
@@ -166,6 +124,94 @@ const Whiteboard = () => {
       socketRef.current.send(JSON.stringify(createCanvasMsg));
     }
   };
+
+  // Set up web socket connection
+  useEffect(() => {
+    console.log('Initializing web socket connection ...');
+    const dispatch = store.dispatch;
+    const wsUri = getWebSocketUri();
+    const ws = new WebSocket(wsUri);
+
+    // handles all web socket messages
+    const handleServerMessage = (event: MessageEvent): void => {
+      try {
+        const msg = JSON.parse(event.data) as SocketServerMessage;
+        console.log('Received:', msg);
+
+        // TODO: handle each type of message
+        switch (msg.type) {
+          case 'init_client':
+            {
+              const { clientId: initClientId, activeClients: initActiveClients, whiteboard } = msg;
+
+              addWhiteboard(dispatch, whiteboard);
+              setWhiteboardId(whiteboard.id);
+              setClientId(initClientId);
+              setActiveClients(new Set(initActiveClients));
+            }
+            break;
+          case 'client_login':
+            {
+              const { clientId } = msg;
+
+              setActiveClients((prev) => {
+                const next = new Set(prev.keys());
+
+                next.add(clientId);
+                return next;
+              });
+            }
+            break;
+          case 'client_logout':
+            {
+              const { clientId } = msg;
+
+              setActiveClients((prev) => {
+                const next = new Set(prev.keys());
+
+                next.delete(clientId);
+                return next;
+              });
+            }
+            break;
+          case 'create_shapes':
+            {
+              const { canvasId, shapes } = msg;
+
+              addCanvasObjects(dispatch, whiteboardIdRef.current, canvasId, shapes);
+            }
+            break;
+          case 'create_canvas':
+            {
+              const { canvasId, width, height, allowedUsers = [] } = msg;
+
+              addCanvas(dispatch, whiteboardIdRef.current, ({
+                id: canvasId,
+                width,
+                height,
+                shapes: [],
+                allowedUsers
+              }));
+            }
+            break;
+          default:
+            console.log('Server Message type unrecognized');
+        }// end switch (msg.type)
+      } catch (e) {
+        console.log('Failed to parse message:', e);
+      }
+    };
+
+    ws.onopen = () => {
+      console.log(`Established web socket connection to ${wsUri}`);
+      socketRef.current = ws;
+    };
+    ws.onerror = () => {
+      console.log(`Failed to establish web socket connection to ${wsUri}`);
+      socketRef.current = null;
+    };
+    ws.onmessage = handleServerMessage;
+  }, []);
 
   const makeHandleAddShapes = (canvasId: CanvasIdType) => (shapes: CanvasObjectModel[]) => {
     if (socketRef.current) {
