@@ -30,8 +30,8 @@ export const selectCanvasWithObjects = createSelector(
 
 export const selectCanvasesWithObjectsByWhiteboardId = (state: RootState, whiteboardId: WhiteboardIdType): CanvasData[] => (
   state.canvasesByWhiteboard[whiteboardId]
-    ?.map((canvasKey: CanvasKeyType) => {
-      const canvas = state.canvases[canvasKey.toString()];
+    ?.map((canvasKey: string) => {
+      const canvas = state.canvases[canvasKey];
       const { id, width, height } = canvas;
 
       if (! canvas) {
