@@ -6,14 +6,14 @@
 // =============================================================================
 
 // -- local imports
-import type { ShapeModelAttributes } from '@/types/CanvasObjectModel';
+import type { ShapeModelBase } from '@/types/CanvasObjectModel';
 
 // === ShapeAttributesState ====================================================
 //
 // Defines the basic attributes newly drawn shapes will have.
 //
 // =============================================================================
-export type ShapeAttributesState = ShapeModelAttributes;
+export type ShapeAttributesState = ShapeModelBase;
 
 export type ShapeAttributesAction = 
   | { type: 'SET_FILL_COLOR'; payload: string }
