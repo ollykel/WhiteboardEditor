@@ -17,6 +17,8 @@ import type {
   EventCoords
 } from '@/types/EventCoords';
 
+import draggableObjectProps from './draggableObjectProps';
+
 // === useEllipseDispatcher ====================================================
 //
 // Tool for drawing ellipses.
@@ -96,6 +98,7 @@ const useEllipseDispatcher = ({ shapeAttributes, addShapes }: OperationDispatche
           stroke={strokeColor}
           strokeWidth={strokeWidth}
           draggable={isDraggable}
+          {...draggableObjectProps(isDraggable)}
         />
       );
     }

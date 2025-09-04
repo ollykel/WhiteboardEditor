@@ -17,6 +17,8 @@ import type {
   EventCoords
 } from '@/types/EventCoords';
 
+import draggableObjectProps from './draggableObjectProps';
+
 // === useVectorDispatcher =====================================================
 //
 // Tool for drawing vectors.
@@ -86,6 +88,7 @@ const useVectorDispatcher = ({ shapeAttributes, addShapes }: OperationDispatcher
           stroke={strokeColor}
           strokeWidth={strokeWidth}
           draggable={isDraggable}
+          {...draggableObjectProps(isDraggable)}
         />
       );
     }

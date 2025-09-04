@@ -17,6 +17,8 @@ import type {
   EventCoords
 } from '@/types/EventCoords';
 
+import draggableObjectProps from './draggableObjectProps';
+
 // === useRectangleDispatcher ==================================================
 //
 // Tool for drawing rectangles.
@@ -108,6 +110,7 @@ const useRectangleDispatcher = ({ shapeAttributes, addShapes }: OperationDispatc
           stroke={strokeColor}
           strokeWidth={strokeWidth}
           draggable={isDraggable}
+          {...draggableObjectProps(isDraggable)}
         />
       );
     }
