@@ -6,7 +6,6 @@ import {
 } from 'react';
 
 import {
-<<<<<<< HEAD
   useSelector
 } from 'react-redux';
 
@@ -86,10 +85,6 @@ const Whiteboard = () => {
     fillColor: '#999999',
     strokeColor: '#000000',
     strokeWidth: 1
-  });
-
-  const WhiteboardContext = createContext({
-    toolChoice
   });
 
   const currWhiteboard: WhiteboardAttribs | null = useSelector((state: RootState) => (
