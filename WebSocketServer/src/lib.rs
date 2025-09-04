@@ -15,14 +15,38 @@ use serde::{Deserialize, Serialize};
 
 pub type ClientIdType = i32;
 pub type CanvasIdType = i32;
+pub type CanvasObjectIdType = i32;
 pub type WhiteboardIdType = i32;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "snake_case", rename_all_fields="camelCase")]
 pub enum ShapeModel {
-    Rect { x: f64, y: f64, width: f64, height: f64, stroke_width: f64, stroke_color: String, fill_color: String },
-    Ellipse { x: f64, y: f64, radius_x: f64, radius_y: f64, stroke_width: f64, stroke_color: String, fill_color: String },
-    Vector { points: Vec<f64>, stroke_width: f64, stroke_color: String },
+    Rect {
+        id: Option<CanvasObjectIdType>,
+        x: f64,
+        y: f64,
+        width: f64,
+        height: f64,
+        stroke_width: f64,
+        stroke_color: String,
+        fill_color: String
+    },
+    Ellipse {
+        id: Option<CanvasObjectIdType>,
+        x: f64,
+        y: f64,
+        radius_x: f64,
+        radius_y: f64,
+        stroke_width: f64,
+        stroke_color: String,
+        fill_color: String
+    },
+    Vector {
+        id: Option<CanvasObjectIdType>,
+        points: Vec<f64>,
+        stroke_width: f64,
+        stroke_color: String
+    },
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -69,6 +93,7 @@ pub struct Canvas {
     pub width: u64,
     pub height: u64,
     pub shapes: Vec<ShapeModel>,
+    pub next_shape_id: CanvasObjectIdType,
     pub allowed_users: Option<HashSet<ClientIdType>>, // None = open to all
 }
 
@@ -156,12 +181,26 @@ pub async fn handle_client_message(program_state: &ProgramState, current_client_
                         todo!()
                     },
                     Some(canvas) => {
-                        canvas.shapes.extend_from_slice(shapes.as_slice());
+                        let mut new_shapes = shapes.clone();
+
+                        for (idx, shape) in new_shapes.iter_mut().enumerate() {
+                            match shape {
+                                ShapeModel::Rect { id, .. }
+                                | ShapeModel::Ellipse { id, .. }
+                                | ShapeModel::Vector { id, .. } => {
+                                    *id = Some(canvas.next_shape_id + (idx as i32));
+                                }
+                            };
+                        }// end for (idx, &mut shape) in new_shapes.iter_mut().enumerate()
+
+                        canvas.shapes.extend_from_slice(new_shapes.as_slice());
+
+                        canvas.next_shape_id += shapes.len() as i32;
 
                         Some(ServerSocketMessage::CreateShapes{
                             client_id: current_client_id,
                             canvas_id: canvas_id,
-                            shapes: shapes.clone()
+                            shapes: new_shapes
                         })
                     }
                 }
@@ -181,6 +220,7 @@ pub async fn handle_client_message(program_state: &ProgramState, current_client_
                     width: width,
                     height: height,
                     shapes: Vec::<ShapeModel>::new(),
+                    next_shape_id: 0,
                     allowed_users: Some(allowed),
                 });
 

@@ -40,6 +40,7 @@ async fn main() {
                         width: 512,
                         height: 512,
                         shapes: Vec::<ShapeModel>::new(),
+                        next_shape_id: 0,
                         allowed_users: None, // None means open to all users
                     }
                 ]

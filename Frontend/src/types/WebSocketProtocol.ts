@@ -6,7 +6,10 @@
 // =============================================================================
 
 // --- local imports
-import type { CanvasObjectModel } from '@/types/CanvasObjectModel';
+import type {
+  CanvasObjectModel,
+  CanvasObjectRecord
+} from '@/types/CanvasObjectModel';
 
 // The unique identifier for clients within a web socket session.
 export type ClientIdType = number;
@@ -17,19 +20,36 @@ export type CanvasIdType = number;
 // Unique identifier for each whiteboard
 export type WhiteboardIdType = number;
 
-export interface CanvasData {
+export interface CanvasAttribs {
   id: CanvasIdType;
   width: number;
   height: number;
-  shapes: CanvasObjectModel[];
+}
+
+// Contains nested data
+export interface CanvasData extends CanvasAttribs {
+  shapes: CanvasObjectRecord[];
   allowedUsers: ClientIdType[];
 }
 
-export interface WhiteboardData {
+// Ensure unique id by including whiteboard id
+export type CanvasKeyType = [WhiteboardIdType, CanvasIdType];
+
+export interface CanvasRecord extends CanvasAttribs {
+  whiteboardId: WhiteboardIdType;
+}
+
+export interface WhiteboardAttribs {
   id: WhiteboardIdType;
   name: string;
+}
+
+// Contains nested data
+export interface WhiteboardData extends WhiteboardAttribs {
   canvases: CanvasData[];
 }
+
+export type WhiteboardRecord = WhiteboardAttribs;
 
 // Sent to an individual client to initialize the whiteboard on their end
 export interface ServerMessageInitClient {
@@ -56,7 +76,7 @@ export interface ServerMessageCreateShapes {
   type: "create_shapes";
   clientId: ClientIdType;
   canvasId: CanvasIdType;
-  shapes: CanvasObjectModel[];
+  shapes: CanvasObjectRecord[];
 }
 
 export interface ServerMessageCreateCanvas {
