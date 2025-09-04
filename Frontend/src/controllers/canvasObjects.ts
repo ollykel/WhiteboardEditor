@@ -4,12 +4,13 @@ import type {
 
 import type {
   WhiteboardIdType,
-  CanvasIdType
+  CanvasIdType,
+  CanvasKeyType
 } from '@/types/WebSocketProtocol';
 
 import type {
-  CanvasObjectModel,
-  CanvasObjectRecord
+  CanvasObjectRecord,
+  CanvasObjectRecordFull
 } from '@/types/CanvasObjectModel';
 
 import {
@@ -24,16 +25,17 @@ export const addCanvasObjects = (
   dispatch: AppDispatch,
   whiteboardId: WhiteboardIdType,
   canvasId: CanvasIdType,
-  canvasObjects: CanvasObjectModel[]
+  canvasObjects: CanvasObjectRecord[]
 ) => {
-  const canvasObjectRecords: CanvasObjectRecord[] = canvasObjects.map((canvasObject) => ({
+  const canvasObjectRecords: CanvasObjectRecordFull[] = canvasObjects.map((canvasObject) => ({
     ...canvasObject,
     canvasId,
     whiteboardId
   }));
+  const canvasKey: CanvasKeyType = [whiteboardId, canvasId];
 
   dispatch(setCanvasObjects(canvasObjectRecords));
   dispatch(addObjectsByCanvas({
-    [canvasId]: canvasObjects.map(obj => [whiteboardId, canvasId, obj.id])
+    [canvasKey.toString()]: canvasObjects.map(obj => [whiteboardId, canvasId, obj.id])
   }));
 };

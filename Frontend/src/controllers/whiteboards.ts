@@ -3,8 +3,7 @@ import type {
 } from '@/store';
 
 import type {
-  WhiteboardIdType,
-  CanvasData
+  WhiteboardData
 } from '@/types/WebSocketProtocol';
 
 import {
@@ -20,30 +19,32 @@ import {
 } from '@/store/canvases/canvasesSlice';
 
 import {
-  addCanvasesByWhiteboard
+  setCanvasesByWhiteboard
 } from '@/store/canvases/canvasesByWhiteboardSlice';
 
 import {
-  normalizeCanvas
-} from '@/store/canvases/canvasesNormalizers';
+  normalizeWhiteboard
+} from '@/store/whiteboards/whiteboardsNormalizers';
 
-export const addCanvas = (
+import {
+  setWhiteboards
+} from '@/store/whiteboards/whiteboardsSlice';
+
+export const addWhiteboard = (
   dispatch: AppDispatch,
-  whiteboardId: WhiteboardIdType,
-  canvas: CanvasData
+  whiteboard: WhiteboardData
 ) => {
   const {
+    whiteboards,
     canvases,
+    canvasesByWhiteboard,
     canvasObjects,
     canvasObjectsByCanvas
-  } = normalizeCanvas(whiteboardId, canvas);
+  } = normalizeWhiteboard(whiteboard);
 
-  console.log('!! addCanvas');
-
+  dispatch(setWhiteboards(whiteboards));
   dispatch(setCanvases(canvases));
   dispatch(setCanvasObjects(canvasObjects));
   dispatch(setObjectsByCanvas(canvasObjectsByCanvas));
-  dispatch(addCanvasesByWhiteboard({
-    [whiteboardId]: [[whiteboardId, canvas.id]]
-  }));
+  dispatch(setCanvasesByWhiteboard(canvasesByWhiteboard));
 };
