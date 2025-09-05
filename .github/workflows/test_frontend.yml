@@ -6,10 +6,8 @@ on:
       - 'docker-compose.yml'
       - '.github/workflows/test_frontend.yml'
   pull_request:
-    paths:
-      - 'Frontend/**'
-      - 'docker-compose.yml'
-      - '.github/workflows/test_frontend.yml'
+    on:
+      - opened
 jobs:
   test_lint_frontend:
     # run linter
