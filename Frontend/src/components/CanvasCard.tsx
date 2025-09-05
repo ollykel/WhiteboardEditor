@@ -1,4 +1,6 @@
 import Canvas from "./Canvas";
+import PopoverMenu from "./PopoverMenu";
+import CanvasMenu from "./CanvasMenu";
 
 import type { CanvasProps } from '@/components/Canvas';
 
@@ -21,6 +23,11 @@ function CanvasCard(props: CanvasCardProps) {
       </div>
       {/* Currently Drawing */}
       <div className="currently-drawing">Joe is drawing...</div>
+      <PopoverMenu
+        trigger={<button>Edit Canvas</button>}
+      >
+        <CanvasMenu />
+      </PopoverMenu>
     </div>
   );
 }
