@@ -37,6 +37,7 @@ import useInaccessibleDispatcher from '@/dispatchers/useInaccessibleDispatcher';
 import useRectangleDispatcher from '@/dispatchers/useRectangleDispatcher';
 import useEllipseDispatcher from '@/dispatchers/useEllipseDispatcher';
 import useVectorDispatcher from '@/dispatchers/useVectorDispatcher';
+import useHandDispatcher from '@/dispatchers/useHandDispatcher';
 
 export interface CanvasProps {
   id: CanvasIdType;
@@ -89,7 +90,10 @@ const Canvas = (props: CanvasProps) => {
   });
 
   const dispatcherMap = {
-    'hand': defaultDispatcher,
+    'hand': useHandDispatcher({
+      shapeAttributes,
+      addShapes
+    }),
     'rect': useRectangleDispatcher({
       shapeAttributes,
       addShapes
