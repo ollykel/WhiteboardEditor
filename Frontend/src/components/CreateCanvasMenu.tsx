@@ -26,6 +26,7 @@ function CreateCanvasMenu({ onCreate }: CreateCanvasMenuProps) {
 
   return (
     <div className="grid gap-2">
+      <h1 className='text-center font-bold'>Create New Canvas</h1>
       <Label htmlFor="name">Canvas Name</Label>
       <Input
         id="name"
