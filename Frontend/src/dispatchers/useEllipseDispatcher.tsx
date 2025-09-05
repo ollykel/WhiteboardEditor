@@ -11,6 +11,7 @@ import type {
   OperationDispatcherProps
 } from '@/types/OperationDispatcher';
 import type {
+  CanvasObjectIdType,
   CanvasObjectModel
 } from '@/types/CanvasObjectModel';
 import type {
@@ -24,7 +25,11 @@ import draggableObjectProps from './draggableObjectProps';
 // Tool for drawing ellipses.
 //
 // =============================================================================
-const useEllipseDispatcher = ({ shapeAttributes, addShapes }: OperationDispatcherProps): OperationDispatcher => {
+const useEllipseDispatcher = ({
+  shapeAttributes,
+  addShapes
+}: OperationDispatcherProps
+): OperationDispatcher => {
   const [mouseDownCoords, setMouseDownCoords] = useState<EventCoords | null>(null);
   const [mouseCoords, setMouseCoords] = useState<EventCoords | null>(null);
 
@@ -80,7 +85,8 @@ const useEllipseDispatcher = ({ shapeAttributes, addShapes }: OperationDispatche
   const renderShape = (
     key: string | number,
     model: CanvasObjectModel,
-    isDraggable: boolean
+    isDraggable: boolean,
+    handleUpdateShapes: (shapes: Record<CanvasObjectIdType, CanvasObjectModel>) => void
   ): React.JSX.Element | null => {
     if (model.type !== 'ellipse') {
       return null;
@@ -90,6 +96,7 @@ const useEllipseDispatcher = ({ shapeAttributes, addShapes }: OperationDispatche
       return (
         <Ellipse
           key={key}
+          id={`${key}`}
           x={x}
           y={y}
           radiusX={radiusX}
@@ -98,7 +105,7 @@ const useEllipseDispatcher = ({ shapeAttributes, addShapes }: OperationDispatche
           stroke={strokeColor}
           strokeWidth={strokeWidth}
           draggable={isDraggable}
-          {...draggableObjectProps(isDraggable)}
+          {...draggableObjectProps(model, isDraggable, handleUpdateShapes)}
         />
       );
     }

@@ -2,18 +2,18 @@
 import type {
   WhiteboardIdType,
   CanvasKeyType,
-  CanvasData,
-  CanvasRecord
+  CanvasAttribs,
+  CanvasData
 } from '@/types/WebSocketProtocol';
 
 import type {
-  CanvasObjectRecordFull,
-  CanvasObjectKeyType
+  CanvasObjectKeyType,
+  CanvasObjectModel
 } from '@/types/CanvasObjectModel';
 
 export interface CanvasNormal {
-  canvases: CanvasRecord[];
-  canvasObjects: CanvasObjectRecordFull[];
+  canvases: Record<string, CanvasAttribs>;
+  canvasObjects: Record<string, CanvasObjectModel>;
   canvasObjectsByCanvas: Record<string, CanvasObjectKeyType[]>;
 }
 
@@ -27,17 +27,32 @@ export const normalizeCanvas = (
   whiteboardId: WhiteboardIdType,
   canvas: CanvasData
 ): CanvasNormal => {
-  const { id: canvasId, width, height } = canvas;
+  const { id: canvasId } = canvas;
+  const canvasAttribs: Partial<CanvasData> = { ...canvas };
   const canvasKey: CanvasKeyType = [whiteboardId, canvasId];
-  const canvasObjects = Object.entries(canvas.shapes).map(([shapeId, shape]) => ({
-    ...shape, id: parseInt(shapeId), canvasId, whiteboardId
+  const canvasObjects = Object.fromEntries(Object.entries(canvas.shapes).map(([objIdStr, obj]) => {
+    const objId = parseInt(objIdStr);
+    const objKey: CanvasObjectKeyType = [whiteboardId, canvasId, objId];
+
+    return [objKey.toString(), obj];
   }));
 
+  // remove vector fields from canvasAttribs
+  delete canvasAttribs.shapes;
+  delete canvasAttribs.allowedUsers;
+
   return ({
-    canvases: [({ id: canvasId, whiteboardId, width, height })],
+    canvases: ({
+      [canvasKey.toString()]: canvasAttribs as CanvasAttribs
+    }),
     canvasObjects,
     canvasObjectsByCanvas: {
-      [canvasKey.toString()]: canvasObjects.map((sh) => [whiteboardId, canvasId, sh.id])
+      [canvasKey.toString()]: Object.keys(canvas.shapes).map((objIdStr) => {
+        const objId = parseInt(objIdStr);
+        const objKey: CanvasObjectKeyType = [whiteboardId, canvasId, objId];
+
+        return objKey;
+      })
     }
   });
 };

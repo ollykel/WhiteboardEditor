@@ -11,20 +11,24 @@ import type {
   OperationDispatcherProps
 } from '@/types/OperationDispatcher';
 import type {
-  CanvasObjectModel
+  CanvasObjectIdType,
+  CanvasObjectModel,
+  VectorModel
 } from '@/types/CanvasObjectModel';
 import type {
   EventCoords
 } from '@/types/EventCoords';
-
-import draggableObjectProps from './draggableObjectProps';
 
 // === useVectorDispatcher =====================================================
 //
 // Tool for drawing vectors.
 //
 // =============================================================================
-const useVectorDispatcher = ({ shapeAttributes, addShapes }: OperationDispatcherProps): OperationDispatcher => {
+const useVectorDispatcher = ({
+  shapeAttributes,
+  addShapes
+}: OperationDispatcherProps
+): OperationDispatcher => {
   const [mouseDownCoords, setMouseDownCoords] = useState<EventCoords | null>(null);
   const [mouseCoords, setMouseCoords] = useState<EventCoords | null>(null);
 
@@ -74,7 +78,8 @@ const useVectorDispatcher = ({ shapeAttributes, addShapes }: OperationDispatcher
   const renderShape = (
     key: string | number,
     model: CanvasObjectModel,
-    isDraggable: boolean
+    isDraggable: boolean,
+    _handleUpdateShapes: (shapes: Record<CanvasObjectIdType, VectorModel>) => void
   ): React.JSX.Element | null => {
     if (model.type !== 'vector') {
       return null;
@@ -84,11 +89,16 @@ const useVectorDispatcher = ({ shapeAttributes, addShapes }: OperationDispatcher
       return (
         <Line
           key={key}
+          id={`${key}`}
           points={points}
           stroke={strokeColor}
           strokeWidth={strokeWidth}
           draggable={isDraggable}
-          {...draggableObjectProps(isDraggable)}
+          onMouseOver={undefined}
+          onMouseOut={undefined}
+          onMouseDown={undefined}
+          onMouseUp={undefined}
+          onDragEnd={undefined}
         />
       );
     }

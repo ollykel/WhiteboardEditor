@@ -1,14 +1,30 @@
 import React, {
   createContext,
-  type PropsWithChildren
+  type PropsWithChildren,
+  type RefObject
 } from 'react';
+
 import type {
   ToolChoice
 } from '@/components/Tool';
 
+import type {
+  CanvasObjectIdType,
+  CanvasObjectModel
+} from '@/types/CanvasObjectModel';
+
+import type {
+  CanvasIdType,
+  WhiteboardIdType
+} from '@/types/WebSocketProtocol';
+
 export interface WhiteboardContextType {
+  socketRef: RefObject<WebSocket | null>;
+  handleUpdateShapes: (canvasId: CanvasIdType, shapes: Record<CanvasObjectIdType, CanvasObjectModel>) => void;
   currentTool: ToolChoice;
   setCurrentTool: React.Dispatch<React.SetStateAction<ToolChoice>>;
+  whiteboardId: WhiteboardIdType;
+  setWhiteboardId: React.Dispatch<React.SetStateAction<WhiteboardIdType>>;
 }
 
 export type WhiteboardProvidersProps = WhiteboardContextType;
@@ -16,10 +32,25 @@ export type WhiteboardProvidersProps = WhiteboardContextType;
 const WhiteboardContext = createContext<WhiteboardContextType | undefined>(undefined);
 
 const WhiteboardProvider = (props: PropsWithChildren<WhiteboardProvidersProps>): React.JSX.Element => {
-  const { currentTool, setCurrentTool, children } = props;
+  const {
+    socketRef,
+    handleUpdateShapes,
+    currentTool,
+    setCurrentTool,
+    whiteboardId,
+    setWhiteboardId,
+    children
+  } = props;
 
   return (
-    <WhiteboardContext.Provider value={{ currentTool, setCurrentTool }}>
+    <WhiteboardContext.Provider value={{
+      socketRef,
+      handleUpdateShapes,
+      currentTool,
+      setCurrentTool,
+      whiteboardId,
+      setWhiteboardId
+    }}>
       {children}
     </WhiteboardContext.Provider>
   );

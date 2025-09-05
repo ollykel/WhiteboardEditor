@@ -10,8 +10,8 @@ import type {
 
 import type {
   CanvasObjectIdType,
-  CanvasObjectModel,
-  CanvasObjectRecordFull
+  CanvasObjectKeyType,
+  CanvasObjectModel
 } from '@/types/CanvasObjectModel';
 
 import {
@@ -22,22 +22,28 @@ import {
   addObjectsByCanvas
 } from '@/store/canvasObjects/canvasObjectsByCanvasSlice';
 
-export const addCanvasObjects = (
+const controllerSetCanvasObjects = (
   dispatch: AppDispatch,
   whiteboardId: WhiteboardIdType,
   canvasId: CanvasIdType,
   canvasObjects: Record<CanvasObjectIdType, CanvasObjectModel>
 ) => {
-  const canvasObjectRecords: CanvasObjectRecordFull[] = Object.entries(canvasObjects).map(([id, obj]) => ({
-    ...obj,
-    id: parseInt(id),
-    canvasId,
-    whiteboardId
-  }));
   const canvasKey: CanvasKeyType = [whiteboardId, canvasId];
+  const canvasObjectsByKey: Record<string, CanvasObjectModel> = Object.fromEntries(
+    Object.entries(canvasObjects).map(([objIdStr, obj]) => {
+      const objId = parseInt(objIdStr);
+      const objKey: CanvasObjectKeyType = [whiteboardId, canvasId, objId];
 
-  dispatch(setCanvasObjects(canvasObjectRecords));
+      return [objKey, obj];
+    })
+  );
+
+  dispatch(setCanvasObjects(canvasObjectsByKey));
   dispatch(addObjectsByCanvas({
     [canvasKey.toString()]: Object.keys(canvasObjects).map(id => [whiteboardId, canvasId, parseInt(id)])
   }));
+};
+
+export {
+  controllerSetCanvasObjects as setCanvasObjects
 };

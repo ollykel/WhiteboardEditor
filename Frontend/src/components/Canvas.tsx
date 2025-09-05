@@ -9,16 +9,21 @@
 
 import {
   useRef,
+  useContext
 } from 'react';
 import { Stage, Layer, Text } from 'react-konva';
 import Konva from 'konva';
 
 // -- local imports
+import WhiteboardContext from '@/context/WhiteboardContext';
 import type { ToolChoice } from '@/components/Tool';
 import type {
   CanvasObjectIdType,
   CanvasObjectModel
 } from '@/types/CanvasObjectModel';
+import type {
+  CanvasIdType,
+} from '@/types/WebSocketProtocol';
 import type {
   ShapeAttributesState
 } from '@/reducers/shapeAttributesReducer';
@@ -34,6 +39,7 @@ import useEllipseDispatcher from '@/dispatchers/useEllipseDispatcher';
 import useVectorDispatcher from '@/dispatchers/useVectorDispatcher';
 
 export interface CanvasProps {
+  id: CanvasIdType;
   width: number;
   height: number;
   shapes: Record<CanvasObjectIdType, CanvasObjectModel>;
@@ -45,6 +51,7 @@ export interface CanvasProps {
 
 const Canvas = (props: CanvasProps) => {
   const {
+    id,
     width,
     height,
     shapes,
@@ -53,7 +60,20 @@ const Canvas = (props: CanvasProps) => {
     currentTool,
     disabled
   } = props;
+  const whiteboardContext = useContext(WhiteboardContext);
+
+  if (! whiteboardContext) {
+    throw new Error('No whiteboard context');
+  }
+
+  const {
+    handleUpdateShapes
+  } = whiteboardContext;
   const stageRef = useRef<Konva.Stage | null>(null);
+
+  const handleObjectUpdateShapes = (shapes: Record<CanvasObjectIdType, CanvasObjectModel>) => {
+    handleUpdateShapes(id, shapes);
+  };
 
   // In the future, we may wrap onAddShapes with some other logic.
   // For now, it's just an alias.
@@ -127,7 +147,7 @@ const Canvas = (props: CanvasProps) => {
               const renderDispatcher = dispatcherMap[shape.type] || defaultDispatcher;
               const { renderShape } = renderDispatcher;
 
-              return renderShape(id, shape, areShapesDraggable);
+              return renderShape(id, shape, areShapesDraggable, handleObjectUpdateShapes);
             })
           }
         </Layer>

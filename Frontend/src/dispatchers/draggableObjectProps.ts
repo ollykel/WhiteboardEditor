@@ -1,13 +1,23 @@
 import Konva from 'konva';
 
+import type {
+  CanvasObjectIdType,
+  ShapeModel
+} from '@/types/CanvasObjectModel';
+
 export interface DraggableObjectProps {
-   onMouseOver?: (ev: Konva.KonvaEventObject<MouseEvent>) => void;
-   onMouseOut?: (ev: Konva.KonvaEventObject<MouseEvent>) => void;
-   onMouseDown?: (ev: Konva.KonvaEventObject<MouseEvent>) => void;
-   onMouseUp?: (ev: Konva.KonvaEventObject<MouseEvent>) => void;
+  onMouseOver?: (ev: Konva.KonvaEventObject<MouseEvent>) => void;
+  onMouseOut?: (ev: Konva.KonvaEventObject<MouseEvent>) => void;
+  onMouseDown?: (ev: Konva.KonvaEventObject<MouseEvent>) => void;
+  onMouseUp?: (ev: Konva.KonvaEventObject<MouseEvent>) => void;
+  onDragEnd?: (ev: Konva.KonvaEventObject<DragEvent>) => void;
 }
 
-const draggableObjectProps = (isDraggable: boolean): DraggableObjectProps => {
+const draggableObjectProps = <ShapeType extends ShapeModel> (
+  shapeModel: ShapeType,
+  isDraggable: boolean,
+  handleUpdateShapes: (shapes: Record<CanvasObjectIdType, ShapeType>) => void
+): DraggableObjectProps => {
   const handleMouseOver = (ev: Konva.KonvaEventObject<MouseEvent>) => {
     const stage = ev.target.getStage();
 
@@ -40,11 +50,22 @@ const draggableObjectProps = (isDraggable: boolean): DraggableObjectProps => {
     }
   };
 
+  const handleDragEnd = (ev: Konva.KonvaEventObject<DragEvent>) => {
+    const id = parseInt(ev.target.id());
+    const x = ev.target.x();
+    const y = ev.target.y();
+
+    handleUpdateShapes({
+      [id]: ({ ...shapeModel, x, y })
+    });
+  };
+
   return ({
     onMouseOver: isDraggable && handleMouseOver || undefined,
     onMouseOut: isDraggable && handleMouseOut || undefined,
     onMouseDown: isDraggable && handleMouseDown || undefined,
-    onMouseUp: isDraggable && handleMouseUp || undefined
+    onMouseUp: isDraggable && handleMouseUp || undefined,
+    onDragEnd: isDraggable && handleDragEnd || undefined
   });
 };
 

@@ -12,26 +12,34 @@ import type {
 const canvasesByWhiteboardSlice = createSlice({
   name: 'canvasesByWhiteboard',
   // Will store data in a <whiteboard_id> => CanvasKeyType[] format
-  initialState: {} as Record<string, string[]>,
+  initialState: {} as Record<string, CanvasKeyType[]>,
   reducers: {
     setCanvasesByWhiteboard(state, action: PayloadAction<Record<string, CanvasKeyType[]>>) {
-
       return {
         ...state,
-        ...Object.fromEntries(Object.entries(action.payload).map(([k, v]) => [
-          k, v.map(canvasKey => canvasKey.toString())
-        ]))
+        ...action.payload
       };
     },
     addCanvasesByWhiteboard(state, action: PayloadAction<Record<string, CanvasKeyType[]>>) {
       const out = { ...state };
 
-      Object.entries(action.payload).forEach(([id, records]) => {
-        if (id.toString() in state) {
-          // need to filter out duplicate records
-          out[id] = [...new Set([...state[id], ...records.map(canvasKey => canvasKey.toString())])];
+      Object.entries(action.payload).forEach(([key, records]) => {
+        if (key.toString() in state) {
+          const canvasKeySet : Record<string, CanvasKeyType> = {};
+
+          // add existing keys to set
+          state[key.toString()]?.forEach(canvasKey => {
+            canvasKeySet[canvasKey.toString()] = canvasKey;
+          });
+
+          // add new keys to set
+          records.forEach(canvasKey => {
+            canvasKeySet[canvasKey.toString()] = canvasKey;
+          });
+
+          out[key.toString()] = Object.values(canvasKeySet);
         } else {
-          out[id] = records.map(canvasKey => canvasKey.toString());
+          out[key.toString()] = [...records];
         }
       });
 

@@ -13,7 +13,7 @@ import type {
 } from '@/types/CanvasObjectModel';
 
 // In reality, the string represents a CanvasKeyType
-export type CanvasObjectsByCanvasState = Record<string, string[]>;
+export type CanvasObjectsByCanvasState = Record<string, CanvasObjectKeyType[]>;
 
 const canvasObjectsByCanvasSlice = createSlice({
   name: 'canvasObjectsByCanvas',
@@ -23,19 +23,29 @@ const canvasObjectsByCanvasSlice = createSlice({
     setObjectsByCanvas(state, action: PayloadAction<Record<string, CanvasObjectKeyType[]>>) {
       return {
         ...state,
-        ...Object.fromEntries(Object.entries(action.payload).map(([k, v]) => [
-          k, v.map(objectKey => objectKey.toString())
-        ]))
+        ...action.payload
       };
     },
     addObjectsByCanvas(state, action: PayloadAction<Record<string, CanvasObjectKeyType[]>>) {
       const out = { ...state };
 
-      Object.entries(action.payload).forEach(([id, records]) => {
-        if (id.toString() in state) {
-          out[id] = [...new Set([...state[id], ...records.map(objectKey => objectKey.toString())])];
+      Object.entries(action.payload).forEach(([key, records]) => {
+        if (key.toString() in state) {
+          const objectKeySet : Record<string, CanvasObjectKeyType> = {};
+
+          // add existing keys to set
+          state[key.toString()]?.forEach(objKey => {
+            objectKeySet[objKey.toString()] = objKey;
+          });
+
+          // add new keys to set
+          records.forEach(objKey => {
+            objectKeySet[objKey.toString()] = objKey;
+          });
+
+          out[key] = Object.values(objectKeySet);
         } else {
-          out[id] = records.map(objectKey => objectKey.toString());
+          out[key] = [...records];
         }
       });
 

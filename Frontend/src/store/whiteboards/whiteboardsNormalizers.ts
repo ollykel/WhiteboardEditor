@@ -1,8 +1,9 @@
 import type {
   CanvasData,
   CanvasKeyType,
+  WhiteboardIdType,
   WhiteboardData,
-  WhiteboardRecord
+  WhiteboardAttribs
 } from '@/types/WebSocketProtocol';
 
 import {
@@ -11,8 +12,8 @@ import {
 } from '@/store/canvases/canvasesNormalizers';
 
 export interface WhiteboardNormal extends CanvasNormal {
-  whiteboards: WhiteboardRecord[];
-  canvasesByWhiteboard: Record<string, CanvasKeyType[]>;
+  whiteboards: Record<WhiteboardIdType, WhiteboardAttribs>;
+  canvasesByWhiteboard: Record<WhiteboardIdType, CanvasKeyType[]>;
 }
 
 // === normalizeWhiteboard =====================================================
@@ -34,25 +35,31 @@ export const normalizeWhiteboard = (
     .map((canvas: CanvasData) => normalizeCanvas(id, canvas))
     .reduce(
     (accum: CanvasNormal, curr: CanvasNormal) => ({
-      canvases: [...accum.canvases, ...curr.canvases],
-      canvasObjects: [...accum.canvasObjects, ...curr.canvasObjects],
+      canvases: {...accum.canvases, ...curr.canvases},
+      canvasObjects: {...accum.canvasObjects, ...curr.canvasObjects},
       canvasObjectsByCanvas: ({
         ...accum.canvasObjectsByCanvas,
         ...curr.canvasObjectsByCanvas
       })
     }),
     {
-      canvases: [],
-      canvasObjects: [],
+      canvases: {},
+      canvasObjects: {},
       canvasObjectsByCanvas: {}
     }
   );
 
   return ({
-    whiteboards: [({ id, name })],
+    whiteboards: {
+      [id]: ({ id, name })
+    },
     canvases,
     canvasesByWhiteboard: {
-      [id]: canvases.map(canvas => [id, canvas.id])
+      [id]: whiteboard.canvases.map(({ id: canvasId }) => {
+        const canvasKey: CanvasKeyType = [id, canvasId];
+
+        return canvasKey;
+      })
     },
     canvasObjects,
     canvasObjectsByCanvas

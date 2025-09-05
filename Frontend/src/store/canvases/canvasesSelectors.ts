@@ -5,22 +5,17 @@ import type {
 } from '@/store';
 
 import type {
-  CanvasRecord,
+  CanvasAttribs,
   CanvasData,
   CanvasKeyType,
   WhiteboardIdType
 } from '@/types/WebSocketProtocol';
 
-import type {
-  CanvasObjectRecord,
-  CanvasObjectModel
-} from '@/types/CanvasObjectModel';
-
-export const selectCanvasById = (state: RootState, canvasId: CanvasKeyType): CanvasRecord | null => (
+export const selectCanvasById = (state: RootState, canvasId: CanvasKeyType): CanvasAttribs | null => (
   state.canvases[canvasId.toString()] || null
 );
 
-export const selectCanvasesByWhiteboardId = (state: RootState, whiteboardId: WhiteboardIdType): CanvasRecord[] => (
+export const selectCanvasesByWhiteboardId = (state: RootState, whiteboardId: WhiteboardIdType): CanvasAttribs[] => (
   state.canvasesByWhiteboard[whiteboardId]?.map(canvasKey => state.canvases[canvasKey.toString()]) ?? []
 );
 
@@ -33,29 +28,30 @@ export const selectCanvasWithObjects = createSelector(
   (canvas, objects) => canvas ? ({ ...canvas, shapes: objects }) : null
 );
 
-export const selectCanvasesWithObjectsByWhiteboardId = (state: RootState, whiteboardId: WhiteboardIdType): CanvasData[] => (
+export const selectCanvasesWithObjectsByWhiteboardId = (
+  state: RootState,
+  whiteboardId: WhiteboardIdType
+): CanvasData[] => (
   state.canvasesByWhiteboard[whiteboardId]
-    ?.map((canvasKey: string) => {
-      const canvas = state.canvases[canvasKey];
-      const { id, width, height } = canvas;
+    ?.map((canvasKey: CanvasKeyType) => {
+      const canvas = state.canvases[canvasKey.toString()] || null;
 
       if (! canvas) {
         return null;
       } else {
+        const { id, width, height } = canvas;
+
         return ({
           id, width, height,
           shapes: Object.fromEntries(state.canvasObjectsByCanvas[canvasKey.toString()]
             .map(canvasObjectKey => {
-              if (! (canvasObjectKey in state.canvasObjects)) {
+              if (! (canvasObjectKey.toString() in state.canvasObjects)) {
                 return null;
               } else {
-                const canvasObjectRecord = state.canvasObjects[canvasObjectKey];
-                const { id } = canvasObjectRecord;
-                const out: Partial<CanvasObjectRecord> = { ...canvasObjectRecord };
+                const [_whiteboardId, _canvasId, objId] = canvasObjectKey;
+                const canvasObjectRecord = state.canvasObjects[canvasObjectKey.toString()];
 
-                delete out.id;
-
-                return [id, out as CanvasObjectModel];
+                return [objId, canvasObjectRecord];
               }
             })
             .filter(entry => !!entry)

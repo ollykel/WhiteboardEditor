@@ -38,8 +38,6 @@ export const addCanvas = (
     canvasObjectsByCanvas
   } = normalizeCanvas(whiteboardId, canvas);
 
-  console.log('!! addCanvas');
-
   dispatch(setCanvases(canvases));
   dispatch(setCanvasObjects(canvasObjects));
   dispatch(setObjectsByCanvas(canvasObjectsByCanvas));

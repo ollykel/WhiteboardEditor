@@ -68,6 +68,10 @@ export interface VectorModel extends CanvasObjectBase {
 export type VectorRecord = VectorModel & ObjectID;
 export type VectorRecordFull = VectorModel & ObjectUID;
 
-export type CanvasObjectModel = RectModel | EllipseModel | VectorModel;
-export type CanvasObjectRecord = RectRecord | EllipseRecord | VectorRecord;
-export type CanvasObjectRecordFull = RectRecordFull | EllipseRecordFull | VectorRecordFull;
+export type ShapeModel = RectModel | EllipseModel;
+export type ShapeRecord = RectRecord | EllipseRecord;
+export type ShapeRecordFull = RectRecordFull | EllipseRecordFull;
+
+export type CanvasObjectModel = ShapeModel | VectorModel;
+export type CanvasObjectRecord = ShapeRecord | VectorRecord;
+export type CanvasObjectRecordFull = ShapeRecordFull | VectorRecordFull;

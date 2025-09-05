@@ -80,6 +80,14 @@ export interface ServerMessageCreateShapes {
   shapes: Record<CanvasObjectIdType, CanvasObjectRecord>;
 }
 
+// Update existing shapes in a canvas
+export interface ServerMessageUpdateShapes {
+  type: "update_shapes";
+  clientId: ClientIdType;
+  canvasId: CanvasIdType;
+  shapes: Record<CanvasObjectIdType, CanvasObjectRecord>;
+}
+
 export interface ServerMessageCreateCanvas {
   type: "create_canvas";
   clientId: ClientIdType;
@@ -89,19 +97,40 @@ export interface ServerMessageCreateCanvas {
   allowedUsers: ClientIdType[];
 }
 
+export interface ServerMessageIndividualError {
+  type: 'individual_error';
+  clientId: ClientIdType;
+  message: string;
+}
+
+export interface ServerMessageBroadcastError {
+  type: 'broadcast_error';
+  message: string;
+}
+
 // Tagged union of all possible client-server messages
 export type SocketServerMessage =
-  ServerMessageInitClient
+  | ServerMessageInitClient
   | ServerMessageClientLogin
   | ServerMessageClientLogout
   | ServerMessageCreateShapes
-  | ServerMessageCreateCanvas;
+  | ServerMessageUpdateShapes
+  | ServerMessageCreateCanvas
+  | ServerMessageIndividualError
+  | ServerMessageBroadcastError;
 
 // Notify the server that the client has created a new shape.
 export interface ClientMessageCreateShapes {
   type: "create_shapes";
   canvasId: CanvasIdType;
   shapes: CanvasObjectModel[];
+}
+
+// Notify the server that the client has updated shape(s)
+export interface ClientMessageUpdateShapes {
+  type: "update_shapes";
+  canvasId: CanvasIdType;
+  shapes: Record<CanvasObjectIdType, CanvasObjectModel>;
 }
 
 // Notify server that client has created a new canvas
@@ -115,5 +144,6 @@ export interface ClientMessageCreateCanvas {
 
 // Tagged union of all possible client-server messages
 export type SocketClientMessage =
-  ClientMessageCreateShapes
+  | ClientMessageCreateShapes
+  | ClientMessageUpdateShapes
   | ClientMessageCreateCanvas;

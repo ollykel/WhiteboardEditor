@@ -76,7 +76,7 @@ pub enum ServerSocketMessage {
     ClientLogin { client_id: ClientIdType },
     ClientLogout { client_id: ClientIdType },
     CreateShapes { client_id: ClientIdType, canvas_id: CanvasIdType, shapes: HashMap<CanvasObjectIdType, ShapeModel> },
-    UpdateShapes { client_id: ClientIdType, canvas_id: CanvasIdType, shapes: HashMap<CanvasObjectIdType, ShapeModel> },
+    UpdateShapes { client_id: ClientIdType, canvas_id: CanvasIdType, shapes: HashMap<String, ShapeModel> },
     CreateCanvas { client_id: ClientIdType, canvas_id: CanvasIdType, width: u64, height: u64, allowed_users: Vec<ClientIdType> },
     IndividualError { client_id: ClientIdType, message: String },
     BroadcastError { message: String },
@@ -86,7 +86,7 @@ pub enum ServerSocketMessage {
 #[serde(tag = "type", rename_all = "snake_case", rename_all_fields="camelCase")]
 pub enum ClientSocketMessage {
     CreateShapes { canvas_id: CanvasIdType, shapes: Vec<ShapeModel> },
-    UpdateShapes { canvas_id: CanvasIdType, shapes: HashMap<CanvasObjectIdType, ShapeModel> },
+    UpdateShapes { canvas_id: CanvasIdType, shapes: HashMap<String, ShapeModel> },
     CreateCanvas { width: u64, height: u64 }
 }
 
@@ -171,101 +171,112 @@ pub struct ConnectionState {
 // @param client_msg_s          -- Content of client message
 // @return                      -- (Optional) Message to send to clients, if any
 pub async fn handle_client_message(program_state: &ProgramState, current_client_id: ClientIdType, client_msg_s: &str) -> Option<ServerSocketMessage> {
-    if let Ok(client_msg) = serde_json::from_str::<ClientSocketMessage>(client_msg_s) {
-        println!("Received message from client {}", current_client_id);
-        
-        match client_msg {
-            ClientSocketMessage::CreateShapes{ canvas_id, ref shapes } => {
-                let mut whiteboard = program_state.whiteboard.lock().await;
-                println!("Creating shape on canvas {} ...", canvas_id);
+    match serde_json::from_str::<ClientSocketMessage>(client_msg_s) {
+        Ok(client_msg) => {
+            println!("Received message from client {}", current_client_id);
+            
+            match client_msg {
+                ClientSocketMessage::CreateShapes{ canvas_id, ref shapes } => {
+                    let mut whiteboard = program_state.whiteboard.lock().await;
+                    println!("Creating shape on canvas {} ...", canvas_id);
 
-                match whiteboard.canvases.get_mut(canvas_id as usize) {
-                    None => {
-                        // TODO: send an error handling message
-                        todo!()
-                    },
-                    Some(canvas) => {
-                        let mut new_shapes = HashMap::<CanvasObjectIdType, ShapeModel>::new();
+                    match whiteboard.canvases.get_mut(canvas_id as usize) {
+                        None => {
+                            // TODO: send an error handling message
+                            todo!()
+                        },
+                        Some(canvas) => {
+                            let mut new_shapes = HashMap::<CanvasObjectIdType, ShapeModel>::new();
 
-                        for shape in shapes.iter() {
-                            let obj_id = canvas.next_shape_id;
+                            for shape in shapes.iter() {
+                                let obj_id = canvas.next_shape_id;
 
-                            new_shapes.insert(obj_id, shape.clone());
-                            canvas.shapes.insert(obj_id, shape.clone());
-                            canvas.next_shape_id += 1;
-                        }// end for (idx, &mut shape) in new_shapes.iter_mut().enumerate()
+                                new_shapes.insert(obj_id, shape.clone());
+                                canvas.shapes.insert(obj_id, shape.clone());
+                                canvas.next_shape_id += 1;
+                            }// end for (idx, &mut shape) in new_shapes.iter_mut().enumerate()
 
-                        Some(ServerSocketMessage::CreateShapes{
-                            client_id: current_client_id,
-                            canvas_id: canvas_id,
-                            shapes: new_shapes
-                        })
+                            Some(ServerSocketMessage::CreateShapes{
+                                client_id: current_client_id,
+                                canvas_id: canvas_id,
+                                shapes: new_shapes
+                            })
+                        }
                     }
-                }
-            },
-            ClientSocketMessage::UpdateShapes{ canvas_id, ref shapes } => {
-                let mut whiteboard = program_state.whiteboard.lock().await;
-                println!("Creating shape on canvas {} ...", canvas_id);
+                },
+                ClientSocketMessage::UpdateShapes{ canvas_id, ref shapes } => {
+                    let mut whiteboard = program_state.whiteboard.lock().await;
+                    println!("Creating shape on canvas {} ...", canvas_id);
 
-                match whiteboard.canvases.get_mut(canvas_id as usize) {
-                    None => {
-                        // TODO: send an error handling message
-                        todo!()
-                    },
-                    Some(canvas) => {
-                        let mut new_shapes = shapes.clone();
+                    match whiteboard.canvases.get_mut(canvas_id as usize) {
+                        None => {
+                            // TODO: send an error handling message
+                            todo!()
+                        },
+                        Some(canvas) => {
+                            let mut new_shapes = shapes.clone();
 
-                        for (obj_id, shape) in shapes.iter() {
-                            if ! canvas.shapes.contains_key(obj_id) {
-                                new_shapes.remove(obj_id);
-                            } else {
-                                canvas.shapes.insert(*obj_id, shape.clone());
-                            }
-                        }// end for (&obj_id, &shape) in shapes.iter_mut()
+                            for (obj_id_s, shape) in shapes.iter() {
+                                match obj_id_s.parse::<CanvasObjectIdType>() {
+                                    Ok(obj_id) => {
+                                        if ! canvas.shapes.contains_key(&obj_id) {
+                                            new_shapes.remove(obj_id_s);
+                                        } else {
+                                            canvas.shapes.insert(obj_id, shape.clone());
+                                        }
+                                    },
+                                    Err(e) => {
+                                        println!("Could not parse \"{}\" into object id: {}", obj_id_s, e);
+                                    }
+                                };
+                            }// end for (&obj_id, &shape) in shapes.iter_mut()
 
-                        Some(ServerSocketMessage::UpdateShapes{
-                            client_id: current_client_id,
-                            canvas_id: canvas_id,
-                            shapes: new_shapes
-                        })
+                            Some(ServerSocketMessage::UpdateShapes{
+                                client_id: current_client_id,
+                                canvas_id: canvas_id,
+                                shapes: new_shapes
+                            })
+                        }
                     }
-                }
-            },
-            ClientSocketMessage::CreateCanvas { width, height } => {
-                let mut whiteboard = program_state.whiteboard.lock().await;
-                let new_canvas_id = whiteboard.canvases.len() as CanvasIdType;
-                let mut allowed = HashSet::new();
+                },
+                ClientSocketMessage::CreateCanvas { width, height } => {
+                    let mut whiteboard = program_state.whiteboard.lock().await;
+                    let new_canvas_id = whiteboard.canvases.len() as CanvasIdType;
+                    let mut allowed = HashSet::new();
 
-                // Initialize new canvas with only current user allowed to edit
-                allowed.insert(current_client_id);
+                    // Initialize new canvas with only current user allowed to edit
+                    allowed.insert(current_client_id);
 
-                let allowed_users_vec = allowed.iter().copied().collect::<Vec<_>>();
-                
-                whiteboard.canvases.push(Canvas{
-                    id: new_canvas_id,
-                    width: width,
-                    height: height,
-                    shapes: HashMap::<CanvasObjectIdType, ShapeModel>::new(),
-                    next_shape_id: 0,
-                    allowed_users: Some(allowed),
-                });
+                    let allowed_users_vec = allowed.iter().copied().collect::<Vec<_>>();
+                    
+                    whiteboard.canvases.push(Canvas{
+                        id: new_canvas_id,
+                        width: width,
+                        height: height,
+                        shapes: HashMap::<CanvasObjectIdType, ShapeModel>::new(),
+                        next_shape_id: 0,
+                        allowed_users: Some(allowed),
+                    });
 
-                Some(ServerSocketMessage::CreateCanvas{
-                    client_id: current_client_id,
-                    canvas_id: new_canvas_id,
-                    width: width,
-                    height: height,
-                    allowed_users: allowed_users_vec,
-                })
-            },
+                    Some(ServerSocketMessage::CreateCanvas{
+                        client_id: current_client_id,
+                        canvas_id: new_canvas_id,
+                        width: width,
+                        height: height,
+                        allowed_users: allowed_users_vec,
+                    })
+                },
+            }
+        },
+        Err(e) => {
+            println!("ERROR: invalid client message: {}", client_msg_s);
+            println!("Reason: {}", e);
+
+            Some(ServerSocketMessage::IndividualError{
+                client_id: current_client_id,
+                message: String::from("invalid client message")
+            })
         }
-    } else {
-        println!("ERROR: invalid client message: {}", client_msg_s);
-
-        Some(ServerSocketMessage::IndividualError{
-            client_id: current_client_id,
-            message: String::from("invalid client message")
-        })
     }
 }// end handle_client_message
 
