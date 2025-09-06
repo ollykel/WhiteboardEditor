@@ -4,6 +4,8 @@ import type {
 
 import type {
   WhiteboardIdType,
+  CanvasIdType,
+  CanvasKeyType,
   CanvasData
 } from '@/types/WebSocketProtocol';
 
@@ -16,7 +18,8 @@ import {
 } from '@/store/canvasObjects/canvasObjectsByCanvasSlice';
 
 import {
-  setCanvases
+  setCanvases,
+  removeCanvases
 } from '@/store/canvases/canvasesSlice';
 
 import {
@@ -44,4 +47,14 @@ export const addCanvas = (
   dispatch(addCanvasesByWhiteboard({
     [whiteboardId]: [[whiteboardId, canvas.id]]
   }));
+};
+
+export const deleteCanvas = (
+  dispatch: AppDispatch,
+  whiteboardId: WhiteboardIdType,
+  canvasId: CanvasIdType
+) => {
+  const canvasKey: CanvasKeyType = [whiteboardId, canvasId];
+
+  dispatch(removeCanvases([canvasKey]));
 };

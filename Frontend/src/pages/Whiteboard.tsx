@@ -19,7 +19,8 @@ import {
 import {
   addWhiteboard,
   setCanvasObjects,
-  addCanvas
+  addCanvas,
+  deleteCanvas
 } from '@/controllers';
 
 import {
@@ -215,6 +216,15 @@ const Whiteboard = () => {
                 shapes: {},
                 allowedUsers
               }));
+            }
+            break;
+          case 'delete_canvases':
+            {
+              const { canvasIds } = msg;
+
+              for (const canvasId of canvasIds) {
+                deleteCanvas(dispatch, whiteboardIdRef.current, canvasId);
+              }// end for (const canvasId of canvasIds)
             }
             break;
           case 'individual_error':

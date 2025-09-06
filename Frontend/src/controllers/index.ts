@@ -5,7 +5,8 @@ import {
 } from './canvasObjects';
 
 import {
-  addCanvas
+  addCanvas,
+  deleteCanvas
 } from './canvases';
 
 import {
@@ -15,5 +16,6 @@ import {
 export {
   setCanvasObjects,
   addCanvas,
+  deleteCanvas,
   addWhiteboard
 };
