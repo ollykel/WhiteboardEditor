@@ -1,0 +1,44 @@
+name: Feature Request
+description: Request a new feature to improve the app
+title: "[Feature]: "
+labels:
+  - feature
+  - requirement
+assignees: []
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to fill out this feature request!
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Decription of the feature request
+      description: Please describe the functionality you would like to see in our app.
+      placeholder: "As a <user>, I would like to <action>, so that <objective>."
+    validations:
+      required: true
+
+  - type: textarea
+    id: acceptance_criteria
+    attributes:
+      label: Acceptance criteria
+      description: What should be implemented to satisfy this requirement?
+    validations:
+      required: true
+
+  - type: dropdown
+    id: estimate
+    attributes:
+      label: Effort estimate
+      description: On a relative scale of 1-8, how difficult do you estimate that implementing this task will be?
+      options:
+        - 1
+        - 2
+        - 3
+        - 5
+        - 8
+    validations:
+      required: true
