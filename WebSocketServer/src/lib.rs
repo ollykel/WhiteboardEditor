@@ -310,7 +310,7 @@ mod tests {
             whiteboard: Mutex::new(Whiteboard{
                 id: 0,
                 name: String::from("Test"),
-                canvases: vec![]
+                canvases: HashMap::new()
             }),
             active_clients: Mutex::new(HashSet::new())
         };
