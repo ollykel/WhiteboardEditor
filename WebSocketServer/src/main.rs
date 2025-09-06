@@ -35,16 +35,19 @@ async fn main() {
             whiteboard: Mutex::new(Whiteboard{
                 id: 0,
                 name: String::from("First Shared Whiteboard"),
-                canvases: vec![
-                    Canvas{
-                        id: 0,
-                        width: 512,
-                        height: 512,
-                        shapes: HashMap::<CanvasObjectIdType, ShapeModel>::new(),
-                        next_shape_id: 0,
-                        allowed_users: None, // None means open to all users
-                    }
-                ]
+                canvases: HashMap::from([
+                    (
+                        0,
+                        Canvas{
+                            id: 0,
+                            width: 512,
+                            height: 512,
+                            shapes: HashMap::<CanvasObjectIdType, ShapeModel>::new(),
+                            next_shape_id: 0,
+                            allowed_users: None, // None means open to all users
+                        }
+                    )
+                ])
             }),
             active_clients: Mutex::new(HashSet::<ClientIdType>::new())
         }

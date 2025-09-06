@@ -78,6 +78,7 @@ pub enum ServerSocketMessage {
     CreateShapes { client_id: ClientIdType, canvas_id: CanvasIdType, shapes: HashMap<CanvasObjectIdType, ShapeModel> },
     UpdateShapes { client_id: ClientIdType, canvas_id: CanvasIdType, shapes: HashMap<String, ShapeModel> },
     CreateCanvas { client_id: ClientIdType, canvas_id: CanvasIdType, width: u64, height: u64, allowed_users: Vec<ClientIdType> },
+    DeleteCanvases { client_id: ClientIdType, canvas_ids: Vec<CanvasIdType> },
     IndividualError { client_id: ClientIdType, message: String },
     BroadcastError { message: String },
 }
@@ -87,7 +88,8 @@ pub enum ServerSocketMessage {
 pub enum ClientSocketMessage {
     CreateShapes { canvas_id: CanvasIdType, shapes: Vec<ShapeModel> },
     UpdateShapes { canvas_id: CanvasIdType, shapes: HashMap<String, ShapeModel> },
-    CreateCanvas { width: u64, height: u64 }
+    CreateCanvas { width: u64, height: u64 },
+    DeleteCanvases { canvas_ids: Vec<CanvasIdType> }
 }
 
 #[derive(Clone, Serialize)]
@@ -123,7 +125,7 @@ impl Canvas {
 pub struct Whiteboard {
     pub id: WhiteboardIdType,
     pub name: String,
-    pub canvases: Vec<Canvas>,
+    pub canvases: HashMap<CanvasIdType, Canvas>,
 }
 
 impl Whiteboard {
@@ -134,7 +136,7 @@ impl Whiteboard {
             id: self.id,
             name: self.name.clone(),
             canvases: self.canvases.iter()
-                .map(|c| c.to_client_view())
+                .map(|(_, c)| c.to_client_view())
                 .collect()
         }
     }// end pub fn to_client_view(&self) -> CanvasClientView
@@ -180,7 +182,7 @@ pub async fn handle_client_message(program_state: &ProgramState, current_client_
                     let mut whiteboard = program_state.whiteboard.lock().await;
                     println!("Creating shape on canvas {} ...", canvas_id);
 
-                    match whiteboard.canvases.get_mut(canvas_id as usize) {
+                    match whiteboard.canvases.get_mut(&canvas_id) {
                         None => {
                             // TODO: send an error handling message
                             todo!()
@@ -208,7 +210,7 @@ pub async fn handle_client_message(program_state: &ProgramState, current_client_
                     let mut whiteboard = program_state.whiteboard.lock().await;
                     println!("Creating shape on canvas {} ...", canvas_id);
 
-                    match whiteboard.canvases.get_mut(canvas_id as usize) {
+                    match whiteboard.canvases.get_mut(&canvas_id) {
                         None => {
                             // TODO: send an error handling message
                             todo!()
@@ -249,14 +251,17 @@ pub async fn handle_client_message(program_state: &ProgramState, current_client_
 
                     let allowed_users_vec = allowed.iter().copied().collect::<Vec<_>>();
                     
-                    whiteboard.canvases.push(Canvas{
-                        id: new_canvas_id,
-                        width: width,
-                        height: height,
-                        shapes: HashMap::<CanvasObjectIdType, ShapeModel>::new(),
-                        next_shape_id: 0,
-                        allowed_users: Some(allowed),
-                    });
+                    whiteboard.canvases.insert(
+                        new_canvas_id,
+                        Canvas{
+                            id: new_canvas_id,
+                            width: width,
+                            height: height,
+                            shapes: HashMap::<CanvasObjectIdType, ShapeModel>::new(),
+                            next_shape_id: 0,
+                            allowed_users: Some(allowed),
+                        }
+                    );
 
                     Some(ServerSocketMessage::CreateCanvas{
                         client_id: current_client_id,
@@ -264,6 +269,19 @@ pub async fn handle_client_message(program_state: &ProgramState, current_client_
                         width: width,
                         height: height,
                         allowed_users: allowed_users_vec,
+                    })
+                },
+                ClientSocketMessage::DeleteCanvases { canvas_ids } => {
+                    let mut whiteboard = program_state.whiteboard.lock().await;
+
+                    // delete canvases identified by the given ids
+                    for id in &canvas_ids {
+                        whiteboard.canvases.remove(&id);
+                    }// end for id in canvas_ids
+
+                    Some(ServerSocketMessage::DeleteCanvases{
+                        client_id: current_client_id,
+                        canvas_ids: canvas_ids
                     })
                 },
             }
