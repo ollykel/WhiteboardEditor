@@ -11,18 +11,26 @@ import type {
   OperationDispatcherProps
 } from '@/types/OperationDispatcher';
 import type {
-  CanvasObjectModel
+  CanvasObjectIdType,
+  CanvasObjectModel,
+  RectModel
 } from '@/types/CanvasObjectModel';
 import type {
   EventCoords
 } from '@/types/EventCoords';
+
+import draggableObjectProps from './draggableObjectProps';
 
 // === useRectangleDispatcher ==================================================
 //
 // Tool for drawing rectangles.
 //
 // =============================================================================
-const useRectangleDispatcher = ({ shapeAttributes, addShapes }: OperationDispatcherProps): OperationDispatcher => {
+const useRectangleDispatcher = ({
+  shapeAttributes,
+  addShapes
+}: OperationDispatcherProps
+): OperationDispatcher => {
   const [mouseDownCoords, setMouseDownCoords] = useState<EventCoords | null>(null);
   const [mouseCoords, setMouseCoords] = useState<EventCoords | null>(null);
 
@@ -81,7 +89,9 @@ const useRectangleDispatcher = ({ shapeAttributes, addShapes }: OperationDispatc
 
   const renderShape = (
     key: string | number,
-    model: CanvasObjectModel
+    model: CanvasObjectModel,
+    isDraggable: boolean,
+    handleUpdateShapes: (shapes: Record<CanvasObjectIdType, CanvasObjectModel>) => void
   ): React.JSX.Element | null => {
     if (model.type !== 'rect') {
       return null;
@@ -99,6 +109,7 @@ const useRectangleDispatcher = ({ shapeAttributes, addShapes }: OperationDispatc
       return (
         <Rect
           key={key}
+          id={`${key}`}
           x={x}
           y={y}
           width={width}
@@ -106,6 +117,8 @@ const useRectangleDispatcher = ({ shapeAttributes, addShapes }: OperationDispatc
           fill={fillColor}
           stroke={strokeColor}
           strokeWidth={strokeWidth}
+          draggable={isDraggable}
+          {...draggableObjectProps<RectModel>(model, isDraggable, handleUpdateShapes)}
         />
       );
     }

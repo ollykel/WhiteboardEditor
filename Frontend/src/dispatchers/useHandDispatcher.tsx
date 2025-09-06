@@ -1,3 +1,7 @@
+import {
+  useState
+} from 'react';
+
 import Konva from 'konva';
 
 import type {
@@ -9,20 +13,24 @@ import type {
   CanvasObjectModel
 } from '@/types/CanvasObjectModel';
 
-// === useMockDispatcher =======================================================
-// Use as a dummy for unimplemented functionalities.
+// === useHandDispatcher =======================================================
+// 
+// Dispatcher for the Hand tool. Unlike other tools, doesn't generate a preview
+// or render shapes.
 //
 // =============================================================================
-const useMockDispatcher = (_props: OperationDispatcherProps): OperationDispatcher => {
+const useHandDispatcher = (_props: OperationDispatcherProps): OperationDispatcher => {
+  const [isMouseDown, setIsMouseDown] = useState<boolean>(false);
+
   return ({
     handlePointerDown: (_ev: Konva.KonvaEventObject<MouseEvent>) => {
-      console.log('TODO: implement');
+      setIsMouseDown(true);
     },
     handlePointerMove: (_ev: Konva.KonvaEventObject<MouseEvent>) => {
-      console.log('TODO: implement');
+      // Nothing to do
     },
     handlePointerUp: (_ev: Konva.KonvaEventObject<MouseEvent>) => {
-      console.log('TODO: implement');
+      setIsMouseDown(false);
     },
     getPreview: () => null,
     renderShape: (
@@ -31,8 +39,8 @@ const useMockDispatcher = (_props: OperationDispatcherProps): OperationDispatche
       _isDraggable: boolean,
       _handleUpdateShapes: (shapes: Record<CanvasObjectIdType, CanvasObjectModel>) => void
     ) => null,
-    getTooltipText: () => "TODO: implement"
+    getTooltipText: () => isMouseDown ? "Drag shape(s) to desired location" : "Grab a shape to move its location"
   });
 };
 
-export default useMockDispatcher;
+export default useHandDispatcher;

@@ -1,7 +1,7 @@
 // re-import constituent functions
 
 import {
-  addCanvasObjects
+  setCanvasObjects
 } from './canvasObjects';
 
 import {
@@ -13,7 +13,7 @@ import {
 } from './whiteboards';
 
 export {
-  addCanvasObjects,
+  setCanvasObjects,
   addCanvas,
   addWhiteboard
 };

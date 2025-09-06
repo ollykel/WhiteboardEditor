@@ -5,6 +5,7 @@ import type {
   OperationDispatcherProps
 } from '@/types/OperationDispatcher';
 import type {
+  CanvasObjectIdType,
   CanvasObjectModel
 } from '@/types/CanvasObjectModel';
 
@@ -28,7 +29,9 @@ const useInaccessibleDispatcher = (_props: OperationDispatcherProps): OperationD
     getPreview: () => null,
     renderShape: (
       _key: string | number,
-      _model: CanvasObjectModel
+      _model: CanvasObjectModel,
+      _isDraggable: boolean,
+      _handleUpdateShapes: (shapes: Record<CanvasObjectIdType, CanvasObjectModel>) => void
     ) => null,
     getTooltipText: () => "You don't have access to this canvas"
   });

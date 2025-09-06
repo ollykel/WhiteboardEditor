@@ -3,7 +3,7 @@ import {
   useRef,
   useEffect,
   useReducer,
-  createContext
+  useContext
 } from 'react';
 
 import {
@@ -18,7 +18,7 @@ import {
 
 import {
   addWhiteboard,
-  addCanvasObjects,
+  setCanvasObjects,
   addCanvas
 } from '@/controllers';
 
@@ -30,6 +30,14 @@ import {
   selectCanvasesWithObjectsByWhiteboardId
 } from '@/store/canvases/canvasesSelectors';
 
+import {
+  selectCanvasObjectsByWhiteboard
+} from '@/store/canvasObjects/canvasObjectsSelectors';
+
+import WhiteboardContext, {
+  WhiteboardProvider
+} from "@/context/WhiteboardContext";
+
 import CanvasCard from "@/components/CanvasCard";
 import Sidebar from "@/components/Sidebar";
 import Toolbar from "@/components/Toolbar";
@@ -37,10 +45,14 @@ import ShapeAttributesMenu from "@/components/ShapeAttributesMenu";
 import Header from '@/components/Header';
 import shapeAttributesReducer from '@/reducers/shapeAttributesReducer';
 import type { ToolChoice } from '@/components/Tool';
-import type { CanvasObjectModel } from '@/types/CanvasObjectModel';
+import type {
+  CanvasObjectIdType,
+  CanvasObjectModel
+} from '@/types/CanvasObjectModel';
 import type {
   SocketServerMessage,
   ClientMessageCreateShapes,
+  ClientMessageUpdateShapes,
   ClientMessageCreateCanvas,
   CanvasData,
   CanvasIdType,
@@ -62,13 +74,22 @@ const Whiteboard = () => {
   //  - tool choice
 
   // -- references
-  const socketRef = useRef<WebSocket | null>(null);
+  const context = useContext(WhiteboardContext);
+
+  if (! context) {
+    throw new Error('No WhiteboardContext provided');
+  }
+
+  const {
+    socketRef,
+    whiteboardId,
+    setWhiteboardId
+  } = context;
 
   // -- managed state
   const [clientId, setClientId] = useState<number>(-1);
   const [activeClients, setActiveClients] = useState<Set<number>>(new Set());
   const [toolChoice, setToolChoice] = useState<ToolChoice>('rect');
-  const [whiteboardId, setWhiteboardId] = useState<WhiteboardIdType>(-1);
   const whiteboardIdRef = useRef<WhiteboardIdType>(whiteboardId);
 
   // dirty trick to keep whiteboardIdRef in-sync with whiteboardId
@@ -82,10 +103,6 @@ const Whiteboard = () => {
     fillColor: '#999999',
     strokeColor: '#000000',
     strokeWidth: 1
-  });
-
-  const WhiteboardContext = createContext({
-    toolChoice
   });
 
   const currWhiteboard: WhiteboardAttribs | null = useSelector((state: RootState) => (
@@ -138,15 +155,14 @@ const Whiteboard = () => {
         const msg = JSON.parse(event.data) as SocketServerMessage;
         console.log('Received:', msg);
 
-        // TODO: handle each type of message
         switch (msg.type) {
           case 'init_client':
             {
               const { clientId: initClientId, activeClients: initActiveClients, whiteboard } = msg;
 
-              addWhiteboard(dispatch, whiteboard);
               setWhiteboardId(whiteboard.id);
               setClientId(initClientId);
+              addWhiteboard(dispatch, whiteboard);
               setActiveClients(new Set(initActiveClients));
             }
             break;
@@ -178,7 +194,14 @@ const Whiteboard = () => {
             {
               const { canvasId, shapes } = msg;
 
-              addCanvasObjects(dispatch, whiteboardIdRef.current, canvasId, shapes);
+              setCanvasObjects(dispatch, whiteboardIdRef.current, canvasId, shapes);
+            }
+            break;
+          case 'update_shapes':
+            {
+              const { canvasId, shapes } = msg;
+
+              setCanvasObjects(dispatch, whiteboardIdRef.current, canvasId, shapes);
             }
             break;
           case 'create_canvas':
@@ -189,13 +212,21 @@ const Whiteboard = () => {
                 id: canvasId,
                 width,
                 height,
-                shapes: [],
+                shapes: {},
                 allowedUsers
               }));
             }
             break;
+          case 'individual_error':
+          case 'broadcast_error':
+            {
+              const { message } = msg;
+
+              console.error('Socket error:', message);
+            }
+            break;
           default:
-            console.log('Server Message type unrecognized');
+            console.log('Server Message unrecognized:', msg);
         }// end switch (msg.type)
       } catch (e) {
         console.log('Failed to parse message:', e);
@@ -211,7 +242,7 @@ const Whiteboard = () => {
       socketRef.current = null;
     };
     ws.onmessage = handleServerMessage;
-  }, []);
+  }, [socketRef, setWhiteboardId]);
 
   const makeHandleAddShapes = (canvasId: CanvasIdType) => (shapes: CanvasObjectModel[]) => {
     if (socketRef.current) {
@@ -226,81 +257,139 @@ const Whiteboard = () => {
     }
   };
 
+
   return (
-    <WhiteboardContext.Provider value={{ toolChoice }}>
-      <main>
-        {/* Header */}
-        <Header 
-          title={title}
-        />
-        {
-          /** Display if socket not connected **/
-          (! isActive) && (
-            <p className="text-lg font-bold text-red-600">
-              Connecting ...
-            </p>
-          )
-        }
+    <main>
+      {/* Header */}
+      <Header 
+        title={title}
+      />
+      {
+        /** Display if socket not connected **/
+        (! isActive) && (
+          <p className="text-lg font-bold text-red-600">
+            Connecting ...
+          </p>
+        )
+      }
 
-        {/* Content */}
-        <div className="mt-20">
-          {/* Left-hand sidebar for toolbar and menus */}
-          <Sidebar side="left">
-            {/* Toolbar */}
-            <Toolbar
-              toolChoice={toolChoice}
-              onToolChange={setToolChoice}
-              onNewCanvas={handleNewCanvas}
-            />
+      {/* Content */}
+      <div className="mt-20">
+        {/* Left-hand sidebar for toolbar and menus */}
+        <Sidebar side="left">
+          {/* Toolbar */}
+          <Toolbar
+            toolChoice={toolChoice}
+            onToolChange={setToolChoice}
+            onNewCanvas={handleNewCanvas}
+          />
 
-            {/** Shape Attributes Menu **/}
-            <ShapeAttributesMenu
-              attributes={shapeAttributesState}
-              dispatch={dispatchShapeAttributes}
-            />
-          </Sidebar>
+          {/** Shape Attributes Menu **/}
+          <ShapeAttributesMenu
+            attributes={shapeAttributesState}
+            dispatch={dispatchShapeAttributes}
+          />
+        </Sidebar>
 
 
-          {/* Canvas Container */}
-          <div className="flex flex-col justify-center flex-wrap ml-40">
-            {/** Misc. info **/}
+        {/* Canvas Container */}
+        <div className="flex flex-col justify-center flex-wrap ml-40">
+          {/** Misc. info **/}
 
-            <div className="flex flex-col justify-center flex-wrap">
-              {/** Own Client ID **/}
-              <div>
-                <span>Client ID: </span> {clientId}
-              </div>
-
-              {/* Display Active Clients */}
-              <div>
-                <span>Active user IDs: </span>
-                { [...activeClients.keys()].join(', ') }
-              </div>
+          <div className="flex flex-col justify-center flex-wrap">
+            {/** Own Client ID **/}
+            <div>
+              <span>Client ID: </span> {clientId}
             </div>
 
-            <div className="flex flex-1 flex-row justify-center flex-wrap">
-              {canvases.map(({ id: canvasId, width, height, shapes, allowedUsers }: CanvasData) => {
-                const hasAccess = allowedUsers.length === 0 || allowedUsers.includes(clientId);
-                return (
-                  <CanvasCard
-                    key={canvasId}
-                    title={"TODO: store titles"}
-                    width={width}
-                    height={height}
-                    shapes={shapes}
-                    onAddShapes={makeHandleAddShapes(canvasId)}
-                    shapeAttributes={shapeAttributesState}
-                    currentTool={toolChoice}
-                    disabled={!hasAccess}
-                  />
-                );
-              })}
+            {/* Display Active Clients */}
+            <div>
+              <span>Active user IDs: </span>
+              { [...activeClients.keys()].join(', ') }
             </div>
           </div>
-        </div>
-      </main>
-    </WhiteboardContext.Provider>
-  );
-}
 
-export default Whiteboard;
+          <div className="flex flex-1 flex-row justify-center flex-wrap">
+            {canvases.map(({ id: canvasId, width, height, shapes, allowedUsers }: CanvasData) => {
+              const hasAccess = allowedUsers.length === 0 || allowedUsers.includes(clientId);
+              return (
+                <CanvasCard
+                  id={canvasId}
+                  key={canvasId}
+                  title={"TODO: store titles"}
+                  width={width}
+                  height={height}
+                  shapes={shapes}
+                  onAddShapes={makeHandleAddShapes(canvasId)}
+                  shapeAttributes={shapeAttributesState}
+                  currentTool={toolChoice}
+                  disabled={!hasAccess}
+                />
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    </main>
+  );
+};// end Whiteboard
+
+const WrappedWhiteboard = () => {
+  const socketRef = useRef<WebSocket | null>(null);
+  const [whiteboardId, setWhiteboardId] = useState<WhiteboardIdType>(-1);
+
+  const canvasObjectsByCanvas: Record<CanvasIdType, Record<CanvasObjectIdType, CanvasObjectModel>> = useSelector((state: RootState) => (
+    selectCanvasObjectsByWhiteboard(state, whiteboardId)
+  ));
+
+  const handleUpdateShapes = (canvasId: CanvasIdType, shapes: Record<CanvasObjectIdType, CanvasObjectModel>) => {
+    if (socketRef.current) {
+      // find relevant objects and merge the new attributes into the existing
+      // attributes
+      const canvasObjects: Record<CanvasObjectIdType, CanvasObjectModel> | null = canvasObjectsByCanvas[canvasId] || null;
+
+      if (! canvasObjects) {
+        console.error('No canvas objects on canvas id', canvasId);
+        return;
+      }
+
+      const changedObjects: Record<CanvasObjectIdType, CanvasObjectModel> = {};
+
+      for (const [objIdStr, objUpdate] of Object.entries(shapes)) {
+        const objId = parseInt(objIdStr);
+
+        if (objId in canvasObjects) {
+          changedObjects[objId] = ({
+            ...canvasObjects[objId],
+            ...objUpdate
+          });
+        }
+      }// end for (const [objId, objUpdate] of Object.entries(shapes))
+
+      const createShapesMsg: ClientMessageUpdateShapes = ({
+        type: 'update_shapes',
+        canvasId,
+        shapes: changedObjects
+      });
+
+      socketRef.current.send(JSON.stringify(createShapesMsg));
+    }
+  };
+
+  const [currentTool, setCurrentTool] = useState<ToolChoice>('hand');
+
+  return (
+    <WhiteboardProvider
+      socketRef={socketRef}
+      handleUpdateShapes={handleUpdateShapes}
+      currentTool={currentTool}
+      setCurrentTool={setCurrentTool}
+      whiteboardId={whiteboardId}
+      setWhiteboardId={setWhiteboardId}
+    >
+      <Whiteboard />
+    </WhiteboardProvider>
+  );
+};// end WrappedWhiteboard
+
+export default WrappedWhiteboard;
