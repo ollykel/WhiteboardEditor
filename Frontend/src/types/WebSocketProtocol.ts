@@ -6,7 +6,11 @@
 // =============================================================================
 
 // --- local imports
-import type { ShapeModel } from '@/types/ShapeModel';
+import type {
+  CanvasObjectIdType,
+  CanvasObjectModel,
+  CanvasObjectRecord
+} from '@/types/CanvasObjectModel';
 
 // The unique identifier for clients within a web socket session.
 export type ClientIdType = number;
@@ -17,19 +21,36 @@ export type CanvasIdType = number;
 // Unique identifier for each whiteboard
 export type WhiteboardIdType = number;
 
-export interface CanvasData {
+export interface CanvasAttribs {
   id: CanvasIdType;
   width: number;
   height: number;
-  shapes: ShapeModel[];
+}
+
+// Contains nested data
+export interface CanvasData extends CanvasAttribs {
+  shapes: Record<CanvasObjectIdType, CanvasObjectModel>,
   allowedUsers: ClientIdType[];
 }
 
-export interface WhiteboardData {
+// Ensure unique id by including whiteboard id
+export type CanvasKeyType = [WhiteboardIdType, CanvasIdType];
+
+export interface CanvasRecord extends CanvasAttribs {
+  whiteboardId: WhiteboardIdType;
+}
+
+export interface WhiteboardAttribs {
   id: WhiteboardIdType;
   name: string;
+}
+
+// Contains nested data
+export interface WhiteboardData extends WhiteboardAttribs {
   canvases: CanvasData[];
 }
+
+export type WhiteboardRecord = WhiteboardAttribs;
 
 // Sent to an individual client to initialize the whiteboard on their end
 export interface ServerMessageInitClient {
@@ -56,7 +77,15 @@ export interface ServerMessageCreateShapes {
   type: "create_shapes";
   clientId: ClientIdType;
   canvasId: CanvasIdType;
-  shapes: ShapeModel[];
+  shapes: Record<CanvasObjectIdType, CanvasObjectRecord>;
+}
+
+// Update existing shapes in a canvas
+export interface ServerMessageUpdateShapes {
+  type: "update_shapes";
+  clientId: ClientIdType;
+  canvasId: CanvasIdType;
+  shapes: Record<CanvasObjectIdType, CanvasObjectRecord>;
 }
 
 export interface ServerMessageCreateCanvas {
@@ -68,19 +97,40 @@ export interface ServerMessageCreateCanvas {
   allowedUsers: ClientIdType[];
 }
 
+export interface ServerMessageIndividualError {
+  type: 'individual_error';
+  clientId: ClientIdType;
+  message: string;
+}
+
+export interface ServerMessageBroadcastError {
+  type: 'broadcast_error';
+  message: string;
+}
+
 // Tagged union of all possible client-server messages
 export type SocketServerMessage =
-  ServerMessageInitClient
+  | ServerMessageInitClient
   | ServerMessageClientLogin
   | ServerMessageClientLogout
   | ServerMessageCreateShapes
-  | ServerMessageCreateCanvas;
+  | ServerMessageUpdateShapes
+  | ServerMessageCreateCanvas
+  | ServerMessageIndividualError
+  | ServerMessageBroadcastError;
 
 // Notify the server that the client has created a new shape.
 export interface ClientMessageCreateShapes {
   type: "create_shapes";
   canvasId: CanvasIdType;
-  shapes: ShapeModel[];
+  shapes: CanvasObjectModel[];
+}
+
+// Notify the server that the client has updated shape(s)
+export interface ClientMessageUpdateShapes {
+  type: "update_shapes";
+  canvasId: CanvasIdType;
+  shapes: Record<CanvasObjectIdType, CanvasObjectModel>;
 }
 
 // Notify server that client has created a new canvas
@@ -94,5 +144,6 @@ export interface ClientMessageCreateCanvas {
 
 // Tagged union of all possible client-server messages
 export type SocketClientMessage =
-  ClientMessageCreateShapes
+  | ClientMessageCreateShapes
+  | ClientMessageUpdateShapes
   | ClientMessageCreateCanvas;

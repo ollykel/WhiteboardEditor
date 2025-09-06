@@ -4,6 +4,7 @@ use std::{
     sync::Arc,
     net::SocketAddr,
     collections::HashSet,
+    collections::HashMap,
 };
 
 use futures::{
@@ -39,7 +40,8 @@ async fn main() {
                         id: 0,
                         width: 512,
                         height: 512,
-                        shapes: Vec::<ShapeModel>::new(),
+                        shapes: HashMap::<CanvasObjectIdType, ShapeModel>::new(),
+                        next_shape_id: 0,
                         allowed_users: None, // None means open to all users
                     }
                 ]

@@ -21,6 +21,7 @@ services:
         target: /app/cert.pem
     depends_on:
       - frontend
+      - rest_api
       - web_socket_server
   
   frontend:

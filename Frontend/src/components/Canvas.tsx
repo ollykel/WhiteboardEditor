@@ -7,379 +7,105 @@
 //
 // =============================================================================
 
-import { useState, useRef } from 'react';
-import { Stage, Layer, Rect, Ellipse, Line, Text } from 'react-konva';
+import {
+  useRef,
+  useContext
+} from 'react';
+import { Stage, Layer, Text } from 'react-konva';
 import Konva from 'konva';
 
 // -- local imports
+import WhiteboardContext from '@/context/WhiteboardContext';
 import type { ToolChoice } from '@/components/Tool';
-import type { ShapeModel } from '@/types/ShapeModel';
+import type {
+  CanvasObjectIdType,
+  CanvasObjectModel
+} from '@/types/CanvasObjectModel';
+import type {
+  CanvasIdType,
+} from '@/types/WebSocketProtocol';
+import type {
+  ShapeAttributesState
+} from '@/reducers/shapeAttributesReducer';
+import type {
+  OperationDispatcher,
+} from '@/types/OperationDispatcher';
+
+// -- dispatchers
+import useMockDispatcher from '@/dispatchers/useMockDispatcher';
+import useInaccessibleDispatcher from '@/dispatchers/useInaccessibleDispatcher';
+import useRectangleDispatcher from '@/dispatchers/useRectangleDispatcher';
+import useEllipseDispatcher from '@/dispatchers/useEllipseDispatcher';
+import useVectorDispatcher from '@/dispatchers/useVectorDispatcher';
+import useHandDispatcher from '@/dispatchers/useHandDispatcher';
 
 export interface CanvasProps {
+  id: CanvasIdType;
   width: number;
   height: number;
-  shapes: ShapeModel[];
-  onAddShapes: (shapes: ShapeModel[]) => void;
+  shapes: Record<CanvasObjectIdType, CanvasObjectModel>;
+  onAddShapes: (shapes: CanvasObjectModel[]) => void;
+  shapeAttributes: ShapeAttributesState;
   currentTool: ToolChoice;
   disabled: boolean;
 }
 
-// For starters, just assume all rectangles have uniform width, height, and
-// color.
-interface EventCoords {
-  x: number;
-  y: number;
-}
-
-interface OperationDispatcherProps {
-  addShapes: (shapes: ShapeModel[]) => void;
-}
-
-// === interface OperationDispatcher ===========================================
-//
-// A collection of functions that handle tool operations.
-//
-// Each tool operation must handle three Konva events:
-//  - pointer down: The starting point of the operation should be determined
-//  here (i.e. the initial point from which to draw a rectangle)
-//  - pointer move: Triggered whenever the pointer moves while the mouse is
-//  down. Should modify the state of preview and prepare the operation for its
-//  final state.
-//  - pointer up: Finishes the operation. Likely creates a shape, to be added to
-//  the collection of shapes within the canvas.
-//
-//  The dispatcher should also provide a getPreview method, which indicates the
-//  current state of the operation and the final shape that the user would draw
-//  if they finish the operation at any given point (i.e. an outline of a
-//  rectangle).
-//
-// =============================================================================
-interface OperationDispatcher {
-  handlePointerDown: (ev: Konva.KonvaEventObject<MouseEvent>) => void;
-  handlePointerMove: (ev: Konva.KonvaEventObject<MouseEvent>) => void;
-  handlePointerUp: (ev: Konva.KonvaEventObject<MouseEvent>) => void;
-  getPreview: () => React.JSX.Element | null;
-  renderShape: (key: string | number, model: ShapeModel) => React.JSX.Element | null;
-  getTooltipText: () => string;
-}
-
-// === useMockDispatcher =======================================================
-//
-// Use as a dummy for unimplemented functionalities.
-//
-// =============================================================================
-const useMockDispatcher = (_props: OperationDispatcherProps): OperationDispatcher => {
-  return ({
-    handlePointerDown: (_ev: Konva.KonvaEventObject<MouseEvent>) => {
-      console.log('TODO: implement');
-    },
-    handlePointerMove: (_ev: Konva.KonvaEventObject<MouseEvent>) => {
-      console.log('TODO: implement');
-    },
-    handlePointerUp: (_ev: Konva.KonvaEventObject<MouseEvent>) => {
-      console.log('TODO: implement');
-    },
-    getPreview: () => null,
-    renderShape: (_key: string | number, _model: ShapeModel) => null,
-    getTooltipText: () => "TODO: implement"
-  });
-};
-
-// === useInaccessibleDispatcher ===============================================
-//
-// Used for keeping users from accessing inaccessible canvases.
-//
-// =============================================================================
-const useInaccessibleDispatcher = (_props: OperationDispatcherProps): OperationDispatcher => {
-  return ({
-    handlePointerDown: (_ev: Konva.KonvaEventObject<MouseEvent>) => {
-      console.log("You don't have access to this canvas");
-    },
-    handlePointerMove: (_ev: Konva.KonvaEventObject<MouseEvent>) => {
-      console.log("You don't have access to this canvas");
-    },
-    handlePointerUp: (_ev: Konva.KonvaEventObject<MouseEvent>) => {
-      console.log("You don't have access to this canvas");
-    },
-    getPreview: () => null,
-    renderShape: (_key: string | number, _model: ShapeModel) => null,
-    getTooltipText: () => "You don't have access to this canvas"
-  });
-};
-
-const useRectangleDispatcher = ({ addShapes }: OperationDispatcherProps): OperationDispatcher => {
-  const [mouseDownCoords, setMouseDownCoords] = useState<EventCoords | null>(null);
-  const [mouseCoords, setMouseCoords] = useState<EventCoords | null>(null);
-
-  const handlePointerDown = (ev: Konva.KonvaEventObject<MouseEvent>) => {
-    const { offsetX, offsetY } = ev.evt;
-
-    setMouseDownCoords({ x: offsetX, y: offsetY });
-    setMouseCoords({ x: offsetX, y: offsetY });
-  };
-
-  const handlePointerMove = (ev: Konva.KonvaEventObject<MouseEvent>) => {
-    const { offsetX, offsetY } = ev.evt;
-
-    setMouseCoords({ x: offsetX, y: offsetY });
-  };
-
-  const handlePointerUp = (ev: Konva.KonvaEventObject<MouseEvent>) => {
-    if (mouseDownCoords !== null) {
-      const { offsetX: xA, offsetY: yA } = ev.evt;
-      const { x: xB, y: yB } = mouseDownCoords;
-      const xMin = Math.min(xA, xB);
-      const yMin = Math.min(yA, yB);
-      const width = Math.abs(xA - xB);
-      const height = Math.abs(yA - yB);
-
-      addShapes([{ type: 'rect', x: xMin, y: yMin, width, height }]);
-      setMouseDownCoords(null);
-    }
-  };
-
-  const getPreview = (): React.JSX.Element | null => {
-    if (mouseDownCoords && mouseCoords) {
-      const { x: xA, y: yA } = mouseDownCoords;
-      const { x: xB, y: yB } = mouseCoords;
-
-      return (
-        <Rect
-          x={Math.min(xA, xB)}
-          y={Math.min(yA, yB)}
-          width={Math.abs(xA - xB)}
-          height={Math.abs(yA - yB)}
-          fill="#ffaaaa"
-        />
-      );
-    } else {
-      return null;
-    }
-  };
-
-  const renderShape = (key: string | number, model: ShapeModel): React.JSX.Element | null => {
-    if (model.type !== 'rect') {
-      return null;
-    } else {
-      const { x, y, width, height } = model;
-
-      return (
-        <Rect
-          key={key}
-          x={x}
-          y={y}
-          width={width}
-          height={height}
-          fill="red"
-          shadowBlur={10}
-        />
-      );
-    }
-  };
-
-  const getTooltipText = () => {
-    if (mouseDownCoords) {
-      return 'Drag to desired shape, then release';
-    } else {
-      return 'Click to draw a rectangle';
-    }
-  };
-
-  return ({
-    handlePointerDown,
-    handlePointerMove,
-    handlePointerUp,
-    getPreview,
-    renderShape,
-    getTooltipText
-  });
-};// end useRectangleDispatcher
-
-const useEllipseDispatcher = ({ addShapes }: OperationDispatcherProps): OperationDispatcher => {
-  const [mouseDownCoords, setMouseDownCoords] = useState<EventCoords | null>(null);
-  const [mouseCoords, setMouseCoords] = useState<EventCoords | null>(null);
-
-  const handlePointerDown = (ev: Konva.KonvaEventObject<MouseEvent>) => {
-    const { offsetX, offsetY } = ev.evt;
-
-    setMouseDownCoords({ x: offsetX, y: offsetY });
-    setMouseCoords({ x: offsetX, y: offsetY });
-  };
-
-  const handlePointerMove = (ev: Konva.KonvaEventObject<MouseEvent>) => {
-    const { offsetX, offsetY } = ev.evt;
-
-    setMouseCoords({ x: offsetX, y: offsetY });
-  };
-
-  const handlePointerUp = (ev: Konva.KonvaEventObject<MouseEvent>) => {
-    if (mouseDownCoords !== null) {
-      const { offsetX: xRelease, offsetY: yRelease } = ev.evt;
-      const { x: xOrigin, y: yOrigin } = mouseDownCoords;
-
-      addShapes([{
-        type: 'ellipse',
-        x: xOrigin,
-        y: yOrigin,
-        radiusX: Math.abs(xRelease - xOrigin),
-        radiusY: Math.abs(yRelease - yOrigin)
-      }]);
-      setMouseDownCoords(null);
-    }
-  };
-
-  const getPreview = (): React.JSX.Element | null => {
-    if (mouseDownCoords && mouseCoords) {
-      const { x: xOrigin, y: yOrigin } = mouseDownCoords;
-      const { x: xCurr, y: yCurr } = mouseCoords;
-
-      return (
-        <Ellipse
-          x={xOrigin}
-          y={yOrigin}
-          radiusX={Math.abs(xCurr - xOrigin)}
-          radiusY={Math.abs(yCurr - yOrigin)}
-          fill="#ffaaaa"
-        />
-      );
-    } else {
-      return null;
-    }
-  };
-
-  const renderShape = (key: string | number, model: ShapeModel): React.JSX.Element | null => {
-    if (model.type !== 'ellipse') {
-      return null;
-    } else {
-      const { x, y, radiusX, radiusY } = model;
-
-      return (
-        <Ellipse
-          key={key}
-          x={x}
-          y={y}
-          radiusX={radiusX}
-          radiusY={radiusY}
-          fill="red"
-        />
-      );
-    }
-  };
-
-  const getTooltipText = () => {
-    if (mouseDownCoords) {
-      return 'Drag to desired shape, then release';
-    } else {
-      return 'Click to draw an ellipse';
-    }
-  };
-
-  return ({
-    handlePointerDown,
-    handlePointerMove,
-    handlePointerUp,
-    getPreview,
-    renderShape,
-    getTooltipText
-  });
-};// end useEllipseDispatcher
-
-const useVectorDispatcher = ({ addShapes }: OperationDispatcherProps): OperationDispatcher => {
-  const [mouseDownCoords, setMouseDownCoords] = useState<EventCoords | null>(null);
-  const [mouseCoords, setMouseCoords] = useState<EventCoords | null>(null);
-
-  const handlePointerDown = (ev: Konva.KonvaEventObject<MouseEvent>) => {
-    const { offsetX, offsetY } = ev.evt;
-
-    setMouseDownCoords({ x: offsetX, y: offsetY });
-    setMouseCoords({ x: offsetX, y: offsetY });
-  };
-
-  const handlePointerMove = (ev: Konva.KonvaEventObject<MouseEvent>) => {
-    const { offsetX, offsetY } = ev.evt;
-
-    setMouseCoords({ x: offsetX, y: offsetY });
-  };
-
-  const handlePointerUp = (ev: Konva.KonvaEventObject<MouseEvent>) => {
-    if (mouseDownCoords !== null) {
-      const { offsetX: xA, offsetY: yA } = ev.evt;
-      const { x: xB, y: yB } = mouseDownCoords;
-
-      addShapes([{
-        type: 'vector',
-        points: [xA, yA, xB, yB]
-      }]);
-      setMouseDownCoords(null);
-    }
-  };
-
-  const getPreview = (): React.JSX.Element | null => {
-    if (mouseDownCoords && mouseCoords) {
-      const { x: xA, y: yA } = mouseDownCoords;
-      const { x: xB, y: yB } = mouseCoords;
-
-      return (
-        <Line
-          points={[xA, yA, xB, yB]}
-          stroke="#888888"
-        />
-      );
-    } else {
-      return null;
-    }
-  };
-
-  const renderShape = (key: string | number, model: ShapeModel): React.JSX.Element | null => {
-    if (model.type !== 'vector') {
-      return null;
-    } else {
-      const { points } = model;
-
-      return (
-        <Line
-          key={key}
-          points={points}
-          stroke="#000000"
-        />
-      );
-    }
-  };
-
-  const getTooltipText = () => {
-    if (mouseDownCoords) {
-      return 'Drag to desired length, then release';
-    } else {
-      return 'Click to draw a vector';
-    }
-  };
-
-  return ({
-    handlePointerDown,
-    handlePointerMove,
-    handlePointerUp,
-    getPreview,
-    renderShape,
-    getTooltipText
-  });
-};// end useVectorDispatcher
-
 const Canvas = (props: CanvasProps) => {
-  const { width, height, shapes, onAddShapes, currentTool, disabled } = props;
+  const {
+    id,
+    width,
+    height,
+    shapes,
+    onAddShapes,
+    shapeAttributes,
+    currentTool,
+    disabled
+  } = props;
+  const whiteboardContext = useContext(WhiteboardContext);
+
+  if (! whiteboardContext) {
+    throw new Error('No whiteboard context');
+  }
+
+  const {
+    handleUpdateShapes
+  } = whiteboardContext;
   const stageRef = useRef<Konva.Stage | null>(null);
+
+  const handleObjectUpdateShapes = (shapes: Record<CanvasObjectIdType, CanvasObjectModel>) => {
+    handleUpdateShapes(id, shapes);
+  };
 
   // In the future, we may wrap onAddShapes with some other logic.
   // For now, it's just an alias.
   const addShapes = onAddShapes;
   
-  const defaultDispatcher = useMockDispatcher({ addShapes });
-  const inaccessibleDispatcher = useInaccessibleDispatcher({ addShapes });
+  const defaultDispatcher = useMockDispatcher({
+    shapeAttributes,
+    addShapes
+  });
+  const inaccessibleDispatcher = useInaccessibleDispatcher({
+    shapeAttributes,
+    addShapes
+  });
 
   const dispatcherMap = {
-    'hand': defaultDispatcher,
-    'rect': useRectangleDispatcher({ addShapes }),
-    'ellipse': useEllipseDispatcher({ addShapes }),
-    'vector': useVectorDispatcher({ addShapes })
+    'hand': useHandDispatcher({
+      shapeAttributes,
+      addShapes
+    }),
+    'rect': useRectangleDispatcher({
+      shapeAttributes,
+      addShapes
+    }),
+    'ellipse': useEllipseDispatcher({
+      shapeAttributes,
+      addShapes
+    }),
+    'vector': useVectorDispatcher({
+      shapeAttributes,
+      addShapes
+    })
   };
 
   let dispatcher: OperationDispatcher;
@@ -398,34 +124,39 @@ const Canvas = (props: CanvasProps) => {
     getTooltipText
   } = dispatcher;
 
+  // TODO: delegate draggability to tool definitions
+  const areShapesDraggable = (currentTool === 'hand');
+
   return (
-    <Stage
-      ref={stageRef}
-      width={width}
-      height={height}
-      onPointerdown={handlePointerDown}
-      onPointermove={handlePointerMove}
-      onPointerup={handlePointerUp}
-    >
-      <Layer>
-        <Text
-          text={getTooltipText()}
-          fontSize={15}
-        />
-        {/** Preview Shape **/}
-        {getPreview()}
+    <>
+      <Stage
+        ref={stageRef}
+        width={width}
+        height={height}
+        onPointerdown={handlePointerDown}
+        onPointermove={handlePointerMove}
+        onPointerup={handlePointerUp}
+      >
+        <Layer>
+          <Text
+            text={getTooltipText()}
+            fontSize={15}
+          />
+          {/** Preview Shape **/}
+          {getPreview()}
 
-        {/** Shapes **/}
-        {
-          shapes.filter((sh) => sh).map((shape: ShapeModel, idx: number) => {
-            const renderDispatcher = dispatcherMap[shape.type] || defaultDispatcher;
-            const { renderShape } = renderDispatcher;
+          {/** Shapes **/}
+          {
+            Object.entries(shapes).filter(([_id, sh]) => !!sh).map(([id, shape]) => {
+              const renderDispatcher = dispatcherMap[shape.type] || defaultDispatcher;
+              const { renderShape } = renderDispatcher;
 
-            return renderShape(idx, shape);
-          })
-        }
-      </Layer>
-    </Stage>
+              return renderShape(id, shape, areShapesDraggable, handleObjectUpdateShapes);
+            })
+          }
+        </Layer>
+      </Stage>
+    </>
   );
 };
 
