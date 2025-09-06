@@ -36,26 +36,31 @@ function CanvasMenu() {
           >
             View Main Screen
           </DropdownMenuItem>
+          
           <DropdownMenuItem
             onSelect={handleEditUsers}
           >
             Edit Users
           </DropdownMenuItem>
+          
           <DropdownMenuItem
             onSelect={handleDelete}
           >
             Delete Canvas
           </DropdownMenuItem>
+          
           <DropdownMenuItem
             onSelect={handleRequestAccess}
           >
             Request Access
           </DropdownMenuItem>
+          
           <DropdownMenuItem
             onSelect={handleDownload}
           >
             Download
           </DropdownMenuItem>
+          
           <DropdownMenuItem
             onSelect={handleMerge}
           >
