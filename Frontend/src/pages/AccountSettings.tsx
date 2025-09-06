@@ -2,7 +2,7 @@ import { useContext, useState } from "react";
 import { useForm } from "@tanstack/react-form";
 import AuthContext from "@/context/AuthContext";
 import { useModal } from "@/components/Modal";
-import Header from "@/components/Header";
+import HeaderAuthed from "@/components/HeaderAuthed";
 import api from '@/api/axios';
 
 export default function AccountSettings() {
@@ -91,7 +91,10 @@ export default function AccountSettings() {
 
   return (
     <>
-      <Header title={title}/>
+      <HeaderAuthed
+        title={title}
+      />
+
       <div className="flex flex-row justify-center">
         <div className="p-6 space-y-6 min-w-3xl w-1/2">
           {/* Basic Info */}
