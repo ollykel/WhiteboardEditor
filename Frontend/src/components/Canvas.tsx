@@ -7,15 +7,23 @@
 //
 // =============================================================================
 
-import { useRef } from 'react';
+import {
+  useRef,
+  useContext
+} from 'react';
 import { Stage, Layer, Text } from 'react-konva';
 import Konva from 'konva';
 
 // -- local imports
+import WhiteboardContext from '@/context/WhiteboardContext';
 import type { ToolChoice } from '@/components/Tool';
 import type {
+  CanvasObjectIdType,
   CanvasObjectModel
 } from '@/types/CanvasObjectModel';
+import type {
+  CanvasIdType,
+} from '@/types/WebSocketProtocol';
 import type {
   ShapeAttributesState
 } from '@/reducers/shapeAttributesReducer';
@@ -29,11 +37,13 @@ import useInaccessibleDispatcher from '@/dispatchers/useInaccessibleDispatcher';
 import useRectangleDispatcher from '@/dispatchers/useRectangleDispatcher';
 import useEllipseDispatcher from '@/dispatchers/useEllipseDispatcher';
 import useVectorDispatcher from '@/dispatchers/useVectorDispatcher';
+import useHandDispatcher from '@/dispatchers/useHandDispatcher';
 
 export interface CanvasProps {
+  id: CanvasIdType;
   width: number;
   height: number;
-  shapes: CanvasObjectModel[];
+  shapes: Record<CanvasObjectIdType, CanvasObjectModel>;
   onAddShapes: (shapes: CanvasObjectModel[]) => void;
   shapeAttributes: ShapeAttributesState;
   currentTool: ToolChoice;
@@ -42,6 +52,7 @@ export interface CanvasProps {
 
 const Canvas = (props: CanvasProps) => {
   const {
+    id,
     width,
     height,
     shapes,
@@ -50,7 +61,20 @@ const Canvas = (props: CanvasProps) => {
     currentTool,
     disabled
   } = props;
+  const whiteboardContext = useContext(WhiteboardContext);
+
+  if (! whiteboardContext) {
+    throw new Error('No whiteboard context');
+  }
+
+  const {
+    handleUpdateShapes
+  } = whiteboardContext;
   const stageRef = useRef<Konva.Stage | null>(null);
+
+  const handleObjectUpdateShapes = (shapes: Record<CanvasObjectIdType, CanvasObjectModel>) => {
+    handleUpdateShapes(id, shapes);
+  };
 
   // In the future, we may wrap onAddShapes with some other logic.
   // For now, it's just an alias.
@@ -66,7 +90,10 @@ const Canvas = (props: CanvasProps) => {
   });
 
   const dispatcherMap = {
-    'hand': defaultDispatcher,
+    'hand': useHandDispatcher({
+      shapeAttributes,
+      addShapes
+    }),
     'rect': useRectangleDispatcher({
       shapeAttributes,
       addShapes
@@ -97,6 +124,9 @@ const Canvas = (props: CanvasProps) => {
     getTooltipText
   } = dispatcher;
 
+  // TODO: delegate draggability to tool definitions
+  const areShapesDraggable = (currentTool === 'hand');
+
   return (
     <>
       <Stage
@@ -117,11 +147,11 @@ const Canvas = (props: CanvasProps) => {
 
           {/** Shapes **/}
           {
-            shapes.filter((sh) => sh).map((shape: CanvasObjectModel, idx: number) => {
+            Object.entries(shapes).filter(([_id, sh]) => !!sh).map(([id, shape]) => {
               const renderDispatcher = dispatcherMap[shape.type] || defaultDispatcher;
               const { renderShape } = renderDispatcher;
 
-              return renderShape(idx, shape);
+              return renderShape(id, shape, areShapesDraggable, handleObjectUpdateShapes);
             })
           }
         </Layer>

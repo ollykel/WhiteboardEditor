@@ -21,6 +21,7 @@
 // -- third-party imports
 import Konva from 'konva';
 import type {
+  CanvasObjectIdType,
   CanvasObjectModel
 } from '@/types/CanvasObjectModel';
 import type {
@@ -34,7 +35,9 @@ export interface OperationDispatcher {
   getPreview: () => React.JSX.Element | null;
   renderShape: (
     key: string | number,
-    model: CanvasObjectModel
+    model: CanvasObjectModel,
+    isDraggable: boolean,
+    handleUpdateShapes: (shapes: Record<CanvasObjectIdType, CanvasObjectModel>) => void
   ) => React.JSX.Element | null;
   getTooltipText: () => string;
 }// end interface OperationDispatcher

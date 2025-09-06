@@ -50,7 +50,8 @@ function Toolbar({ toolChoice, onToolChange, onNewCanvas }: ToolbarProps) {
       <PopoverMenu
         trigger={<ToolbarButton label="New Canvas" variant="default" />}
       >
-        <CreateCanvasMenu onCreate={onNewCanvas} />
+        {/* TODO: Get actual allUsers list from dynamic stored state */}
+        <CreateCanvasMenu onCreate={onNewCanvas} allUsers={["joe", "oliver"]}/>
       </PopoverMenu>
     </div>
   )

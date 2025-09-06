@@ -6,10 +6,8 @@ on:
       - 'docker-compose.yml'
       - '.github/workflows/test_rest_api.yml'
   pull_request:
-    paths:
-      - 'RestAPI/**'
-      - 'docker-compose.yml'
-      - '.github/workflows/test_rest_api.yml'
+    on:
+      - opened
 jobs:
   test_build_rest_api:
     # make sure image builds

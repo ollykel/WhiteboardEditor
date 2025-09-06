@@ -13,12 +13,10 @@ const whiteboardsSlice = createSlice({
   name: 'whiteboards',
   initialState: {} as Record<WhiteboardIdType, WhiteboardAttribs>,
   reducers: {
-    setWhiteboards(state, action: PayloadAction<WhiteboardAttribs[]>) {
+    setWhiteboards(state, action: PayloadAction<Record<WhiteboardIdType, WhiteboardAttribs>>) {
       return {
         ...state,
-        // Store [object_id, object] pairs, then turn them into an object to
-        // append to the existing state.
-        ...Object.fromEntries(action.payload.map((record) => [ record.id, record ]))
+        ...action.payload
       };
     },
     removeWhiteboards(state, action: PayloadAction<WhiteboardIdType[]>) {
