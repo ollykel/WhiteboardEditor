@@ -44,6 +44,8 @@ import WhiteboardContext, {
   WhiteboardProvider
 } from "@/context/WhiteboardContext";
 
+import api from '@/api/axios';
+
 import { useModal } from '@/components/Modal';
 
 import CanvasCard from "@/components/CanvasCard";
@@ -385,8 +387,23 @@ const Whiteboard = () => {
 
           <ShareWhiteboardForm
             shareLink="https://example.link/asfasdfasdf"
-            onSubmit={(data: ShareWhiteboardFormData) => {
-              console.log('Share request:', data);
+            onSubmit={async (data: ShareWhiteboardFormData) => {
+              const {
+                email
+              } = data;
+
+              const res = await api.post(`/whiteboards/${whiteboardId}/share`, ({
+                userIdType: 'email',
+                emails: [email]
+              }));
+
+              if (res.status >= 400) {
+                console.error('POST /whiteboards/:id/share failed:', res.data);
+              } else {
+                console.log('Share request submitted successfully');
+                alert('Share request submitted successfully');
+              }
+
               closeShareModal();
             }}
           />
