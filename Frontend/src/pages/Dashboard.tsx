@@ -14,7 +14,8 @@ function Dashboard() {
   const navigate = useNavigate();
 
   const createNewWhiteboard = () => {
-    navigate("/whiteboard/new");
+    // TODO: create new whiteboard and insert its id here
+    navigate("/whiteboard/0");
   }
 
   return (
