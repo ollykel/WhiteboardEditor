@@ -1,6 +1,7 @@
 // -- standard library imports
 
 use std::{
+    sync::Arc,
     collections::{
         HashSet,
         HashMap,
@@ -149,8 +150,18 @@ impl Whiteboard {
 //
 // ================================================================================================
 pub struct ProgramState {
-    pub whiteboard: Mutex<Whiteboard>,
+    pub whiteboards: Mutex<HashMap<WhiteboardIdType, Arc<Mutex<Whiteboard>>>>,
     pub active_clients: Mutex<HashSet<ClientIdType>>
+}
+
+// === ClientState ================================================================================
+//
+// Encapsulate all state a thread needs to handle a single client.
+//
+// ================================================================================================
+pub struct ClientState {
+    pub client_id: ClientIdType,
+    pub whiteboard_ref: Arc<Mutex<Whiteboard>>
 }
 
 // === Connection State ===========================================================================
@@ -170,14 +181,14 @@ pub struct ConnectionState {
 // @param current_client_id     -- ID of sending client
 // @param client_msg_s          -- Content of client message
 // @return                      -- (Optional) Message to send to clients, if any
-pub async fn handle_client_message(program_state: &ProgramState, current_client_id: ClientIdType, client_msg_s: &str) -> Option<ServerSocketMessage> {
+pub async fn handle_client_message(client_state: &ClientState, client_msg_s: &str) -> Option<ServerSocketMessage> {
     match serde_json::from_str::<ClientSocketMessage>(client_msg_s) {
         Ok(client_msg) => {
-            println!("Received message from client {}", current_client_id);
+            println!("Received message from client {}", client_state.client_id);
             
             match client_msg {
                 ClientSocketMessage::CreateShapes{ canvas_id, ref shapes } => {
-                    let mut whiteboard = program_state.whiteboard.lock().await;
+                    let mut whiteboard = client_state.whiteboard_ref.lock().await;
                     println!("Creating shape on canvas {} ...", canvas_id);
 
                     match whiteboard.canvases.get_mut(canvas_id as usize) {
@@ -197,7 +208,7 @@ pub async fn handle_client_message(program_state: &ProgramState, current_client_
                             }// end for (idx, &mut shape) in new_shapes.iter_mut().enumerate()
 
                             Some(ServerSocketMessage::CreateShapes{
-                                client_id: current_client_id,
+                                client_id: client_state.client_id,
                                 canvas_id: canvas_id,
                                 shapes: new_shapes
                             })
@@ -205,7 +216,7 @@ pub async fn handle_client_message(program_state: &ProgramState, current_client_
                     }
                 },
                 ClientSocketMessage::UpdateShapes{ canvas_id, ref shapes } => {
-                    let mut whiteboard = program_state.whiteboard.lock().await;
+                    let mut whiteboard = client_state.whiteboard_ref.lock().await;
                     println!("Creating shape on canvas {} ...", canvas_id);
 
                     match whiteboard.canvases.get_mut(canvas_id as usize) {
@@ -232,7 +243,7 @@ pub async fn handle_client_message(program_state: &ProgramState, current_client_
                             }// end for (&obj_id, &shape) in shapes.iter_mut()
 
                             Some(ServerSocketMessage::UpdateShapes{
-                                client_id: current_client_id,
+                                client_id: client_state.client_id,
                                 canvas_id: canvas_id,
                                 shapes: new_shapes
                             })
@@ -240,12 +251,12 @@ pub async fn handle_client_message(program_state: &ProgramState, current_client_
                     }
                 },
                 ClientSocketMessage::CreateCanvas { width, height } => {
-                    let mut whiteboard = program_state.whiteboard.lock().await;
+                    let mut whiteboard = client_state.whiteboard_ref.lock().await;
                     let new_canvas_id = whiteboard.canvases.len() as CanvasIdType;
                     let mut allowed = HashSet::new();
 
                     // Initialize new canvas with only current user allowed to edit
-                    allowed.insert(current_client_id);
+                    allowed.insert(client_state.client_id);
 
                     let allowed_users_vec = allowed.iter().copied().collect::<Vec<_>>();
                     
@@ -259,7 +270,7 @@ pub async fn handle_client_message(program_state: &ProgramState, current_client_
                     });
 
                     Some(ServerSocketMessage::CreateCanvas{
-                        client_id: current_client_id,
+                        client_id: client_state.client_id,
                         canvas_id: new_canvas_id,
                         width: width,
                         height: height,
@@ -273,7 +284,7 @@ pub async fn handle_client_message(program_state: &ProgramState, current_client_
             println!("Reason: {}", e);
 
             Some(ServerSocketMessage::IndividualError{
-                client_id: current_client_id,
+                client_id: client_state.client_id,
                 message: String::from("invalid client message")
             })
         }
@@ -288,18 +299,18 @@ mod tests {
     #[tokio::test]
     async fn handle_invalid_client_message() {
         // not even valid json
-        let program_state = ProgramState{
-            whiteboard: Mutex::new(Whiteboard{
+        let test_client_id = 0;
+        let client_msg_s = "This is not valid json";
+        let client_state = ClientState {
+            client_id: test_client_id,
+            whiteboard_ref: Arc::new(Mutex::new(Whiteboard {
                 id: 0,
                 name: String::from("Test"),
                 canvases: vec![]
-            }),
-            active_clients: Mutex::new(HashSet::new())
+            }))
         };
-        let test_client_id = 0;
-        let client_msg_s = "This is not valid json";
 
-        let resp = handle_client_message(&program_state, test_client_id, client_msg_s).await;
+        let resp = handle_client_message(&client_state, client_msg_s).await;
 
         match resp {
             None => panic!("Expected some client message, got None"),

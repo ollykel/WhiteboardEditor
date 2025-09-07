@@ -32,20 +32,22 @@ async fn main() {
         tx: tx.clone(),
         next_client_id: Mutex::new(0),
         program_state: ProgramState{
-            whiteboard: Mutex::new(Whiteboard{
-                id: 0,
-                name: String::from("First Shared Whiteboard"),
-                canvases: vec![
-                    Canvas{
-                        id: 0,
-                        width: 512,
-                        height: 512,
-                        shapes: HashMap::<CanvasObjectIdType, ShapeModel>::new(),
-                        next_shape_id: 0,
-                        allowed_users: None, // None means open to all users
-                    }
-                ]
-            }),
+            whiteboards: Mutex::new(HashMap::from([
+                (0, Arc::new(Mutex::new(Whiteboard {
+                    id: 0,
+                    name: String::from("First Shared Whiteboard"),
+                    canvases: vec![
+                        Canvas{
+                            id: 0,
+                            width: 512,
+                            height: 512,
+                            shapes: HashMap::<CanvasObjectIdType, ShapeModel>::new(),
+                            next_shape_id: 0,
+                            allowed_users: None, // None means open to all users
+                        }
+                    ]
+                })))
+            ])),
             active_clients: Mutex::new(HashSet::<ClientIdType>::new())
         }
     });
@@ -55,11 +57,11 @@ async fn main() {
         move || Arc::clone(&connection_state_ref)
     });
 
-    let ws_route = warp::path!("ws")
+    let ws_route = warp::path!("ws" / WhiteboardIdType)
         .and(warp::ws())
         .and(connection_state_ref_filter)
-        .map(|ws: warp::ws::Ws, connection_state_ref| {
-            ws.on_upgrade(move |socket| handle_connection(socket, connection_state_ref))
+        .map(|wid: WhiteboardIdType, ws: warp::ws::Ws, connection_state_ref| {
+            ws.on_upgrade(move |socket| handle_connection(socket, wid, connection_state_ref))
         });
 
     let addr: SocketAddr = ([0, 0, 0, 0], port).into();
@@ -67,7 +69,7 @@ async fn main() {
     warp::serve(ws_route).run(addr).await;
 }// end async fn main()
 
-async fn handle_connection(ws: WebSocket, connection_state_ref: Arc<ConnectionState>) {
+async fn handle_connection(ws: WebSocket, whiteboard_id: WhiteboardIdType, connection_state_ref: Arc<ConnectionState>) {
     let (mut user_ws_tx, mut user_ws_rx) = ws.split();
     let mut rx = connection_state_ref.tx.subscribe();
     let current_client_id = {
@@ -80,6 +82,33 @@ async fn handle_connection(ws: WebSocket, connection_state_ref: Arc<ConnectionSt
     };
 
     println!("New client: {}", current_client_id);
+
+    let client_state_ref = {
+        // - Fetch whiteboard identified by id from program state
+        // - TODO: If not present, try to fetch from the database
+        // - If no such whiteboard, send an individual error message and disconnect
+        let whiteboards_by_id = connection_state_ref.program_state.whiteboards.lock().await;
+
+        match whiteboards_by_id.get(&whiteboard_id) {
+            None => {
+                // No such whiteboard; send individual error and disconnect
+                // IndividualError { client_id: ClientIdType, message: String },
+                let err_msg = ServerSocketMessage::IndividualError {
+                    client_id: current_client_id,
+                    message: format!("Whiteboard {} not found", whiteboard_id)
+                };
+                
+                let _ = user_ws_tx.send(Message::text(serde_json::to_string(&err_msg).unwrap())).await;
+
+                // trigger early disconnect
+                return;
+            },
+            Some(whiteboard_ref) => Arc::new(ClientState {
+                client_id: current_client_id,
+                whiteboard_ref: Arc::clone(whiteboard_ref)
+            })
+        }
+    };
 
     {
         // Add new client to active clients, notify other users that they have logged in
@@ -95,9 +124,8 @@ async fn handle_connection(ws: WebSocket, connection_state_ref: Arc<ConnectionSt
 
     {
         // Send new client initialization message
-        let whiteboard = connection_state_ref
-            .program_state
-            .whiteboard.lock().await;
+        let whiteboard = client_state_ref.whiteboard_ref.lock().await;
+
         let active_clients = connection_state_ref
             .program_state
             .active_clients.lock().await;
@@ -130,6 +158,7 @@ async fn handle_connection(ws: WebSocket, connection_state_ref: Arc<ConnectionSt
     });
 
     let recv_task = tokio::spawn({
+        let client_state_ref = Arc::clone(&client_state_ref);
         let connection_state_ref = Arc::clone(&connection_state_ref);
 
         async move {
@@ -139,8 +168,7 @@ async fn handle_connection(ws: WebSocket, connection_state_ref: Arc<ConnectionSt
                     println!("Raw message: {}", msg_s);
 
                     let resp = handle_client_message(
-                        &connection_state_ref.program_state,
-                        current_client_id,
+                        &client_state_ref,
                         msg_s
                     ).await;
 

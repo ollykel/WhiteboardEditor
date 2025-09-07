@@ -70,7 +70,8 @@ import type {
 
 const getWebSocketUri = (): string => {
     const wsScheme = window.location.protocol === 'https:' ? 'wss' : 'ws';
-    const wsUri = `${wsScheme}://${window.location.host}/ws`;
+    // TODO: get whiteboard id from path params
+    const wsUri = `${wsScheme}://${window.location.host}/ws/0`;
 
     return wsUri;
 };
