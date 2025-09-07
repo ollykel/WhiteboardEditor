@@ -352,6 +352,7 @@ const Whiteboard = () => {
                   shapeAttributes={shapeAttributesState}
                   currentTool={toolChoice}
                   disabled={!hasAccess}
+                  allUsers={["joe"]} // TODO: Change hardcoded list of all users
                 />
               );
             })}
