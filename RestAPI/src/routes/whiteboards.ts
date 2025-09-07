@@ -42,10 +42,16 @@ router.get("/own", async (req: Request<{}, any, AuthorizedRequestBody>, res: Res
   res.status(200).json(ownWhiteboards);
 });
 
-export interface ShareWhiteboardRequestBody extends AuthorizedRequestBody {
-  users: UserIdType[];
-}
-
+export type ShareWhiteboardRequestBody = AuthorizedRequestBody & (
+  | {
+    userIdType: 'id';
+    ids: UserIdType[];
+  }
+  | {
+    userIdType: 'email';
+    emails: string[];
+  }
+)
 // --- Share whiteboard with other users
 router.post(
   "/:id/share",
@@ -55,9 +61,21 @@ router.post(
   ) => {
     try {
       const { id: whiteboardId } = req.params;
-      const { authUser, users } = req.body;
+      const { authUser, userIdType } = req.body;
 
-      const result = await addSharedUsers(whiteboardId, authUser.id, users);
+      const result = await addSharedUsers(
+        whiteboardId,
+        authUser.id,
+        (userIdType === 'id' ? ({
+          userIdType,
+          ids: req.body.ids
+        })
+        :
+        ({
+            userIdType,
+            emails: req.body.emails
+        }))
+      );
 
       switch (result.status) {
         case "success":
@@ -65,6 +83,7 @@ router.post(
         case "no_whiteboard":
           return res.status(404).json({ error: "Whiteboard not found" });
         case "invalid_users":
+        case "invalid_emails":
           return res
             .status(400)
             .json({ error: "Invalid users", invalid_users: result.invalid_users });

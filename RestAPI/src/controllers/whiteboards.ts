@@ -1,6 +1,5 @@
 import { Request, Response } from "express";
 import { Types } from "mongoose";
-import { BSONError } from "bson";
 
 // --- local imports
 import {
@@ -66,50 +65,21 @@ export type ShareWhiteboardResType =
   | { status: "success"; whiteboard: IWhiteboard }
   | { status: "no_whiteboard" }
   | { status: "invalid_users"; invalid_users: UserIdType[] }
+  | { status: "invalid_emails"; invalid_users: string[] }
   | { status: "forbidden" }
   | { status: "exception"; message: string };
 
 export const addSharedUsers = async (
   whiteboardId: WhiteboardIdType,
   ownerId: UserIdType,
-  users: UserIdType[]
+  users:
+    | { userIdType: 'id'; ids: UserIdType[]; }
+    | { userIdType: 'email'; emails: string[]; }
 ): Promise<ShareWhiteboardResType> => {
   try {
-
     // first, ensure given id can actually be cast to an ObjectId
-    try {
-      new Types.ObjectId(whiteboardId);
-    } catch (e: any) {
-      if (e instanceof BSONError) {
-        // it's a bad object ID
-        return { status: "no_whiteboard" };
-      } else {
-        // some other error
-        throw e;
-      }
-    }
-
-    // then, ensure all user ids are valid
-    const malformedUserIds = users.filter((uid) => {
-      try {
-        new Types.ObjectId(uid);
-
-        return false;
-      } catch (e: any) {
-        if (e instanceof BSONError) {
-          return true;
-        } else {
-          // some other error; throw to outside catch block
-          throw e;
-        }
-      }
-    });
-
-    if (malformedUserIds.length > 0) {
-      return {
-        status: 'invalid_users',
-        invalid_users: malformedUserIds
-      };
+    if (! Types.ObjectId.isValid(whiteboardId)) {
+      return { status: "no_whiteboard" };
     }
 
     const whiteboard = await Whiteboard.findById(whiteboardId);
@@ -119,22 +89,69 @@ export const addSharedUsers = async (
     }
 
     // verify ownership
-    if (!whiteboard.owner.equals(ownerId)) {
+    if (! whiteboard.owner.equals(ownerId)) {
       return { status: "forbidden" };
     }
 
-    // validate users exist
-    const foundUsers = await User.find({ _id: { $in: users } }).select("_id");
-    const foundIds = foundUsers.map((u) => u._id.toString());
-    const invalidUsers = users.filter((u) => !foundIds.includes(u.toString()));
+    let usersToShare : UserIdType[];
 
-    if (invalidUsers.length > 0) {
-      return { status: "invalid_users", invalid_users: invalidUsers };
+    switch (users.userIdType) {
+      case 'id':
+        {
+          const { ids } = users;
+
+          // ensure all user ids are valid
+          const malformedUserIds = ids.filter((uid) => (! Types.ObjectId.isValid(uid)));
+
+          if (malformedUserIds.length > 0) {
+            return {
+              status: 'invalid_users',
+              invalid_users: malformedUserIds
+            };
+          }
+
+          // validate users exist
+          const foundUsers = await User.find({ _id: { $in: ids } }).select("_id");
+          const foundIds = foundUsers.map((u) => u._id.toString());
+          const invalidUsers = ids.filter((u) => !foundIds.includes(u.toString()));
+
+          if (invalidUsers.length > 0) {
+            return { status: "invalid_users", invalid_users: invalidUsers };
+          }
+
+          usersToShare = ids;
+        }
+        break;
+      case 'email':
+        {
+          const { emails } = users;
+
+          // validate users exist
+          const foundUsers = await User.find({ email: { $in: emails } }).select("_id email");
+          const foundEmails = foundUsers.map(u => u.email);
+          const invalidEmails = emails.filter(u => !foundEmails.includes(u.toString()));
+
+          if (invalidEmails.length > 0) {
+            return { status: "invalid_emails", invalid_users: invalidEmails };
+          }
+
+          usersToShare = foundUsers.map(u => u._id);
+        }
+        break;
+    }
+    // ensure all user ids are valid
+    const malformedUserIds = usersToShare.filter((uid) => (! Types.ObjectId.isValid(uid)));
+
+    if (malformedUserIds.length > 0) {
+      return {
+        status: 'invalid_users',
+        invalid_users: malformedUserIds
+      };
     }
 
     // add new shared users (skip already added)
     const currentShared = whiteboard.shared_users.map((u) => u.toString());
-    const toAdd = users.filter((u) => !currentShared.includes(u.toString()));
+    const toAdd = usersToShare.filter((u) => !currentShared.includes(u.toString()));
 
     if (toAdd.length > 0) {
       whiteboard.shared_users.push(...toAdd);
