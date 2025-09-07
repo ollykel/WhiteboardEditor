@@ -10,6 +10,8 @@ import {
   useSelector
 } from 'react-redux';
 
+import { X } from 'lucide-react';
+
 // -- program state
 import {
   store,
@@ -38,17 +40,23 @@ import WhiteboardContext, {
   WhiteboardProvider
 } from "@/context/WhiteboardContext";
 
+import { useModal } from '@/components/Modal';
+
 import CanvasCard from "@/components/CanvasCard";
 import Sidebar from "@/components/Sidebar";
 import Toolbar from "@/components/Toolbar";
 import ShapeAttributesMenu from "@/components/ShapeAttributesMenu";
-import Header from '@/components/Header';
+import HeaderButton from '@/components/HeaderButton';
+import HeaderAuthed from '@/components/HeaderAuthed';
 import shapeAttributesReducer from '@/reducers/shapeAttributesReducer';
 import type { ToolChoice } from '@/components/Tool';
 import type {
   CanvasObjectIdType,
   CanvasObjectModel
 } from '@/types/CanvasObjectModel';
+import ShareWhiteboardForm, {
+  type ShareWhiteboardFormData
+} from '@/components/ShareWhiteboardForm';
 import type {
   SocketServerMessage,
   ClientMessageCreateShapes,
@@ -257,12 +265,32 @@ const Whiteboard = () => {
     }
   };
 
+  // -- Header elements
+  const {
+    Modal: ShareModal,
+    openModal: openShareModal,
+    closeModal: closeShareModal
+  } = useModal();
+
+  const ShareWhiteboardButton = () => (
+    <HeaderButton 
+      onClick={() => {
+        console.log("Share clicked");
+
+        openShareModal();
+      }}
+      title="Share"
+    /> 
+  );
 
   return (
     <main>
       {/* Header */}
-      <Header 
+      <HeaderAuthed 
         title={title}
+        toolbarElemsLeft={[
+          <ShareWhiteboardButton />
+        ]}
       />
       {
         /** Display if socket not connected **/
@@ -331,6 +359,28 @@ const Whiteboard = () => {
           </div>
         </div>
       </div>
+
+      {/** Modal that opens to share the whiteboard **/}
+      <ShareModal width="20em" height="10em" zIndex={100}>
+        <div className="flex flex-col">
+          <button
+            onClick={closeShareModal}
+            className="flex flex-row justify-end hover:cursor-pointer"
+          >
+            <X />
+          </button>
+
+          <h2 className="text-md font-bold text-center">Share Whiteboard</h2>
+
+          <ShareWhiteboardForm
+            shareLink="https://example.link/asfasdfasdf"
+            onSubmit={(data: ShareWhiteboardFormData) => {
+              console.log('Share request:', data);
+              closeShareModal();
+            }}
+          />
+        </div>
+      </ShareModal>
     </main>
   );
 };// end Whiteboard

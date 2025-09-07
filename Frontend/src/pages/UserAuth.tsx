@@ -1,4 +1,4 @@
-import Header from "@/components/Header";
+import HeaderUnauthed from "@/components/HeaderUnauthed";
 import AuthForm from "@/components/AuthForm";
 
 interface UserAuthProps {
@@ -10,7 +10,10 @@ function UserAuth({ action }: UserAuthProps) {
 
   return (
     <div>
-      <Header title={title}/>
+      <HeaderUnauthed
+        title={title}
+      />
+
       <div className="flex justify-center items-center min-h-screen">
         <div className="rounded-lg shadow-md bg-stone-50 p-10">
           <AuthForm initialAction={action}/>

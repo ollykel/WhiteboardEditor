@@ -2,7 +2,7 @@
 import { useNavigate } from 'react-router-dom';
 
 // -- local imports
-import Header from "@/components/Header";
+import HeaderAuthed from "@/components/HeaderAuthed";
 import YourWhiteboards from "@/components/YourWhiteboards";
 import SharedWhiteboards from "@/components/SharedWhiteboards";
 import { useUser } from "@/hooks/useUser";
@@ -19,7 +19,10 @@ function Dashboard() {
 
   return (
     <div>
-      <Header title={title}/>
+      <HeaderAuthed
+        title={title}
+      />
+
       <h1 className="text-4xl font-bold text-center">
         Welcome Back, {user?.username}!
       </h1>
