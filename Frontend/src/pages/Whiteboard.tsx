@@ -261,7 +261,7 @@ const Whiteboard = () => {
       socketRef.current = null;
     };
     ws.onmessage = handleServerMessage;
-  }, [socketRef, setWhiteboardId]);
+  }, [socketRef, whiteboardId, setWhiteboardId]);
 
   const makeHandleAddShapes = (canvasId: CanvasIdType) => (shapes: CanvasObjectModel[]) => {
     if (socketRef.current) {
