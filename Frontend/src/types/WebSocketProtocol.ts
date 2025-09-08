@@ -19,7 +19,7 @@ export type ClientIdType = number;
 export type CanvasIdType = number;
 
 // Unique identifier for each whiteboard
-export type WhiteboardIdType = number;
+export type WhiteboardIdType = string;
 
 export interface CanvasAttribs {
   id: CanvasIdType;

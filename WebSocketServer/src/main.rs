@@ -33,8 +33,8 @@ async fn main() {
         next_client_id: Mutex::new(0),
         program_state: ProgramState{
             whiteboards: Mutex::new(HashMap::from([
-                (0, Arc::new(Mutex::new(Whiteboard {
-                    id: 0,
+                (String::from("abcd"), Arc::new(Mutex::new(Whiteboard {
+                    id: String::from("abcd"),
                     name: String::from("First Shared Whiteboard"),
                     canvases: vec![
                         Canvas{

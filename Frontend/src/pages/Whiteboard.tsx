@@ -88,18 +88,16 @@ const Whiteboard = () => {
   // -- references
   const context = useContext(WhiteboardContext);
   const {
-    whiteboard_id: whiteboardIdStr
+    whiteboard_id: whiteboardId
   } = useParams();
 
-  if (! whiteboardIdStr) {
+  if (! whiteboardId) {
     throw new Error('No whiteboard id provided');
   }
 
   if (! context) {
     throw new Error('No WhiteboardContext provided');
   }
-
-  const whiteboardId = parseInt(whiteboardIdStr);
 
   const {
     socketRef,
@@ -400,7 +398,7 @@ const Whiteboard = () => {
 
 const WrappedWhiteboard = () => {
   const socketRef = useRef<WebSocket | null>(null);
-  const [whiteboardId, setWhiteboardId] = useState<WhiteboardIdType>(-1);
+  const [whiteboardId, setWhiteboardId] = useState<WhiteboardIdType>("");
 
   const canvasObjectsByCanvas: Record<CanvasIdType, Record<CanvasObjectIdType, CanvasObjectModel>> = useSelector((state: RootState) => (
     selectCanvasObjectsByWhiteboard(state, whiteboardId)

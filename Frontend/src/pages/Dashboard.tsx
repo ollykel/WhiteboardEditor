@@ -2,41 +2,60 @@
 import { useNavigate } from 'react-router-dom';
 
 // -- local imports
+
+// -- api
+import api from '@/api/axios';
+
+// -- components
 import HeaderAuthed from "@/components/HeaderAuthed";
 import YourWhiteboards from "@/components/YourWhiteboards";
 import SharedWhiteboards from "@/components/SharedWhiteboards";
 import { useUser } from "@/hooks/useUser";
 import type { User } from "@/types/UserAuth";
+import CreateWhiteboardModal, {
+  type CreateWhiteboardFormData
+} from '@/components/CreateWhiteboardModal';
 
-function Dashboard() {
-  const title: string = "<Whiteboard App>";
-  const user: User = useUser().user;
+const Dashboard = (): React.JSX.Element => {
   const navigate = useNavigate();
 
-  const createNewWhiteboard = () => {
-    // TODO: create new whiteboard and insert its id here
-    navigate("/whiteboard/0");
-  }
+  const title: string = "<Whiteboard App>";
+  const user: User = useUser().user;
+
+  const handleCreateWhiteboard = async (data: CreateWhiteboardFormData) => {
+    const res = await api.post('/whiteboards', data);
+
+    if (res.status >= 400) {
+      alert(`Create whiteboard failed: ${res.data}`);
+      console.error('Create whiteboard failed:', res.data);
+    } else {
+      const { _id: id } = res.data;
+      const redirectUrl = `/whiteboard/${id}`;
+
+      navigate(redirectUrl);
+    }
+  };
 
   return (
-    <div>
+    <>
       <HeaderAuthed
         title={title}
       />
 
-      <h1 className="text-4xl font-bold text-center">
-        Welcome Back, {user?.username}!
-      </h1>
-      <button
-        onClick={createNewWhiteboard}
-        className="flex flex-col items-center justify-center ml-10 mt-10 p-4 shadow rounded-lg hover:bg-gray-200 hover:cursor-pointer bg-stone-50"
-      >
-        + New Whiteboard
-      </button>
-      <YourWhiteboards />
-      <SharedWhiteboards />
-    </div>
+      <main>
+        <h1 className="text-4xl font-bold text-center">
+          Welcome Back, {user?.username}!
+        </h1>
+
+        <CreateWhiteboardModal
+          onSubmit={handleCreateWhiteboard}
+        />
+
+        <YourWhiteboards />
+        <SharedWhiteboards />
+      </main>
+    </>
   );
-}
+};// end Dashboard
 
 export default Dashboard;
