@@ -17,6 +17,16 @@ use futures::{
 use tokio::sync::broadcast;
 use serde::{Deserialize, Serialize};
 
+use mongodb::{
+    bson::doc,
+    options::{
+        ClientOptions,
+        ServerApi,
+        ServerApiVersion
+    },
+    Client
+};
+
 pub type ClientIdType = i32;
 pub type CanvasIdType = i32;
 pub type CanvasObjectIdType = i32;
@@ -171,6 +181,7 @@ pub struct ClientState {
 // ================================================================================================
 pub struct ConnectionState {
     pub tx: broadcast::Sender<ServerSocketMessage>,
+    pub mongo_client: Client,
     pub next_client_id: Mutex<ClientIdType>,
     pub program_state: ProgramState,
 }
@@ -290,6 +301,24 @@ pub async fn handle_client_message(client_state: &ClientState, client_msg_s: &st
         }
     }
 }// end handle_client_message
+
+pub async fn connect_mongodb(uri: &str) -> mongodb::error::Result<Client> {
+    // Replace the placeholder with your Atlas connection string
+    let mut client_options = ClientOptions::parse(uri).await?;
+
+    // Set the server_api field of the client_options object to Stable API version 1
+    let server_api = ServerApi::builder().version(ServerApiVersion::V1).build();
+    client_options.server_api = Some(server_api);
+
+    // Create a new client and connect to the server
+    let client = Client::with_options(client_options)?;
+
+    // Send a ping to confirm a successful connection
+    client.database("admin").run_command(doc! { "ping": 1 }).await?;
+    println!("Pinged your deployment. You successfully connected to MongoDB!");
+
+    Ok(client)
+}// end connect_mongodb
 
 // -- Begin tests
 #[cfg(test)]

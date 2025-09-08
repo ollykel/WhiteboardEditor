@@ -1,6 +1,8 @@
 // -- standard library imports
 
 use std::{
+    env,
+    process,
     sync::Arc,
     net::SocketAddr,
     collections::HashSet,
@@ -24,13 +26,28 @@ use warp::Filter;
 use web_socket_server::*;
 
 #[tokio::main]
-async fn main() {
+async fn main() -> process::ExitCode {
     let port = 3000u16;
+    let mongo_uri = match env::var("MONGO_URI") {
+        Err(e) => {
+            eprintln!("Could not find $MONGO_URI: {}", e);
+            return process::ExitCode::FAILURE;
+        },
+        Ok(uri) => uri
+    };
+    let mongo_client = match connect_mongodb(mongo_uri.as_str()).await {
+        Err(e) => {
+            eprintln!("Could not connect to mongodb at {}: {}", &mongo_uri, e);
+            return process::ExitCode::FAILURE;
+        },
+        Ok(client) => client
+    };
     let (tx, _rx) = broadcast::channel::<ServerSocketMessage>(100);
 
     let connection_state_ref = Arc::new(ConnectionState{
         tx: tx.clone(),
         next_client_id: Mutex::new(0),
+        mongo_client: mongo_client,
         program_state: ProgramState{
             whiteboards: Mutex::new(HashMap::from([
                 (String::from("abcd"), Arc::new(Mutex::new(Whiteboard {
@@ -67,6 +84,8 @@ async fn main() {
     let addr: SocketAddr = ([0, 0, 0, 0], port).into();
     println!("Rust WebSocket server running at ws://{}", addr);
     warp::serve(ws_route).run(addr).await;
+
+    process::ExitCode::SUCCESS
 }// end async fn main()
 
 async fn handle_connection(ws: WebSocket, whiteboard_id: WhiteboardIdType, connection_state_ref: Arc<ConnectionState>) {
