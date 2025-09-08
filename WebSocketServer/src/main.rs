@@ -33,7 +33,7 @@ async fn main() {
         next_client_id: Mutex::new(0),
         program_state: ProgramState{
             whiteboard: Mutex::new(Whiteboard{
-                id: 0,
+                id: String::from("abcd"),
                 name: String::from("First Shared Whiteboard"),
                 canvases: vec![
                     Canvas{

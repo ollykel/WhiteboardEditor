@@ -19,7 +19,7 @@ use serde::{Deserialize, Serialize};
 pub type ClientIdType = i32;
 pub type CanvasIdType = i32;
 pub type CanvasObjectIdType = i32;
-pub type WhiteboardIdType = i32;
+pub type WhiteboardIdType = String;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "snake_case", rename_all_fields="camelCase")]
@@ -131,7 +131,7 @@ impl Whiteboard {
         // At the moment, the client view is identical to the Canvas type itself, but this may not
         // always be the case.
         WhiteboardClientView {
-            id: self.id,
+            id: self.id.clone(),
             name: self.name.clone(),
             canvases: self.canvases.iter()
                 .map(|c| c.to_client_view())
@@ -290,7 +290,7 @@ mod tests {
         // not even valid json
         let program_state = ProgramState{
             whiteboard: Mutex::new(Whiteboard{
-                id: 0,
+                id: "abcd",
                 name: String::from("Test"),
                 canvases: vec![]
             }),
