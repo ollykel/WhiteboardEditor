@@ -18,7 +18,10 @@ use tokio::sync::broadcast;
 use serde::{Deserialize, Serialize};
 
 use mongodb::{
-    bson::doc,
+    bson::{
+        doc,
+        oid::ObjectId
+    },
     options::{
         ClientOptions,
         ServerApi,
@@ -69,7 +72,7 @@ pub struct CanvasClientView {
     pub width: u64,
     pub height: u64,
     pub shapes: HashMap<CanvasObjectIdType, ShapeModel>,
-    pub allowed_users: Vec<ClientIdType>,
+    pub allowed_users: Vec<ObjectId>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -88,7 +91,7 @@ pub enum ServerSocketMessage {
     ClientLogout { client_id: ClientIdType },
     CreateShapes { client_id: ClientIdType, canvas_id: CanvasIdType, shapes: HashMap<CanvasObjectIdType, ShapeModel> },
     UpdateShapes { client_id: ClientIdType, canvas_id: CanvasIdType, shapes: HashMap<String, ShapeModel> },
-    CreateCanvas { client_id: ClientIdType, canvas_id: CanvasIdType, width: u64, height: u64, allowed_users: Vec<ClientIdType> },
+    CreateCanvas { client_id: ClientIdType, canvas_id: CanvasIdType, width: u64, height: u64, allowed_users: Vec<ObjectId> },
     IndividualError { client_id: ClientIdType, message: String },
     BroadcastError { message: String },
 }
@@ -101,15 +104,14 @@ pub enum ClientSocketMessage {
     CreateCanvas { width: u64, height: u64 }
 }
 
-#[derive(Clone, Serialize)]
-#[serde(rename_all = "camelCase")]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct Canvas {
     pub id: CanvasIdType,
     pub width: u64,
     pub height: u64,
     pub shapes: HashMap<CanvasObjectIdType, ShapeModel>,
     pub next_shape_id: CanvasObjectIdType,
-    pub allowed_users: Option<HashSet<ClientIdType>>, // None = open to all
+    pub allowed_users: Option<HashSet<ObjectId>>, // None = open to all
 }
 
 impl Canvas {
@@ -129,12 +131,13 @@ impl Canvas {
     }// end pub fn to_client_view(&self) -> CanvasClientView
 }
 
-#[derive(Clone, Serialize)]
-#[serde(rename_all = "camelCase")]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct Whiteboard {
     pub id: WhiteboardIdType,
     pub name: String,
     pub canvases: Vec<Canvas>,
+    pub owner_id: String,
+    pub shared_user_ids: Vec<String>,
 }
 
 impl Whiteboard {
@@ -149,6 +152,73 @@ impl Whiteboard {
                 .collect()
         }
     }// end pub fn to_client_view(&self) -> CanvasClientView
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct CanvasMongoDBView {
+    pub width: u64,
+    pub height: u64,
+    pub shapes: HashMap<String, ShapeModel>,
+    pub allowed_users: Option<Vec<ObjectId>>
+}
+
+impl CanvasMongoDBView {
+    pub fn to_canvas(&self, id: CanvasIdType) -> Canvas {
+        let mut next_shape_id : CanvasObjectIdType = CanvasObjectIdType::MIN;
+        let shapes : HashMap<CanvasObjectIdType, ShapeModel> = self.shapes.iter()
+            .map(|(key, shape)| {
+                match key.parse::<CanvasObjectIdType>() {
+                    Err(_) => None,
+                    Ok(key) => {
+                        next_shape_id = CanvasObjectIdType::max(next_shape_id, key);
+
+                        Some((key, shape.clone()))
+                    }
+                }
+            })
+            .filter(|val| val.is_some())
+            .map(|val| val.unwrap())
+            .collect();
+
+        Canvas {
+            id: id,
+            width: self.width,
+            height: self.height,
+            shapes: shapes,
+            next_shape_id: next_shape_id,
+            allowed_users: match &self.allowed_users {
+                None => None,
+                Some(users) => Some(users.iter().map(|uid| uid.clone()).collect())
+            }
+        }
+    }
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct WhiteboardMongoDBView {
+    #[serde(rename = "_id")]
+    pub id: ObjectId,
+    pub name: String,
+    pub canvases: Vec<CanvasMongoDBView>,
+    #[serde(rename = "owner")]
+    pub owner_id: ObjectId,
+    #[serde(rename = "shared_users")]
+    pub shared_user_ids: Vec<ObjectId>
+}
+
+impl WhiteboardMongoDBView {
+    pub fn to_whiteboard(&self) -> Whiteboard {
+        Whiteboard {
+            id: self.id.to_string(),
+            name: self.name.clone(),
+            canvases: self.canvases.iter()
+                .enumerate()
+                .map(|(idx, db_view)| db_view.to_canvas(idx.try_into().unwrap()))
+                .collect(),
+            owner_id: self.owner_id.to_string(),
+            shared_user_ids: self.shared_user_ids.iter().map(|uid| uid.to_string()).collect()
+        }
+    }
 }
 
 // === Program State ==============================================================================
@@ -264,10 +334,11 @@ pub async fn handle_client_message(client_state: &ClientState, client_msg_s: &st
                 ClientSocketMessage::CreateCanvas { width, height } => {
                     let mut whiteboard = client_state.whiteboard_ref.lock().await;
                     let new_canvas_id = whiteboard.canvases.len() as CanvasIdType;
-                    let mut allowed = HashSet::new();
+                    let mut allowed = HashSet::<ObjectId>::new();
 
                     // Initialize new canvas with only current user allowed to edit
-                    allowed.insert(client_state.client_id);
+                    // TODO: actually fetch user's id from database
+                    allowed.insert(ObjectId::new());
 
                     let allowed_users_vec = allowed.iter().copied().collect::<Vec<_>>();
                     

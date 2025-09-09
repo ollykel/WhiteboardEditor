@@ -21,6 +21,14 @@ use tokio::sync::broadcast;
 use warp::ws::{Message, WebSocket};
 use warp::Filter;
 
+use mongodb::{
+    bson::{
+        doc,
+        oid::ObjectId
+    },
+    Collection
+};
+
 // -- local imports
 
 use web_socket_server::*;
@@ -62,7 +70,9 @@ async fn main() -> process::ExitCode {
                             next_shape_id: 0,
                             allowed_users: None, // None means open to all users
                         }
-                    ]
+                    ],
+                    owner_id: String::from("aaaa"),
+                    shared_user_ids: vec![]
                 })))
             ])),
             active_clients: Mutex::new(HashSet::<ClientIdType>::new())
@@ -106,21 +116,94 @@ async fn handle_connection(ws: WebSocket, whiteboard_id: WhiteboardIdType, conne
         // - Fetch whiteboard identified by id from program state
         // - TODO: If not present, try to fetch from the database
         // - If no such whiteboard, send an individual error message and disconnect
-        let whiteboards_by_id = connection_state_ref.program_state.whiteboards.lock().await;
+        let mut whiteboards_by_id = connection_state_ref.program_state.whiteboards.lock().await;
+        let whiteboard_res = whiteboards_by_id.get(&whiteboard_id);
 
-        match whiteboards_by_id.get(&whiteboard_id) {
+        match &whiteboard_res {
             None => {
-                // No such whiteboard; send individual error and disconnect
-                // IndividualError { client_id: ClientIdType, message: String },
-                let err_msg = ServerSocketMessage::IndividualError {
-                    client_id: current_client_id,
-                    message: format!("Whiteboard {} not found", whiteboard_id)
-                };
-                
-                let _ = user_ws_tx.send(Message::text(serde_json::to_string(&err_msg).unwrap())).await;
+                // Try to fetch whiteboard from the database.
+                // If present, load into cache.
+                // Otherwise, return (disconnect) early.
+                let oid: ObjectId = match ObjectId::parse_str(&whiteboard_id) {
+                    Err(e) => {
+                        eprintln!("Couldn't parse ObjectId from {}: {}", whiteboard_id, e);
 
-                // trigger early disconnect
-                return;
+                        let err_msg = ServerSocketMessage::IndividualError {
+                            client_id: current_client_id,
+                            message: format!("Error fetching whiteboard {}", whiteboard_id)
+                        };
+                        
+                        let _ = user_ws_tx.send(Message::text(serde_json::to_string(&err_msg).unwrap())).await;
+
+                        return;
+                    },
+                    Ok(oid) => oid
+                };
+
+                let whiteboard_coll: Collection<WhiteboardMongoDBView> = match connection_state_ref
+                    .mongo_client
+                    .default_database() {
+                        None => {
+                            // No database specified in mongo uri
+                            // Print error and disconnect early
+                            eprintln!("Database connection error; could not fetch whiteboard - no default database defined in mongo uri");
+                            let err_msg = ServerSocketMessage::IndividualError {
+                                client_id: current_client_id,
+                                message: format!("Error fetching whiteboard {}", whiteboard_id)
+                            };
+                            
+                            let _ = user_ws_tx.send(Message::text(serde_json::to_string(&err_msg).unwrap())).await;
+
+                            return;
+                        },
+                        Some(db) => db.collection::<WhiteboardMongoDBView>("whiteboards")
+                };
+
+                match whiteboard_coll.find_one(doc! { "_id": oid }).await {
+                    Err(e) => {
+                        // connection error: print and disconnect
+                        eprintln!("Connection error; could not fetch whiteboard: {}", e);
+
+                        let err_msg = ServerSocketMessage::IndividualError {
+                            client_id: current_client_id,
+                            message: format!("Error fetching whiteboard {}", whiteboard_id)
+                        };
+                        
+                        let _ = user_ws_tx.send(Message::text(serde_json::to_string(&err_msg).unwrap())).await;
+
+                        return;
+                    },
+                    Ok(res) => match &res {
+                        None => {
+                            // No such whiteboard; send individual error and disconnect
+                            // IndividualError { client_id: ClientIdType, message: String },
+                            let err_msg = ServerSocketMessage::IndividualError {
+                                client_id: current_client_id,
+                                message: format!("Whiteboard {} not found", whiteboard_id)
+                            };
+                            
+                            let _ = user_ws_tx.send(Message::text(serde_json::to_string(&err_msg).unwrap())).await;
+
+                            // trigger early disconnect
+                            return;
+                        },
+                        Some(whiteboard_db_view) => {
+                            // Create new reference to whiteboard
+                            let whiteboard = whiteboard_db_view.to_whiteboard();
+                            let whiteboard_id = whiteboard.id.clone();
+                            let whiteboard_ref = Arc::new(Mutex::new(whiteboard));
+
+                            // insert whiteboard into cache
+                            whiteboards_by_id.insert(whiteboard_id, Arc::clone(&whiteboard_ref));
+
+                            // create new client state
+                            Arc::new(ClientState {
+                                client_id: current_client_id,
+                                whiteboard_ref: Arc::clone(&whiteboard_ref)
+                            })
+                        }
+                    }
+                }
             },
             Some(whiteboard_ref) => Arc::new(ClientState {
                 client_id: current_client_id,
