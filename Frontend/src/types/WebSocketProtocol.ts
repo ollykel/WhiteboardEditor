@@ -65,7 +65,7 @@ export interface ServerMessageClientLogin {
   type: "client_login";
   clientId: ClientIdType;
 }
-//
+
 // Notifies clients that a client has left the session
 export interface ServerMessageClientLogout {
   type: "client_logout";

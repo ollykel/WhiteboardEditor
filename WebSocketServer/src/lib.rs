@@ -87,7 +87,8 @@ pub enum ServerSocketMessage {
 pub enum ClientSocketMessage {
     CreateShapes { canvas_id: CanvasIdType, shapes: Vec<ShapeModel> },
     UpdateShapes { canvas_id: CanvasIdType, shapes: HashMap<String, ShapeModel> },
-    CreateCanvas { width: u64, height: u64 }
+    CreateCanvas { width: u64, height: u64 },
+    Login { client_id: ClientIdType, username: String },
 }
 
 #[derive(Clone, Serialize)]

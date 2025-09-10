@@ -253,6 +253,13 @@ const Whiteboard = () => {
     };
 
     ws.onopen = () => {
+      // Send login/auth message with user ID
+      ws.send(JSON.stringify({
+        type: "client_login",
+        userId: user?._id,
+        username: user?.username,
+      }));
+
       console.log(`Established web socket connection to ${wsUri}`);
       socketRef.current = ws;
     };
@@ -261,7 +268,7 @@ const Whiteboard = () => {
       socketRef.current = null;
     };
     ws.onmessage = handleServerMessage;
-  }, [socketRef, setWhiteboardId]);
+  }, [socketRef, setWhiteboardId, user]);
 
   const makeHandleAddShapes = (canvasId: CanvasIdType) => (shapes: CanvasObjectModel[]) => {
     if (socketRef.current) {

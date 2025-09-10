@@ -46,7 +46,8 @@ async fn main() {
                     }
                 ]
             }),
-            active_clients: Mutex::new(HashSet::<ClientIdType>::new())
+            active_clients: Mutex::new(HashSet::<ClientIdType>::new()),
+            user_map: Mutx::new<HashMap<ClientIdType, String>> // Maps client IDs to usernames
         }
     });
 
