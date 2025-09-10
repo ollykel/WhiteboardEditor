@@ -406,7 +406,9 @@ mod tests {
             whiteboard_ref: Arc::new(Mutex::new(Whiteboard {
                 id: String::from("abcd"),
                 name: String::from("Test"),
-                canvases: vec![]
+                canvases: vec![],
+                owner_id: String::from("aaaa"),
+                shared_user_ids: vec![],
             }))
         };
 
