@@ -68,6 +68,13 @@ import type {
   WhiteboardAttribs
 } from '@/types/WebSocketProtocol';
 
+// -- Allowed Users Redux reducers
+import { 
+  setAllowedUsersByCanvas,
+  addAllowedUsersByCanvas,
+  // removeAllowedUsersByCanvas,
+} from '@/store/allowedUsers/allowedUsersByCanvasSlice';
+
 const getWebSocketUri = (): string => {
     const wsScheme = window.location.protocol === 'https:' ? 'wss' : 'ws';
     const wsUri = `${wsScheme}://${window.location.host}/ws`;
