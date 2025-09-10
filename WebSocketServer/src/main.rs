@@ -80,19 +80,42 @@ async fn handle_connection(ws: WebSocket, connection_state_ref: Arc<ConnectionSt
         client_id
     };
 
+    let first_msg = user_ws_rx.next().await();
+    if let Some(Ok(msg)) = first_msg {
+        if let Ok(msg_s) = msg.to_str() {
+            if let Ok(ClientSocketMessage::Login { user_id, username }) = serde_json::from_str(msg_s) {
+                // Store user_id and username in user_map
+                {
+                    let mut user_map = connection_state_ref.program_state.user_map.loc().await;
+                    user_map.insert(user_id, username.clone());
+                }
+                // Add to active_clients
+                {
+                    let mut active_clients = connection_state_ref.program_state.active_clients.lock().await;
+                    active_clients.insert(user_id);
+                }
+                // Broadcast client_login with user_id and username
+                connection_state_ref.tx.send(ServerSocketMessage::ClientLogin {
+                    user_id,
+                    username,
+                }).ok();
+            }
+        }
+    }
+
     println!("New client: {}", current_client_id);
 
-    {
-        // Add new client to active clients, notify other users that they have logged in
-        let mut active_clients = connection_state_ref
-            .program_state
-            .active_clients.lock().await;
+    // {
+    //     // Add new client to active clients, notify other users that they have logged in
+    //     let mut active_clients = connection_state_ref
+    //         .program_state
+    //         .active_clients.lock().await;
 
-        active_clients.insert(current_client_id);
-        connection_state_ref.tx.send(ServerSocketMessage::ClientLogin{
-            client_id: current_client_id
-        }).ok();
-    }
+    //     active_clients.insert(current_client_id);
+    //     connection_state_ref.tx.send(ServerSocketMessage::ClientLogin{
+    //         client_id: current_client_id
+    //     }).ok();
+    // }
 
     {
         // Send new client initialization message
