@@ -1,6 +1,8 @@
 // -- standard library imports
 
 use std::{
+    env,
+    process,
     sync::Arc,
     net::SocketAddr,
     collections::HashSet,
@@ -19,33 +21,60 @@ use tokio::sync::broadcast;
 use warp::ws::{Message, WebSocket};
 use warp::Filter;
 
+use mongodb::{
+    bson::{
+        doc,
+        oid::ObjectId
+    },
+    Collection
+};
+
 // -- local imports
 
 use web_socket_server::*;
 
 #[tokio::main]
-async fn main() {
+async fn main() -> process::ExitCode {
     let port = 3000u16;
+    let mongo_uri = match env::var("MONGO_URI") {
+        Err(e) => {
+            eprintln!("Could not find $MONGO_URI: {}", e);
+            return process::ExitCode::FAILURE;
+        },
+        Ok(uri) => uri
+    };
+    let mongo_client = match connect_mongodb(mongo_uri.as_str()).await {
+        Err(e) => {
+            eprintln!("Could not connect to mongodb at {}: {}", &mongo_uri, e);
+            return process::ExitCode::FAILURE;
+        },
+        Ok(client) => client
+    };
     let (tx, _rx) = broadcast::channel::<ServerSocketMessage>(100);
 
     let connection_state_ref = Arc::new(ConnectionState{
         tx: tx.clone(),
         next_client_id: Mutex::new(0),
+        mongo_client: mongo_client,
         program_state: ProgramState{
-            whiteboard: Mutex::new(Whiteboard{
-                id: 0,
-                name: String::from("First Shared Whiteboard"),
-                canvases: vec![
-                    Canvas{
-                        id: 0,
-                        width: 512,
-                        height: 512,
-                        shapes: HashMap::<CanvasObjectIdType, ShapeModel>::new(),
-                        next_shape_id: 0,
-                        allowed_users: None, // None means open to all users
-                    }
-                ]
-            }),
+            whiteboards: Mutex::new(HashMap::from([
+                (String::from("abcd"), Arc::new(Mutex::new(Whiteboard {
+                    id: String::from("abcd"),
+                    name: String::from("First Shared Whiteboard"),
+                    canvases: vec![
+                        Canvas{
+                            id: 0,
+                            width: 512,
+                            height: 512,
+                            shapes: HashMap::<CanvasObjectIdType, ShapeModel>::new(),
+                            next_shape_id: 0,
+                            allowed_users: None, // None means open to all users
+                        }
+                    ],
+                    owner_id: String::from("aaaa"),
+                    shared_user_ids: vec![]
+                })))
+            ])),
             active_clients: Mutex::new(HashSet::<ClientIdType>::new())
         }
     });
@@ -55,19 +84,21 @@ async fn main() {
         move || Arc::clone(&connection_state_ref)
     });
 
-    let ws_route = warp::path!("ws")
+    let ws_route = warp::path!("ws" / WhiteboardIdType)
         .and(warp::ws())
         .and(connection_state_ref_filter)
-        .map(|ws: warp::ws::Ws, connection_state_ref| {
-            ws.on_upgrade(move |socket| handle_connection(socket, connection_state_ref))
+        .map(|wid: WhiteboardIdType, ws: warp::ws::Ws, connection_state_ref| {
+            ws.on_upgrade(move |socket| handle_connection(socket, wid, connection_state_ref))
         });
 
     let addr: SocketAddr = ([0, 0, 0, 0], port).into();
     println!("Rust WebSocket server running at ws://{}", addr);
     warp::serve(ws_route).run(addr).await;
+
+    process::ExitCode::SUCCESS
 }// end async fn main()
 
-async fn handle_connection(ws: WebSocket, connection_state_ref: Arc<ConnectionState>) {
+async fn handle_connection(ws: WebSocket, whiteboard_id: WhiteboardIdType, connection_state_ref: Arc<ConnectionState>) {
     let (mut user_ws_tx, mut user_ws_rx) = ws.split();
     let mut rx = connection_state_ref.tx.subscribe();
     let current_client_id = {
@@ -80,6 +111,106 @@ async fn handle_connection(ws: WebSocket, connection_state_ref: Arc<ConnectionSt
     };
 
     println!("New client: {}", current_client_id);
+
+    let client_state_ref = {
+        // - Fetch whiteboard identified by id from program state
+        // - TODO: If not present, try to fetch from the database
+        // - If no such whiteboard, send an individual error message and disconnect
+        let mut whiteboards_by_id = connection_state_ref.program_state.whiteboards.lock().await;
+        let whiteboard_res = whiteboards_by_id.get(&whiteboard_id);
+
+        match &whiteboard_res {
+            None => {
+                // Try to fetch whiteboard from the database.
+                // If present, load into cache.
+                // Otherwise, return (disconnect) early.
+                let oid: ObjectId = match ObjectId::parse_str(&whiteboard_id) {
+                    Err(e) => {
+                        eprintln!("Couldn't parse ObjectId from {}: {}", whiteboard_id, e);
+
+                        let err_msg = ServerSocketMessage::IndividualError {
+                            client_id: current_client_id,
+                            message: format!("Error fetching whiteboard {}", whiteboard_id)
+                        };
+                        
+                        let _ = user_ws_tx.send(Message::text(serde_json::to_string(&err_msg).unwrap())).await;
+
+                        return;
+                    },
+                    Ok(oid) => oid
+                };
+
+                let whiteboard_coll: Collection<WhiteboardMongoDBView> = match connection_state_ref
+                    .mongo_client
+                    .default_database() {
+                        None => {
+                            // No database specified in mongo uri
+                            // Print error and disconnect early
+                            eprintln!("Database connection error; could not fetch whiteboard - no default database defined in mongo uri");
+                            let err_msg = ServerSocketMessage::IndividualError {
+                                client_id: current_client_id,
+                                message: format!("Error fetching whiteboard {}", whiteboard_id)
+                            };
+                            
+                            let _ = user_ws_tx.send(Message::text(serde_json::to_string(&err_msg).unwrap())).await;
+
+                            return;
+                        },
+                        Some(db) => db.collection::<WhiteboardMongoDBView>("whiteboards")
+                };
+
+                match whiteboard_coll.find_one(doc! { "_id": oid }).await {
+                    Err(e) => {
+                        // connection error: print and disconnect
+                        eprintln!("Connection error; could not fetch whiteboard: {}", e);
+
+                        let err_msg = ServerSocketMessage::IndividualError {
+                            client_id: current_client_id,
+                            message: format!("Error fetching whiteboard {}", whiteboard_id)
+                        };
+                        
+                        let _ = user_ws_tx.send(Message::text(serde_json::to_string(&err_msg).unwrap())).await;
+
+                        return;
+                    },
+                    Ok(res) => match &res {
+                        None => {
+                            // No such whiteboard; send individual error and disconnect
+                            // IndividualError { client_id: ClientIdType, message: String },
+                            let err_msg = ServerSocketMessage::IndividualError {
+                                client_id: current_client_id,
+                                message: format!("Whiteboard {} not found", whiteboard_id)
+                            };
+                            
+                            let _ = user_ws_tx.send(Message::text(serde_json::to_string(&err_msg).unwrap())).await;
+
+                            // trigger early disconnect
+                            return;
+                        },
+                        Some(whiteboard_db_view) => {
+                            // Create new reference to whiteboard
+                            let whiteboard = whiteboard_db_view.to_whiteboard();
+                            let whiteboard_id = whiteboard.id.clone();
+                            let whiteboard_ref = Arc::new(Mutex::new(whiteboard));
+
+                            // insert whiteboard into cache
+                            whiteboards_by_id.insert(whiteboard_id, Arc::clone(&whiteboard_ref));
+
+                            // create new client state
+                            Arc::new(ClientState {
+                                client_id: current_client_id,
+                                whiteboard_ref: Arc::clone(&whiteboard_ref)
+                            })
+                        }
+                    }
+                }
+            },
+            Some(whiteboard_ref) => Arc::new(ClientState {
+                client_id: current_client_id,
+                whiteboard_ref: Arc::clone(whiteboard_ref)
+            })
+        }
+    };
 
     {
         // Add new client to active clients, notify other users that they have logged in
@@ -95,9 +226,8 @@ async fn handle_connection(ws: WebSocket, connection_state_ref: Arc<ConnectionSt
 
     {
         // Send new client initialization message
-        let whiteboard = connection_state_ref
-            .program_state
-            .whiteboard.lock().await;
+        let whiteboard = client_state_ref.whiteboard_ref.lock().await;
+
         let active_clients = connection_state_ref
             .program_state
             .active_clients.lock().await;
@@ -130,6 +260,7 @@ async fn handle_connection(ws: WebSocket, connection_state_ref: Arc<ConnectionSt
     });
 
     let recv_task = tokio::spawn({
+        let client_state_ref = Arc::clone(&client_state_ref);
         let connection_state_ref = Arc::clone(&connection_state_ref);
 
         async move {
@@ -139,8 +270,7 @@ async fn handle_connection(ws: WebSocket, connection_state_ref: Arc<ConnectionSt
                     println!("Raw message: {}", msg_s);
 
                     let resp = handle_client_message(
-                        &connection_state_ref.program_state,
-                        current_client_id,
+                        &client_state_ref,
                         msg_s
                     ).await;
 

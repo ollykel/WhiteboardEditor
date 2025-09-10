@@ -7,6 +7,10 @@ import {
 } from 'react';
 
 import {
+  useParams
+} from 'react-router-dom';
+
+import {
   useSelector
 } from 'react-redux';
 
@@ -68,9 +72,9 @@ import type {
   WhiteboardAttribs
 } from '@/types/WebSocketProtocol';
 
-const getWebSocketUri = (): string => {
+const getWebSocketUri = (wid: WhiteboardIdType): string => {
     const wsScheme = window.location.protocol === 'https:' ? 'wss' : 'ws';
-    const wsUri = `${wsScheme}://${window.location.host}/ws`;
+    const wsUri = `${wsScheme}://${window.location.host}/ws/${wid}`;
 
     return wsUri;
 };
@@ -83,6 +87,13 @@ const Whiteboard = () => {
 
   // -- references
   const context = useContext(WhiteboardContext);
+  const {
+    whiteboard_id: whiteboardId
+  } = useParams();
+
+  if (! whiteboardId) {
+    throw new Error('No whiteboard id provided');
+  }
 
   if (! context) {
     throw new Error('No WhiteboardContext provided');
@@ -90,7 +101,6 @@ const Whiteboard = () => {
 
   const {
     socketRef,
-    whiteboardId,
     setWhiteboardId
   } = context;
 
@@ -154,7 +164,8 @@ const Whiteboard = () => {
   useEffect(() => {
     console.log('Initializing web socket connection ...');
     const dispatch = store.dispatch;
-    const wsUri = getWebSocketUri();
+    // TODO: get whiteboard id from path params
+    const wsUri = getWebSocketUri(whiteboardId);
     const ws = new WebSocket(wsUri);
 
     // handles all web socket messages
@@ -250,7 +261,7 @@ const Whiteboard = () => {
       socketRef.current = null;
     };
     ws.onmessage = handleServerMessage;
-  }, [socketRef, setWhiteboardId]);
+  }, [socketRef, whiteboardId, setWhiteboardId]);
 
   const makeHandleAddShapes = (canvasId: CanvasIdType) => (shapes: CanvasObjectModel[]) => {
     if (socketRef.current) {
@@ -387,7 +398,7 @@ const Whiteboard = () => {
 
 const WrappedWhiteboard = () => {
   const socketRef = useRef<WebSocket | null>(null);
-  const [whiteboardId, setWhiteboardId] = useState<WhiteboardIdType>(-1);
+  const [whiteboardId, setWhiteboardId] = useState<WhiteboardIdType>("");
 
   const canvasObjectsByCanvas: Record<CanvasIdType, Record<CanvasObjectIdType, CanvasObjectModel>> = useSelector((state: RootState) => (
     selectCanvasObjectsByWhiteboard(state, whiteboardId)
