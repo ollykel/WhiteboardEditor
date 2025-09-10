@@ -154,6 +154,18 @@ impl Whiteboard {
     }// end pub fn to_client_view(&self) -> CanvasClientView
 }
 
+// === SharedWhiteboardEntry ======================================================================
+//
+// Contains a Whiteboard's data plus necessary objects for managing user connections to the
+// whiteboard, including the Sender.
+//
+// ================================================================================================
+#[derive(Clone)]
+pub struct SharedWhiteboardEntry {
+    pub whiteboard_ref: Arc<Mutex<Whiteboard>>,
+    pub broadcaster: broadcast::Sender<ServerSocketMessage>
+}
+
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct CanvasMongoDBView {
     pub width: u64,
@@ -230,7 +242,7 @@ impl WhiteboardMongoDBView {
 //
 // ================================================================================================
 pub struct ProgramState {
-    pub whiteboards: Mutex<HashMap<WhiteboardIdType, Arc<Mutex<Whiteboard>>>>,
+    pub whiteboards: Mutex<HashMap<WhiteboardIdType, SharedWhiteboardEntry>>,
     pub active_clients: Mutex<HashSet<ClientIdType>>
 }
 
@@ -250,7 +262,6 @@ pub struct ClientState {
 //
 // ================================================================================================
 pub struct ConnectionState {
-    pub tx: broadcast::Sender<ServerSocketMessage>,
     pub mongo_client: Client,
     pub next_client_id: Mutex<ClientIdType>,
     pub program_state: ProgramState,
