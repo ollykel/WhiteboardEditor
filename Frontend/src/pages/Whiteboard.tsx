@@ -68,12 +68,14 @@ import type {
   WhiteboardAttribs
 } from '@/types/WebSocketProtocol';
 
+import { useUser } from '@/hooks/useUser';
+
 // -- Allowed Users Redux reducers
-import { 
-  setAllowedUsersByCanvas,
-  addAllowedUsersByCanvas,
-  // removeAllowedUsersByCanvas,
-} from '@/store/allowedUsers/allowedUsersByCanvasSlice';
+// import { 
+//   setAllowedUsersByCanvas,
+//   addAllowedUsersByCanvas,
+//   // removeAllowedUsersByCanvas,
+// } from '@/store/allowedUsers/allowedUsersByCanvasSlice';
 
 const getWebSocketUri = (): string => {
     const wsScheme = window.location.protocol === 'https:' ? 'wss' : 'ws';
@@ -106,6 +108,8 @@ const Whiteboard = () => {
   const [activeClients, setActiveClients] = useState<Set<number>>(new Set());
   const [toolChoice, setToolChoice] = useState<ToolChoice>('rect');
   const whiteboardIdRef = useRef<WhiteboardIdType>(whiteboardId);
+  
+  const { user } = useUser();
 
   // dirty trick to keep whiteboardIdRef in-sync with whiteboardId
   useEffect(() => {
@@ -334,7 +338,7 @@ const Whiteboard = () => {
           <div className="flex flex-col justify-center flex-wrap">
             {/** Own Client ID **/}
             <div>
-              <span>Client ID: </span> {clientId}
+              <span>Your Username: </span> {user?.username}
             </div>
 
             {/* Display Active Clients */}
