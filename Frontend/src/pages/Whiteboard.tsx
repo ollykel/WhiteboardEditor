@@ -321,7 +321,7 @@ const Whiteboard = () => {
 
 
         {/* Canvas Container */}
-        <div className="flex flex-col justify-center flex-wrap ml-40">
+        <div className="flex flex-col justify-center flex-wrap ml-50">
           {/** Misc. info **/}
 
           <div className="flex flex-col justify-center flex-wrap">
