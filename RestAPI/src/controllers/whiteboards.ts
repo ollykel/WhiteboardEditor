@@ -6,7 +6,9 @@ import {
   Whiteboard,
   Canvas,
   IWhiteboard,
-  WhiteboardIdType
+  WhiteboardIdType,
+  type IWhiteboardPermissionEnum,
+  type IWhiteboardUserPermission
 } from '../models/Whiteboard';
 
 import {
@@ -61,20 +63,23 @@ export const createWhiteboard = async (
   }
 };
 
+export interface WhiteboardPermissionRequest {
+  email: string;
+  permission: IWhiteboardPermissionEnum;
+}
+
 export type ShareWhiteboardResType =
   | { status: "success"; whiteboard: IWhiteboard }
   | { status: "no_whiteboard" }
   | { status: "invalid_users"; invalid_users: UserIdType[] }
-  | { status: "invalid_emails"; invalid_users: string[] }
+  | { status: "invalid_permissions"; invalid_permissions: IWhiteboardUserPermission[] }
   | { status: "forbidden" }
   | { status: "exception"; message: string };
 
 export const addSharedUsers = async (
   whiteboardId: WhiteboardIdType,
   ownerId: UserIdType,
-  users:
-    | { userIdType: 'id'; ids: UserIdType[]; }
-    | { userIdType: 'email'; emails: string[]; }
+  userPermissions: IWhiteboardUserPermission[]
 ): Promise<ShareWhiteboardResType> => {
   try {
     // first, ensure given id can actually be cast to an ObjectId
@@ -93,68 +98,57 @@ export const addSharedUsers = async (
       return { status: "forbidden" };
     }
 
-    let usersToShare : UserIdType[];
+    const permissionsById = userPermissions.filter(perm => perm.type === 'id');
 
-    switch (users.userIdType) {
-      case 'id':
-        {
-          const { ids } = users;
+    if (permissionsById.length > 0) {
+      // ensure all permissions by id are valid
+      const malformedUserIds = permissionsById
+        .filter(perm => (! Types.ObjectId.isValid(perm.user_id)))
+        .map(perm => perm.user_id);
 
-          // ensure all user ids are valid
-          const malformedUserIds = ids.filter((uid) => (! Types.ObjectId.isValid(uid)));
+      if (malformedUserIds.length > 0) {
+        return {
+          status: 'invalid_users',
+          invalid_users: malformedUserIds
+        };
+      }
+      
+      const userIds = permissionsById.map(perm => perm.user_id);
 
-          if (malformedUserIds.length > 0) {
-            return {
-              status: 'invalid_users',
-              invalid_users: malformedUserIds
-            };
-          }
+      // validate users exist
+      const foundUsers = await User.find({ _id: { $in: userIds } }).select("_id");
+      const foundIds = foundUsers.map((u) => u._id.toString());
+      const invalidUsers = userIds.filter(u => (! foundIds.includes(u.toString())));
 
-          // validate users exist
-          const foundUsers = await User.find({ _id: { $in: ids } }).select("_id");
-          const foundIds = foundUsers.map((u) => u._id.toString());
-          const invalidUsers = ids.filter((u) => !foundIds.includes(u.toString()));
-
-          if (invalidUsers.length > 0) {
-            return { status: "invalid_users", invalid_users: invalidUsers };
-          }
-
-          usersToShare = ids;
-        }
-        break;
-      case 'email':
-        {
-          const { emails } = users;
-
-          // validate users exist
-          const foundUsers = await User.find({ email: { $in: emails } }).select("_id email");
-          const foundEmails = foundUsers.map(u => u.email);
-          const invalidEmails = emails.filter(u => !foundEmails.includes(u.toString()));
-
-          if (invalidEmails.length > 0) {
-            return { status: "invalid_emails", invalid_users: invalidEmails };
-          }
-
-          usersToShare = foundUsers.map(u => u._id);
-        }
-        break;
-    }
-    // ensure all user ids are valid
-    const malformedUserIds = usersToShare.filter((uid) => (! Types.ObjectId.isValid(uid)));
-
-    if (malformedUserIds.length > 0) {
-      return {
-        status: 'invalid_users',
-        invalid_users: malformedUserIds
-      };
+      if (invalidUsers.length > 0) {
+        return { status: "invalid_users", invalid_users: invalidUsers };
+      }
     }
 
-    // add new shared users (skip already added)
-    const currentShared = whiteboard.shared_users.map((u) => u.toString());
-    const toAdd = usersToShare.filter((u) => !currentShared.includes(u.toString()));
+    // try to convert emails to user ids, if users accounts exist
+    const permissionsByEmail = userPermissions.filter(perm => perm.type === 'email');
+    const permissionEmails: string[] = permissionsByEmail.map(perm => perm.email);
+    const emailsToPermissions = Object.fromEntries(permissionsByEmail.map(perm => [
+      perm.email, perm
+    ]));
+    const foundUsersByEmail = await User.find({ email: { $in: permissionEmails } }).select("_id email");
+    const foundEmailSet: Record<string, boolean> = Object.fromEntries(foundUsersByEmail.map(user => [user.email, true]));
+    const permissionsByIdFromEmail: IWhiteboardUserPermission[] = foundUsersByEmail.map(user => ({
+      type: 'id',
+      user_id: user._id,
+      permission: emailsToPermissions[user.email].permission,
+    }));
+    const finalEmailPermissions : IWhiteboardUserPermission[] = permissionsByEmail.filter(perm => !(perm.email in foundEmailSet));
+    const finalPermissions = [
+      ...permissionsById,
+      ...permissionsByIdFromEmail,
+      ...finalEmailPermissions
+    ];
 
-    if (toAdd.length > 0) {
-      whiteboard.shared_users.push(...toAdd);
+    if (finalPermissions.length > 0) {
+      // fully replace old permissions
+      whiteboard.shared_users = finalPermissions;
+
       await whiteboard.save();
     }
 

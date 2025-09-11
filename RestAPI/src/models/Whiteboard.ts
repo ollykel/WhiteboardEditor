@@ -30,14 +30,14 @@ export const canvasSchema = new Schema<ICanvas>({
   }
 });
 
-export type WhiteboardPermissionEnum =
+export type IWhiteboardPermissionEnum =
   | 'view'
   | 'edit'
   | 'own'
 ;
 
 export interface IWhiteboardUserPermissionBase {
-  permission: WhiteboardPermissionEnum;
+  permission: IWhiteboardPermissionEnum;
 }
 
 export interface IWhiteboardUserPermissionById extends IWhiteboardUserPermissionBase {
@@ -86,7 +86,7 @@ const whiteboardSchema = new Schema<IWhiteboard>({
   time_created: { type: Date, default: Date.now },
   canvases: [canvasSchema],
   owner: { type: Schema.Types.ObjectId, ref: "User", required: true },
-  shared_users: [WhiteboardUserPermission]
+  shared_users: [whiteboardUserPermissionSchema]
 });
 
 export const Canvas = model<ICanvas>("Canvas", canvasSchema);
