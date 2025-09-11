@@ -83,21 +83,22 @@ async fn handle_connection(ws: WebSocket, connection_state_ref: Arc<ConnectionSt
     if let Some(Ok(msg)) = first_msg {
         if let Ok(msg_s) = msg.to_str() {
             if let Ok(ClientSocketMessage::Login { user_id, username }) = serde_json::from_str(msg_s) {
-                // Store user_id and username in user_map
-                {
-                    let mut user_map = connection_state_ref.program_state.user_map.loc().await;
-                    user_map.insert(user_id, username.clone());
-                }
                 // Add to active_clients
                 {
-                    let mut active_clients = connection_state_ref.program_state.active_clients.lock().await;
-                    active_clients.insert(user_id);
+                    let mut clients = connection_state_ref.program_state.active_clients.lock().await;
+                    clients.insert(current_client_id, (user_id.clone(), username.clone()));
                 }
-                // Broadcast client_login with user_id and username
-                connection_state_ref.tx.send(ServerSocketMessage::ClientLogin {
-                    user_id,
-                    username,
-                }).ok();
+                // Broadcast the full active users list, deduplicating users
+                let users = {
+                    let clients = connection_state_ref.program_state.active_clients.lock().await;
+                    let mut seen = HashSet::new();
+                    clients.values()
+                        .filter(|(uid, )| seen.insert(uid.clone()))
+                        .map(|(uid, uname)| UserSummary { user_id: uid.clone(), username: uname.clone() })
+                        .collect::<Vec<_>>()
+                };
+
+                connection_state_ref.tx.send(ServerSocketMessage::ClientLogin { users }).ok();
             }
         }
     }
