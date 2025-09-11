@@ -21,6 +21,12 @@ export type CanvasIdType = number;
 // Unique identifier for each whiteboard
 export type WhiteboardIdType = number;
 
+// User presence update (canonical list of active users)
+export interface UserSummary {
+  user_id: string;
+  username: string;
+}
+
 export interface CanvasAttribs {
   id: CanvasIdType;
   width: number;
@@ -61,28 +67,10 @@ export interface ServerMessageInitClient {
   whiteboard: WhiteboardData;
 }
 
-// User presence update (canonical list of active users)
-export interface UserSummary {
-  user_id: string;
-  username: string;
-}
-
 export interface ServerMessageActiveUsers {
   type: "active_users";
   users: UserSummary[];
 }
-
-// // Notifies clients that a client has joined the session
-// export interface ServerMessageClientLogin {
-//   type: "client_login";
-//   clientId: ClientIdType;
-// }
-
-// // Notifies clients that a client has left the session
-// export interface ServerMessageClientLogout {
-//   type: "client_logout";
-//   clientId: ClientIdType;
-// }
 
 // Creates a new shape in a canvas
 export interface ServerMessageCreateShapes {
