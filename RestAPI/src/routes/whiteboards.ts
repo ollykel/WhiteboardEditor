@@ -15,6 +15,7 @@ import {
 } from '../middleware/auth';
 
 import {
+  getWhiteboardById,
   getWhiteboardsByOwner,
   createWhiteboard
 } from "../controllers/whiteboards";
@@ -28,15 +29,56 @@ const router = Router();
 // --- all routes authenticated
 router.use(authenticateJWT);
 
+
 router.post("/", createWhiteboard);
 
-// --- Get user's own whiteboards
+// -- Get user's own whiteboards
 router.get("/own", async (req: Request<{}, any, AuthorizedRequestBody>, res: Response) => {
   const { authUser } = req.body;
   const { id: ownerId } = authUser;
   const ownWhiteboards = await getWhiteboardsByOwner(ownerId);
 
   res.status(200).json(ownWhiteboards);
+});
+
+// -- Get whiteboard by id
+router.get('/:whiteboardId', async (
+  req: Request<{ whiteboardId: string }, any, AuthorizedRequestBody>,
+  res: Response
+) => {
+    const { authUser } = req.body;
+    const { id: userId } = authUser;
+    const { whiteboardId } = req.params;
+
+    // fetch whiteboard by id
+    const resp = await getWhiteboardById(whiteboardId);
+
+    switch (resp.status) {
+      case 'invalid_id':
+        return res.status(400).json({ message: 'Invalid whiteboard id' });
+      case 'not_found':
+        return res.status(404).json({ message: 'Whiteboard not found' });
+      case 'ok':
+      {
+          const { whiteboard } = resp;
+          const validUserIdSet: Record<string, boolean> = Object.fromEntries([
+            [whiteboard.owner._id, true],
+            ...whiteboard.shared_users.filter(perm => perm.type === 'id').map(perm => [
+              perm.user_id, true
+            ])
+          ]);
+
+          if (! (userId.toString() in validUserIdSet)) {
+            return res.status(403).json({
+              message: 'You are not authorized to view this resource'
+            });
+          } else {
+            return res.status(200).json(whiteboard);
+          }
+      }
+      default:
+        return res.status(500).json({ message: 'Unexpected error occurred' });
+    }
 });
 
 export interface ShareWhiteboardRequestBody extends AuthorizedRequestBody {

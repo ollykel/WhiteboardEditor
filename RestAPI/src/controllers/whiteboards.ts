@@ -27,6 +27,38 @@ export interface CreateWhiteboardRequest extends AuthorizedRequestBody {
   name: string;
 }
 
+export type GetWhiteboardRes = 
+  | { status: 'ok'; whiteboard: IWhiteboard }
+  | { status: 'invalid_id' }
+  | { status: 'not_found' }
+;
+
+export const getWhiteboardById = async (whiteboardId: string): Promise<GetWhiteboardRes> => {
+  if (! Types.ObjectId.isValid(whiteboardId)) {
+    return ({ status: 'invalid_id' });
+  }
+
+  const whiteboard = await Whiteboard.findById(whiteboardId).populate('owner');
+
+  if (! whiteboard) {
+    return ({ status: 'not_found' });
+  } else {
+    whiteboard.shared_users = whiteboard.shared_users.map(perm => {
+      switch (perm.type) {
+        case 'id':
+          return ({
+            ...perm,
+            user: User.findById(perm.user_id)
+          });
+        default:
+          return perm;
+      }
+    });
+
+    return ({ status: 'ok', whiteboard });
+  }
+};
+
 export const getWhiteboardsByOwner = async (ownerId: Types.ObjectId): Promise<IWhiteboard[]> => {
   return await Whiteboard.find({ owner: ownerId });
 };// end getWhiteboardsByOwner
