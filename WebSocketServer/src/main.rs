@@ -182,13 +182,26 @@ async fn handle_connection(ws: WebSocket, connection_state_ref: Arc<ConnectionSt
 
     // Remove client from active clients, notify other clients of logout
     {
-        // Add new client to active clients, notify other users that they have logged in
-        let mut active_clients = connection_state_ref
-            .program_state
-            .active_clients.lock().await;
+        let mut clients = connection_state_ref.program_state.active_clients.lock().await;
+        clients.remove(&current_client_id);
 
-        active_clients.remove(&current_client_id);
-        connection_state_ref.tx.send(ServerSocketMessage::ClientLogout{ client_id: current_client_id }).ok();
+        // Boradcast updated user list
+        let users = {
+            let mut seen = HashSet::new();
+            clients.values()
+                .filter(|(uid, _)| seen.insert(uid.clone()))
+                .map(|(uid, uname)| UserSummary { user_id: uid.clone(), username: uname.clone() })
+                .collect::<Vec<_>>()
+        }
+
+        connection_state_ref.tx.send(ServerSocketMessage::ActiveUsers { users }).ok();
+
+        // let mut active_clients = connection_state_ref
+        //     .program_state
+        //     .active_clients.lock().await;
+
+        // active_clients.remove(&current_client_id);
+        // connection_state_ref.tx.send(ServerSocketMessage::ClientLogout{ client_id: current_client_id }).ok();
     }
 
     println!("Client {} disconnected", current_client_id);
