@@ -22,7 +22,7 @@ pub type CanvasObjectIdType = i32;
 pub type WhiteboardIdType = i32;
 
 #[derive(Debug, Clone, Serialize)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "snake_case")]
 pub struct UserSummary {
     pub user_id: String,
     pub username: String,
@@ -319,7 +319,7 @@ mod tests {
                 name: String::from("Test"),
                 canvases: vec![]
             }),
-            active_clients: Mutex::new(HashSet::new())
+            active_clients: Mutex::new(HashMap::new())
         };
         let test_client_id = 0;
         let client_msg_s = "This is not valid json";
