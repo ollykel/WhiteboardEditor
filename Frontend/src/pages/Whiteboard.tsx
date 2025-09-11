@@ -21,7 +21,8 @@ import {
 import {
   addWhiteboard,
   setCanvasObjects,
-  addCanvas
+  addCanvas,
+  addActiveUser,
 } from '@/controllers';
 
 import {
@@ -66,12 +67,9 @@ import type {
   CanvasIdType,
   WhiteboardIdType,
   WhiteboardAttribs,
-  ClientIdType
 } from '@/types/WebSocketProtocol';
 
 import { useUser } from '@/hooks/useUser';
-
-import { setActiveUsers } from '@/store/activeUsers/activeUsersSlice';
 
 // -- Allowed Users Redux reducers
 // import { 
@@ -195,13 +193,7 @@ const Whiteboard = () => {
               const { users } = msg;
               console.log('Active users message received:', users);
 
-              const usersById: Record<ClientIdType, string> = {};
-              users.forEach((u) => {
-                console.log('Processing user:', u);
-                usersById[u.user_id as unknown as ClientIdType] = u.username;
-              });
-              console.log("usersById: ", usersById);
-              dispatch(setActiveUsers(usersById));
+              addActiveUser(dispatch, users);
             } 
             break;
           case 'create_shapes':
