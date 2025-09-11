@@ -394,8 +394,13 @@ const Whiteboard = () => {
                 } = data;
 
                 const res = await api.post(`/whiteboards/${whiteboardId}/share`, ({
-                  userIdType: 'email',
-                  emails: collaboratorEmails
+                  // emails: collaboratorEmails
+                  userPermissions: collaboratorEmails.map(email => ({
+                    type: 'email',
+                    email,
+                    // TODO: get permissions from form
+                    permission: 'edit'
+                  }))
                 }));
 
                 if (res.status >= 400) {
