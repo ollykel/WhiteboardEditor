@@ -26,6 +26,10 @@ import {
 } from '@/controllers';
 
 import {
+  selectActiveUsers
+} from '@/store/activeUsers/activeUsersSelectors';
+
+import {
   selectWhiteboardById
 } from '@/store/whiteboards/whiteboardsSelectors';
 
@@ -123,7 +127,7 @@ const Whiteboard = () => {
     strokeWidth: 1
   });
 
-  const activeUsers = useSelector((state: RootState) => state.activeUsers.users);
+  const activeUsers = useSelector(selectActiveUsers);
 
   const currWhiteboard: WhiteboardAttribs | null = useSelector((state: RootState) => (
     selectWhiteboardById(state, whiteboardId))
