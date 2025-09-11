@@ -30,13 +30,55 @@ export const canvasSchema = new Schema<ICanvas>({
   }
 });
 
+export type WhiteboardPermissionEnum =
+  | 'view'
+  | 'edit'
+  | 'own'
+;
+
+export interface IWhiteboardUserPermissionBase {
+  permission: WhiteboardPermissionEnum;
+}
+
+export interface IWhiteboardUserPermissionById extends IWhiteboardUserPermissionBase {
+  type: 'id';
+  user_id: Types.ObjectId;
+}
+
+export interface IWhiteboardUserPermissionByEmail extends IWhiteboardUserPermissionBase {
+  type: 'email';
+  email: string;
+}
+
+export type IWhiteboardUserPermission = 
+  | IWhiteboardUserPermissionById
+  | IWhiteboardUserPermissionByEmail
+;
+
+const whiteboardUserPermissionSchema = new Schema<IWhiteboardUserPermissionBase>({
+    permission: { type: String, enum: ['view', 'edit', 'own'], required: true }
+  }, {
+    discriminatorKey: 'type'
+  }
+);
+
+export const WhiteboardUserPermission = model<IWhiteboardUserPermissionBase>('WhiteboardUserPermission', whiteboardUserPermissionSchema);
+
+export const WhiteboardUserPermissionById = WhiteboardUserPermission.discriminator<IWhiteboardUserPermissionById>('id', new Schema({
+  user_id: { type: Types.ObjectId, ref: "User", required: true }
+}));
+
+export const WhiteboardUserPermissionByEmail = WhiteboardUserPermission.discriminator<IWhiteboardUserPermissionByEmail>('email', new Schema({
+  email: { type: String, required: true }
+}));
+
 export interface IWhiteboard extends Document {
   _id: WhiteboardIdType;
   name: string;
   time_created: Date;
   canvases: ICanvas[];
   owner: UserIdType;        // reference to User
-  shared_users: UserIdType[]; // references to Users
+  shared_users: IWhiteboardUserPermission[];
 }
 
 const whiteboardSchema = new Schema<IWhiteboard>({
@@ -44,7 +86,7 @@ const whiteboardSchema = new Schema<IWhiteboard>({
   time_created: { type: Date, default: Date.now },
   canvases: [canvasSchema],
   owner: { type: Schema.Types.ObjectId, ref: "User", required: true },
-  shared_users: [{ type: Schema.Types.ObjectId, ref: "User" }],
+  shared_users: [WhiteboardUserPermission]
 });
 
 export const Canvas = model<ICanvas>("Canvas", canvasSchema);
