@@ -79,7 +79,7 @@ async fn handle_connection(ws: WebSocket, connection_state_ref: Arc<ConnectionSt
         client_id
     };
 
-    let first_msg = user_ws_rx.next().await();
+    let first_msg = user_ws_rx.next().await;
     if let Some(Ok(msg)) = first_msg {
         if let Ok(msg_s) = msg.to_str() {
             if let Ok(ClientSocketMessage::Login { user_id, username }) = serde_json::from_str(msg_s) {
@@ -93,7 +93,7 @@ async fn handle_connection(ws: WebSocket, connection_state_ref: Arc<ConnectionSt
                     let clients = connection_state_ref.program_state.active_clients.lock().await;
                     let mut seen = HashSet::new();
                     clients.values()
-                        .filter(|(uid, )| seen.insert(uid.clone()))
+                        .filter(|(uid, _)| seen.insert(uid.clone()))
                         .map(|(uid, uname)| UserSummary { user_id: uid.clone(), username: uname.clone() })
                         .collect::<Vec<_>>()
                 };
@@ -192,7 +192,7 @@ async fn handle_connection(ws: WebSocket, connection_state_ref: Arc<ConnectionSt
                 .filter(|(uid, _)| seen.insert(uid.clone()))
                 .map(|(uid, uname)| UserSummary { user_id: uid.clone(), username: uname.clone() })
                 .collect::<Vec<_>>()
-        }
+        };
 
         connection_state_ref.tx.send(ServerSocketMessage::ActiveUsers { users }).ok();
 

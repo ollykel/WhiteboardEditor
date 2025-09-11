@@ -71,6 +71,8 @@ import type {
 
 import { useUser } from '@/hooks/useUser';
 
+import { setActiveUsers } from '@/store/activeUsers/activeUsersSlice';
+
 // -- Allowed Users Redux reducers
 // import { 
 //   setAllowedUsersByCanvas,
@@ -106,7 +108,6 @@ const Whiteboard = () => {
 
   // -- managed state
   const [clientId, setClientId] = useState<number>(-1);
-  const [activeClients, setActiveClients] = useState<Set<number>>(new Set());
   const [toolChoice, setToolChoice] = useState<ToolChoice>('rect');
   const whiteboardIdRef = useRef<WhiteboardIdType>(whiteboardId);
   
@@ -116,6 +117,8 @@ const Whiteboard = () => {
   useEffect(() => {
     whiteboardIdRef.current = whiteboardId;
   }, [whiteboardId]);
+
+  const activeUsers = useSelector((state: RootState) => state.activeUsers.users);
 
   const [shapeAttributesState, dispatchShapeAttributes] = useReducer(shapeAttributesReducer, {
     x: 0,
@@ -194,7 +197,7 @@ const Whiteboard = () => {
                 usersById[u.userId as unknown as ClientIdType] = u.username;
               });
 
-              dispatch({ type: 'usersById/setUsers', payload: usersById });
+              dispatch(setActiveUsers(usersById));
             } 
             break;
           // case 'client_login':
@@ -367,8 +370,8 @@ const Whiteboard = () => {
 
             {/* Display Active Clients */}
             <div>
-              <span>Active user IDs: </span>
-              { [...activeClients.keys()].join(', ') }
+              <span>Active Users: </span>
+              { Object.values(activeUsers).join(', ') }
             </div>
           </div>
 
@@ -387,7 +390,7 @@ const Whiteboard = () => {
                   shapeAttributes={shapeAttributesState}
                   currentTool={toolChoice}
                   disabled={!hasAccess}
-                  allUsers={["joe"]} // TODO: Change hardcoded list of all users
+                  allUsers={Object.values(activeUsers)} // TODO: Change to allowed users
                 />
               );
             })}
