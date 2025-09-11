@@ -128,7 +128,6 @@ async fn handle_connection(ws: WebSocket, connection_state_ref: Arc<ConnectionSt
 
         let init_msg = ServerSocketMessage::InitClient {
             client_id: current_client_id,
-            active_clients: active_clients.iter().map(|&val| val).collect(),
             whiteboard: whiteboard.to_client_view()
         };
 

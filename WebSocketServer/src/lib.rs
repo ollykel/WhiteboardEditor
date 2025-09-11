@@ -79,7 +79,7 @@ pub struct WhiteboardClientView {
 #[derive(Debug, Clone, Serialize)]
 #[serde(tag = "type", rename_all = "snake_case", rename_all_fields="camelCase")]
 pub enum ServerSocketMessage {
-    InitClient { client_id: ClientIdType, active_clients: Vec<ClientIdType>, whiteboard: WhiteboardClientView },
+    InitClient { client_id: ClientIdType, whiteboard: WhiteboardClientView },
     ClientLogin { client_id: ClientIdType },
     ClientLogout { client_id: ClientIdType },
     ActiveUsers { users: Vec<UserSummary>},
