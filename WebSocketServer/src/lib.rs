@@ -80,8 +80,8 @@ pub struct WhiteboardClientView {
 #[serde(tag = "type", rename_all = "snake_case", rename_all_fields="camelCase")]
 pub enum ServerSocketMessage {
     InitClient { client_id: ClientIdType, whiteboard: WhiteboardClientView },
-    ClientLogin { client_id: ClientIdType },
-    ClientLogout { client_id: ClientIdType },
+    // ClientLogin { client_id: ClientIdType },
+    // ClientLogout { client_id: ClientIdType },
     ActiveUsers { users: Vec<UserSummary>},
     CreateShapes { client_id: ClientIdType, canvas_id: CanvasIdType, shapes: HashMap<CanvasObjectIdType, ShapeModel> },
     UpdateShapes { client_id: ClientIdType, canvas_id: CanvasIdType, shapes: HashMap<String, ShapeModel> },

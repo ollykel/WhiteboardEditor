@@ -98,7 +98,7 @@ async fn handle_connection(ws: WebSocket, connection_state_ref: Arc<ConnectionSt
                         .collect::<Vec<_>>()
                 };
 
-                connection_state_ref.tx.send(ServerSocketMessage::ClientLogin { users }).ok();
+                connection_state_ref.tx.send(ServerSocketMessage::ActiveUsers { users }).ok();
             }
         }
     }

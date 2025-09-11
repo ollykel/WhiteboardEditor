@@ -65,7 +65,8 @@ import type {
   CanvasData,
   CanvasIdType,
   WhiteboardIdType,
-  WhiteboardAttribs
+  WhiteboardAttribs,
+  ClientIdType
 } from '@/types/WebSocketProtocol';
 
 import { useUser } from '@/hooks/useUser';
@@ -177,38 +178,49 @@ const Whiteboard = () => {
         switch (msg.type) {
           case 'init_client':
             {
-              const { clientId: initClientId, activeClients: initActiveClients, whiteboard } = msg;
+              const { clientId: initClientId, whiteboard } = msg;
 
               setWhiteboardId(whiteboard.id);
               setClientId(initClientId);
               addWhiteboard(dispatch, whiteboard);
-              setActiveClients(new Set(initActiveClients));
             }
             break;
-          case 'client_login':
+          case 'active_users': 
             {
-              const { clientId } = msg;
+              const { users } = msg;
 
-              setActiveClients((prev) => {
-                const next = new Set(prev.keys());
-
-                next.add(clientId);
-                return next;
+              const usersById: Record<ClientIdType, string> = {};
+              users.forEach((u) => {
+                usersById[u.userId as unknown as ClientIdType] = u.username;
               });
-            }
-            break;
-          case 'client_logout':
-            {
-              const { clientId } = msg;
 
-              setActiveClients((prev) => {
-                const next = new Set(prev.keys());
-
-                next.delete(clientId);
-                return next;
-              });
-            }
+              dispatch({ type: 'usersById/setUsers', payload: usersById });
+            } 
             break;
+          // case 'client_login':
+          //   {
+          //     const { clientId } = msg;
+
+          //     setActiveClients((prev) => {
+          //       const next = new Set(prev.keys());
+
+          //       next.add(clientId);
+          //       return next;
+          //     });
+          //   }
+          //   break;
+          // case 'client_logout':
+          //   {
+          //     const { clientId } = msg;
+
+          //     setActiveClients((prev) => {
+          //       const next = new Set(prev.keys());
+
+          //       next.delete(clientId);
+          //       return next;
+          //     });
+          //   }
+          //   break;
           case 'create_shapes':
             {
               const { canvasId, shapes } = msg;
@@ -255,7 +267,7 @@ const Whiteboard = () => {
     ws.onopen = () => {
       // Send login/auth message with user ID
       ws.send(JSON.stringify({
-        type: "client_login",
+        type: "login",
         userId: user?._id,
         username: user?.username,
       }));
@@ -267,8 +279,13 @@ const Whiteboard = () => {
       console.log(`Failed to establish web socket connection to ${wsUri}`);
       socketRef.current = null;
     };
+
     ws.onmessage = handleServerMessage;
-  }, [socketRef, setWhiteboardId, user]);
+
+    return () => {
+      ws.close();
+    }
+  }, [socketRef, setWhiteboardId, user, store.dispatch]);
 
   const makeHandleAddShapes = (canvasId: CanvasIdType) => (shapes: CanvasObjectModel[]) => {
     if (socketRef.current) {
