@@ -185,6 +185,22 @@ pub async fn handle_client_message(program_state: &ProgramState, current_client_
             println!("Received message from client {}", current_client_id);
             
             match client_msg {
+                ClientSocketMessage::Login { user_id, username } => {
+                    let mut clients = program_state.active_clients.lock().await;
+                    clients.insert(current_client_id, (user_id.clone(), username.clone()));
+
+                    // Deduplicate by user_id
+                    let mut seen = HashSet::new();
+                    let users: Vec<UserSummary> = clients.values()
+                        .filter(|(uid, _)| seen.insert(uid.clone())) // only first occurences
+                        .map(|(uid, uname)| UserSummary {
+                            user_id: uid.clone(),
+                            username: uname.clone(),
+                        })
+                        .collect();
+
+                    Some(ServerSocketMessage::ActiveUsers { users })
+                },
                 ClientSocketMessage::CreateShapes{ canvas_id, ref shapes } => {
                     let mut whiteboard = program_state.whiteboard.lock().await;
                     println!("Creating shape on canvas {} ...", canvas_id);
