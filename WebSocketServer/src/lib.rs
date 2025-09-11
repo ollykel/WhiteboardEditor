@@ -21,13 +21,6 @@ pub type CanvasIdType = i32;
 pub type CanvasObjectIdType = i32;
 pub type WhiteboardIdType = i32;
 
-#[derive(Debug, Clone, Serialize)]
-#[serde(rename_all = "snake_case")]
-pub struct UserSummary {
-    pub user_id: String,
-    pub username: String,
-}
-
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "snake_case", rename_all_fields="camelCase")]
 pub enum ShapeModel {
@@ -58,6 +51,13 @@ pub enum ShapeModel {
     },
 }
 
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub struct UserSummary {
+    pub user_id: String,
+    pub username: String,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CanvasClientView {
@@ -80,8 +80,6 @@ pub struct WhiteboardClientView {
 #[serde(tag = "type", rename_all = "snake_case", rename_all_fields="camelCase")]
 pub enum ServerSocketMessage {
     InitClient { client_id: ClientIdType, whiteboard: WhiteboardClientView },
-    // ClientLogin { client_id: ClientIdType },
-    // ClientLogout { client_id: ClientIdType },
     ActiveUsers { users: Vec<UserSummary>},
     CreateShapes { client_id: ClientIdType, canvas_id: CanvasIdType, shapes: HashMap<CanvasObjectIdType, ShapeModel> },
     UpdateShapes { client_id: ClientIdType, canvas_id: CanvasIdType, shapes: HashMap<String, ShapeModel> },
