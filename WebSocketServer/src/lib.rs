@@ -21,6 +21,13 @@ pub type CanvasIdType = i32;
 pub type CanvasObjectIdType = i32;
 pub type WhiteboardIdType = i32;
 
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct UserSummary {
+    pub user_id: String,
+    pub username: String,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "snake_case", rename_all_fields="camelCase")]
 pub enum ShapeModel {
@@ -75,6 +82,7 @@ pub enum ServerSocketMessage {
     InitClient { client_id: ClientIdType, active_clients: Vec<ClientIdType>, whiteboard: WhiteboardClientView },
     ClientLogin { client_id: ClientIdType },
     ClientLogout { client_id: ClientIdType },
+    ActiveUsers { users: Vec<UserSummary>},
     CreateShapes { client_id: ClientIdType, canvas_id: CanvasIdType, shapes: HashMap<CanvasObjectIdType, ShapeModel> },
     UpdateShapes { client_id: ClientIdType, canvas_id: CanvasIdType, shapes: HashMap<String, ShapeModel> },
     CreateCanvas { client_id: ClientIdType, canvas_id: CanvasIdType, width: u64, height: u64, allowed_users: Vec<ClientIdType> },
@@ -88,7 +96,7 @@ pub enum ClientSocketMessage {
     CreateShapes { canvas_id: CanvasIdType, shapes: Vec<ShapeModel> },
     UpdateShapes { canvas_id: CanvasIdType, shapes: HashMap<String, ShapeModel> },
     CreateCanvas { width: u64, height: u64 },
-    Login { client_id: ClientIdType, username: String },
+    Login { user_id: String, username: String },
 }
 
 #[derive(Clone, Serialize)]
@@ -151,7 +159,7 @@ impl Whiteboard {
 // ================================================================================================
 pub struct ProgramState {
     pub whiteboard: Mutex<Whiteboard>,
-    pub active_clients: Mutex<HashSet<ClientIdType>>
+    pub active_clients: Mutex<HashMap<ClientIdType, (String, String)>>
 }
 
 // === Connection State ===========================================================================
