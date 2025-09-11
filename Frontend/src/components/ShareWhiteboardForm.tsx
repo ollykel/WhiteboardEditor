@@ -1,148 +1,157 @@
-import { useForm } from '@tanstack/react-form';
-import { useState, useRef, useEffect } from 'react';
+// -- std imports
+import {
+  useState
+} from 'react';
 
-export type UserPermissions = 'view' | 'edit';
+// -- third-party imports
+import {
+  X
+} from 'lucide-react';
+
+// -- local imports
+
+import {
+  Button
+} from '@/components/ui/button';
+
+import {
+  Input
+} from '@/components/ui/input';
 
 export interface ShareWhiteboardFormData {
-  email: string;
-  permissions: UserPermissions;
+  collaboratorEmails: string[];
 }
 
 export interface ShareWhiteboardFormProps {
-  shareLink: string;
+  initCollaboratorEmails: string[];
   onSubmit: (data: ShareWhiteboardFormData) => void;
 }
 
-const ShareWhiteboardForm = (props: ShareWhiteboardFormProps) => {
-  const form = useForm({
-    defaultValues: {
-      email: '',
-      permissions: 'view' as UserPermissions,
-    },
-    onSubmit: async ({ value }: { value: ShareWhiteboardFormData }) => {
-      props.onSubmit(value);
-    },
-  });
+const ShareWhiteboardForm = ({
+  initCollaboratorEmails,
+  onSubmit
+}: ShareWhiteboardFormProps): React.JSX.Element => {
+  // -- prop-derived state
+  const initEmailSet: Record<string, boolean> = Object.fromEntries(initCollaboratorEmails.map(email => [
+    email, true
+  ]));
 
-  const [copied, setCopied] = useState(false);
-  const [openDropdown, setOpenDropdown] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement | null>(null);
+  // -- managed state
+  const [emailSet, setEmailSet] = useState<Record<string, boolean>>(initEmailSet);
+  const [newEmail, setNewEmail] = useState<string>("");
 
-  // Close dropdown on outside click
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setOpenDropdown(false);
+  const handleChangeNewEmail = (ev: React.ChangeEvent<HTMLInputElement>) => {
+    ev.preventDefault();
+    setNewEmail(ev.target.value);
+  };
+
+  const handleAddNewEmail = (ev: React.MouseEvent<HTMLButtonElement>) => {
+    ev.preventDefault();
+
+    setNewEmail(newEmail => {
+      if (newEmail) {
+        setEmailSet(prev => ({ ...prev, [newEmail]: true }));
       }
-    }
-    if (openDropdown) {
-      document.addEventListener('mousedown', handleClickOutside);
-    }
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [openDropdown]);
 
-  const handleCopy = async () => {
-    try {
-      await navigator.clipboard.writeText(props.shareLink);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch (err) {
-      console.error('Failed to copy', err);
-    }
+      return "";
+    });
+  };
+
+  const makeHandleRemoveEmail = (email: string) => () => {
+    setEmailSet(prev => {
+      const next = ({ ...prev });
+
+      delete next[email];
+
+      return next;
+    });
+  };
+
+  const RemovableEmail = (email: string): React.JSX.Element => {
+    return (
+      <div
+        className="mr-2 mb-2 px-2 py-1 inline-block align-middle rounded-2xl bg-gray-200 border-gray-600"
+      >
+        <button
+          onClick={makeHandleRemoveEmail(email)}
+          className="hover:cursor-pointer p-1 inline-block align-middle"
+        >
+          <X size={18} />
+        </button>
+        <span>
+          {email}
+        </span>
+      </div>
+    );
+  };
+
+  const handleSubmit = (ev: React.FormEvent<HTMLFormElement>) => {
+    ev.preventDefault();
+
+    const data = ({
+      collaboratorEmails: Object.keys(emailSet)
+    });
+
+    setEmailSet({});
+    onSubmit(data);
   };
 
   return (
-    <div className="bg-gray-200 border border-gray-400 rounded-sm p-3 w-[320px] text-sm space-y-3">
-      {/* Share Link */}
-      <div className="flex items-center">
-        <input
-          type="text"
-          value={props.shareLink}
-          readOnly
-          className="flex-1 border border-gray-500 rounded-sm px-2 py-1 bg-white text-xs"
-        />
-        <button
-          type="button"
-          onClick={handleCopy}
-          className="ml-2 px-2 py-1 border border-gray-600 rounded-sm bg-gray-100 hover:bg-gray-300 text-xs"
-        >
-          {copied ? 'Copied!' : 'Copy Link'}
-        </button>
-      </div>
+    <div className="w-200 p-0 m-4 flex flex-col flex-shrink">
+      <form onSubmit={handleSubmit}>
+        <h2 className="text-center text-2xl font-bold m-2">Control access to this whiteboard</h2>
 
-      {/* Invite Row */}
-      <form onSubmit={form.handleSubmit} className="flex items-center space-x-2 relative">
-        {/* Email Input */}
-        <form.Field
-          name="email"
-          validators={{
-            onChange: ({ value }) =>
-              !value.includes('@') ? 'Invalid email' : undefined,
-          }}
-        >
-          {(field) => (
-            <input
+        <div className="flex flex-col flex-shrink p-4">
+          <h3 className="text-lg font-semibold">
+            Invite collaborators by email
+          </h3>
+
+          <div
+            className="flex flex-row align-top w-160"
+          >
+            <Input
+              name="new-email"
               type="email"
-              value={field.state.value}
-              onChange={(e) => field.handleChange(e.target.value)}
-              placeholder="Invite by Email"
-              className="flex-1 border border-gray-500 rounded-sm px-2 py-1 text-xs bg-white text-black"
+              placeholder="Email"
+              onChange={handleChangeNewEmail}
+              value={newEmail}
+              className="mr-2"
             />
-          )}
-        </form.Field>
 
-        {/* Permissions Dropdown (custom) */}
-        <form.Field name="permissions">
-          {(field) => (
-            <div className="relative" ref={dropdownRef}>
-              <button
-                type="button"
-                onClick={() => setOpenDropdown((o) => !o)}
-                className="border border-gray-500 rounded-sm px-2 py-1 text-xs bg-white flex items-center space-x-1"
-              >
-                <span className="capitalize">{field.state.value}</span>
-                <span className="text-[10px]">⌄</span>
-              </button>
-              {openDropdown && (
-                <div className="absolute left-0 mt-1 w-full border border-gray-500 bg-white rounded-sm shadow-sm text-xs z-10">
-                  <div
-                    className="px-2 py-1 hover:bg-gray-200 cursor-pointer"
-                    onClick={() => {
-                      field.handleChange('view');
-                      setOpenDropdown(false);
-                    }}
-                  >
-                    View
-                  </div>
-                  <div
-                    className="px-2 py-1 hover:bg-gray-200 cursor-pointer"
-                    onClick={() => {
-                      field.handleChange('edit');
-                      setOpenDropdown(false);
-                    }}
-                  >
-                    Edit
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-        </form.Field>
-
-        {/* Invite Button */}
-        <form.Subscribe selector={(s) => [s.isSubmitting]}>
-          {([isSubmitting]) => (
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="px-3 py-1 border border-gray-600 rounded-sm bg-gray-100 hover:bg-gray-300 text-xs"
+            <Button
+              variant="secondary"
+              onClick={handleAddNewEmail}
             >
-              Invite
-            </button>
-          )}
-        </form.Subscribe>
+              + Add Email
+            </Button>
+          </div>
+
+          <div>
+            {/** Display user emails to add, with option to remove **/}
+            <h3>Collaborators to invite:</h3>
+            <ul className="flex flex-row flex-wrap">
+            {
+                Object.keys(emailSet).length ?
+                  Object.keys(emailSet).map(email => (
+                      <li>
+                        {RemovableEmail(email)}
+                      </li>
+                    ))
+                  :
+                  "No emails selected"
+            }
+            </ul>
+          </div>
+        </div>
+
+        <div className="flex flex-row justify-center">
+          <Button
+            type="submit"
+            className="w-1/2"
+          >
+            Update Shared Users
+          </Button>
+        </div>
       </form>
     </div>
   );

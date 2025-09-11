@@ -374,7 +374,7 @@ const Whiteboard = () => {
       </div>
 
       {/** Modal that opens to share the whiteboard **/}
-      <ShareModal width="20em" height="10em" zIndex={100}>
+      <ShareModal width="50em" height="20em" zIndex={100}>
         <div className="flex flex-col">
           <button
             onClick={closeShareModal}
@@ -386,25 +386,27 @@ const Whiteboard = () => {
           <h2 className="text-md font-bold text-center">Share Whiteboard</h2>
 
           <ShareWhiteboardForm
-            shareLink="https://example.link/asfasdfasdf"
+            initCollaboratorEmails={[]}
             onSubmit={async (data: ShareWhiteboardFormData) => {
-              const {
-                email
-              } = data;
+              try {
+                const {
+                  collaboratorEmails
+                } = data;
 
-              const res = await api.post(`/whiteboards/${whiteboardId}/share`, ({
-                userIdType: 'email',
-                emails: [email]
-              }));
+                const res = await api.post(`/whiteboards/${whiteboardId}/share`, ({
+                  userIdType: 'email',
+                  emails: collaboratorEmails
+                }));
 
-              if (res.status >= 400) {
-                console.error('POST /whiteboards/:id/share failed:', res.data);
-              } else {
-                console.log('Share request submitted successfully');
-                alert('Share request submitted successfully');
+                if (res.status >= 400) {
+                  console.error('POST /whiteboards/:id/share failed:', res.data);
+                } else {
+                  console.log('Share request submitted successfully');
+                  alert('Share request submitted successfully');
+                }
+              } finally {
+                closeShareModal();
               }
-
-              closeShareModal();
             }}
           />
         </div>
