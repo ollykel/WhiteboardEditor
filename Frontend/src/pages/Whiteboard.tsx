@@ -174,9 +174,12 @@ const Whiteboard = () => {
 
     // handles all web socket messages
     const handleServerMessage = (event: MessageEvent): void => {
+      console.log('Raw WebSocket message received:', event.data);
+
       try {
         const msg = JSON.parse(event.data) as SocketServerMessage;
-        console.log('Received:', msg);
+        console.log('Parsed message:', msg);
+        console.log('Message type:', msg.type);
 
         switch (msg.type) {
           case 'init_client':
@@ -191,10 +194,12 @@ const Whiteboard = () => {
           case 'active_users': 
             {
               const { users } = msg;
+              console.log('Active users message received:', users);
 
               const usersById: Record<ClientIdType, string> = {};
               users.forEach((u) => {
-                usersById[u.userId as unknown as ClientIdType] = u.username;
+                console.log('Processing user:', u);
+                usersById[u.user_id as unknown as ClientIdType] = u.username;
               });
 
               dispatch(setActiveUsers(usersById));
@@ -269,11 +274,13 @@ const Whiteboard = () => {
 
     ws.onopen = () => {
       // Send login/auth message with user ID
-      ws.send(JSON.stringify({
+      const loginMessage = {
         type: "login",
-        userId: user?._id,
+        user_id: user?.id,
         username: user?.username,
-      }));
+      };
+      console.log('🚀 Sending login message:', loginMessage);
+      ws.send(JSON.stringify(loginMessage));
 
       console.log(`Established web socket connection to ${wsUri}`);
       socketRef.current = ws;

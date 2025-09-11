@@ -63,7 +63,7 @@ export interface ServerMessageInitClient {
 
 // User presence update (canonical list of active users)
 export interface UserSummary {
-  userId: string;
+  user_id: string;
   username: string;
 }
 

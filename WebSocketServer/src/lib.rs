@@ -91,7 +91,7 @@ pub enum ServerSocketMessage {
 }
 
 #[derive(Debug, Clone, Deserialize)]
-#[serde(tag = "type", rename_all = "snake_case", rename_all_fields="camelCase")]
+#[serde(tag = "type", rename_all = "snake_case")]
 pub enum ClientSocketMessage {
     CreateShapes { canvas_id: CanvasIdType, shapes: Vec<ShapeModel> },
     UpdateShapes { canvas_id: CanvasIdType, shapes: HashMap<String, ShapeModel> },
