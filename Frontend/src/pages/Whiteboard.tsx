@@ -95,6 +95,7 @@ const Whiteboard = () => {
 
   // -- references
   const context = useContext(WhiteboardContext);
+  const { user } = useUser();
 
   if (! context) {
     throw new Error('No WhiteboardContext provided');
@@ -110,15 +111,11 @@ const Whiteboard = () => {
   const [clientId, setClientId] = useState<number>(-1);
   const [toolChoice, setToolChoice] = useState<ToolChoice>('rect');
   const whiteboardIdRef = useRef<WhiteboardIdType>(whiteboardId);
-  
-  const { user } = useUser();
 
   // dirty trick to keep whiteboardIdRef in-sync with whiteboardId
   useEffect(() => {
     whiteboardIdRef.current = whiteboardId;
   }, [whiteboardId]);
-
-  const activeUsers = useSelector((state: RootState) => state.activeUsers.users);
 
   const [shapeAttributesState, dispatchShapeAttributes] = useReducer(shapeAttributesReducer, {
     x: 0,
@@ -127,6 +124,8 @@ const Whiteboard = () => {
     strokeColor: '#000000',
     strokeWidth: 1
   });
+
+  const activeUsers = useSelector((state: RootState) => state.activeUsers.users);
 
   const currWhiteboard: WhiteboardAttribs | null = useSelector((state: RootState) => (
     selectWhiteboardById(state, whiteboardId))
@@ -201,34 +200,10 @@ const Whiteboard = () => {
                 console.log('Processing user:', u);
                 usersById[u.user_id as unknown as ClientIdType] = u.username;
               });
-
+              console.log("usersById: ", usersById);
               dispatch(setActiveUsers(usersById));
             } 
             break;
-          // case 'client_login':
-          //   {
-          //     const { clientId } = msg;
-
-          //     setActiveClients((prev) => {
-          //       const next = new Set(prev.keys());
-
-          //       next.add(clientId);
-          //       return next;
-          //     });
-          //   }
-          //   break;
-          // case 'client_logout':
-          //   {
-          //     const { clientId } = msg;
-
-          //     setActiveClients((prev) => {
-          //       const next = new Set(prev.keys());
-
-          //       next.delete(clientId);
-          //       return next;
-          //     });
-          //   }
-          //   break;
           case 'create_shapes':
             {
               const { canvasId, shapes } = msg;
@@ -279,7 +254,7 @@ const Whiteboard = () => {
         user_id: user?.id,
         username: user?.username,
       };
-      console.log('🚀 Sending login message:', loginMessage);
+      console.log('Sending login message:', loginMessage);
       ws.send(JSON.stringify(loginMessage));
 
       console.log(`Established web socket connection to ${wsUri}`);
