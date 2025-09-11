@@ -133,7 +133,7 @@ const ShareWhiteboardForm = ({
             {
                 Object.keys(emailSet).length ?
                   Object.keys(emailSet).map(email => (
-                      <li>
+                      <li key={email}>
                         {RemovableEmail(email)}
                       </li>
                     ))
