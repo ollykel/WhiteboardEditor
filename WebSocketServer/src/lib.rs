@@ -280,7 +280,7 @@ pub struct ConnectionState {
 // @param current_client_id     -- ID of sending client
 // @param client_msg_s          -- Content of client message
 // @return                      -- (Optional) Message to send to clients, if any
-pub async fn handle_client_message(client_state: &ClientState, client_msg_s: &str) -> Option<ServerSocketMessage> {
+pub async fn handle_client_message(client_state: &ClientState, program_state: &ProgramState, client_msg_s: &str) -> Option<ServerSocketMessage> {
     match serde_json::from_str::<ClientSocketMessage>(client_msg_s) {
         Ok(client_msg) => {
             println!("Received message from client {}", client_state.client_id);
@@ -288,7 +288,7 @@ pub async fn handle_client_message(client_state: &ClientState, client_msg_s: &st
             match client_msg {
                 ClientSocketMessage::Login { user_id, username } => {
                     let mut clients = program_state.active_clients.lock().await;
-                    clients.insert(current_client_id, (user_id.clone(), username.clone()));
+                    clients.insert(client_state.client_id, (user_id.clone(), username.clone()));
 
                     // Deduplicate by user_id
                     let mut seen = HashSet::new();

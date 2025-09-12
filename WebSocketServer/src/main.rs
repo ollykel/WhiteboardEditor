@@ -82,6 +82,7 @@ async fn main() -> process::ExitCode {
 
 async fn handle_connection(ws: WebSocket, whiteboard_id: WhiteboardIdType, connection_state_ref: Arc<ConnectionState>) {
     let (mut user_ws_tx, mut user_ws_rx) = ws.split();
+
     let current_client_id = {
         let mut next_client_id = connection_state_ref.next_client_id.lock().await;
         let client_id = *next_client_id;
@@ -234,6 +235,7 @@ async fn handle_connection(ws: WebSocket, whiteboard_id: WhiteboardIdType, conne
     let recv_task = tokio::spawn({
         let tx = tx.clone();
         let client_state_ref = Arc::clone(&client_state_ref);
+        let connection_state_ref = Arc::clone(&connection_state_ref);
 
         async move {
             while let Some(Ok(msg)) = user_ws_rx.next().await {
@@ -261,13 +263,14 @@ async fn handle_connection(ws: WebSocket, whiteboard_id: WhiteboardIdType, conne
                                 .collect::<Vec<_>>()
                         };
 
-                        connection_state_ref.tx.send(ServerSocketMessage::ActiveUsers { users }).ok();
+                        tx.send(ServerSocketMessage::ActiveUsers { users }).ok();
                         continue; // Don't process login as a regular message
                     }
 
                     // Handle other messages
                     let resp = handle_client_message(
                         &client_state_ref,
+                        &connection_state_ref.program_state,
                         msg_s
                     ).await;
 
@@ -297,7 +300,7 @@ async fn handle_connection(ws: WebSocket, whiteboard_id: WhiteboardIdType, conne
                 .collect::<Vec<_>>()
         };
 
-        connection_state_ref.tx.send(ServerSocketMessage::ActiveUsers { users }).ok();
+        tx.send(ServerSocketMessage::ActiveUsers { users }).ok();
     }
 
     println!("Client {} disconnected", current_client_id);
