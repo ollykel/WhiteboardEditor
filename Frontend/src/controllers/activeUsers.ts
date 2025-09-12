@@ -18,7 +18,7 @@ export const addActiveUser = (
   const usersById: Record<ClientIdType, string> = {};
   users.forEach((u) => {
     console.log('Processing user:', u);
-    usersById[u.user_id as unknown as ClientIdType] = u.username;
+    usersById[u.userId as unknown as ClientIdType] = u.username;
   });
   console.log("usersById: ", usersById);
 

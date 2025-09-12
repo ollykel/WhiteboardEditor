@@ -23,7 +23,7 @@ export type WhiteboardIdType = string;
 
 // User presence update (canonical list of active users)
 export interface UserSummary {
-  user_id: string;
+  userId: string;
   username: string;
 }
 

@@ -259,7 +259,7 @@ const Whiteboard = () => {
       if (user) {
         const loginMessage = {
           type: "login",
-          user_id: user.id,
+          userId: user.id,
           username: user.username,
         };
         console.log('Sending login message:', loginMessage);
@@ -286,7 +286,7 @@ const Whiteboard = () => {
       // TODO: modify backend to take multiple shapes (i.e. create_shapes)
       const createShapesMsg = ({
         type: 'create_shapes',
-        canvas_id: canvasId,
+        canvasId,
         shapes
       });
 
