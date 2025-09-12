@@ -5,6 +5,7 @@ import { BSONError } from "bson";
 // --- local imports
 import {
   Whiteboard,
+  Canvas,
   IWhiteboard,
   WhiteboardIdType
 } from '../models/Whiteboard';
@@ -37,9 +38,17 @@ export const createWhiteboard = async (
     const { authUser, name } = req.body;
     const { id: ownerId } = authUser;
 
+    // initialize every new whiteboard with a single empty canvas
+    const defaultCanvas = new Canvas({
+      width: 512,
+      height: 512,
+      allowed_users: [],
+      shapes: {}
+    });
+
     const whiteboard = new Whiteboard({
       name,
-      canvases: [],
+      canvases: [defaultCanvas],
       owner: ownerId,
       shared_users: []
     });

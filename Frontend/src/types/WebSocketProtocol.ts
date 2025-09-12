@@ -19,7 +19,7 @@ export type ClientIdType = number;
 export type CanvasIdType = number;
 
 // Unique identifier for each whiteboard
-export type WhiteboardIdType = number;
+export type WhiteboardIdType = string;
 
 // User presence update (canonical list of active users)
 export interface UserSummary {
