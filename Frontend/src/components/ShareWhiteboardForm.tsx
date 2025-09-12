@@ -144,7 +144,7 @@ const ShareWhiteboardForm = ({
           </h3>
 
           <div
-            className="flex flex-row align-bottom align-text-bottom w-160"
+            className="flex flex-row align-bottom align-text-bottom w-full"
           >
             <Input
               name="new-email"
@@ -176,7 +176,7 @@ const ShareWhiteboardForm = ({
               variant="secondary"
               onClick={handleAddNewEmail}
             >
-              + Add Email
+              + Add Collaborator
             </Button>
           </div>
 
