@@ -259,7 +259,7 @@ const Whiteboard = () => {
       if (user) {
         const loginMessage = {
           type: "login",
-          user_id: user._id,
+          user_id: user.id,
           username: user.username,
         };
         console.log('Sending login message:', loginMessage);
