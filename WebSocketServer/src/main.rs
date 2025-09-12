@@ -57,7 +57,6 @@ async fn main() -> process::ExitCode {
         mongo_client: mongo_client,
         program_state: ProgramState{
             whiteboards: Mutex::new(HashMap::new()),
-            active_clients: Mutex::new(HashMap::<ClientIdType, (String, String)>::new()),
         }
     });
 
@@ -178,7 +177,8 @@ async fn handle_connection(ws: WebSocket, whiteboard_id: WhiteboardIdType, conne
                             let (tx, _rx) = broadcast::channel::<ServerSocketMessage>(100);
                             let shared_whiteboard_entry = SharedWhiteboardEntry {
                                 whiteboard_ref: Arc::clone(&whiteboard_ref),
-                                broadcaster: tx.clone()
+                                broadcaster: tx.clone(),
+                                active_clients: Arc::new(Mutex::new(HashMap::new())),
                             };
 
                             // insert whiteboard into cache
@@ -235,7 +235,7 @@ async fn handle_connection(ws: WebSocket, whiteboard_id: WhiteboardIdType, conne
     let recv_task = tokio::spawn({
         let tx = tx.clone();
         let client_state_ref = Arc::clone(&client_state_ref);
-        let connection_state_ref = Arc::clone(&connection_state_ref);
+        let shared_whiteboard_entry = shared_whiteboard_entry.clone();
 
         async move {
             while let Some(Ok(msg)) = user_ws_rx.next().await {
@@ -245,7 +245,7 @@ async fn handle_connection(ws: WebSocket, whiteboard_id: WhiteboardIdType, conne
 
                     let resp = handle_client_message(
                         &client_state_ref,
-                        &connection_state_ref.program_state,
+                        &shared_whiteboard_entry,
                         msg_s
                     ).await;
 
@@ -264,16 +264,16 @@ async fn handle_connection(ws: WebSocket, whiteboard_id: WhiteboardIdType, conne
 
     // Cleanup when client disconnects
     {
-        let mut clients = connection_state_ref.program_state.active_clients.lock().await;
+        let mut clients = shared_whiteboard_entry.active_clients.lock().await;
         clients.remove(&current_client_id);
 
-        let users = {
-            let mut seen = HashSet::new();
-            clients.values()
-                .filter(|(uid, _)| seen.insert(uid.clone()))
-                .map(|(uid, uname)| UserSummary { user_id: uid.clone(), username: uname.clone() })
-                .collect::<Vec<_>>()
-        };
+        // Deduplicate by user_id
+        let mut seen = HashSet::new();
+        let users: Vec<UserSummary> = clients
+            .values()
+            .filter(|u| seen.insert(u.user_id.clone())) // only first occurences
+            .cloned() // turn &UserSummary into UserSummary
+            .collect();
 
         tx.send(ServerSocketMessage::ActiveUsers { users }).ok();
     }
