@@ -21,6 +21,12 @@ export type CanvasIdType = number;
 // Unique identifier for each whiteboard
 export type WhiteboardIdType = string;
 
+// User presence update (canonical list of active users)
+export interface UserSummary {
+  userId: string;
+  username: string;
+}
+
 export interface CanvasAttribs {
   id: CanvasIdType;
   width: number;
@@ -52,24 +58,18 @@ export interface WhiteboardData extends WhiteboardAttribs {
 
 export type WhiteboardRecord = WhiteboardAttribs;
 
+// ========================== SERVER → CLIENT ==================================
+
 // Sent to an individual client to initialize the whiteboard on their end
 export interface ServerMessageInitClient {
   type: "init_client";
   clientId: ClientIdType;
-  activeClients: ClientIdType[];
   whiteboard: WhiteboardData;
 }
 
-// Notifies clients that a client has joined the session
-export interface ServerMessageClientLogin {
-  type: "client_login";
-  clientId: ClientIdType;
-}
-//
-// Notifies clients that a client has left the session
-export interface ServerMessageClientLogout {
-  type: "client_logout";
-  clientId: ClientIdType;
+export interface ServerMessageActiveUsers {
+  type: "active_users";
+  users: UserSummary[];
 }
 
 // Creates a new shape in a canvas
@@ -111,13 +111,21 @@ export interface ServerMessageBroadcastError {
 // Tagged union of all possible client-server messages
 export type SocketServerMessage =
   | ServerMessageInitClient
-  | ServerMessageClientLogin
-  | ServerMessageClientLogout
+  | ServerMessageActiveUsers
   | ServerMessageCreateShapes
   | ServerMessageUpdateShapes
   | ServerMessageCreateCanvas
   | ServerMessageIndividualError
   | ServerMessageBroadcastError;
+
+// ========================== CLIENT → SERVER ==================================
+
+// Notify server of identity on first connection
+export interface ClientMessageLogin {
+  type: "login";
+  userId: string; // MongoDB _id as string
+  username: string;
+}
 
 // Notify the server that the client has created a new shape.
 export interface ClientMessageCreateShapes {
@@ -144,6 +152,7 @@ export interface ClientMessageCreateCanvas {
 
 // Tagged union of all possible client-server messages
 export type SocketClientMessage =
+  | ClientMessageLogin
   | ClientMessageCreateShapes
   | ClientMessageUpdateShapes
   | ClientMessageCreateCanvas;

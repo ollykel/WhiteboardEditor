@@ -25,8 +25,13 @@ import {
 import {
   addWhiteboard,
   setCanvasObjects,
-  addCanvas
+  addCanvas,
+  addActiveUser,
 } from '@/controllers';
+
+import {
+  selectActiveUsers
+} from '@/store/activeUsers/activeUsersSelectors';
 
 import {
   selectWhiteboardById
@@ -63,14 +68,23 @@ import ShareWhiteboardForm, {
 } from '@/components/ShareWhiteboardForm';
 import type {
   SocketServerMessage,
-  ClientMessageCreateShapes,
+  // ClientMessageCreateShapes,
   ClientMessageUpdateShapes,
   ClientMessageCreateCanvas,
   CanvasData,
   CanvasIdType,
   WhiteboardIdType,
-  WhiteboardAttribs
+  WhiteboardAttribs,
 } from '@/types/WebSocketProtocol';
+
+import { useUser } from '@/hooks/useUser';
+
+// -- Allowed Users Redux reducers
+// import { 
+//   setAllowedUsersByCanvas,
+//   addAllowedUsersByCanvas,
+//   // removeAllowedUsersByCanvas,
+// } from '@/store/allowedUsers/allowedUsersByCanvasSlice';
 
 const getWebSocketUri = (wid: WhiteboardIdType): string => {
     const wsScheme = window.location.protocol === 'https:' ? 'wss' : 'ws';
@@ -87,6 +101,7 @@ const Whiteboard = () => {
 
   // -- references
   const context = useContext(WhiteboardContext);
+  const { user } = useUser();
   const {
     whiteboard_id: whiteboardId
   } = useParams();
@@ -106,7 +121,6 @@ const Whiteboard = () => {
 
   // -- managed state
   const [clientId, setClientId] = useState<number>(-1);
-  const [activeClients, setActiveClients] = useState<Set<number>>(new Set());
   const [toolChoice, setToolChoice] = useState<ToolChoice>('rect');
   const whiteboardIdRef = useRef<WhiteboardIdType>(whiteboardId);
 
@@ -122,6 +136,8 @@ const Whiteboard = () => {
     strokeColor: '#000000',
     strokeWidth: 1
   });
+
+  const activeUsers = useSelector(selectActiveUsers);
 
   const currWhiteboard: WhiteboardAttribs | null = useSelector((state: RootState) => (
     selectWhiteboardById(state, whiteboardId))
@@ -170,44 +186,30 @@ const Whiteboard = () => {
 
     // handles all web socket messages
     const handleServerMessage = (event: MessageEvent): void => {
+      console.log('Raw WebSocket message received:', event.data);
+
       try {
         const msg = JSON.parse(event.data) as SocketServerMessage;
-        console.log('Received:', msg);
+        console.log('Parsed message:', msg);
+        console.log('Message type:', msg.type);
 
         switch (msg.type) {
           case 'init_client':
             {
-              const { clientId: initClientId, activeClients: initActiveClients, whiteboard } = msg;
+              const { clientId: initClientId, whiteboard } = msg;
 
               setWhiteboardId(whiteboard.id);
               setClientId(initClientId);
               addWhiteboard(dispatch, whiteboard);
-              setActiveClients(new Set(initActiveClients));
             }
             break;
-          case 'client_login':
+          case 'active_users': 
             {
-              const { clientId } = msg;
+              const { users } = msg;
+              console.log('Active users message received:', users);
 
-              setActiveClients((prev) => {
-                const next = new Set(prev.keys());
-
-                next.add(clientId);
-                return next;
-              });
-            }
-            break;
-          case 'client_logout':
-            {
-              const { clientId } = msg;
-
-              setActiveClients((prev) => {
-                const next = new Set(prev.keys());
-
-                next.delete(clientId);
-                return next;
-              });
-            }
+              addActiveUser(dispatch, users);
+            } 
             break;
           case 'create_shapes':
             {
@@ -253,6 +255,17 @@ const Whiteboard = () => {
     };
 
     ws.onopen = () => {
+      // Send login/auth message with user ID, if currently logged in
+      if (user) {
+        const loginMessage = {
+          type: "login",
+          userId: user.id,
+          username: user.username,
+        };
+        console.log('Sending login message:', loginMessage);
+        ws.send(JSON.stringify(loginMessage));
+      }
+
       console.log(`Established web socket connection to ${wsUri}`);
       socketRef.current = ws;
     };
@@ -260,13 +273,18 @@ const Whiteboard = () => {
       console.log(`Failed to establish web socket connection to ${wsUri}`);
       socketRef.current = null;
     };
+
     ws.onmessage = handleServerMessage;
-  }, [socketRef, whiteboardId, setWhiteboardId]);
+
+    return () => {
+      ws.close();
+    }
+  }, [socketRef, whiteboardId, setWhiteboardId, user]);
 
   const makeHandleAddShapes = (canvasId: CanvasIdType) => (shapes: CanvasObjectModel[]) => {
     if (socketRef.current) {
       // TODO: modify backend to take multiple shapes (i.e. create_shapes)
-      const createShapesMsg: ClientMessageCreateShapes = ({
+      const createShapesMsg = ({
         type: 'create_shapes',
         canvasId,
         shapes
@@ -332,19 +350,19 @@ const Whiteboard = () => {
 
 
         {/* Canvas Container */}
-        <div className="flex flex-col justify-center flex-wrap ml-40">
+        <div className="flex flex-col justify-center flex-wrap ml-50">
           {/** Misc. info **/}
 
           <div className="flex flex-col justify-center flex-wrap">
             {/** Own Client ID **/}
             <div>
-              <span>Client ID: </span> {clientId}
+              <span>Your Username: </span> {user?.username}
             </div>
 
             {/* Display Active Clients */}
             <div>
-              <span>Active user IDs: </span>
-              { [...activeClients.keys()].join(', ') }
+              <span>Active Users: </span>
+              { Object.values(activeUsers).join(', ') }
             </div>
           </div>
 
@@ -363,7 +381,7 @@ const Whiteboard = () => {
                   shapeAttributes={shapeAttributesState}
                   currentTool={toolChoice}
                   disabled={!hasAccess}
-                  allUsers={["joe"]} // TODO: Change hardcoded list of all users
+                  allUsers={Object.values(activeUsers)} // TODO: Change to allowed users
                 />
               );
             })}
