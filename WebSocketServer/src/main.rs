@@ -243,31 +243,6 @@ async fn handle_connection(ws: WebSocket, whiteboard_id: WhiteboardIdType, conne
                 if let Ok(msg_s) = msg.to_str() {
                     println!("Raw message: {}", msg_s);
 
-                    // Handle login message specifically
-                    if let Ok(ClientSocketMessage::Login { user_id, username }) = serde_json::from_str(msg_s) {
-                        println!("Login received - user_id: {}, username: {}", user_id, username);
-                        
-                        // Add to active_clients
-                        {
-                            let mut clients = connection_state_ref.program_state.active_clients.lock().await;
-                            clients.insert(current_client_id, (user_id.clone(), username.clone()));
-                        }
-
-                        // Broadcast updated active users list
-                        let users = {
-                            let clients = connection_state_ref.program_state.active_clients.lock().await;
-                            let mut seen = HashSet::new();
-                            clients.values()
-                                .filter(|(uid, _)| seen.insert(uid.clone()))
-                                .map(|(uid, uname)| UserSummary { user_id: uid.clone(), username: uname.clone() })
-                                .collect::<Vec<_>>()
-                        };
-
-                        tx.send(ServerSocketMessage::ActiveUsers { users }).ok();
-                        continue; // Don't process login as a regular message
-                    }
-
-                    // Handle other messages
                     let resp = handle_client_message(
                         &client_state_ref,
                         &connection_state_ref.program_state,
