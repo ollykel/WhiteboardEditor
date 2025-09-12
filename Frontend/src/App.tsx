@@ -35,7 +35,7 @@ const App = () => {
               <AccountSettings />
             </ProtectedRoute>
           } />
-          <Route path="/whiteboard/new" element={
+          <Route path="/whiteboard/:whiteboard_id" element={
             <ProtectedRoute fallback="/login">
               <Whiteboard />
             </ProtectedRoute>

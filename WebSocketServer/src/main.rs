@@ -1,6 +1,8 @@
 // -- standard library imports
 
 use std::{
+    env,
+    process,
     sync::Arc,
     net::SocketAddr,
     collections::HashSet,
@@ -19,37 +21,43 @@ use tokio::sync::broadcast;
 use warp::ws::{Message, WebSocket};
 use warp::Filter;
 
+use mongodb::{
+    bson::{
+        doc,
+        oid::ObjectId
+    },
+    Collection
+};
+
 // -- local imports
 
 use web_socket_server::*;
 
 #[tokio::main]
-async fn main() {
+async fn main() -> process::ExitCode {
     let port = 3000u16;
-    let (tx, _rx) = broadcast::channel::<ServerSocketMessage>(100);
+    let mongo_uri = match env::var("MONGO_URI") {
+        Err(e) => {
+            eprintln!("Could not find $MONGO_URI: {}", e);
+            return process::ExitCode::FAILURE;
+        },
+        Ok(uri) => uri
+    };
+    let mongo_client = match connect_mongodb(mongo_uri.as_str()).await {
+        Err(e) => {
+            eprintln!("Could not connect to mongodb at {}: {}", &mongo_uri, e);
+            return process::ExitCode::FAILURE;
+        },
+        Ok(client) => client
+    };
+    // broadcaster for initial whiteboard
 
     let connection_state_ref = Arc::new(ConnectionState{
-        tx: tx.clone(),
         next_client_id: Mutex::new(0),
+        mongo_client: mongo_client,
         program_state: ProgramState{
-            whiteboard: Mutex::new(Whiteboard{
-                id: 0,
-                name: String::from("First Shared Whiteboard"),
-                canvases: HashMap::from([
-                    (
-                        0,
-                        Canvas{
-                            id: 0,
-                            width: 512,
-                            height: 512,
-                            shapes: HashMap::<CanvasObjectIdType, ShapeModel>::new(),
-                            next_shape_id: 0,
-                            allowed_users: None, // None means open to all users
-                        }
-                    )
-                ])
-            }),
-            active_clients: Mutex::new(HashSet::<ClientIdType>::new())
+            whiteboards: Mutex::new(HashMap::new()),
+            active_clients: Mutex::new(HashMap::<ClientIdType, (String, String)>::new()),
         }
     });
 
@@ -58,59 +66,151 @@ async fn main() {
         move || Arc::clone(&connection_state_ref)
     });
 
-    let ws_route = warp::path!("ws")
+    let ws_route = warp::path!("ws" / WhiteboardIdType)
         .and(warp::ws())
         .and(connection_state_ref_filter)
-        .map(|ws: warp::ws::Ws, connection_state_ref| {
-            ws.on_upgrade(move |socket| handle_connection(socket, connection_state_ref))
+        .map(|wid: WhiteboardIdType, ws: warp::ws::Ws, connection_state_ref| {
+            ws.on_upgrade(move |socket| handle_connection(socket, wid, connection_state_ref))
         });
 
     let addr: SocketAddr = ([0, 0, 0, 0], port).into();
     println!("Rust WebSocket server running at ws://{}", addr);
     warp::serve(ws_route).run(addr).await;
+
+    process::ExitCode::SUCCESS
 }// end async fn main()
 
-async fn handle_connection(ws: WebSocket, connection_state_ref: Arc<ConnectionState>) {
+async fn handle_connection(ws: WebSocket, whiteboard_id: WhiteboardIdType, connection_state_ref: Arc<ConnectionState>) {
     let (mut user_ws_tx, mut user_ws_rx) = ws.split();
-    let mut rx = connection_state_ref.tx.subscribe();
+
     let current_client_id = {
         let mut next_client_id = connection_state_ref.next_client_id.lock().await;
         let client_id = *next_client_id;
-
         *next_client_id += 1;
-
         client_id
     };
 
     println!("New client: {}", current_client_id);
 
+    let shared_whiteboard_entry : SharedWhiteboardEntry = {
+        // - Fetch whiteboard identified by id from program state
+        // - TODO: If not present, try to fetch from the database
+        // - If no such whiteboard, send an individual error message and disconnect
+        let mut whiteboards_by_id = connection_state_ref.program_state.whiteboards.lock().await;
+        let whiteboard_res = whiteboards_by_id.get(&whiteboard_id);
+
+        match &whiteboard_res {
+            &None => {
+                // Try to fetch whiteboard from the database.
+                // If present, load into cache.
+                // Otherwise, return (disconnect) early.
+                let oid: ObjectId = match ObjectId::parse_str(&whiteboard_id) {
+                    Err(e) => {
+                        eprintln!("Couldn't parse ObjectId from {}: {}", whiteboard_id, e);
+
+                        let err_msg = ServerSocketMessage::IndividualError {
+                            client_id: current_client_id,
+                            message: format!("Error fetching whiteboard {}", whiteboard_id)
+                        };
+                        
+                        let _ = user_ws_tx.send(Message::text(serde_json::to_string(&err_msg).unwrap())).await;
+
+                        return;
+                    },
+                    Ok(oid) => oid
+                };
+
+                let whiteboard_coll: Collection<WhiteboardMongoDBView> = match connection_state_ref
+                    .mongo_client
+                    .default_database() {
+                        None => {
+                            // No database specified in mongo uri
+                            // Print error and disconnect early
+                            eprintln!("Database connection error; could not fetch whiteboard - no default database defined in mongo uri");
+                            let err_msg = ServerSocketMessage::IndividualError {
+                                client_id: current_client_id,
+                                message: format!("Error fetching whiteboard {}", whiteboard_id)
+                            };
+                            
+                            let _ = user_ws_tx.send(Message::text(serde_json::to_string(&err_msg).unwrap())).await;
+
+                            return;
+                        },
+                        Some(db) => db.collection::<WhiteboardMongoDBView>("whiteboards")
+                };
+
+                match whiteboard_coll.find_one(doc! { "_id": oid }).await {
+                    Err(e) => {
+                        // connection error: print and disconnect
+                        eprintln!("Connection error; could not fetch whiteboard: {}", e);
+
+                        let err_msg = ServerSocketMessage::IndividualError {
+                            client_id: current_client_id,
+                            message: format!("Error fetching whiteboard {}", whiteboard_id)
+                        };
+                        
+                        let _ = user_ws_tx.send(Message::text(serde_json::to_string(&err_msg).unwrap())).await;
+
+                        return;
+                    },
+                    Ok(res) => match &res {
+                        None => {
+                            // No such whiteboard; send individual error and disconnect
+                            // IndividualError { client_id: ClientIdType, message: String },
+                            let err_msg = ServerSocketMessage::IndividualError {
+                                client_id: current_client_id,
+                                message: format!("Whiteboard {} not found", whiteboard_id)
+                            };
+                            
+                            let _ = user_ws_tx.send(Message::text(serde_json::to_string(&err_msg).unwrap())).await;
+
+                            // trigger early disconnect
+                            return;
+                        },
+                        Some(whiteboard_db_view) => {
+                            // Create new reference to whiteboard
+                            let whiteboard = whiteboard_db_view.to_whiteboard();
+                            let whiteboard_id = whiteboard.id.clone();
+                            let whiteboard_ref = Arc::new(Mutex::new(whiteboard));
+
+                            // sender
+                            // TODO: replace 100 with value from a config
+                            let (tx, _rx) = broadcast::channel::<ServerSocketMessage>(100);
+                            let shared_whiteboard_entry = SharedWhiteboardEntry {
+                                whiteboard_ref: Arc::clone(&whiteboard_ref),
+                                broadcaster: tx.clone()
+                            };
+
+                            // insert whiteboard into cache
+                            whiteboards_by_id.insert(whiteboard_id, shared_whiteboard_entry.clone());
+
+                            // return new shared whiteboard entry
+                            shared_whiteboard_entry.clone()
+                        }
+                    }
+                }
+            },
+            &Some(shared_whiteboard_entry) => shared_whiteboard_entry.clone()
+        }
+    };
+
+    // -- subscribe to broadcaster
+    let tx = shared_whiteboard_entry.broadcaster.clone();
+    let mut rx = tx.subscribe();
+
+    // -- create client state
+    let client_state_ref = Arc::new(ClientState {
+        client_id: current_client_id,
+        whiteboard_ref: Arc::clone(&shared_whiteboard_entry.whiteboard_ref)
+    });
+
+    // Send init message immediately
     {
-        // Add new client to active clients, notify other users that they have logged in
-        let mut active_clients = connection_state_ref
-            .program_state
-            .active_clients.lock().await;
-
-        active_clients.insert(current_client_id);
-        connection_state_ref.tx.send(ServerSocketMessage::ClientLogin{
-            client_id: current_client_id
-        }).ok();
-    }
-
-    {
-        // Send new client initialization message
-        let whiteboard = connection_state_ref
-            .program_state
-            .whiteboard.lock().await;
-        let active_clients = connection_state_ref
-            .program_state
-            .active_clients.lock().await;
-
+        let whiteboard = shared_whiteboard_entry.whiteboard_ref.lock().await;
         let init_msg = ServerSocketMessage::InitClient {
             client_id: current_client_id,
-            active_clients: active_clients.iter().map(|&val| val).collect(),
             whiteboard: whiteboard.to_client_view()
         };
-
         let _ = user_ws_tx.send(Message::text(serde_json::to_string(&init_msg).unwrap())).await;
     }
 
@@ -133,6 +233,8 @@ async fn handle_connection(ws: WebSocket, connection_state_ref: Arc<ConnectionSt
     });
 
     let recv_task = tokio::spawn({
+        let tx = tx.clone();
+        let client_state_ref = Arc::clone(&client_state_ref);
         let connection_state_ref = Arc::clone(&connection_state_ref);
 
         async move {
@@ -142,13 +244,13 @@ async fn handle_connection(ws: WebSocket, connection_state_ref: Arc<ConnectionSt
                     println!("Raw message: {}", msg_s);
 
                     let resp = handle_client_message(
+                        &client_state_ref,
                         &connection_state_ref.program_state,
-                        current_client_id,
                         msg_s
                     ).await;
 
                     if let Some(resp) = resp {
-                        connection_state_ref.tx.send(resp).ok();
+                        tx.send(resp).ok();
                     }
                 }
             }
@@ -160,16 +262,21 @@ async fn handle_connection(ws: WebSocket, connection_state_ref: Arc<ConnectionSt
         _ = recv_task => {},
     }
 
-    // Remove client from active clients, notify other clients of logout
+    // Cleanup when client disconnects
     {
-        // Add new client to active clients, notify other users that they have logged in
-        let mut active_clients = connection_state_ref
-            .program_state
-            .active_clients.lock().await;
+        let mut clients = connection_state_ref.program_state.active_clients.lock().await;
+        clients.remove(&current_client_id);
 
-        active_clients.remove(&current_client_id);
-        connection_state_ref.tx.send(ServerSocketMessage::ClientLogout{ client_id: current_client_id }).ok();
+        let users = {
+            let mut seen = HashSet::new();
+            clients.values()
+                .filter(|(uid, _)| seen.insert(uid.clone()))
+                .map(|(uid, uname)| UserSummary { user_id: uid.clone(), username: uname.clone() })
+                .collect::<Vec<_>>()
+        };
+
+        tx.send(ServerSocketMessage::ActiveUsers { users }).ok();
     }
 
     println!("Client {} disconnected", current_client_id);
-}// end handle_connection
+}

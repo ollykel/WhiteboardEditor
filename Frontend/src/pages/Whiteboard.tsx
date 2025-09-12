@@ -7,8 +7,24 @@ import {
 } from 'react';
 
 import {
+  useParams
+} from 'react-router-dom';
+
+import {
   useSelector
 } from 'react-redux';
+
+import {
+  useQuery,
+  useQueryClient
+} from '@tanstack/react-query';
+
+import { X } from 'lucide-react';
+
+// -- local types
+import type {
+  Whiteboard as APIWhiteboard
+} from '@/types/APIProtocol';
 
 // -- program state
 import {
@@ -20,8 +36,13 @@ import {
   addWhiteboard,
   setCanvasObjects,
   addCanvas,
-  deleteCanvas
+  deleteCanvas,
+  addActiveUser,
 } from '@/controllers';
+
+import {
+  selectActiveUsers
+} from '@/store/activeUsers/activeUsersSelectors';
 
 import {
   selectWhiteboardById
@@ -39,31 +60,48 @@ import WhiteboardContext, {
   WhiteboardProvider
 } from "@/context/WhiteboardContext";
 
+import api from '@/api/axios';
+
+import { useModal } from '@/components/Modal';
+
 import CanvasCard from "@/components/CanvasCard";
 import Sidebar from "@/components/Sidebar";
 import Toolbar from "@/components/Toolbar";
 import ShapeAttributesMenu from "@/components/ShapeAttributesMenu";
-import Header from '@/components/Header';
+import HeaderButton from '@/components/HeaderButton';
+import HeaderAuthed from '@/components/HeaderAuthed';
 import shapeAttributesReducer from '@/reducers/shapeAttributesReducer';
 import type { ToolChoice } from '@/components/Tool';
 import type {
   CanvasObjectIdType,
   CanvasObjectModel
 } from '@/types/CanvasObjectModel';
+import ShareWhiteboardForm, {
+  type ShareWhiteboardFormData
+} from '@/components/ShareWhiteboardForm';
 import type {
   SocketServerMessage,
-  ClientMessageCreateShapes,
+  // ClientMessageCreateShapes,
   ClientMessageUpdateShapes,
   ClientMessageCreateCanvas,
   CanvasData,
   CanvasIdType,
   WhiteboardIdType,
-  WhiteboardAttribs
+  WhiteboardAttribs,
 } from '@/types/WebSocketProtocol';
 
-const getWebSocketUri = (): string => {
+import { useUser } from '@/hooks/useUser';
+
+// -- Allowed Users Redux reducers
+// import { 
+//   setAllowedUsersByCanvas,
+//   addAllowedUsersByCanvas,
+//   // removeAllowedUsersByCanvas,
+// } from '@/store/allowedUsers/allowedUsersByCanvasSlice';
+
+const getWebSocketUri = (wid: WhiteboardIdType): string => {
     const wsScheme = window.location.protocol === 'https:' ? 'wss' : 'ws';
-    const wsUri = `${wsScheme}://${window.location.host}/ws`;
+    const wsUri = `${wsScheme}://${window.location.host}/ws/${wid}`;
 
     return wsUri;
 };
@@ -76,6 +114,16 @@ const Whiteboard = () => {
 
   // -- references
   const context = useContext(WhiteboardContext);
+  const queryClient = useQueryClient();
+  const { user } = useUser();
+
+  const {
+    whiteboard_id: whiteboardId
+  } = useParams();
+
+  if (! whiteboardId) {
+    throw new Error('No whiteboard id provided');
+  }
 
   if (! context) {
     throw new Error('No WhiteboardContext provided');
@@ -83,15 +131,45 @@ const Whiteboard = () => {
 
   const {
     socketRef,
-    whiteboardId,
     setWhiteboardId
   } = context;
 
+  // -- prop-derived state
+  const whiteboardKey = ['whiteboard', whiteboardId];
+
   // -- managed state
+  const {
+    isLoading: isWhiteboardLoading,
+    isFetching: isWhiteboardFetching,
+    error: whiteboardError,
+    data: whiteboardData
+  } = useQuery<APIWhiteboard, string>({
+    queryKey: whiteboardKey,
+    queryFn: async (): Promise<APIWhiteboard> => {
+      const res = await api.get(`/whiteboards/${whiteboardId}`);
+
+      if (res.status >= 400) {
+        throw new Error(res.data?.message || 'whiteboard request failed');
+      } else {
+        // success
+        return res.data;
+      }
+    }
+  });
   const [clientId, setClientId] = useState<number>(-1);
-  const [activeClients, setActiveClients] = useState<Set<number>>(new Set());
   const [toolChoice, setToolChoice] = useState<ToolChoice>('rect');
   const whiteboardIdRef = useRef<WhiteboardIdType>(whiteboardId);
+
+  // alert user of any errors fetching whiteboard
+  useEffect(
+    () => {
+      if (whiteboardError) {
+        console.error('Error fetching whiteboard', whiteboardId, ':', whiteboardError);
+        alert(`Error fetching whiteboard: ${whiteboardError}`);
+      }
+    },
+    [whiteboardError]
+  );
 
   // dirty trick to keep whiteboardIdRef in-sync with whiteboardId
   useEffect(() => {
@@ -105,6 +183,8 @@ const Whiteboard = () => {
     strokeColor: '#000000',
     strokeWidth: 1
   });
+
+  const activeUsers = useSelector(selectActiveUsers);
 
   const currWhiteboard: WhiteboardAttribs | null = useSelector((state: RootState) => (
     selectWhiteboardById(state, whiteboardId))
@@ -123,6 +203,10 @@ const Whiteboard = () => {
   // --- derived state
   const title = currWhiteboard?.name ?? 'Loading whiteboard ...';
   const isActive = !!socketRef.current;
+  const isReady = isActive && (! (isWhiteboardLoading || isWhiteboardFetching));
+  const {
+    shared_users: sharedUsers
+  } = whiteboardData || {};
 
   // --- misc functions
   const handleNewCanvas = (name: string, allowedUsers: string[]) => {
@@ -147,49 +231,36 @@ const Whiteboard = () => {
   useEffect(() => {
     console.log('Initializing web socket connection ...');
     const dispatch = store.dispatch;
-    const wsUri = getWebSocketUri();
+    // TODO: get whiteboard id from path params
+    const wsUri = getWebSocketUri(whiteboardId);
     const ws = new WebSocket(wsUri);
 
     // handles all web socket messages
     const handleServerMessage = (event: MessageEvent): void => {
+      console.log('Raw WebSocket message received:', event.data);
+
       try {
         const msg = JSON.parse(event.data) as SocketServerMessage;
-        console.log('Received:', msg);
+        console.log('Parsed message:', msg);
+        console.log('Message type:', msg.type);
 
         switch (msg.type) {
           case 'init_client':
             {
-              const { clientId: initClientId, activeClients: initActiveClients, whiteboard } = msg;
+              const { clientId: initClientId, whiteboard } = msg;
 
               setWhiteboardId(whiteboard.id);
               setClientId(initClientId);
               addWhiteboard(dispatch, whiteboard);
-              setActiveClients(new Set(initActiveClients));
             }
             break;
-          case 'client_login':
+          case 'active_users': 
             {
-              const { clientId } = msg;
+              const { users } = msg;
+              console.log('Active users message received:', users);
 
-              setActiveClients((prev) => {
-                const next = new Set(prev.keys());
-
-                next.add(clientId);
-                return next;
-              });
-            }
-            break;
-          case 'client_logout':
-            {
-              const { clientId } = msg;
-
-              setActiveClients((prev) => {
-                const next = new Set(prev.keys());
-
-                next.delete(clientId);
-                return next;
-              });
-            }
+              addActiveUser(dispatch, users);
+            } 
             break;
           case 'create_shapes':
             {
@@ -244,6 +315,17 @@ const Whiteboard = () => {
     };
 
     ws.onopen = () => {
+      // Send login/auth message with user ID, if currently logged in
+      if (user) {
+        const loginMessage = {
+          type: "login",
+          userId: user.id,
+          username: user.username,
+        };
+        console.log('Sending login message:', loginMessage);
+        ws.send(JSON.stringify(loginMessage));
+      }
+
       console.log(`Established web socket connection to ${wsUri}`);
       socketRef.current = ws;
     };
@@ -251,13 +333,18 @@ const Whiteboard = () => {
       console.log(`Failed to establish web socket connection to ${wsUri}`);
       socketRef.current = null;
     };
+
     ws.onmessage = handleServerMessage;
-  }, [socketRef, setWhiteboardId]);
+
+    return () => {
+      ws.close();
+    }
+  }, [socketRef, whiteboardId, setWhiteboardId, user]);
 
   const makeHandleAddShapes = (canvasId: CanvasIdType) => (shapes: CanvasObjectModel[]) => {
     if (socketRef.current) {
       // TODO: modify backend to take multiple shapes (i.e. create_shapes)
-      const createShapesMsg: ClientMessageCreateShapes = ({
+      const createShapesMsg = ({
         type: 'create_shapes',
         canvasId,
         shapes
@@ -267,12 +354,32 @@ const Whiteboard = () => {
     }
   };
 
+  // -- Header elements
+  const {
+    Modal: ShareModal,
+    openModal: openShareModal,
+    closeModal: closeShareModal
+  } = useModal();
+
+  const ShareWhiteboardButton = () => (
+    <HeaderButton 
+      onClick={() => {
+        if (isReady) {
+          openShareModal();
+        }
+      }}
+      title="Share"
+    /> 
+  );
 
   return (
     <main>
       {/* Header */}
-      <Header 
+      <HeaderAuthed 
         title={title}
+        toolbarElemsLeft={[
+          <ShareWhiteboardButton />
+        ]}
       />
       {
         /** Display if socket not connected **/
@@ -303,19 +410,19 @@ const Whiteboard = () => {
 
 
         {/* Canvas Container */}
-        <div className="flex flex-col justify-center flex-wrap ml-40">
+        <div className="flex flex-col justify-center flex-wrap ml-50">
           {/** Misc. info **/}
 
           <div className="flex flex-col justify-center flex-wrap">
             {/** Own Client ID **/}
             <div>
-              <span>Client ID: </span> {clientId}
+              <span>Your Username: </span> {user?.username}
             </div>
 
             {/* Display Active Clients */}
             <div>
-              <span>Active user IDs: </span>
-              { [...activeClients.keys()].join(', ') }
+              <span>Active Users: </span>
+              { Object.values(activeUsers).join(', ') }
             </div>
           </div>
 
@@ -334,19 +441,61 @@ const Whiteboard = () => {
                   shapeAttributes={shapeAttributesState}
                   currentTool={toolChoice}
                   disabled={!hasAccess}
+                  allUsers={Object.values(activeUsers)} // TODO: Change to allowed users
                 />
               );
             })}
           </div>
         </div>
       </div>
+
+      {/** Modal that opens to share the whiteboard **/}
+      <ShareModal width="50em" height="20em" zIndex={100}>
+        <div className="flex flex-col">
+          <button
+            onClick={closeShareModal}
+            className="flex flex-row justify-end hover:cursor-pointer"
+          >
+            <X />
+          </button>
+
+          <h2 className="text-md font-bold text-center">Share Whiteboard</h2>
+
+          <ShareWhiteboardForm
+            initUserPermissions={sharedUsers || []}
+            onSubmit={async (data: ShareWhiteboardFormData) => {
+              try {
+                const {
+                  userPermissions
+                } = data;
+
+                const res = await api.post(`/whiteboards/${whiteboardId}/share`, ({
+                  userPermissions
+                }));
+
+                if (res.status >= 400) {
+                  console.error('POST /whiteboards/:id/share failed:', res.data);
+                } else {
+                  console.log('Share request submitted successfully');
+                  alert('Share request submitted successfully');
+                  queryClient.invalidateQueries({
+                    queryKey: whiteboardKey
+                  });
+                }
+              } finally {
+                closeShareModal();
+              }
+            }}
+          />
+        </div>
+      </ShareModal>
     </main>
   );
 };// end Whiteboard
 
 const WrappedWhiteboard = () => {
   const socketRef = useRef<WebSocket | null>(null);
-  const [whiteboardId, setWhiteboardId] = useState<WhiteboardIdType>(-1);
+  const [whiteboardId, setWhiteboardId] = useState<WhiteboardIdType>("");
 
   const canvasObjectsByCanvas: Record<CanvasIdType, Record<CanvasObjectIdType, CanvasObjectModel>> = useSelector((state: RootState) => (
     selectCanvasObjectsByWhiteboard(state, whiteboardId)

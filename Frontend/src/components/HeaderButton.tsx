@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 
-interface HeaderButtonProps {
+export interface HeaderButtonProps {
   // If to is present renders a link, if onClick is present renders a button
   to?: string;
   onClick?: () => void;

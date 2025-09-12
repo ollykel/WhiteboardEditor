@@ -1,108 +1,37 @@
-import HeaderButton from './HeaderButton';
-import { useLocation, useNavigate } from 'react-router-dom';
-import { useUser } from '../hooks/useUser';
+// === Header ==================================================================
+//
+// Framework for displaying a floating header at the top of a page. Allows
+// setting the title and adding buttons and other elements to toolbars on the
+// left and right sides.
+//
+// =============================================================================
 
-import { X } from 'lucide-react';
-
-import { useModal } from '@/components/Modal';
-import ShareWhiteboardForm from '@/components/ShareWhiteboardForm';
-import type { ShareWhiteboardFormData } from '@/components/ShareWhiteboardForm';
-
-interface HeaderProps {
+export interface HeaderProps {
   title: string;
+  // Buttons and other elements to display on left side of header
+  toolbarElemsLeft?: React.JSX.Element[];
+  // Buttons and other elements to display on right side of header
+  toolbarElemsRight?: React.JSX.Element[];
 }
 
-function Header({ title }: HeaderProps) {
-  const location = useLocation();
-  const navigate = useNavigate();
-  const { user, setUser } = useUser();
-
-  const isLoggedIn = !!user;
-
-  const handleLogOut = () => {
-    setUser(null);
-    navigate("/login");
-  }
-
-  const {
-    Modal: ShareModal,
-    openModal: openShareModal,
-    closeModal: closeShareModal
-  } = useModal();
-  
+const Header = ({
+  title ,
+  toolbarElemsLeft = [],
+  toolbarElemsRight = []
+}: HeaderProps): React.JSX.Element => {
   return (
     <>
       {/** Floating header **/}
       <div className="fixed z-50 top-1 left-0 right-0 max-h-15 shadow-md rounded-lg mx-20 m-1 p-3 bg-stone-50"> 
         <div className="relative flex items-center justify-center">
           <div className="absolute left-2">
-            <HeaderButton 
-              to={isLoggedIn ? "/dashboard" : "/login"}
-              title="Home"
-            />
+            {toolbarElemsLeft}
           </div>
 
           <h1 className="text-2xl font-bold">{title}</h1>
           
           <div className="absolute right-2">
-              <div>
-                {isLoggedIn ? (
-                  <div>
-                    <HeaderButton 
-                      to="/account"
-                      title="Settings"
-                    />
-                    <HeaderButton 
-                      onClick={handleLogOut}
-                      title="Log Out"
-                    />
-                  </div>
-                ) : (
-                  <div>
-                    <HeaderButton 
-                      to="/login"
-                      title="Log In"
-                    />
-                    <HeaderButton 
-                      to="/signup"
-                      title="Sign Up"
-                    />
-                  </div>
-                )}
-              </div>
-            {location.pathname.startsWith("/whiteboard/") && (
-              <div>
-                <HeaderButton 
-                  onClick={() => {
-                    console.log("Share clicked");
-
-                    openShareModal();
-                  }}
-                  title="Share"
-                /> 
-
-                <ShareModal width="20em" height="10em" zIndex={100}>
-                  <div className="flex flex-col">
-                    <button
-                      onClick={closeShareModal}
-                      className="flex flex-row justify-end hover:cursor-pointer"
-                    >
-                      <X />
-                    </button>
-
-                    <h2 className="text-md font-bold text-center">Share Whiteboard</h2>
-
-                    <ShareWhiteboardForm
-                      shareLink="https://example.link/asfasdfasdf"
-                      onSubmit={(data: ShareWhiteboardFormData) => {
-                        console.log('Share request:', data);
-                        closeShareModal();
-                      }}
-                    />
-                  </div>
-                </ShareModal>
-              </div>
-            )} {/* TODO: Implement sharing function */}
+            {toolbarElemsRight}
           </div>
         </div>
       </div>
@@ -111,6 +40,6 @@ function Header({ title }: HeaderProps) {
       </div>
     </>
   );
-}
+};
 
 export default Header;

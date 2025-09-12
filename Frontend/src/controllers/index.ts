@@ -13,9 +13,14 @@ import {
   addWhiteboard
 } from './whiteboards';
 
+import {
+  addActiveUser
+} from './activeUsers';
+
 export {
   setCanvasObjects,
   addCanvas,
   deleteCanvas,
-  addWhiteboard
+  addWhiteboard,
+  addActiveUser,
 };
