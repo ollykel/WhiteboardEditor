@@ -40,6 +40,12 @@ export type UserPermissionEnum =
   | 'own'
 ;
 
+export const USER_PERMISSION_TYPES = [
+  'view',
+  'edit',
+  'own'
+];
+
 // === UserPermission ==========================================================
 //
 // Specifies the permissions a user has on a given whiteboard. The permissions

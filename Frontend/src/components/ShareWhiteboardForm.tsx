@@ -11,6 +11,12 @@ import {
 // -- local imports
 
 import {
+  USER_PERMISSION_TYPES,
+  type UserPermission,
+  type UserPermissionEnum
+} from '@/types/APIProtocol';
+
+import {
   Button
 } from '@/components/ui/button';
 
@@ -19,30 +25,50 @@ import {
 } from '@/components/ui/input';
 
 export interface ShareWhiteboardFormData {
-  collaboratorEmails: string[];
+  userPermissions: UserPermission[];
 }
 
 export interface ShareWhiteboardFormProps {
-  initCollaboratorEmails: string[];
+  initUserPermissions: UserPermission[];
   onSubmit: (data: ShareWhiteboardFormData) => void;
 }
 
 const ShareWhiteboardForm = ({
-  initCollaboratorEmails,
+  initUserPermissions,
   onSubmit
 }: ShareWhiteboardFormProps): React.JSX.Element => {
   // -- prop-derived state
-  const initEmailSet: Record<string, boolean> = Object.fromEntries(initCollaboratorEmails.map(email => [
-    email, true
-  ]));
+  const initPermissionsByEmail: Record<string, UserPermission> = Object.fromEntries(
+    initUserPermissions.map(perm => {
+      switch (perm.type) {
+        case 'email':
+          return [perm.email, perm];
+        default:
+          return [perm.user.email, perm];
+      }
+    })
+  );
 
   // -- managed state
-  const [emailSet, setEmailSet] = useState<Record<string, boolean>>(initEmailSet);
+  const [permissionsByEmail, setPermissionsByEmail] = useState<Record<string, UserPermission>>(
+    initPermissionsByEmail
+  );
   const [newEmail, setNewEmail] = useState<string>("");
+  const [newUserPermType, setNewUserPermType] = useState<UserPermissionEnum>(
+    USER_PERMISSION_TYPES[0] as UserPermissionEnum
+  );
+
+  // -- derived state
+  const permissions: UserPermission[] = Object.values(permissionsByEmail);
 
   const handleChangeNewEmail = (ev: React.ChangeEvent<HTMLInputElement>) => {
     ev.preventDefault();
     setNewEmail(ev.target.value);
+  };
+
+  const handleChangePermType = (ev: React.ChangeEvent<HTMLSelectElement>) => {
+    ev.preventDefault();
+    setNewUserPermType(ev.target.value as UserPermissionEnum);
   };
 
   const handleAddNewEmail = (ev: React.MouseEvent<HTMLButtonElement>) => {
@@ -50,7 +76,14 @@ const ShareWhiteboardForm = ({
 
     setNewEmail(newEmail => {
       if (newEmail) {
-        setEmailSet(prev => ({ ...prev, [newEmail]: true }));
+        setPermissionsByEmail(prev => ({
+          ...prev,
+          [newEmail]: ({
+            type: 'email',
+            email: newEmail,
+            permission: newUserPermType
+          })
+        }));
       }
 
       return "";
@@ -58,7 +91,7 @@ const ShareWhiteboardForm = ({
   };
 
   const makeHandleRemoveEmail = (email: string) => () => {
-    setEmailSet(prev => {
+    setPermissionsByEmail(prev => {
       const next = ({ ...prev });
 
       delete next[email];
@@ -67,32 +100,36 @@ const ShareWhiteboardForm = ({
     });
   };
 
-  const RemovableEmail = (email: string): React.JSX.Element => {
+  const RemovablePermission = (perm: UserPermission): React.JSX.Element => {
+    // as an entry in a table
+    const email: string = perm.type === 'email' ? perm.email : perm.user.email;
+    const username: string = perm.type === 'id' ? perm.user.username : '-';
+    const { permission } = perm;
+
     return (
-      <div
-        className="mr-2 mb-2 px-2 py-1 inline-block align-middle rounded-2xl bg-gray-200 border-gray-600"
-      >
-        <button
-          onClick={makeHandleRemoveEmail(email)}
-          className="hover:cursor-pointer p-1 inline-block align-middle"
-        >
-          <X size={18} />
-        </button>
-        <span>
-          {email}
-        </span>
-      </div>
+      <tr key={email}>
+        <td className="text-center">{email}</td>
+        <td className="text-center">{username}</td>
+        <td className="text-center">{permission}</td>
+        <td className="text-center">
+          <button
+            onClick={makeHandleRemoveEmail(email)}
+            className="hover:cursor-pointer p-1 inline-block align-middle"
+          >
+            <X size={18} />
+          </button>
+        </td>
+      </tr>
     );
   };
 
   const handleSubmit = (ev: React.FormEvent<HTMLFormElement>) => {
     ev.preventDefault();
 
-    const data = ({
-      collaboratorEmails: Object.keys(emailSet)
+    const data: ShareWhiteboardFormData = ({
+      userPermissions: Object.values(permissionsByEmail)
     });
 
-    setEmailSet({});
     onSubmit(data);
   };
 
@@ -107,7 +144,7 @@ const ShareWhiteboardForm = ({
           </h3>
 
           <div
-            className="flex flex-row align-top w-160"
+            className="flex flex-row align-bottom align-text-bottom w-160"
           >
             <Input
               name="new-email"
@@ -115,8 +152,25 @@ const ShareWhiteboardForm = ({
               placeholder="Email"
               onChange={handleChangeNewEmail}
               value={newEmail}
-              className="mr-2"
+              className="mr-2 grow"
             />
+
+            <label
+              htmlFor="permission-type"
+              className="mr-2 grow"
+            >
+              Permission:
+            </label>
+            <select
+              name="permission-type"
+              value={newUserPermType}
+              onChange={handleChangePermType}
+              className="hover:cursor-pointer mr-2"
+            >
+              {USER_PERMISSION_TYPES.map(perm => (
+                <option key={perm} value={perm}>{perm}</option>
+              ))}
+            </select>
 
             <Button
               variant="secondary"
@@ -129,18 +183,30 @@ const ShareWhiteboardForm = ({
           <div>
             {/** Display user emails to add, with option to remove **/}
             <h3>Collaborators to invite:</h3>
-            <ul className="flex flex-row flex-wrap">
+            <table className="w-full">
+              <thead>
+                <tr>
+                  <th>
+                    Email
+                  </th>
+                  <th>
+                    Username
+                  </th>
+                  <th>
+                    Permission
+                  </th>
+                  <th>
+                    Delete
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {permissions.map(perm => RemovablePermission(perm)) }
+              </tbody>
+            </table>
             {
-                Object.keys(emailSet).length ?
-                  Object.keys(emailSet).map(email => (
-                      <li key={email}>
-                        {RemovableEmail(email)}
-                      </li>
-                    ))
-                  :
-                  "No emails selected"
+              permissions.length < 1 && <span>No user permissions created</span>
             }
-            </ul>
           </div>
         </div>
 

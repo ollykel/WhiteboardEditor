@@ -14,7 +14,17 @@ import {
   useSelector
 } from 'react-redux';
 
+import {
+  useQuery,
+  useQueryClient
+} from '@tanstack/react-query';
+
 import { X } from 'lucide-react';
+
+// -- local types
+import type {
+  Whiteboard as APIWhiteboard
+} from '@/types/APIProtocol';
 
 // -- program state
 import {
@@ -89,6 +99,7 @@ const Whiteboard = () => {
 
   // -- references
   const context = useContext(WhiteboardContext);
+  const queryClient = useQueryClient();
   const {
     whiteboard_id: whiteboardId
   } = useParams();
@@ -106,11 +117,43 @@ const Whiteboard = () => {
     setWhiteboardId
   } = context;
 
+  // -- prop-derived state
+  const whiteboardKey = ['whiteboard', whiteboardId];
+
   // -- managed state
+  const {
+    isLoading: isWhiteboardLoading,
+    isFetching: isWhiteboardFetching,
+    error: whiteboardError,
+    data: whiteboardData
+  } = useQuery<APIWhiteboard, string>({
+    queryKey: whiteboardKey,
+    queryFn: async (): Promise<APIWhiteboard> => {
+      const res = await api.get(`/whiteboards/${whiteboardId}`);
+
+      if (res.status >= 400) {
+        throw new Error(res.data?.message || 'whiteboard request failed');
+      } else {
+        // success
+        return res.data;
+      }
+    }
+  });
   const [clientId, setClientId] = useState<number>(-1);
   const [activeClients, setActiveClients] = useState<Set<number>>(new Set());
   const [toolChoice, setToolChoice] = useState<ToolChoice>('rect');
   const whiteboardIdRef = useRef<WhiteboardIdType>(whiteboardId);
+
+  // alert user of any errors fetching whiteboard
+  useEffect(
+    () => {
+      if (whiteboardError) {
+        console.error('Error fetching whiteboard', whiteboardId, ':', whiteboardError);
+        alert(`Error fetching whiteboard: ${whiteboardError}`);
+      }
+    },
+    [whiteboardError]
+  );
 
   // dirty trick to keep whiteboardIdRef in-sync with whiteboardId
   useEffect(() => {
@@ -142,6 +185,10 @@ const Whiteboard = () => {
   // --- derived state
   const title = currWhiteboard?.name ?? 'Loading whiteboard ...';
   const isActive = !!socketRef.current;
+  const isReady = isActive && (! (isWhiteboardLoading || isWhiteboardFetching));
+  const {
+    shared_users: sharedUsers
+  } = whiteboardData || {};
 
   // --- misc functions
   const handleNewCanvas = (name: string, allowedUsers: string[]) => {
@@ -288,9 +335,9 @@ const Whiteboard = () => {
   const ShareWhiteboardButton = () => (
     <HeaderButton 
       onClick={() => {
-        console.log("Share clicked");
-
-        openShareModal();
+        if (isReady) {
+          openShareModal();
+        }
       }}
       title="Share"
     /> 
@@ -386,21 +433,15 @@ const Whiteboard = () => {
           <h2 className="text-md font-bold text-center">Share Whiteboard</h2>
 
           <ShareWhiteboardForm
-            initCollaboratorEmails={[]}
+            initUserPermissions={sharedUsers || []}
             onSubmit={async (data: ShareWhiteboardFormData) => {
               try {
                 const {
-                  collaboratorEmails
+                  userPermissions
                 } = data;
 
                 const res = await api.post(`/whiteboards/${whiteboardId}/share`, ({
-                  // emails: collaboratorEmails
-                  userPermissions: collaboratorEmails.map(email => ({
-                    type: 'email',
-                    email,
-                    // TODO: get permissions from form
-                    permission: 'edit'
-                  }))
+                  userPermissions
                 }));
 
                 if (res.status >= 400) {
@@ -408,6 +449,9 @@ const Whiteboard = () => {
                 } else {
                   console.log('Share request submitted successfully');
                   alert('Share request submitted successfully');
+                  queryClient.invalidateQueries({
+                    queryKey: whiteboardKey
+                  });
                 }
               } finally {
                 closeShareModal();
