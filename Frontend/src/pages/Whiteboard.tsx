@@ -277,7 +277,7 @@ const Whiteboard = () => {
     return () => {
       ws.close();
     }
-  }, [socketRef, whiteboardId, setWhiteboardId, user, store.dispatch]);
+  }, [socketRef, whiteboardId, setWhiteboardId, user]);
 
   const makeHandleAddShapes = (canvasId: CanvasIdType) => (shapes: CanvasObjectModel[]) => {
     if (socketRef.current) {
