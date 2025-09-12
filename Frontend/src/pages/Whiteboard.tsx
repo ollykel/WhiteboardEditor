@@ -68,7 +68,7 @@ import ShareWhiteboardForm, {
 } from '@/components/ShareWhiteboardForm';
 import type {
   SocketServerMessage,
-  ClientMessageCreateShapes,
+  // ClientMessageCreateShapes,
   ClientMessageUpdateShapes,
   ClientMessageCreateCanvas,
   CanvasData,
@@ -282,9 +282,9 @@ const Whiteboard = () => {
   const makeHandleAddShapes = (canvasId: CanvasIdType) => (shapes: CanvasObjectModel[]) => {
     if (socketRef.current) {
       // TODO: modify backend to take multiple shapes (i.e. create_shapes)
-      const createShapesMsg: ClientMessageCreateShapes = ({
+      const createShapesMsg = ({
         type: 'create_shapes',
-        canvasId,
+        canvas_id: canvasId,
         shapes
       });
 
