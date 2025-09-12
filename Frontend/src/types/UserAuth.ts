@@ -1,13 +1,15 @@
-type User = {
-  _id: string;
+import type {
+  Dispatch
+} from 'react';
+
+export interface User {
+  id: string;
   username: string;
   email: string;
   profilePicture?: string;
-} | null;
-
-type AuthContextType = {
-  user: User;
-  setUser: (user: User) => void;
 }
 
-export type { User, AuthContextType };
+export interface AuthContextType {
+  user: User | null;
+  setUser: Dispatch<User | null>;
+}

@@ -57,7 +57,7 @@ async fn main() -> process::ExitCode {
         mongo_client: mongo_client,
         program_state: ProgramState{
             whiteboards: Mutex::new(HashMap::new()),
-            active_clients: Mutex::new(HashSet::<ClientIdType>::new())
+            active_clients: Mutex::new(HashMap::<ClientIdType, (String, String)>::new()),
         }
     });
 
@@ -82,12 +82,11 @@ async fn main() -> process::ExitCode {
 
 async fn handle_connection(ws: WebSocket, whiteboard_id: WhiteboardIdType, connection_state_ref: Arc<ConnectionState>) {
     let (mut user_ws_tx, mut user_ws_rx) = ws.split();
+
     let current_client_id = {
         let mut next_client_id = connection_state_ref.next_client_id.lock().await;
         let client_id = *next_client_id;
-
         *next_client_id += 1;
-
         client_id
     };
 
@@ -205,33 +204,13 @@ async fn handle_connection(ws: WebSocket, whiteboard_id: WhiteboardIdType, conne
         whiteboard_ref: Arc::clone(&shared_whiteboard_entry.whiteboard_ref)
     });
 
+    // Send init message immediately
     {
-        // Add new client to active clients, notify other users that they have logged in
-        let tx = tx.clone();
-        let mut active_clients = connection_state_ref
-            .program_state
-            .active_clients.lock().await;
-
-        active_clients.insert(current_client_id);
-        tx.send(ServerSocketMessage::ClientLogin{
-            client_id: current_client_id
-        }).ok();
-    }
-
-    {
-        // -- Send new client initialization message
         let whiteboard = shared_whiteboard_entry.whiteboard_ref.lock().await;
-
-        let active_clients = connection_state_ref
-            .program_state
-            .active_clients.lock().await;
-
         let init_msg = ServerSocketMessage::InitClient {
             client_id: current_client_id,
-            active_clients: active_clients.iter().map(|&val| val).collect(),
             whiteboard: whiteboard.to_client_view()
         };
-
         let _ = user_ws_tx.send(Message::text(serde_json::to_string(&init_msg).unwrap())).await;
     }
 
@@ -256,6 +235,7 @@ async fn handle_connection(ws: WebSocket, whiteboard_id: WhiteboardIdType, conne
     let recv_task = tokio::spawn({
         let tx = tx.clone();
         let client_state_ref = Arc::clone(&client_state_ref);
+        let connection_state_ref = Arc::clone(&connection_state_ref);
 
         async move {
             while let Some(Ok(msg)) = user_ws_rx.next().await {
@@ -265,6 +245,7 @@ async fn handle_connection(ws: WebSocket, whiteboard_id: WhiteboardIdType, conne
 
                     let resp = handle_client_message(
                         &client_state_ref,
+                        &connection_state_ref.program_state,
                         msg_s
                     ).await;
 
@@ -281,17 +262,21 @@ async fn handle_connection(ws: WebSocket, whiteboard_id: WhiteboardIdType, conne
         _ = recv_task => {},
     }
 
-    // Remove client from active clients, notify other clients of logout
+    // Cleanup when client disconnects
     {
-        // Add new client to active clients, notify other users that they have logged in
-        let tx = tx.clone();
-        let mut active_clients = connection_state_ref
-            .program_state
-            .active_clients.lock().await;
+        let mut clients = connection_state_ref.program_state.active_clients.lock().await;
+        clients.remove(&current_client_id);
 
-        active_clients.remove(&current_client_id);
-        tx.send(ServerSocketMessage::ClientLogout{ client_id: current_client_id }).ok();
+        let users = {
+            let mut seen = HashSet::new();
+            clients.values()
+                .filter(|(uid, _)| seen.insert(uid.clone()))
+                .map(|(uid, uname)| UserSummary { user_id: uid.clone(), username: uname.clone() })
+                .collect::<Vec<_>>()
+        };
+
+        tx.send(ServerSocketMessage::ActiveUsers { users }).ok();
     }
 
     println!("Client {} disconnected", current_client_id);
-}// end handle_connection
+}

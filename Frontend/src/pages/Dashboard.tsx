@@ -20,7 +20,11 @@ const Dashboard = (): React.JSX.Element => {
   const navigate = useNavigate();
 
   const title: string = "<Whiteboard App>";
-  const user: User = useUser().user;
+  const user: User | null = useUser().user;
+
+  if (! user) {
+    throw new Error('No user found on authenticated page');
+  }
 
   const handleCreateWhiteboard = async (data: CreateWhiteboardFormData) => {
     const res = await api.post('/whiteboards', data);

@@ -65,6 +65,13 @@ pub enum ShapeModel {
     },
 }
 
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct UserSummary {
+    pub user_id: String,
+    pub username: String,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CanvasClientView {
@@ -86,9 +93,8 @@ pub struct WhiteboardClientView {
 #[derive(Debug, Clone, Serialize)]
 #[serde(tag = "type", rename_all = "snake_case", rename_all_fields="camelCase")]
 pub enum ServerSocketMessage {
-    InitClient { client_id: ClientIdType, active_clients: Vec<ClientIdType>, whiteboard: WhiteboardClientView },
-    ClientLogin { client_id: ClientIdType },
-    ClientLogout { client_id: ClientIdType },
+    InitClient { client_id: ClientIdType, whiteboard: WhiteboardClientView },
+    ActiveUsers { users: Vec<UserSummary>},
     CreateShapes { client_id: ClientIdType, canvas_id: CanvasIdType, shapes: HashMap<CanvasObjectIdType, ShapeModel> },
     UpdateShapes { client_id: ClientIdType, canvas_id: CanvasIdType, shapes: HashMap<String, ShapeModel> },
     CreateCanvas { client_id: ClientIdType, canvas_id: CanvasIdType, width: u64, height: u64, allowed_users: Vec<ObjectId> },
@@ -97,11 +103,12 @@ pub enum ServerSocketMessage {
 }
 
 #[derive(Debug, Clone, Deserialize)]
-#[serde(tag = "type", rename_all = "snake_case", rename_all_fields="camelCase")]
+#[serde(tag = "type", rename_all = "snake_case", rename_all_fields = "camelCase")]
 pub enum ClientSocketMessage {
     CreateShapes { canvas_id: CanvasIdType, shapes: Vec<ShapeModel> },
     UpdateShapes { canvas_id: CanvasIdType, shapes: HashMap<String, ShapeModel> },
-    CreateCanvas { width: u64, height: u64 }
+    CreateCanvas { width: u64, height: u64 },
+    Login { user_id: String, username: String },
 }
 
 #[derive(Clone, Serialize, Deserialize)]
@@ -243,7 +250,7 @@ impl WhiteboardMongoDBView {
 // ================================================================================================
 pub struct ProgramState {
     pub whiteboards: Mutex<HashMap<WhiteboardIdType, SharedWhiteboardEntry>>,
-    pub active_clients: Mutex<HashSet<ClientIdType>>
+    pub active_clients: Mutex<HashMap<ClientIdType, (String, String)>>
 }
 
 // === ClientState ================================================================================
@@ -273,12 +280,28 @@ pub struct ConnectionState {
 // @param current_client_id     -- ID of sending client
 // @param client_msg_s          -- Content of client message
 // @return                      -- (Optional) Message to send to clients, if any
-pub async fn handle_client_message(client_state: &ClientState, client_msg_s: &str) -> Option<ServerSocketMessage> {
+pub async fn handle_client_message(client_state: &ClientState, program_state: &ProgramState, client_msg_s: &str) -> Option<ServerSocketMessage> {
     match serde_json::from_str::<ClientSocketMessage>(client_msg_s) {
         Ok(client_msg) => {
             println!("Received message from client {}", client_state.client_id);
             
             match client_msg {
+                ClientSocketMessage::Login { user_id, username } => {
+                    let mut clients = program_state.active_clients.lock().await;
+                    clients.insert(client_state.client_id, (user_id.clone(), username.clone()));
+
+                    // Deduplicate by user_id
+                    let mut seen = HashSet::new();
+                    let users: Vec<UserSummary> = clients.values()
+                        .filter(|(uid, _)| seen.insert(uid.clone())) // only first occurences
+                        .map(|(uid, uname)| UserSummary {
+                            user_id: uid.clone(),
+                            username: uname.clone(),
+                        })
+                        .collect();
+
+                    Some(ServerSocketMessage::ActiveUsers { users })
+                },
                 ClientSocketMessage::CreateShapes{ canvas_id, ref shapes } => {
                     let mut whiteboard = client_state.whiteboard_ref.lock().await;
                     println!("Creating shape on canvas {} ...", canvas_id);
@@ -422,8 +445,12 @@ mod tests {
                 shared_user_ids: vec![],
             }))
         };
+        let program_state = ProgramState{
+            whiteboards: Mutex::new(HashMap::new()),
+            active_clients: Mutex::new(HashMap::new()),
+        };
 
-        let resp = handle_client_message(&client_state, client_msg_s).await;
+        let resp = handle_client_message(&client_state, &program_state, client_msg_s).await;
 
         match resp {
             None => panic!("Expected some client message, got None"),

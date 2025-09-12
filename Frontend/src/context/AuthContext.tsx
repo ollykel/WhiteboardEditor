@@ -7,7 +7,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 const LS_KEY_USER = 'user';
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>((): User => {
+  const [user, setUser] = useState<User | null>((): User | null => {
     const val = localStorage.getItem(LS_KEY_USER);
 
     if (! val) {

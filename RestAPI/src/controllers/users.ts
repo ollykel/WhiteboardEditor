@@ -63,7 +63,7 @@ export const createUser = async (
       const loginResult = await loginService("username", username, password);
       return res.status(201).json({
         user: {
-          _id: user._id,
+          id: user._id,
           email: user.email,
           username: user.username,
         },
@@ -71,7 +71,7 @@ export const createUser = async (
       });
     } catch (err: any) {
       console.error("Login after signup failed: ", err);   
-      return res.status(201).json({ user: { _id: user._id, email, password }, token: null })   
+      return res.status(500).json({ message: 'Unexpected login failure' })   
     }
     
   } catch (err: any) {
