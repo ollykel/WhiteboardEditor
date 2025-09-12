@@ -446,7 +446,7 @@ mod tests {
             }))
         };
 
-        let resp = handle_client_message(&client_state, client_msg_s).await;
+        let resp = handle_client_message(&client_state, &program_state, client_msg_s).await;
 
         match resp {
             None => panic!("Expected some client message, got None"),
