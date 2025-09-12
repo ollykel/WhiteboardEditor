@@ -12,3 +12,6 @@ node_modules
 
 # Mac file(s)
 .DS_Store
+
+# vscode files
+.vscode
