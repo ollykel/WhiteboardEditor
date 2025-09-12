@@ -106,7 +106,13 @@ describe("Whiteboards API", () => {
       .post(targetUrl)
       .set("Authorization", `Bearer ${authToken}`)
       .send({
-        users: [sharee._id]
+        userPermissions: [
+          {
+            type: 'id',
+            user_id: sharee._id.toString(),
+            permission: 'view'
+          }
+        ]
       })
       .expect(200);
 
@@ -119,7 +125,18 @@ describe("Whiteboards API", () => {
       expect(Array.isArray(wbRes.body.shared_users)).toBe(true);
 
       if (wbRes.body.shared_users) {
-        expect(wbRes.body.shared_users).toEqual([sharee._id.toString()]);
+        const sharedUsersLimited = wbRes.body.shared_users.map((perm: any) => {
+          const { type, user_id, permission } = perm;
+
+          return ({ type, user_id: user_id.toString(), permission });
+        });
+        expect(sharedUsersLimited).toEqual([
+          {
+            type: 'id',
+            user_id: sharee._id.toString(),
+            permission: 'view'
+          }
+        ]);
       }
   });
 
@@ -154,7 +171,11 @@ describe("Whiteboards API", () => {
       .post(`/api/v1/whiteboards/${whiteboard._id}/share`)
       .set("Authorization", `Bearer ${authToken}`)
       .send({
-        users: [sharee._id]
+        userPermissions: [{
+          type: 'id',
+          user_id: sharee._id.toString(),
+          permission: 'view'
+        }]
       })
       .expect(403);
   });
@@ -189,7 +210,11 @@ describe("Whiteboards API", () => {
       .set("Authorization", `Bearer ${authToken}`)
       .send({
         // Not a real id
-        users: ['zzzzzzz']
+        userPermissions: [{
+          type: 'id',
+          user_id: 'zzzzzzz',
+          permission: 'view'
+        }]
       })
       .expect(400);
   });
@@ -224,7 +249,11 @@ describe("Whiteboards API", () => {
       .set("Authorization", `Bearer ${authToken}`)
       .send({
         // With timestamp at beginning of unix epoch
-        users: ['000000018ab18fedd089b041']
+        userPermissions: [{
+          type: 'id',
+          user_id: '000000018ab18fedd089b041',
+          permission: 'view'
+        }]
       })
       .expect(400);
   });
