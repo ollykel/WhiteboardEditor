@@ -285,24 +285,28 @@ pub struct ConnectionState {
 // @param current_client_id     -- ID of sending client
 // @param client_msg_s          -- Content of client message
 // @return                      -- (Optional) Message to send to clients, if any
-pub async fn handle_client_message(client_state: &ClientState, program_state: &ProgramState, client_msg_s: &str) -> Option<ServerSocketMessage> {
+pub async fn handle_client_message(client_state: &ClientState, shared_whiteboard_entry: &SharedWhiteboardEntry, client_msg_s: &str) -> Option<ServerSocketMessage> {
     match serde_json::from_str::<ClientSocketMessage>(client_msg_s) {
         Ok(client_msg) => {
             println!("Received message from client {}", client_state.client_id);
             
             match client_msg {
                 ClientSocketMessage::Login { user_id, username } => {
-                    let mut clients = program_state.active_clients.lock().await;
-                    clients.insert(client_state.client_id, (user_id.clone(), username.clone()));
+                    let mut clients = shared_whiteboard_entry.active_clients.lock().await;
+                    clients.insert(
+                        client_state.client_id,
+                        UserSummary {
+                            user_id: user_id.clone(),
+                            username: username.clone(),
+                        },
+                    );
 
                     // Deduplicate by user_id
                     let mut seen = HashSet::new();
-                    let users: Vec<UserSummary> = clients.values()
-                        .filter(|(uid, _)| seen.insert(uid.clone())) // only first occurences
-                        .map(|(uid, uname)| UserSummary {
-                            user_id: uid.clone(),
-                            username: uname.clone(),
-                        })
+                    let users: Vec<UserSummary> = clients
+                        .values()
+                        .filter(|u| seen.insert(u.user_id.clone())) // only first occurences
+                        .cloned() // turn &UserSummary into UserSummary
                         .collect();
 
                     Some(ServerSocketMessage::ActiveUsers { users })
@@ -464,14 +468,22 @@ mod tests {
                 canvases: HashMap::new(),
                 owner_id: String::from("aaaa"),
                 shared_user_ids: vec![],
-            }))
+            })),
         };
-        let program_state = ProgramState{
-            whiteboards: Mutex::new(HashMap::new()),
-            active_clients: Mutex::new(HashMap::new()),
+        let (broadcaster, _) = broadcast::channel(16);
+        let shared_whiteboard_entry = SharedWhiteboardEntry { 
+            whiteboard_ref: Arc::new(Mutex::new(Whiteboard {
+                id: String::from("abcd"),
+                name: String::from("Test"),
+                canvases: vec![],
+                owner_id: String::from("aaaa"),
+                shared_user_ids: vec![],
+            })),
+            broadcaster, 
+            active_clients: Arc::new(Mutex::new(HashMap::new())),
         };
 
-        let resp = handle_client_message(&client_state, &program_state, client_msg_s).await;
+        let resp = handle_client_message(&client_state, &shared_whiteboard_entry, client_msg_s).await;
 
         match resp {
             None => panic!("Expected some client message, got None"),
