@@ -56,8 +56,6 @@ export const getWhiteboardById = async (whiteboardId: string): Promise<GetWhiteb
       }
     }));
 
-    console.log('Shared Users:', sharedUsers);
-
     whiteboardObj.shared_users = sharedUsers;
 
     return ({ status: 'ok', whiteboard: whiteboardObj });
