@@ -255,14 +255,16 @@ const Whiteboard = () => {
     };
 
     ws.onopen = () => {
-      // Send login/auth message with user ID
-      const loginMessage = {
-        type: "login",
-        user_id: user?.id,
-        username: user?.username,
-      };
-      console.log('Sending login message:', loginMessage);
-      ws.send(JSON.stringify(loginMessage));
+      // Send login/auth message with user ID, if currently logged in
+      if (user) {
+        const loginMessage = {
+          type: "login",
+          user_id: user.id,
+          username: user.username,
+        };
+        console.log('Sending login message:', loginMessage);
+        ws.send(JSON.stringify(loginMessage));
+      }
 
       console.log(`Established web socket connection to ${wsUri}`);
       socketRef.current = ws;
