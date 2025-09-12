@@ -14,7 +14,17 @@ import {
   useSelector
 } from 'react-redux';
 
+import {
+  useQuery,
+  useQueryClient
+} from '@tanstack/react-query';
+
 import { X } from 'lucide-react';
+
+// -- local types
+import type {
+  Whiteboard as APIWhiteboard
+} from '@/types/APIProtocol';
 
 // -- program state
 import {
@@ -48,6 +58,8 @@ import {
 import WhiteboardContext, {
   WhiteboardProvider
 } from "@/context/WhiteboardContext";
+
+import api from '@/api/axios';
 
 import { useModal } from '@/components/Modal';
 
@@ -101,7 +113,9 @@ const Whiteboard = () => {
 
   // -- references
   const context = useContext(WhiteboardContext);
+  const queryClient = useQueryClient();
   const { user } = useUser();
+
   const {
     whiteboard_id: whiteboardId
   } = useParams();
@@ -119,10 +133,42 @@ const Whiteboard = () => {
     setWhiteboardId
   } = context;
 
+  // -- prop-derived state
+  const whiteboardKey = ['whiteboard', whiteboardId];
+
   // -- managed state
+  const {
+    isLoading: isWhiteboardLoading,
+    isFetching: isWhiteboardFetching,
+    error: whiteboardError,
+    data: whiteboardData
+  } = useQuery<APIWhiteboard, string>({
+    queryKey: whiteboardKey,
+    queryFn: async (): Promise<APIWhiteboard> => {
+      const res = await api.get(`/whiteboards/${whiteboardId}`);
+
+      if (res.status >= 400) {
+        throw new Error(res.data?.message || 'whiteboard request failed');
+      } else {
+        // success
+        return res.data;
+      }
+    }
+  });
   const [clientId, setClientId] = useState<number>(-1);
   const [toolChoice, setToolChoice] = useState<ToolChoice>('rect');
   const whiteboardIdRef = useRef<WhiteboardIdType>(whiteboardId);
+
+  // alert user of any errors fetching whiteboard
+  useEffect(
+    () => {
+      if (whiteboardError) {
+        console.error('Error fetching whiteboard', whiteboardId, ':', whiteboardError);
+        alert(`Error fetching whiteboard: ${whiteboardError}`);
+      }
+    },
+    [whiteboardError]
+  );
 
   // dirty trick to keep whiteboardIdRef in-sync with whiteboardId
   useEffect(() => {
@@ -156,6 +202,10 @@ const Whiteboard = () => {
   // --- derived state
   const title = currWhiteboard?.name ?? 'Loading whiteboard ...';
   const isActive = !!socketRef.current;
+  const isReady = isActive && (! (isWhiteboardLoading || isWhiteboardFetching));
+  const {
+    shared_users: sharedUsers
+  } = whiteboardData || {};
 
   // --- misc functions
   const handleNewCanvas = (name: string, allowedUsers: string[]) => {
@@ -304,9 +354,9 @@ const Whiteboard = () => {
   const ShareWhiteboardButton = () => (
     <HeaderButton 
       onClick={() => {
-        console.log("Share clicked");
-
-        openShareModal();
+        if (isReady) {
+          openShareModal();
+        }
       }}
       title="Share"
     /> 
@@ -390,7 +440,7 @@ const Whiteboard = () => {
       </div>
 
       {/** Modal that opens to share the whiteboard **/}
-      <ShareModal width="20em" height="10em" zIndex={100}>
+      <ShareModal width="50em" height="20em" zIndex={100}>
         <div className="flex flex-col">
           <button
             onClick={closeShareModal}
@@ -402,10 +452,29 @@ const Whiteboard = () => {
           <h2 className="text-md font-bold text-center">Share Whiteboard</h2>
 
           <ShareWhiteboardForm
-            shareLink="https://example.link/asfasdfasdf"
-            onSubmit={(data: ShareWhiteboardFormData) => {
-              console.log('Share request:', data);
-              closeShareModal();
+            initUserPermissions={sharedUsers || []}
+            onSubmit={async (data: ShareWhiteboardFormData) => {
+              try {
+                const {
+                  userPermissions
+                } = data;
+
+                const res = await api.post(`/whiteboards/${whiteboardId}/share`, ({
+                  userPermissions
+                }));
+
+                if (res.status >= 400) {
+                  console.error('POST /whiteboards/:id/share failed:', res.data);
+                } else {
+                  console.log('Share request submitted successfully');
+                  alert('Share request submitted successfully');
+                  queryClient.invalidateQueries({
+                    queryKey: whiteboardKey
+                  });
+                }
+              } finally {
+                closeShareModal();
+              }
             }}
           />
         </div>
