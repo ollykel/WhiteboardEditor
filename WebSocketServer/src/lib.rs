@@ -66,7 +66,7 @@ pub enum ShapeModel {
 }
 
 #[derive(Debug, Clone, Serialize)]
-#[serde(rename_all = "snake_case")]
+#[serde(rename_all = "camelCase")]
 pub struct UserSummary {
     pub user_id: String,
     pub username: String,
