@@ -124,20 +124,19 @@ describe("Whiteboards API", () => {
       expect(wbRes.body).toHaveProperty('shared_users');
       expect(Array.isArray(wbRes.body.shared_users)).toBe(true);
 
-      if (wbRes.body.shared_users) {
-        const sharedUsersLimited = wbRes.body.shared_users.map((perm: any) => {
-          const { type, user_id, permission } = perm;
+      const sharedUsersLimited = wbRes.body.shared_users.map((perm: any) => {
+        const { type, user_id, permission } = perm;
 
-          return ({ type, user_id: user_id.toString(), permission });
-        });
-        expect(sharedUsersLimited).toEqual([
-          {
-            type: 'id',
-            user_id: sharee._id.toString(),
-            permission: 'view'
-          }
-        ]);
-      }
+        return ({ type, user_id: user_id.toString(), permission });
+      });
+
+      expect(sharedUsersLimited).toEqual([
+        {
+          type: 'id',
+          user_id: sharee._id.toString(),
+          permission: 'view'
+        }
+      ]);
   });
 
   it("should not allow a user to share a whiteboard they don't own", async () => {
@@ -306,17 +305,15 @@ describe("Whiteboards API", () => {
     expect(wbRes.body).toHaveProperty('shared_users');
     expect(Array.isArray(wbRes.body.shared_users)).toBe(true);
 
-    if (wbRes.body.shared_users) {
-      const sharedUsersLimited = wbRes.body.shared_users.map((perm: any) => {
-        const out = ({ ...perm });
+    const sharedUsersLimited = wbRes.body.shared_users.map((perm: any) => {
+      const out = ({ ...perm });
 
-        delete out._id;
+      delete out._id;
 
-        return out;
-      });
+      return out;
+    });
 
-      expect(sharedUsersLimited).toEqual(userPermissions);
-    }
+    expect(sharedUsersLimited).toEqual(userPermissions);
   });
 
 });
