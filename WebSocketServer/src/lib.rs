@@ -172,7 +172,8 @@ impl Whiteboard {
 #[derive(Clone)]
 pub struct SharedWhiteboardEntry {
     pub whiteboard_ref: Arc<Mutex<Whiteboard>>,
-    pub broadcaster: broadcast::Sender<ServerSocketMessage>
+    pub broadcaster: broadcast::Sender<ServerSocketMessage>,
+    pub active_clients: Arc<Mutex<HashMap<ClientIdType, UserSummary>>>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -255,7 +256,6 @@ impl WhiteboardMongoDBView {
 // ================================================================================================
 pub struct ProgramState {
     pub whiteboards: Mutex<HashMap<WhiteboardIdType, SharedWhiteboardEntry>>,
-    pub active_clients: Mutex<HashMap<ClientIdType, (String, String)>>
 }
 
 // === ClientState ================================================================================
