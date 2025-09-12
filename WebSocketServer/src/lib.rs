@@ -445,6 +445,14 @@ mod tests {
                 shared_user_ids: vec![],
             }))
         };
+        let program_state = ProgramState{
+            whiteboard: Mutex::new(Whiteboard{
+                id: 0,
+                name: String::from("Test"),
+                canvases: vec![]
+            }),
+            active_clients: Mutex::new(HashMap::new())
+        };
 
         let resp = handle_client_message(&client_state, &program_state, client_msg_s).await;
 
