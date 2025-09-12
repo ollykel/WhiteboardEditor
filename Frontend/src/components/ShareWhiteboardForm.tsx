@@ -182,7 +182,9 @@ const ShareWhiteboardForm = ({
 
           <div>
             {/** Display user emails to add, with option to remove **/}
-            <h3>Collaborators to invite:</h3>
+            <h3 className="text-lg font-semibold my-2">
+              Collaborators to invite:
+            </h3>
             <table className="w-full">
               <thead>
                 <tr>
