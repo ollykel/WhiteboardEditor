@@ -43,19 +43,24 @@ export const getWhiteboardById = async (whiteboardId: string): Promise<GetWhiteb
   if (! whiteboard) {
     return ({ status: 'not_found' });
   } else {
-    whiteboard.shared_users = whiteboard.shared_users.map(perm => {
+    const whiteboardObj = whiteboard.toObject();
+    const sharedUsers: IWhiteboardUserPermission[] = await Promise.all(whiteboardObj.shared_users.map(async perm => {
       switch (perm.type) {
         case 'id':
           return ({
             ...perm,
-            user: User.findById(perm.user_id)
+            user: await User.findById(perm.user_id)
           });
         default:
           return perm;
       }
-    });
+    }));
 
-    return ({ status: 'ok', whiteboard });
+    console.log('Shared Users:', sharedUsers);
+
+    whiteboardObj.shared_users = sharedUsers;
+
+    return ({ status: 'ok', whiteboard: whiteboardObj });
   }
 };
 
