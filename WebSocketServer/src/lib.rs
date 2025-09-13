@@ -190,6 +190,7 @@ pub struct SharedWhiteboardEntry {
     pub whiteboard_ref: Arc<Mutex<Whiteboard>>,
     pub broadcaster: broadcast::Sender<ServerSocketMessage>,
     pub active_clients: Arc<Mutex<HashMap<ClientIdType, UserSummary>>>,
+    pub diffs: Arc<Mutex<Vec<WhiteboardDiff>>>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -270,7 +271,6 @@ impl WhiteboardMongoDBView {
 pub struct ProgramState {
     pub whiteboards: Mutex<HashMap<WhiteboardIdType, SharedWhiteboardEntry>>,
 }
-
 // === ClientState ================================================================================
 //
 // Encapsulate all state a thread needs to handle a single client.
@@ -280,6 +280,7 @@ pub struct ClientState {
     pub client_id: ClientIdType,
     pub whiteboard_ref: Arc<Mutex<Whiteboard>>,
     pub active_clients: Arc<Mutex<HashMap<ClientIdType, UserSummary>>>,
+    pub diffs: Arc<Mutex<Vec<WhiteboardDiff>>>,
 }
 
 // === Connection State ===========================================================================
@@ -337,6 +338,16 @@ pub async fn handle_client_message(client_state: &ClientState, client_msg_s: &st
                         Some(canvas) => {
                             let mut new_shapes = HashMap::<CanvasObjectIdType, ShapeModel>::new();
 
+                            // valid input: add to diffs
+                            {
+                                let mut diffs = client_state.diffs.lock().await;
+
+                                diffs.push(WhiteboardDiff::CreateShapes{
+                                    canvas_id: canvas_id,
+                                    shapes: shapes.clone()
+                                });
+                            }
+
                             for shape in shapes.iter() {
                                 let obj_id = canvas.next_shape_id;
 
@@ -364,6 +375,16 @@ pub async fn handle_client_message(client_state: &ClientState, client_msg_s: &st
                         },
                         Some(canvas) => {
                             let mut new_shapes = shapes.clone();
+
+                            // valid input: add to diffs
+                            {
+                                let mut diffs = client_state.diffs.lock().await;
+
+                                diffs.push(WhiteboardDiff::UpdateShapes{
+                                    canvas_id: canvas_id,
+                                    shapes: shapes.clone()
+                                });
+                            }
 
                             for (obj_id_s, shape) in shapes.iter() {
                                 match obj_id_s.parse::<CanvasObjectIdType>() {
@@ -407,6 +428,17 @@ pub async fn handle_client_message(client_state: &ClientState, client_msg_s: &st
                         next_shape_id: 0,
                         allowed_users: Some(allowed),
                     });
+
+
+                    // valid input: add to diffs
+                    {
+                        let mut diffs = client_state.diffs.lock().await;
+
+                        diffs.push(WhiteboardDiff::CreateCanvas{
+                            width: width,
+                            height: height
+                        });
+                    }
 
                     Some(ServerSocketMessage::CreateCanvas{
                         client_id: client_state.client_id,
@@ -468,6 +500,7 @@ mod tests {
                 shared_user_ids: vec![],
             })),
             active_clients: Arc::new(Mutex::new(HashMap::new())),
+            diffs: Arc::new(Mutex::new(Vec::new())),
         };
 
         let resp = handle_client_message(&client_state, client_msg_s).await;

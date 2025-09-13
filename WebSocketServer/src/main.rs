@@ -179,6 +179,7 @@ async fn handle_connection(ws: WebSocket, whiteboard_id: WhiteboardIdType, conne
                                 whiteboard_ref: Arc::clone(&whiteboard_ref),
                                 broadcaster: tx.clone(),
                                 active_clients: Arc::new(Mutex::new(HashMap::new())),
+                                diffs: Arc::new(Mutex::new(Vec::new())),
                             };
 
                             // insert whiteboard into cache
@@ -202,7 +203,8 @@ async fn handle_connection(ws: WebSocket, whiteboard_id: WhiteboardIdType, conne
     let client_state_ref = Arc::new(ClientState {
         client_id: current_client_id,
         whiteboard_ref: Arc::clone(&shared_whiteboard_entry.whiteboard_ref),
-        active_clients: Arc::clone(&shared_whiteboard_entry.active_clients)
+        active_clients: Arc::clone(&shared_whiteboard_entry.active_clients),
+        diffs: Arc::clone(&shared_whiteboard_entry.diffs)
     });
 
     // Send init message immediately
