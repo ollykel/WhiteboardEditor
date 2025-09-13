@@ -90,6 +90,24 @@ pub struct WhiteboardClientView {
     pub canvases: Vec<CanvasClientView>,
 }
 
+// === WhiteboardDiff =============================================================================
+//
+// Defines an atomic change to be made to the state of the Whiteboard.
+//
+// Largely overlaps with the ServerSocketMessage and ClientSocketMessage enums defined below.
+//
+// TODO: refactor ServerSocketMessage and ClientSocketMessage to incorporate WhiteboardDiff,
+// instead of duplicating the given fields.
+//
+// ================================================================================================
+#[derive(Debug, Clone, Serialize)]
+#[serde(tag = "type", rename_all = "snake_case", rename_all_fields="camelCase")]
+pub enum WhiteboardDiff {
+    CreateCanvas { width: u64, height: u64 },
+    CreateShapes { canvas_id: CanvasIdType, shapes: Vec<ShapeModel> },
+    UpdateShapes { canvas_id: CanvasIdType, shapes: HashMap<String, ShapeModel> },
+}
+
 #[derive(Debug, Clone, Serialize)]
 #[serde(tag = "type", rename_all = "snake_case", rename_all_fields="camelCase")]
 pub enum ServerSocketMessage {
