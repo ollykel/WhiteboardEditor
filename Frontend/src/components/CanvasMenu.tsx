@@ -1,22 +1,50 @@
 import { useState } from "react";
+import { useDispatch } from "react-redux";
 
-import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu";
-import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { 
+  DropdownMenu, 
+  DropdownMenuTrigger, 
+  DropdownMenuContent, 
+  DropdownMenuItem, 
+} from "@/components/ui/dropdown-menu";
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogHeader, 
+  DialogTitle, 
+} from "@/components/ui/dialog";
+import { 
+  Popover, 
+  PopoverContent, 
+  PopoverTrigger, 
+} from "@/components/ui/popover";
+import { 
+  Command, 
+  CommandEmpty, 
+  CommandGroup, 
+  CommandInput, 
+  CommandItem, 
+} from "@/components/ui/command";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "@/components/ui/command";
+import { Button } from "@/components/ui/button";
 import { ChevronsUpDown } from "lucide-react";
+
+import { deleteCanvas } from "@/controllers";
+
+import type { CanvasIdType, WhiteboardIdType } from "@/types/WebSocketProtocol";
 
 interface CanvasMenuProps {
   allowedUsers: string[];
   setAllowedUsers: (users: string[]) => void;
   allUsers: string[];
+  canvasId: CanvasIdType;
+  whiteboardId: WhiteboardIdType;
 }
 
-function CanvasMenu({ allowedUsers, setAllowedUsers, allUsers }: CanvasMenuProps) {
+function CanvasMenu({ allowedUsers, setAllowedUsers, allUsers, canvasId, whiteboardId }: CanvasMenuProps) {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [popoverOpen, setPopoverOpen] = useState(false);
+  const dispatch = useDispatch();
 
   const toggleUser = (user: string) => {
     if (allowedUsers.includes(user)) {
@@ -28,7 +56,7 @@ function CanvasMenu({ allowedUsers, setAllowedUsers, allUsers }: CanvasMenuProps
   };
 
   const handleDelete = () => {
-    console.log("delete clicked");
+    deleteCanvas(dispatch, whiteboardId, canvasId);
   }
 
   const handleDownload = () => {

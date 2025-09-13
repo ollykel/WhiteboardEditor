@@ -23,7 +23,8 @@ import {
 } from '@/store/canvases/canvasesSlice';
 
 import {
-  addCanvasesByWhiteboard
+  addCanvasesByWhiteboard,
+  removeCanvasesByWhiteboard
 } from '@/store/canvases/canvasesByWhiteboardSlice';
 
 import {
@@ -57,4 +58,5 @@ export const deleteCanvas = (
   const canvasKey: CanvasKeyType = [whiteboardId, canvasId];
 
   dispatch(removeCanvases([canvasKey]));
+  dispatch(removeCanvasesByWhiteboard([canvasKey]));
 };

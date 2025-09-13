@@ -4,14 +4,17 @@ import Canvas from "./Canvas";
 import CanvasMenu from "./CanvasMenu";
 
 import type { CanvasProps } from '@/components/Canvas';
+import type { CanvasIdType, WhiteboardIdType } from "@/types/WebSocketProtocol";
 
 interface CanvasCardProps extends CanvasProps {
   title: string;
   allUsers: string[];
+  canvasId: CanvasIdType;
+  whiteboardId: WhiteboardIdType;
 }
 
 function CanvasCard(props: CanvasCardProps) {
-  const { title, allUsers } = props;
+  const { title, allUsers, canvasId, whiteboardId } = props;
 
   // TODO: Use context to get dynamic state from database(?) outside card
   const [allowedUsers, setAllowedUsers] = useState<string[]>(["joe"]);
@@ -33,6 +36,8 @@ function CanvasCard(props: CanvasCardProps) {
         allowedUsers={allowedUsers}
         setAllowedUsers={setAllowedUsers}
         allUsers={allUsers}
+        canvasId={canvasId}
+        whiteboardId={whiteboardId}
       />
     </div>
   );
