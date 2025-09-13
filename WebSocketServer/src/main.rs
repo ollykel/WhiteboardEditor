@@ -201,7 +201,8 @@ async fn handle_connection(ws: WebSocket, whiteboard_id: WhiteboardIdType, conne
     // -- create client state
     let client_state_ref = Arc::new(ClientState {
         client_id: current_client_id,
-        whiteboard_ref: Arc::clone(&shared_whiteboard_entry.whiteboard_ref)
+        whiteboard_ref: Arc::clone(&shared_whiteboard_entry.whiteboard_ref),
+        active_clients: Arc::clone(&shared_whiteboard_entry.active_clients)
     });
 
     // Send init message immediately
@@ -235,7 +236,6 @@ async fn handle_connection(ws: WebSocket, whiteboard_id: WhiteboardIdType, conne
     let recv_task = tokio::spawn({
         let tx = tx.clone();
         let client_state_ref = Arc::clone(&client_state_ref);
-        let shared_whiteboard_entry = shared_whiteboard_entry.clone();
 
         async move {
             while let Some(Ok(msg)) = user_ws_rx.next().await {
@@ -245,7 +245,6 @@ async fn handle_connection(ws: WebSocket, whiteboard_id: WhiteboardIdType, conne
 
                     let resp = handle_client_message(
                         &client_state_ref,
-                        &shared_whiteboard_entry,
                         msg_s
                     ).await;
 
