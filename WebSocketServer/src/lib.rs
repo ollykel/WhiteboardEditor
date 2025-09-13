@@ -170,7 +170,8 @@ impl Whiteboard {
 #[derive(Clone)]
 pub struct SharedWhiteboardEntry {
     pub whiteboard_ref: Arc<Mutex<Whiteboard>>,
-    pub broadcaster: broadcast::Sender<ServerSocketMessage>
+    pub broadcaster: broadcast::Sender<ServerSocketMessage>,
+    pub active_clients: Arc<Mutex<HashMap<ClientIdType, UserSummary>>>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -250,7 +251,6 @@ impl WhiteboardMongoDBView {
 // ================================================================================================
 pub struct ProgramState {
     pub whiteboards: Mutex<HashMap<WhiteboardIdType, SharedWhiteboardEntry>>,
-    pub active_clients: Mutex<HashMap<ClientIdType, (String, String)>>
 }
 
 // === ClientState ================================================================================
@@ -260,7 +260,8 @@ pub struct ProgramState {
 // ================================================================================================
 pub struct ClientState {
     pub client_id: ClientIdType,
-    pub whiteboard_ref: Arc<Mutex<Whiteboard>>
+    pub whiteboard_ref: Arc<Mutex<Whiteboard>>,
+    pub active_clients: Arc<Mutex<HashMap<ClientIdType, UserSummary>>>,
 }
 
 // === Connection State ===========================================================================
@@ -280,24 +281,28 @@ pub struct ConnectionState {
 // @param current_client_id     -- ID of sending client
 // @param client_msg_s          -- Content of client message
 // @return                      -- (Optional) Message to send to clients, if any
-pub async fn handle_client_message(client_state: &ClientState, program_state: &ProgramState, client_msg_s: &str) -> Option<ServerSocketMessage> {
+pub async fn handle_client_message(client_state: &ClientState, client_msg_s: &str) -> Option<ServerSocketMessage> {
     match serde_json::from_str::<ClientSocketMessage>(client_msg_s) {
         Ok(client_msg) => {
             println!("Received message from client {}", client_state.client_id);
             
             match client_msg {
                 ClientSocketMessage::Login { user_id, username } => {
-                    let mut clients = program_state.active_clients.lock().await;
-                    clients.insert(client_state.client_id, (user_id.clone(), username.clone()));
+                    let mut clients = client_state.active_clients.lock().await;
+                    clients.insert(
+                        client_state.client_id,
+                        UserSummary {
+                            user_id: user_id.clone(),
+                            username: username.clone(),
+                        },
+                    );
 
                     // Deduplicate by user_id
                     let mut seen = HashSet::new();
-                    let users: Vec<UserSummary> = clients.values()
-                        .filter(|(uid, _)| seen.insert(uid.clone())) // only first occurences
-                        .map(|(uid, uname)| UserSummary {
-                            user_id: uid.clone(),
-                            username: uname.clone(),
-                        })
+                    let users: Vec<UserSummary> = clients
+                        .values()
+                        .filter(|u| seen.insert(u.user_id.clone())) // only first occurences
+                        .cloned() // turn &UserSummary into UserSummary
                         .collect();
 
                     Some(ServerSocketMessage::ActiveUsers { users })
@@ -443,14 +448,11 @@ mod tests {
                 canvases: vec![],
                 owner_id: String::from("aaaa"),
                 shared_user_ids: vec![],
-            }))
-        };
-        let program_state = ProgramState{
-            whiteboards: Mutex::new(HashMap::new()),
-            active_clients: Mutex::new(HashMap::new()),
+            })),
+            active_clients: Arc::new(Mutex::new(HashMap::new())),
         };
 
-        let resp = handle_client_message(&client_state, &program_state, client_msg_s).await;
+        let resp = handle_client_message(&client_state, client_msg_s).await;
 
         match resp {
             None => panic!("Expected some client message, got None"),
