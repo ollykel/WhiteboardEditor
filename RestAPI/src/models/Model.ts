@@ -1,5 +1,4 @@
 import {
-  Document,
   Types
 } from "mongoose";
 
@@ -9,6 +8,7 @@ import {
 //
 // =============================================================================
 
-export interface DocumentBase extends Document {
-  _id: Types.ObjectId;
+export interface DocumentBase {
+  id: Types.ObjectId;
+  _id?: Types.ObjectId;
 }

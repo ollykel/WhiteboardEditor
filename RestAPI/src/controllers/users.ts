@@ -8,18 +8,15 @@ import type {
 
 import {
   User,
-  IUser,
-  IUserFull,
-  PatchUserData
+  PatchUserData,
+  type IUser,
+  type IUserPublicView,
+  type CreateUserRequest
 } from "../models/User";
-
-import type {
-  CreateUserRequest,
-} from '../models/User';
 
 import { loginService } from "../services/loginService";
 
-export const getUser = async (userId: Types.ObjectId): Promise<IUserFull | null> => {
+export const getUser = async (userId: Types.ObjectId): Promise<IUser | null> => {
   return await User.findOne({ _id: userId });
 };// end getUser
 
@@ -56,17 +53,13 @@ export const createUser = async (
       passwordHashed: hashed,
     });
 
-    await user.save();
+    const userFinal = await user.save();
 
     // --- Automatically log in user via service ---
     try {
       const loginResult = await loginService("username", username, password);
       return res.status(201).json({
-        user: {
-          id: user._id,
-          email: user.email,
-          username: user.username,
-        },
+        user: userFinal.toPublicView(),
         token: loginResult.token
       });
     } catch (err: any) {
@@ -82,7 +75,7 @@ export const createUser = async (
 
 export interface PatchUserOkResult {
   type: 'ok';
-  data: IUser;
+  data: IUserPublicView;
 }
 
 export interface PatchUserErrorResult {
@@ -92,7 +85,7 @@ export interface PatchUserErrorResult {
 
 export type PatchUserResult = PatchUserOkResult | PatchUserErrorResult;
 
-export const patchUser = async (user: IUserFull, patchData: PatchUserData): Promise<PatchUserResult> => {
+export const patchUser = async (user: IUser, patchData: PatchUserData): Promise<PatchUserResult> => {
   try {
     const patchDataLocal = { ...patchData };
     const passwordHashed = patchDataLocal.password ? 
@@ -108,11 +101,11 @@ export const patchUser = async (user: IUserFull, patchData: PatchUserData): Prom
       passwordHashed
     });
 
-    const res = await user.save();
+    const userModified = await user.save();
 
     return ({
       type: 'ok',
-      data: res
+      data: userModified.toPublicView()
     });
   } catch (err: any) {
     return ({
@@ -122,7 +115,7 @@ export const patchUser = async (user: IUserFull, patchData: PatchUserData): Prom
   }
 };
 
-export const deleteUser = async (userId: Types.ObjectId): Promise<Result<IUserFull, string>> => {
+export const deleteUser = async (userId: Types.ObjectId): Promise<Result<IUserPublicView, string>> => {
   try {
     const deletedUser = await User.findOne({ _id: userId });
 
@@ -136,7 +129,7 @@ export const deleteUser = async (userId: Types.ObjectId): Promise<Result<IUserFu
 
       return ({
         result: 'ok',
-        data: deletedUser
+        data: deletedUser.toPublicView()
       });
     }
   } catch (err: any) {
