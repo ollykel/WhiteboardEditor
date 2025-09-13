@@ -260,7 +260,8 @@ pub struct ProgramState {
 // ================================================================================================
 pub struct ClientState {
     pub client_id: ClientIdType,
-    pub whiteboard_ref: Arc<Mutex<Whiteboard>>
+    pub whiteboard_ref: Arc<Mutex<Whiteboard>>,
+    pub active_clients: Arc<Mutex<HashMap<ClientIdType, UserSummary>>>,
 }
 
 // === Connection State ===========================================================================
@@ -280,14 +281,14 @@ pub struct ConnectionState {
 // @param current_client_id     -- ID of sending client
 // @param client_msg_s          -- Content of client message
 // @return                      -- (Optional) Message to send to clients, if any
-pub async fn handle_client_message(client_state: &ClientState, shared_whiteboard_entry: &SharedWhiteboardEntry, client_msg_s: &str) -> Option<ServerSocketMessage> {
+pub async fn handle_client_message(client_state: &ClientState, client_msg_s: &str) -> Option<ServerSocketMessage> {
     match serde_json::from_str::<ClientSocketMessage>(client_msg_s) {
         Ok(client_msg) => {
             println!("Received message from client {}", client_state.client_id);
             
             match client_msg {
                 ClientSocketMessage::Login { user_id, username } => {
-                    let mut clients = shared_whiteboard_entry.active_clients.lock().await;
+                    let mut clients = client_state.active_clients.lock().await;
                     clients.insert(
                         client_state.client_id,
                         UserSummary {
@@ -448,21 +449,10 @@ mod tests {
                 owner_id: String::from("aaaa"),
                 shared_user_ids: vec![],
             })),
-        };
-        let (broadcaster, _) = broadcast::channel(16);
-        let shared_whiteboard_entry = SharedWhiteboardEntry { 
-            whiteboard_ref: Arc::new(Mutex::new(Whiteboard {
-                id: String::from("abcd"),
-                name: String::from("Test"),
-                canvases: vec![],
-                owner_id: String::from("aaaa"),
-                shared_user_ids: vec![],
-            })),
-            broadcaster, 
             active_clients: Arc::new(Mutex::new(HashMap::new())),
         };
 
-        let resp = handle_client_message(&client_state, &shared_whiteboard_entry, client_msg_s).await;
+        let resp = handle_client_message(&client_state, client_msg_s).await;
 
         match resp {
             None => panic!("Expected some client message, got None"),
