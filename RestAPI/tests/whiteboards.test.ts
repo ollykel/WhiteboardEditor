@@ -306,9 +306,10 @@ describe("Whiteboards API", () => {
     expect(Array.isArray(wbRes.body.shared_users)).toBe(true);
 
     const sharedUsersLimited = wbRes.body.shared_users.map((perm: any) => {
-      const out = ({ ...perm });
-
-      delete out._id;
+      const {
+        _id,
+        ...out
+      } = perm;
 
       return out;
     });
@@ -380,9 +381,10 @@ describe("Whiteboards API", () => {
     expect(Array.isArray(wbRes.body.shared_users)).toBe(true);
 
     const sharedUsersLimited = wbRes.body.shared_users.map((perm: any) => {
-      const out = ({ ...perm });
-
-      delete out._id;
+      const {
+        _id,
+        ...out
+      } = perm;
 
       return out;
     });
