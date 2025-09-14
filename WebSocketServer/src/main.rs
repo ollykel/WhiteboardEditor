@@ -24,7 +24,8 @@ use warp::Filter;
 use mongodb::{
     bson::{
         doc,
-        oid::ObjectId
+        oid::ObjectId,
+        DateTime
     },
     Collection
 };
@@ -91,6 +92,23 @@ async fn handle_connection(ws: WebSocket, whiteboard_id: WhiteboardIdType, conne
 
     println!("New client: {}", current_client_id);
 
+    // -- generate object id for whiteboard
+    let oid: ObjectId = match ObjectId::parse_str(&whiteboard_id) {
+        Err(e) => {
+            eprintln!("Couldn't parse ObjectId from {}: {}", whiteboard_id, e);
+
+            let err_msg = ServerSocketMessage::IndividualError {
+                client_id: current_client_id,
+                message: format!("Error fetching whiteboard {}", whiteboard_id)
+            };
+            
+            let _ = user_ws_tx.send(Message::text(serde_json::to_string(&err_msg).unwrap())).await;
+
+            return;
+        },
+        Ok(oid) => oid
+    };
+
     let shared_whiteboard_entry : SharedWhiteboardEntry = {
         // - Fetch whiteboard identified by id from program state
         // - TODO: If not present, try to fetch from the database
@@ -103,22 +121,6 @@ async fn handle_connection(ws: WebSocket, whiteboard_id: WhiteboardIdType, conne
                 // Try to fetch whiteboard from the database.
                 // If present, load into cache.
                 // Otherwise, return (disconnect) early.
-                let oid: ObjectId = match ObjectId::parse_str(&whiteboard_id) {
-                    Err(e) => {
-                        eprintln!("Couldn't parse ObjectId from {}: {}", whiteboard_id, e);
-
-                        let err_msg = ServerSocketMessage::IndividualError {
-                            client_id: current_client_id,
-                            message: format!("Error fetching whiteboard {}", whiteboard_id)
-                        };
-                        
-                        let _ = user_ws_tx.send(Message::text(serde_json::to_string(&err_msg).unwrap())).await;
-
-                        return;
-                    },
-                    Ok(oid) => oid
-                };
-
                 let whiteboard_coll: Collection<WhiteboardMongoDBView> = match connection_state_ref
                     .mongo_client
                     .default_database() {
@@ -177,6 +179,7 @@ async fn handle_connection(ws: WebSocket, whiteboard_id: WhiteboardIdType, conne
                             let (tx, _rx) = broadcast::channel::<ServerSocketMessage>(100);
                             let shared_whiteboard_entry = SharedWhiteboardEntry {
                                 whiteboard_ref: Arc::clone(&whiteboard_ref),
+                                whiteboard_id: oid.clone(),
                                 broadcaster: tx.clone(),
                                 active_clients: Arc::new(Mutex::new(HashMap::new())),
                                 diffs: Arc::new(Mutex::new(Vec::new())),
@@ -238,6 +241,25 @@ async fn handle_connection(ws: WebSocket, whiteboard_id: WhiteboardIdType, conne
     let recv_task = tokio::spawn({
         let tx = tx.clone();
         let client_state_ref = Arc::clone(&client_state_ref);
+        let whiteboard_coll: Collection<WhiteboardMongoDBView> = match connection_state_ref
+            .mongo_client
+            .default_database() {
+                None => {
+                    // No database specified in mongo uri
+                    // Print error and disconnect early
+                    eprintln!("Database connection error; could not fetch whiteboard - no default database defined in mongo uri");
+                    let err_msg = ServerSocketMessage::IndividualError {
+                        client_id: current_client_id,
+                        message: format!("Error fetching whiteboard {}", whiteboard_id)
+                    };
+                    
+                    let _ = tx.send(err_msg);
+
+                    return;
+                },
+                Some(db) => db.collection::<WhiteboardMongoDBView>("whiteboards")
+        };
+        let whiteboard_filter = doc! { "_id": oid };
 
         async move {
             while let Some(Ok(msg)) = user_ws_rx.next().await {
@@ -250,6 +272,56 @@ async fn handle_connection(ws: WebSocket, whiteboard_id: WhiteboardIdType, conne
                         msg_s
                     ).await;
 
+                    // -- update database, if there are diffs
+                    {
+                        let mut diffs = client_state_ref.diffs.lock().await;
+
+                        if ! diffs.is_empty() {
+                            for diff in diffs.iter() {
+                                match diff {
+                                    WhiteboardDiff::CreateCanvas { width, height } => {
+                                        let now = DateTime::now();
+                                        let update_res = whiteboard_coll.update_one(
+                                            whiteboard_filter.clone(),
+                                            doc! {
+                                                "$push": {
+                                                    "canvases": {
+                                                        "width": width,
+                                                        "height": height,
+                                                        "time_created": now,
+                                                        "time_last_modified": now,
+                                                        "allowed_users":  Vec::<i32>::new(),
+                                                        "shapes": {}
+                                                    }
+                                                }
+                                            }
+                                        ).await;
+
+                                        match update_res {
+                                            Err(e) => {
+                                                eprintln!("CreateCanvas update failed: {}", e);
+                                            },
+                                            Ok(update) => {
+                                                eprintln!("CreateCanvas matched count: {}", update.matched_count);
+                                                eprintln!("CreateCanvas modified count: {}", update.modified_count);
+                                            }
+                                        };
+                                    },
+                                    WhiteboardDiff::CreateShapes { canvas_id: _canvas_id , shapes: _shapes } => {
+                                        // TODO: implement
+                                    },
+                                    WhiteboardDiff::UpdateShapes { canvas_id: _canvas_id , shapes: _shapes } => {
+                                        // TODO: implement
+                                    }
+                                }
+                            }// -- end for &diff in diffs
+
+                            // -- clear diffs
+                            diffs.clear();
+                        }
+                    }
+
+                    // -- send response to clients, if requested
                     if let Some(resp) = resp {
                         tx.send(resp).ok();
                     }

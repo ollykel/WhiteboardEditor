@@ -76,8 +76,8 @@ pub struct UserSummary {
 #[serde(rename_all = "camelCase")]
 pub struct CanvasClientView {
     pub id: CanvasIdType,
-    pub width: u64,
-    pub height: u64,
+    pub width: i32,
+    pub height: i32,
     pub shapes: HashMap<CanvasObjectIdType, ShapeModel>,
     pub allowed_users: Vec<ObjectId>,
 }
@@ -103,7 +103,7 @@ pub struct WhiteboardClientView {
 #[derive(Debug, Clone, Serialize)]
 #[serde(tag = "type", rename_all = "snake_case", rename_all_fields="camelCase")]
 pub enum WhiteboardDiff {
-    CreateCanvas { width: u64, height: u64 },
+    CreateCanvas { width: i32, height: i32 },
     CreateShapes { canvas_id: CanvasIdType, shapes: Vec<ShapeModel> },
     UpdateShapes { canvas_id: CanvasIdType, shapes: HashMap<String, ShapeModel> },
 }
@@ -115,7 +115,7 @@ pub enum ServerSocketMessage {
     ActiveUsers { users: Vec<UserSummary>},
     CreateShapes { client_id: ClientIdType, canvas_id: CanvasIdType, shapes: HashMap<CanvasObjectIdType, ShapeModel> },
     UpdateShapes { client_id: ClientIdType, canvas_id: CanvasIdType, shapes: HashMap<String, ShapeModel> },
-    CreateCanvas { client_id: ClientIdType, canvas_id: CanvasIdType, width: u64, height: u64, allowed_users: Vec<ObjectId> },
+    CreateCanvas { client_id: ClientIdType, canvas_id: CanvasIdType, width: i32, height: i32, allowed_users: Vec<ObjectId> },
     IndividualError { client_id: ClientIdType, message: String },
     BroadcastError { message: String },
 }
@@ -125,15 +125,15 @@ pub enum ServerSocketMessage {
 pub enum ClientSocketMessage {
     CreateShapes { canvas_id: CanvasIdType, shapes: Vec<ShapeModel> },
     UpdateShapes { canvas_id: CanvasIdType, shapes: HashMap<String, ShapeModel> },
-    CreateCanvas { width: u64, height: u64 },
+    CreateCanvas { width: i32, height: i32 },
     Login { user_id: String, username: String },
 }
 
 #[derive(Clone, Serialize, Deserialize)]
 pub struct Canvas {
     pub id: CanvasIdType,
-    pub width: u64,
-    pub height: u64,
+    pub width: i32,
+    pub height: i32,
     pub shapes: HashMap<CanvasObjectIdType, ShapeModel>,
     pub next_shape_id: CanvasObjectIdType,
     pub allowed_users: Option<HashSet<ObjectId>>, // None = open to all
@@ -188,6 +188,7 @@ impl Whiteboard {
 #[derive(Clone)]
 pub struct SharedWhiteboardEntry {
     pub whiteboard_ref: Arc<Mutex<Whiteboard>>,
+    pub whiteboard_id: ObjectId,
     pub broadcaster: broadcast::Sender<ServerSocketMessage>,
     pub active_clients: Arc<Mutex<HashMap<ClientIdType, UserSummary>>>,
     pub diffs: Arc<Mutex<Vec<WhiteboardDiff>>>,
@@ -195,8 +196,8 @@ pub struct SharedWhiteboardEntry {
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct CanvasMongoDBView {
-    pub width: u64,
-    pub height: u64,
+    pub width: i32,
+    pub height: i32,
     pub shapes: HashMap<String, ShapeModel>,
     pub allowed_users: Option<Vec<ObjectId>>
 }

@@ -5,8 +5,8 @@ import { Types } from "mongoose";
 import {
   Whiteboard,
   Canvas,
-  IWhiteboard,
-  WhiteboardIdType,
+  type IWhiteboard,
+  type WhiteboardIdType,
   type IWhiteboardPermissionEnum,
   type IWhiteboardUserPermission
 } from '../models/Whiteboard';
@@ -35,16 +35,13 @@ export const getWhiteboardById = async (whiteboardId: string): Promise<GetWhiteb
     return ({ status: 'invalid_id' });
   }
 
-  const whiteboard = await Whiteboard.findById(whiteboardId).populate({
-    path: 'owner',
-    transform: user => user.toPublicView()
-  });
+  const whiteboards = await Whiteboard.findFull({ _id: whiteboardId });
 
-  if (! whiteboard) {
+  if ((! whiteboards) || (whiteboards.length < 1)) {
     return ({ status: 'not_found' });
   } else {
-    const whiteboardObj = whiteboard.toObject();
-    const sharedUsers: IWhiteboardUserPermission[] = await Promise.all(whiteboardObj.shared_users.map(async perm => {
+    const whiteboardObj = whiteboards[0].toObject();
+    const sharedUsers: IWhiteboardUserPermission[] = await Promise.all(whiteboardObj.shared_users.map(async (perm: IWhiteboardUserPermission) => {
       switch (perm.type) {
         case 'id':
           return ({
@@ -93,7 +90,7 @@ export const createWhiteboard = async (
 
     const whiteboardOut = await whiteboard.save();
     
-    res.status(201).json(whiteboardOut);
+    res.status(201).json(whiteboardOut.toJSON({ virtuals: true }));
   } catch (err: any) {
     res.status(400).json({ error: err.message });
   }
@@ -130,7 +127,7 @@ export const addSharedUsers = async (
     }
 
     // verify ownership
-    if (! whiteboard.owner.equals(ownerId)) {
+    if (! whiteboard.owner._id.equals(ownerId)) {
       return { status: "forbidden" };
     }
 
