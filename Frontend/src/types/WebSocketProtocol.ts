@@ -160,7 +160,7 @@ export interface ClientMessageCreateCanvas {
 // Notify server that client has deleted canvases
 export interface ClientMessageDeleteCanvases {
   type: "delete_canvases";
-  canvas_ids: CanvasIdType[];
+  canvasIds: CanvasIdType[];
 }
 
 // Tagged union of all possible client-server messages

@@ -75,7 +75,7 @@ function CanvasMenu({ allowedUsers, setAllowedUsers, allUsers, canvasId, whitebo
     if (socketRef.current) {
       const msg: ClientMessageDeleteCanvases = {
         type: "delete_canvases",
-        canvas_ids: [canvasId],
+        canvasIds: [canvasId],
       };
 
       socketRef.current.send(JSON.stringify(msg));
