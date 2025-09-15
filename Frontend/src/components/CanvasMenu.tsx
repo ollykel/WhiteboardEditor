@@ -2,8 +2,6 @@ import {
   useState,
   useContext,
 } from "react";
-import { useDispatch } from "react-redux";
-
 
 import { 
   DropdownMenu, 
@@ -33,6 +31,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { ChevronsUpDown } from "lucide-react";
 
+import { store } from "@/store";
 import WhiteboardContext from "@/context/WhiteboardContext";
 import { deleteCanvas } from "@/controllers";
 import type { ClientMessageDeleteCanvases } from "@/types/WebSocketProtocol";
@@ -50,7 +49,7 @@ interface CanvasMenuProps {
 function CanvasMenu({ allowedUsers, setAllowedUsers, allUsers, canvasId, whiteboardId }: CanvasMenuProps) {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [popoverOpen, setPopoverOpen] = useState(false);
-  const dispatch = useDispatch();
+  const dispatch = store.dispatch;
 
   const ctx = useContext(WhiteboardContext);
   if (!ctx) {
