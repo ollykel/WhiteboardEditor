@@ -36,6 +36,7 @@ import {
   addWhiteboard,
   setCanvasObjects,
   addCanvas,
+  deleteCanvas,
   addActiveUser,
 } from '@/controllers';
 
@@ -288,6 +289,15 @@ const Whiteboard = () => {
               }));
             }
             break;
+          case 'delete_canvases':
+            {
+              const { canvasIds } = msg;
+
+              for (const canvasId of canvasIds) {
+                deleteCanvas(dispatch, whiteboardIdRef.current, canvasId);
+              }// end for (const canvasId of canvasIds)
+            }
+            break;
           case 'individual_error':
           case 'broadcast_error':
             {
@@ -432,6 +442,7 @@ const Whiteboard = () => {
                   currentTool={toolChoice}
                   disabled={!hasAccess}
                   allUsers={Object.values(activeUsers)} // TODO: Change to allowed users
+                  whiteboardId={whiteboardId}
                 />
               );
             })}

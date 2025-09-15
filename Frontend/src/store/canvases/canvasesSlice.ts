@@ -20,13 +20,11 @@ const canvasesSlice = createSlice({
       });
     },
     removeCanvases(state, action: PayloadAction<CanvasKeyType[]>) {
-      const out = { ...state };
-
-      for (const id of action.payload) {
-        delete out[id.toString()];
+      for (const canvasKey of action.payload) {
+        delete state[canvasKey.toString()];
+        console.log("canvasKey: ", canvasKey);
+        console.log("canvasKey string: ", canvasKey.toString());
       }
-
-      return out;
     }
   },
   selectors: {

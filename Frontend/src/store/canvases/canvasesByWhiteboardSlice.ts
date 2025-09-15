@@ -45,15 +45,13 @@ const canvasesByWhiteboardSlice = createSlice({
 
       return out;
     },
-    removeCanvasesByWhiteboard(state, action: PayloadAction<WhiteboardIdType[]>) {
-      const out = { ...state };
-
-      for (const id of action.payload) {
-        delete out[id.toString()];
+    removeCanvasesByWhiteboard(state, action: PayloadAction<CanvasKeyType[]>) {
+      for (const [whiteboardId, canvasId] of action.payload) {
+        state[whiteboardId] = (state[whiteboardId] ?? []).filter(
+          ([wbId, cId]) => !(wbId === whiteboardId && cId === canvasId)
+        );
       }
-
-      return out;
-    }
+    },
   },
   selectors: {
     // Entire state is mapping of object ids to objects

@@ -1,22 +1,62 @@
-import { useState } from "react";
+import { 
+  useState,
+  useContext,
+} from "react";
 
-import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu";
-import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { 
+  DropdownMenu, 
+  DropdownMenuTrigger, 
+  DropdownMenuContent, 
+  DropdownMenuItem, 
+} from "@/components/ui/dropdown-menu";
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogHeader, 
+  DialogTitle, 
+} from "@/components/ui/dialog";
+import { 
+  Popover, 
+  PopoverContent, 
+  PopoverTrigger, 
+} from "@/components/ui/popover";
+import { 
+  Command, 
+  CommandEmpty, 
+  CommandGroup, 
+  CommandInput, 
+  CommandItem, 
+} from "@/components/ui/command";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "@/components/ui/command";
+import { Button } from "@/components/ui/button";
 import { ChevronsUpDown } from "lucide-react";
+
+import { store } from "@/store";
+import WhiteboardContext from "@/context/WhiteboardContext";
+import { deleteCanvas } from "@/controllers";
+import type { ClientMessageDeleteCanvases } from "@/types/WebSocketProtocol";
+
+import type { CanvasIdType, WhiteboardIdType } from "@/types/WebSocketProtocol";
 
 interface CanvasMenuProps {
   allowedUsers: string[];
   setAllowedUsers: (users: string[]) => void;
   allUsers: string[];
+  canvasId: CanvasIdType;
+  whiteboardId: WhiteboardIdType;
 }
 
-function CanvasMenu({ allowedUsers, setAllowedUsers, allUsers }: CanvasMenuProps) {
+function CanvasMenu({ allowedUsers, setAllowedUsers, allUsers, canvasId, whiteboardId }: CanvasMenuProps) {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [popoverOpen, setPopoverOpen] = useState(false);
+  const dispatch = store.dispatch;
+
+  const context = useContext(WhiteboardContext);
+  if (!context) {
+    throw new Error("CanvasMenu must be used inside a WhiteboardProvider");
+  }
+
+  const { socketRef } = context;
 
   const toggleUser = (user: string) => {
     if (allowedUsers.includes(user)) {
@@ -28,7 +68,18 @@ function CanvasMenu({ allowedUsers, setAllowedUsers, allUsers }: CanvasMenuProps
   };
 
   const handleDelete = () => {
-    console.log("delete clicked");
+    // update Redux
+    deleteCanvas(dispatch, whiteboardId, canvasId);
+
+    // broadcast to server
+    if (socketRef.current) {
+      const msg: ClientMessageDeleteCanvases = {
+        type: "delete_canvases",
+        canvasIds: [canvasId],
+      };
+
+      socketRef.current.send(JSON.stringify(msg));
+    }
   }
 
   const handleDownload = () => {

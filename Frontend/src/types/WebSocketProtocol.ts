@@ -97,6 +97,12 @@ export interface ServerMessageCreateCanvas {
   allowedUsers: ClientIdType[];
 }
 
+export interface ServerMessageDeleteCanvases {
+  type: "delete_canvases";
+  clientId: ClientIdType;
+  canvasIds: CanvasIdType[];
+}
+
 export interface ServerMessageIndividualError {
   type: 'individual_error';
   clientId: ClientIdType;
@@ -115,6 +121,7 @@ export type SocketServerMessage =
   | ServerMessageCreateShapes
   | ServerMessageUpdateShapes
   | ServerMessageCreateCanvas
+  | ServerMessageDeleteCanvases
   | ServerMessageIndividualError
   | ServerMessageBroadcastError;
 
@@ -150,9 +157,16 @@ export interface ClientMessageCreateCanvas {
   allowedUsers?: string[];
 }
 
+// Notify server that client has deleted canvases
+export interface ClientMessageDeleteCanvases {
+  type: "delete_canvases";
+  canvasIds: CanvasIdType[];
+}
+
 // Tagged union of all possible client-server messages
 export type SocketClientMessage =
   | ClientMessageLogin
   | ClientMessageCreateShapes
   | ClientMessageUpdateShapes
-  | ClientMessageCreateCanvas;
+  | ClientMessageCreateCanvas
+  | ClientMessageDeleteCanvases;
