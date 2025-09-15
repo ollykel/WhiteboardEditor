@@ -78,6 +78,7 @@ pub struct CanvasClientView {
     pub id: CanvasIdType,
     pub width: u64,
     pub height: u64,
+    pub name: String,
     pub shapes: HashMap<CanvasObjectIdType, ShapeModel>,
     pub allowed_users: Vec<ObjectId>,
 }
@@ -97,7 +98,7 @@ pub enum ServerSocketMessage {
     ActiveUsers { users: Vec<UserSummary>},
     CreateShapes { client_id: ClientIdType, canvas_id: CanvasIdType, shapes: HashMap<CanvasObjectIdType, ShapeModel> },
     UpdateShapes { client_id: ClientIdType, canvas_id: CanvasIdType, shapes: HashMap<String, ShapeModel> },
-    CreateCanvas { client_id: ClientIdType, canvas_id: CanvasIdType, width: u64, height: u64, allowed_users: Vec<ObjectId> },
+    CreateCanvas { client_id: ClientIdType, canvas_id: CanvasIdType, width: u64, height: u64, name: String, allowed_users: Vec<ObjectId> },
     DeleteCanvases { client_id: ClientIdType, canvas_ids: Vec<CanvasIdType> },
     IndividualError { client_id: ClientIdType, message: String },
     BroadcastError { message: String },
@@ -108,7 +109,7 @@ pub enum ServerSocketMessage {
 pub enum ClientSocketMessage {
     CreateShapes { canvas_id: CanvasIdType, shapes: Vec<ShapeModel> },
     UpdateShapes { canvas_id: CanvasIdType, shapes: HashMap<String, ShapeModel> },
-    CreateCanvas { width: u64, height: u64 },
+    CreateCanvas { width: u64, height: u64, name: String },
     DeleteCanvases { canvas_ids: Vec<CanvasIdType> },
     Login { user_id: String, username: String },
 }
@@ -118,6 +119,7 @@ pub struct Canvas {
     pub id: CanvasIdType,
     pub width: u64,
     pub height: u64,
+    pub name: String,
     pub shapes: HashMap<CanvasObjectIdType, ShapeModel>,
     pub next_shape_id: CanvasObjectIdType,
     pub allowed_users: Option<HashSet<ObjectId>>, // None = open to all
@@ -131,6 +133,7 @@ impl Canvas {
             id: self.id,
             width: self.width,
             height: self.height,
+            name: self.name.clone(),
             shapes: self.shapes.clone(),
             allowed_users: match &self.allowed_users {
                 Some(set) => set.iter().copied().collect(),
@@ -180,6 +183,7 @@ pub struct SharedWhiteboardEntry {
 pub struct CanvasMongoDBView {
     pub width: u64,
     pub height: u64,
+    pub name: String,
     pub shapes: HashMap<String, ShapeModel>,
     pub allowed_users: Option<Vec<ObjectId>>
 }
@@ -206,6 +210,7 @@ impl CanvasMongoDBView {
             id: id,
             width: self.width,
             height: self.height,
+            name: self.name.clone(),
             shapes: shapes,
             next_shape_id: next_shape_id,
             allowed_users: match &self.allowed_users {
@@ -375,7 +380,7 @@ pub async fn handle_client_message(client_state: &ClientState, client_msg_s: &st
                         }
                     }
                 },
-                ClientSocketMessage::CreateCanvas { width, height } => {
+                ClientSocketMessage::CreateCanvas { width, height, name } => {
                     let mut whiteboard = client_state.whiteboard_ref.lock().await;
                     let new_canvas_id = whiteboard.canvases.len() as CanvasIdType;
                     let mut allowed = HashSet::<ObjectId>::new();
@@ -392,6 +397,7 @@ pub async fn handle_client_message(client_state: &ClientState, client_msg_s: &st
                             id: new_canvas_id,
                             width: width,
                             height: height,
+                            name: name.clone(),
                             shapes: HashMap::<CanvasObjectIdType, ShapeModel>::new(),
                             next_shape_id: 0,
                             allowed_users: Some(allowed),
@@ -403,6 +409,7 @@ pub async fn handle_client_message(client_state: &ClientState, client_msg_s: &st
                         canvas_id: new_canvas_id,
                         width: width,
                         height: height,
+                        name,
                         allowed_users: allowed_users_vec,
                     })
                 },
