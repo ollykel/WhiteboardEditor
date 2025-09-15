@@ -1,5 +1,9 @@
-import { useState } from "react";
+import { 
+  useState,
+  useContext,
+} from "react";
 import { useDispatch } from "react-redux";
+
 
 import { 
   DropdownMenu, 
@@ -29,7 +33,9 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { ChevronsUpDown } from "lucide-react";
 
+import WhiteboardContext from "@/context/WhiteboardContext";
 import { deleteCanvas } from "@/controllers";
+import type { ClientMessageDeleteCanvases } from "@/types/WebSocketProtocol";
 
 import type { CanvasIdType, WhiteboardIdType } from "@/types/WebSocketProtocol";
 
@@ -46,6 +52,13 @@ function CanvasMenu({ allowedUsers, setAllowedUsers, allUsers, canvasId, whitebo
   const [popoverOpen, setPopoverOpen] = useState(false);
   const dispatch = useDispatch();
 
+  const ctx = useContext(WhiteboardContext);
+  if (!ctx) {
+    throw new Error("CanvasMenu must be used inside a WhiteboardProvider");
+  }
+
+  const { socketRef } = ctx;
+
   const toggleUser = (user: string) => {
     if (allowedUsers.includes(user)) {
       setAllowedUsers(allowedUsers.filter(u => u !== user));
@@ -56,7 +69,18 @@ function CanvasMenu({ allowedUsers, setAllowedUsers, allUsers, canvasId, whitebo
   };
 
   const handleDelete = () => {
+    // update Redux
     deleteCanvas(dispatch, whiteboardId, canvasId);
+
+    // broadcast to server
+    if (socketRef.current) {
+      const msg: ClientMessageDeleteCanvases = {
+        type: "delete_canvases",
+        canvas_ids: [canvasId],
+      };
+
+      socketRef.current.send(JSON.stringify(msg));
+    }
   }
 
   const handleDownload = () => {
