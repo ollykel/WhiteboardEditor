@@ -442,7 +442,6 @@ const Whiteboard = () => {
                   currentTool={toolChoice}
                   disabled={!hasAccess}
                   allUsers={Object.values(activeUsers)} // TODO: Change to allowed users
-                  canvasId={canvasId}
                   whiteboardId={whiteboardId}
                 />
               );
