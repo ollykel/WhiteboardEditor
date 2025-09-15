@@ -85,7 +85,7 @@ export const shapeSchema = new Schema<IShape>(
   }
 );
 
-export const Shape = model<IShape>("Shape", shapeSchema);
+export const Shape = model<IShape>("Shape", shapeSchema, "shapes");
 
 export interface ICanvasModel {
   width: number;
@@ -200,7 +200,9 @@ canvasSchema.virtual('shapes', {
   justOne: false,
 });
 
-export const Canvas = model<ICanvas>("Canvas", canvasSchema);
+// ALWAYS specify collection name explicitly ("canvases"), otherwise it will
+// incorrectly be named "canvas".
+export const Canvas = model<ICanvas>("Canvas", canvasSchema, "canvases");
 
 export type IWhiteboardPermissionEnum =
   | 'view'
@@ -234,7 +236,9 @@ const whiteboardUserPermissionSchema = new Schema<IWhiteboardUserPermissionBase>
   }
 );
 
-export const WhiteboardUserPermission = model<IWhiteboardUserPermissionBase>('WhiteboardUserPermission', whiteboardUserPermissionSchema);
+export const WhiteboardUserPermission = model<IWhiteboardUserPermissionBase>(
+  'WhiteboardUserPermission', whiteboardUserPermissionSchema, "whiteboardUserPermissions"
+);
 
 export const WhiteboardUserPermissionById = WhiteboardUserPermission.discriminator<IWhiteboardUserPermissionById>('id', new Schema({
   user_id: { type: Types.ObjectId, ref: "User", required: true }
@@ -299,7 +303,6 @@ const whiteboardToAttribView = (wb: IWhiteboardDocument): IWhiteboardAttribView 
 
 const whiteboardSchema = new Schema<IWhiteboard, IWhiteboardSchema>(
   {
-    _id: { type: Schema.Types.ObjectId, required: true },
     name: { type: String, required: true },
     time_created: { type: Date, default: Date.now },
     owner: { type: Schema.Types.ObjectId, ref: "User", required: true },
@@ -366,4 +369,4 @@ whiteboardSchema.pre('find', function() {
   this.populate('canvases');
 });
 
-export const Whiteboard = model<IWhiteboard, IWhiteboardSchema>("Whiteboard", whiteboardSchema);
+export const Whiteboard = model<IWhiteboard, IWhiteboardSchema>("Whiteboard", whiteboardSchema, "whiteboards");

@@ -71,17 +71,9 @@ export const createWhiteboard = async (
     const { authUser, name } = req.body;
     const { id: ownerId } = authUser;
 
-    // initialize every new whiteboard with a single empty canvas
-    const defaultCanvas = new Canvas({
-      width: 512,
-      height: 512,
-      allowed_users: [],
-      shapes: {}
-    });
-
     const whiteboard = new Whiteboard({
       name,
-      canvases: [defaultCanvas],
+      // canvases: [defaultCanvas], // TODO: remove
       owner: ownerId,
       shared_users: []
     });
@@ -89,10 +81,22 @@ export const createWhiteboard = async (
     console.log('Attempting to create new whiteboard:', whiteboard);
 
     const whiteboardOut = await whiteboard.save();
+
+    // initialize every new whiteboard with a single empty canvas
+    const defaultCanvas = new Canvas({
+      whiteboard_id: whiteboardOut._id,
+      id: 0,
+      width: 512,
+      height: 512,
+      allowed_users: [],
+    });
+
+    await defaultCanvas.save();
     
-    res.status(201).json(whiteboardOut.toJSON({ virtuals: true }));
+    res.status(201).json(await whiteboardOut.toPublicView());
   } catch (err: any) {
-    res.status(400).json({ error: err.message });
+    console.log('Server Error:', err);
+    res.status(500).json({ message: "Unexpected server error" });
   }
 };
 
@@ -120,11 +124,13 @@ export const addSharedUsers = async (
       return { status: "no_whiteboard" };
     }
 
-    const whiteboard = await Whiteboard.findById(whiteboardId);
+    const whiteboards = await Whiteboard.findFull({ _id: whiteboardId });
 
-    if (!whiteboard) {
+    if ((! whiteboards) || (whiteboards.length < 1)) {
       return { status: "no_whiteboard" };
     }
+
+    const whiteboard = whiteboards[0];
 
     // verify ownership
     if (! whiteboard.owner._id.equals(ownerId)) {
@@ -183,9 +189,11 @@ export const addSharedUsers = async (
       // fully replace old permissions
       whiteboard.shared_users = finalPermissions;
 
+      await whiteboard.save();
+
       return ({
         status: "success",
-        whiteboard: await whiteboard.save()
+        whiteboard: whiteboard
       });
     } else {
       // Trivial success: return true

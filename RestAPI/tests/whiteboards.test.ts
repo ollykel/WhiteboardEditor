@@ -385,18 +385,14 @@ describe("Whiteboards API", () => {
     expect(wbRes.body).toHaveProperty('canvases');
     expect(wbRes.body).toHaveProperty('owner');
     expect(wbRes.body).toHaveProperty('shared_users');
+
+    // -- shared users
     expect(Array.isArray(wbRes.body.shared_users)).toBe(true);
+    expect(wbRes.body.shared_users.length).toBe(userPermissions.length);
 
-    const sharedUsersLimited = wbRes.body.shared_users.map((perm: any) => {
-      const {
-        _id,
-        ...out
-      } = perm;
-
-      return out;
-    });
-
-    expect(sharedUsersLimited).toEqual(userPermissions);
+    for (const i in userPermissions) {
+      expect(wbRes.body.shared_users[0]).toMatchObject(userPermissions[i]);
+    }// -- end for (const i in userPermissions)
   });
 
   it("should convert a shared user email to a shared user id if an account exists for the given email", async () => {
@@ -459,18 +455,13 @@ describe("Whiteboards API", () => {
     expect(wbRes.body).toHaveProperty('time_created');
     expect(wbRes.body).toHaveProperty('canvases');
     expect(wbRes.body).toHaveProperty('owner');
-    expect(wbRes.body).toHaveProperty('shared_users');
+
+    // -- shared users
     expect(Array.isArray(wbRes.body.shared_users)).toBe(true);
+    expect(wbRes.body.shared_users.length).toBe(userPermissionsExpect.length);
 
-    const sharedUsersLimited = wbRes.body.shared_users.map((perm: any) => {
-      const {
-        _id,
-        ...out
-      } = perm;
-
-      return out;
-    });
-
-    expect(sharedUsersLimited).toEqual(userPermissionsExpect);
+    for (const i in userPermissionsExpect) {
+      expect(wbRes.body.shared_users[0]).toMatchObject(userPermissionsExpect[i]);
+    }// -- end for (const i in userPermissionsExpect)
   });
 });

@@ -104,7 +104,7 @@ router.post(
 
       switch (result.status) {
         case "success":
-          return res.status(200).json(result.whiteboard);
+          return res.status(200).json(result.whiteboard.toPublicView());
         case "no_whiteboard":
           return res.status(404).json({ error: "Whiteboard not found" });
         case "invalid_users":

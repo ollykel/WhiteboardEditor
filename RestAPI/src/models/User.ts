@@ -161,4 +161,4 @@ userSchema.virtual('id').get(function() {
 });
 
 // -- User Model
-export const User = model<IUser>("User", userSchema);
+export const User = model<IUser>("User", userSchema, "users");
