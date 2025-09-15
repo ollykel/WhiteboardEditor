@@ -22,6 +22,8 @@ const canvasesSlice = createSlice({
     removeCanvases(state, action: PayloadAction<CanvasKeyType[]>) {
       for (const canvasKey of action.payload) {
         delete state[canvasKey.toString()];
+        console.log("canvasKey: ", canvasKey);
+        console.log("canvasKey string: ", canvasKey.toString());
       }
     }
   },

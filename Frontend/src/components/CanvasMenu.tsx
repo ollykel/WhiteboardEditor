@@ -51,12 +51,12 @@ function CanvasMenu({ allowedUsers, setAllowedUsers, allUsers, canvasId, whitebo
   const [popoverOpen, setPopoverOpen] = useState(false);
   const dispatch = store.dispatch;
 
-  const ctx = useContext(WhiteboardContext);
-  if (!ctx) {
+  const context = useContext(WhiteboardContext);
+  if (!context) {
     throw new Error("CanvasMenu must be used inside a WhiteboardProvider");
   }
 
-  const { socketRef } = ctx;
+  const { socketRef } = context;
 
   const toggleUser = (user: string) => {
     if (allowedUsers.includes(user)) {
