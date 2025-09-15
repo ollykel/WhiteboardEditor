@@ -53,7 +53,7 @@ function CreateCanvasMenu({ onCreate, allUsers }: CreateCanvasMenuProps) {
             className="justify-between"
           >
             {selectedUsers.length > 0
-              ? `${selectedUsers.length} user(s) selected`
+              ? `${selectedUsers.length}${selectedUsers.length === 1 ? ' user selected' : ' users selected'}`
               : "Select users"
             }
             <ChevronsUpDown className='ml-2 h-4 w-4 shrink-0 opacity-50' />
