@@ -31,6 +31,7 @@ export interface CanvasAttribs {
   id: CanvasIdType;
   width: number;
   height: number;
+  name: string;
 }
 
 // Contains nested data
@@ -94,6 +95,7 @@ export interface ServerMessageCreateCanvas {
   canvasId: CanvasIdType;
   width: number;
   height: number;
+  name: string;
   allowedUsers: ClientIdType[];
 }
 
@@ -153,7 +155,7 @@ export interface ClientMessageCreateCanvas {
   type: "create_canvas";
   width: number;
   height: number;
-  name?: string;
+  name: string;
   allowedUsers?: string[];
 }
 

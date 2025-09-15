@@ -278,12 +278,13 @@ const Whiteboard = () => {
             break;
           case 'create_canvas':
             {
-              const { canvasId, width, height, allowedUsers = [] } = msg;
+              const { canvasId, width, height, name, allowedUsers = [] } = msg;
 
               addCanvas(dispatch, whiteboardIdRef.current, ({
                 id: canvasId,
                 width,
                 height,
+                name,
                 shapes: {},
                 allowedUsers
               }));
@@ -426,14 +427,15 @@ const Whiteboard = () => {
             </div>
           </div>
 
+          {/* Display Canvases */}
           <div className="flex flex-1 flex-row justify-center flex-wrap">
-            {canvases.map(({ id: canvasId, width, height, shapes, allowedUsers }: CanvasData) => {
+            {canvases.map(({ id: canvasId, width, height, name, shapes, allowedUsers }: CanvasData) => {
               const hasAccess = allowedUsers.length === 0 || allowedUsers.includes(clientId);
               return (
                 <CanvasCard
                   id={canvasId}
                   key={canvasId}
-                  title={"TODO: store titles"}
+                  title={width.toString() + name}
                   width={width}
                   height={height}
                   shapes={shapes}

@@ -24,9 +24,16 @@ function CreateCanvasMenu({ onCreate, allUsers }: CreateCanvasMenuProps) {
         ? prev.filter((u) => u !== user)
         : [...prev, user]
       );
+
+    setOpen(false);
   };
 
   const handleSubmit = () => {
+    if (!canvasName.trim()) {
+      alert("Canvas name cannot be empty");
+      return;
+    }
+
     onCreate(canvasName, selectedUsers)
     setCanvasName("")
     setSelectedUsers([])
