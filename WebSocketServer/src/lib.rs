@@ -76,8 +76,9 @@ pub struct UserSummary {
 #[serde(rename_all = "camelCase")]
 pub struct CanvasClientView {
     pub id: CanvasIdType,
-    pub width: i32,
-    pub height: i32,
+    pub width: u64,
+    pub height: u64,
+    pub name: String,
     pub shapes: HashMap<CanvasObjectIdType, ShapeModel>,
     pub allowed_users: Vec<ObjectId>,
 }
@@ -90,24 +91,6 @@ pub struct WhiteboardClientView {
     pub canvases: Vec<CanvasClientView>,
 }
 
-// === WhiteboardDiff =============================================================================
-//
-// Defines an atomic change to be made to the state of the Whiteboard.
-//
-// Largely overlaps with the ServerSocketMessage and ClientSocketMessage enums defined below.
-//
-// TODO: refactor ServerSocketMessage and ClientSocketMessage to incorporate WhiteboardDiff,
-// instead of duplicating the given fields.
-//
-// ================================================================================================
-#[derive(Debug, Clone, Serialize)]
-#[serde(tag = "type", rename_all = "snake_case", rename_all_fields="camelCase")]
-pub enum WhiteboardDiff {
-    CreateCanvas { width: i32, height: i32 },
-    CreateShapes { canvas_id: CanvasIdType, shapes: Vec<ShapeModel> },
-    UpdateShapes { canvas_id: CanvasIdType, shapes: HashMap<String, ShapeModel> },
-}
-
 #[derive(Debug, Clone, Serialize)]
 #[serde(tag = "type", rename_all = "snake_case", rename_all_fields = "camelCase")]
 pub enum ServerSocketMessage {
@@ -115,7 +98,7 @@ pub enum ServerSocketMessage {
     ActiveUsers { users: Vec<UserSummary>},
     CreateShapes { client_id: ClientIdType, canvas_id: CanvasIdType, shapes: HashMap<CanvasObjectIdType, ShapeModel> },
     UpdateShapes { client_id: ClientIdType, canvas_id: CanvasIdType, shapes: HashMap<String, ShapeModel> },
-    CreateCanvas { client_id: ClientIdType, canvas_id: CanvasIdType, width: u64, height: u64, allowed_users: Vec<ObjectId> },
+    CreateCanvas { client_id: ClientIdType, canvas_id: CanvasIdType, width: u64, height: u64, name: String, allowed_users: Vec<ObjectId> },
     DeleteCanvases { client_id: ClientIdType, canvas_ids: Vec<CanvasIdType> },
     IndividualError { client_id: ClientIdType, message: String },
     BroadcastError { message: String },
@@ -126,7 +109,7 @@ pub enum ServerSocketMessage {
 pub enum ClientSocketMessage {
     CreateShapes { canvas_id: CanvasIdType, shapes: Vec<ShapeModel> },
     UpdateShapes { canvas_id: CanvasIdType, shapes: HashMap<String, ShapeModel> },
-    CreateCanvas { width: u64, height: u64 },
+    CreateCanvas { width: u64, height: u64, name: String },
     DeleteCanvases { canvas_ids: Vec<CanvasIdType> },
     Login { user_id: String, username: String },
 }
@@ -134,8 +117,9 @@ pub enum ClientSocketMessage {
 #[derive(Clone, Serialize, Deserialize)]
 pub struct Canvas {
     pub id: CanvasIdType,
-    pub width: i32,
-    pub height: i32,
+    pub width: u64,
+    pub height: u64,
+    pub name: String,
     pub shapes: HashMap<CanvasObjectIdType, ShapeModel>,
     pub next_shape_id: CanvasObjectIdType,
     pub allowed_users: Option<HashSet<ObjectId>>, // None = open to all
@@ -149,6 +133,7 @@ impl Canvas {
             id: self.id,
             width: self.width,
             height: self.height,
+            name: self.name.clone(),
             shapes: self.shapes.clone(),
             allowed_users: match &self.allowed_users {
                 Some(set) => set.iter().copied().collect(),
@@ -190,16 +175,15 @@ impl Whiteboard {
 #[derive(Clone)]
 pub struct SharedWhiteboardEntry {
     pub whiteboard_ref: Arc<Mutex<Whiteboard>>,
-    pub whiteboard_id: ObjectId,
     pub broadcaster: broadcast::Sender<ServerSocketMessage>,
     pub active_clients: Arc<Mutex<HashMap<ClientIdType, UserSummary>>>,
-    pub diffs: Arc<Mutex<Vec<WhiteboardDiff>>>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct CanvasMongoDBView {
-    pub width: i32,
-    pub height: i32,
+    pub width: u64,
+    pub height: u64,
+    pub name: String,
     pub shapes: HashMap<String, ShapeModel>,
     pub allowed_users: Option<Vec<ObjectId>>
 }
@@ -226,6 +210,7 @@ impl CanvasMongoDBView {
             id: id,
             width: self.width,
             height: self.height,
+            name: self.name.clone(),
             shapes: shapes,
             next_shape_id: next_shape_id,
             allowed_users: match &self.allowed_users {
@@ -277,6 +262,7 @@ impl WhiteboardMongoDBView {
 pub struct ProgramState {
     pub whiteboards: Mutex<HashMap<WhiteboardIdType, SharedWhiteboardEntry>>,
 }
+
 // === ClientState ================================================================================
 //
 // Encapsulate all state a thread needs to handle a single client.
@@ -286,7 +272,6 @@ pub struct ClientState {
     pub client_id: ClientIdType,
     pub whiteboard_ref: Arc<Mutex<Whiteboard>>,
     pub active_clients: Arc<Mutex<HashMap<ClientIdType, UserSummary>>>,
-    pub diffs: Arc<Mutex<Vec<WhiteboardDiff>>>,
 }
 
 // === Connection State ===========================================================================
@@ -344,16 +329,6 @@ pub async fn handle_client_message(client_state: &ClientState, client_msg_s: &st
                         Some(canvas) => {
                             let mut new_shapes = HashMap::<CanvasObjectIdType, ShapeModel>::new();
 
-                            // valid input: add to diffs
-                            {
-                                let mut diffs = client_state.diffs.lock().await;
-
-                                diffs.push(WhiteboardDiff::CreateShapes{
-                                    canvas_id: canvas_id,
-                                    shapes: shapes.clone()
-                                });
-                            }
-
                             for shape in shapes.iter() {
                                 let obj_id = canvas.next_shape_id;
 
@@ -382,16 +357,6 @@ pub async fn handle_client_message(client_state: &ClientState, client_msg_s: &st
                         Some(canvas) => {
                             let mut new_shapes = shapes.clone();
 
-                            // valid input: add to diffs
-                            {
-                                let mut diffs = client_state.diffs.lock().await;
-
-                                diffs.push(WhiteboardDiff::UpdateShapes{
-                                    canvas_id: canvas_id,
-                                    shapes: shapes.clone()
-                                });
-                            }
-
                             for (obj_id_s, shape) in shapes.iter() {
                                 match obj_id_s.parse::<CanvasObjectIdType>() {
                                     Ok(obj_id) => {
@@ -415,7 +380,7 @@ pub async fn handle_client_message(client_state: &ClientState, client_msg_s: &st
                         }
                     }
                 },
-                ClientSocketMessage::CreateCanvas { width, height } => {
+                ClientSocketMessage::CreateCanvas { width, height, name } => {
                     let mut whiteboard = client_state.whiteboard_ref.lock().await;
                     let new_canvas_id = whiteboard.canvases.len() as CanvasIdType;
                     let mut allowed = HashSet::<ObjectId>::new();
@@ -432,28 +397,19 @@ pub async fn handle_client_message(client_state: &ClientState, client_msg_s: &st
                             id: new_canvas_id,
                             width: width,
                             height: height,
+                            name: name.clone(),
                             shapes: HashMap::<CanvasObjectIdType, ShapeModel>::new(),
                             next_shape_id: 0,
                             allowed_users: Some(allowed),
                         }
                     );
 
-
-                    // valid input: add to diffs
-                    {
-                        let mut diffs = client_state.diffs.lock().await;
-
-                        diffs.push(WhiteboardDiff::CreateCanvas{
-                            width: width,
-                            height: height
-                        });
-                    }
-
                     Some(ServerSocketMessage::CreateCanvas{
                         client_id: client_state.client_id,
                         canvas_id: new_canvas_id,
                         width: width,
                         height: height,
+                        name: name.clone(),
                         allowed_users: allowed_users_vec,
                     })
                 },
@@ -522,7 +478,6 @@ mod tests {
                 shared_user_ids: vec![],
             })),
             active_clients: Arc::new(Mutex::new(HashMap::new())),
-            diffs: Arc::new(Mutex::new(Vec::new())),
         };
 
         let resp = handle_client_message(&client_state, client_msg_s).await;

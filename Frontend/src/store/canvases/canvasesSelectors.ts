@@ -39,10 +39,10 @@ export const selectCanvasesWithObjectsByWhiteboardId = (
       if (! canvas) {
         return null;
       } else {
-        const { id, width, height } = canvas;
+        const { id, width, height, name } = canvas;
 
         return ({
-          id, width, height,
+          id, width, height, name,
           shapes: Object.fromEntries(state.canvasObjectsByCanvas[canvasKey.toString()]
             .map(canvasObjectKey => {
               if (! (canvasObjectKey.toString() in state.canvasObjects)) {

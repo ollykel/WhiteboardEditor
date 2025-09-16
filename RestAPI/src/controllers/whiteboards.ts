@@ -5,8 +5,8 @@ import { Types } from "mongoose";
 import {
   Whiteboard,
   Canvas,
-  type IWhiteboard,
-  type WhiteboardIdType,
+  IWhiteboard,
+  WhiteboardIdType,
   type IWhiteboardPermissionEnum,
   type IWhiteboardUserPermission
 } from '../models/Whiteboard';
@@ -35,13 +35,16 @@ export const getWhiteboardById = async (whiteboardId: string): Promise<GetWhiteb
     return ({ status: 'invalid_id' });
   }
 
-  const whiteboards = await Whiteboard.findFull({ _id: whiteboardId });
+  const whiteboard = await Whiteboard.findById(whiteboardId).populate({
+    path: 'owner',
+    transform: user => user.toPublicView()
+  });
 
-  if ((! whiteboards) || (whiteboards.length < 1)) {
+  if (! whiteboard) {
     return ({ status: 'not_found' });
   } else {
-    const whiteboardObj = whiteboards[0].toObject();
-    const sharedUsers: IWhiteboardUserPermission[] = await Promise.all(whiteboardObj.shared_users.map(async (perm: IWhiteboardUserPermission) => {
+    const whiteboardObj = whiteboard.toObject();
+    const sharedUsers: IWhiteboardUserPermission[] = await Promise.all(whiteboardObj.shared_users.map(async perm => {
       switch (perm.type) {
         case 'id':
           return ({
@@ -71,9 +74,18 @@ export const createWhiteboard = async (
     const { authUser, name } = req.body;
     const { id: ownerId } = authUser;
 
+    // initialize every new whiteboard with a single empty canvas
+    const defaultCanvas = new Canvas({
+      width: 512,
+      height: 512,
+      name: "Main Canvas",  // Give a default name to the canvas
+      allowed_users: [],
+      shapes: {}
+    });
+
     const whiteboard = new Whiteboard({
       name,
-      // canvases: [defaultCanvas], // TODO: remove
+      canvases: [defaultCanvas],
       owner: ownerId,
       shared_users: []
     });
@@ -81,22 +93,10 @@ export const createWhiteboard = async (
     console.log('Attempting to create new whiteboard:', whiteboard);
 
     const whiteboardOut = await whiteboard.save();
-
-    // initialize every new whiteboard with a single empty canvas
-    const defaultCanvas = new Canvas({
-      whiteboard_id: whiteboardOut._id,
-      id: 0,
-      width: 512,
-      height: 512,
-      allowed_users: [],
-    });
-
-    await defaultCanvas.save();
     
-    res.status(201).json(await whiteboardOut.toPublicView());
+    res.status(201).json(whiteboardOut);
   } catch (err: any) {
-    console.log('Server Error:', err);
-    res.status(500).json({ message: "Unexpected server error" });
+    res.status(400).json({ error: err.message });
   }
 };
 
@@ -124,16 +124,14 @@ export const addSharedUsers = async (
       return { status: "no_whiteboard" };
     }
 
-    const whiteboards = await Whiteboard.findFull({ _id: whiteboardId });
+    const whiteboard = await Whiteboard.findById(whiteboardId);
 
-    if ((! whiteboards) || (whiteboards.length < 1)) {
+    if (!whiteboard) {
       return { status: "no_whiteboard" };
     }
 
-    const whiteboard = whiteboards[0];
-
     // verify ownership
-    if (! whiteboard.owner._id.equals(ownerId)) {
+    if (! whiteboard.owner.equals(ownerId)) {
       return { status: "forbidden" };
     }
 
@@ -189,11 +187,9 @@ export const addSharedUsers = async (
       // fully replace old permissions
       whiteboard.shared_users = finalPermissions;
 
-      await whiteboard.save();
-
       return ({
         status: "success",
-        whiteboard: whiteboard
+        whiteboard: await whiteboard.save()
       });
     } else {
       // Trivial success: return true

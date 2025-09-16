@@ -32,42 +32,37 @@ const whiteboards = [
   {
     name: "Project Alpha",
     time_created: new Date("2025-08-01T12:00:00.000Z"),
+    canvases: [
+      {
+        width: 800,
+        height: 600,
+        name: "Canvas Alpha",
+        time_created: new Date("2025-08-01T12:10:00.000Z"),
+        time_last_modified: new Date("2025-08-10T12:10:00.000Z"),
+        editors: [],
+      },
+    ],
     owner: insertedUsers[0]._id, // Alice
     shared_users: [],
   },
   {
     name: "Project Beta",
     time_created: new Date("2025-08-02T12:10:00.000Z"),
+    canvases: [
+      {
+        width: 1024,
+        height: 768,
+        name: "Canvas Beta",
+        time_created: new Date("2025-08-02T12:20:00.000Z"),
+        time_last_modified: new Date("2025-08-03T12:10:00.000Z"),
+        editors: [],
+      },
+    ],
     owner: insertedUsers[1]._id, // Bob
     shared_users: [],
   },
 ];
 
 db.whiteboards.insertMany(whiteboards);
-
-const insertedWhiteboards = db.whiteboards.find().toArray();
-
-const canvases = [
-  {
-    whiteboard_id: insertedWhiteboards[0]._id,
-    id: 111,
-    width: 800,
-    height: 600,
-    time_created: new Date("2025-08-01T12:10:00.000Z"),
-    time_last_modified: new Date("2025-08-10T12:10:00.000Z"),
-    allowed_users: [],
-  },
-  {
-    whiteboard_id: insertedWhiteboards[1]._id,
-    id: 222,
-    width: 1024,
-    height: 768,
-    time_created: new Date("2025-08-02T12:20:00.000Z"),
-    time_last_modified: new Date("2025-08-03T12:10:00.000Z"),
-    allowed_users: [],
-  }
-];
-
-db.canvases.insertMany(canvases);
 
 print("Database initialized with test users and whiteboards.");
