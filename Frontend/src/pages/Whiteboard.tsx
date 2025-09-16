@@ -435,7 +435,7 @@ const Whiteboard = () => {
                 <CanvasCard
                   id={canvasId}
                   key={canvasId}
-                  title={width.toString() + name}
+                  title={name}
                   width={width}
                   height={height}
                   shapes={shapes}
