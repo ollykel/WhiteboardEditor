@@ -409,7 +409,7 @@ pub async fn handle_client_message(client_state: &ClientState, client_msg_s: &st
                         canvas_id: new_canvas_id,
                         width: width,
                         height: height,
-                        name,
+                        name: name.clone(),
                         allowed_users: allowed_users_vec,
                     })
                 },
