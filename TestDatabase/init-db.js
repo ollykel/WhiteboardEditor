@@ -36,6 +36,7 @@ const whiteboards = [
       {
         width: 800,
         height: 600,
+        name: "Canvas Alpha",
         time_created: new Date("2025-08-01T12:10:00.000Z"),
         time_last_modified: new Date("2025-08-10T12:10:00.000Z"),
         editors: [],
@@ -51,6 +52,7 @@ const whiteboards = [
       {
         width: 1024,
         height: 768,
+        name: "Canvas Beta",
         time_created: new Date("2025-08-02T12:20:00.000Z"),
         time_last_modified: new Date("2025-08-03T12:10:00.000Z"),
         editors: [],
