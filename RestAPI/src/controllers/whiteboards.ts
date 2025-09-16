@@ -78,6 +78,7 @@ export const createWhiteboard = async (
     const defaultCanvas = new Canvas({
       width: 512,
       height: 512,
+      name: "Main Canvas",  // Give a default name to the canvas
       allowed_users: [],
       shapes: {}
     });

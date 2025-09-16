@@ -18,6 +18,7 @@ export type WhiteboardIdType = Types.ObjectId;
 export interface ICanvasModel {
   width: number;
   height: number;
+  name: string;
   time_created: Date;
   time_last_modified: Date;
 
@@ -71,6 +72,7 @@ export const canvasSchema = new Schema<ICanvas>(
   {
     width: { type: Number, required: true },
     height: { type: Number, required: true },
+    name: { type: String, required: true },
     time_created: { type: Date, default: Date.now },
     time_last_modified: { type: Date, default: Date.now },
     allowed_users: [{ type: Schema.Types.ObjectId, ref: "User" }],
