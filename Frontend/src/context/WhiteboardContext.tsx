@@ -15,7 +15,8 @@ import type {
 
 import type {
   CanvasIdType,
-  WhiteboardIdType
+  WhiteboardIdType,
+  UserSummary,
 } from '@/types/WebSocketProtocol';
 
 export interface WhiteboardContextType {
@@ -25,6 +26,8 @@ export interface WhiteboardContextType {
   setCurrentTool: React.Dispatch<React.SetStateAction<ToolChoice>>;
   whiteboardId: WhiteboardIdType;
   setWhiteboardId: React.Dispatch<React.SetStateAction<WhiteboardIdType>>;
+  sharedUsers: UserSummary[];
+  setSharedUsers: React.Dispatch<React.SetStateAction<UserSummary[]>>;
 }
 
 export type WhiteboardProvidersProps = WhiteboardContextType;
@@ -39,7 +42,9 @@ const WhiteboardProvider = (props: PropsWithChildren<WhiteboardProvidersProps>):
     setCurrentTool,
     whiteboardId,
     setWhiteboardId,
-    children
+    children,
+    sharedUsers,
+    setSharedUsers,
   } = props;
 
   return (
@@ -49,7 +54,9 @@ const WhiteboardProvider = (props: PropsWithChildren<WhiteboardProvidersProps>):
       currentTool,
       setCurrentTool,
       whiteboardId,
-      setWhiteboardId
+      setWhiteboardId,
+      sharedUsers,
+      setSharedUsers,
     }}>
       {children}
     </WhiteboardContext.Provider>
