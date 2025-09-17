@@ -15,6 +15,7 @@ interface CreateCanvasMenuProps {
 }
 
 function CreateCanvasMenu({ onCreate, sharedUsers }: CreateCanvasMenuProps) {
+  console.log("Shared users: ", sharedUsers); // Debugging
   const [canvasName, setCanvasName] = useState("");
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
   const [open, setOpen] = useState(false);

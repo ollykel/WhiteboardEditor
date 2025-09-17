@@ -37,10 +37,12 @@ const ToolbarButton = React.forwardRef<HTMLButtonElement, ToolbarButtonProps>(
 
 function Toolbar({ toolChoice, onToolChange, onNewCanvas }: ToolbarProps) {
   const context = useContext(WhiteboardContext);
+  console.log("toolbar context: ", context); // degbugging
   if (!context) {
     throw new Error('No WhiteboardContext provided');
   }
   const sharedUsers = context.sharedUsers;
+  console.log("toolbar sharedUsers: ", sharedUsers); // degbugging
 
   const renderToolChoice = (choice: ToolChoice): React.JSX.Element => (
     <ToolbarButton
