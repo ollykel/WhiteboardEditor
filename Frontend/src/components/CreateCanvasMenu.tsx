@@ -10,10 +10,10 @@ import { ChevronsUpDown } from "lucide-react";
 
 interface CreateCanvasMenuProps {
   onCreate: (name: string, allowedUsers: string[]) => void
-  allUsers: string[];
+  sharedUsers: string[];
 }
 
-function CreateCanvasMenu({ onCreate, allUsers }: CreateCanvasMenuProps) {
+function CreateCanvasMenu({ onCreate, sharedUsers }: CreateCanvasMenuProps) {
   const [canvasName, setCanvasName] = useState("");
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
   const [open, setOpen] = useState(false);
@@ -34,9 +34,9 @@ function CreateCanvasMenu({ onCreate, allUsers }: CreateCanvasMenuProps) {
       return;
     }
 
-    onCreate(canvasName, selectedUsers)
-    setCanvasName("")
-    setSelectedUsers([])
+    onCreate(canvasName, selectedUsers);
+    setCanvasName("");
+    setSelectedUsers([]);
   }
 
   return (
@@ -71,7 +71,7 @@ function CreateCanvasMenu({ onCreate, allUsers }: CreateCanvasMenuProps) {
             <CommandInput placeholder='Search users...' />
             <CommandEmpty>No users found</CommandEmpty>
             <CommandGroup>
-              {allUsers.map((user) => (
+              {sharedUsers.map((user) => (
                 <CommandItem
                   key={user}
                   onSelect={() => toggleUser(user)}

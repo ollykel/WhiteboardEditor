@@ -31,6 +31,8 @@ const ToolbarButton = React.forwardRef<HTMLButtonElement, ToolbarButtonProps>(
   )
 );
 
+const sharedUsers = ["joe", "oliver"];
+
 function Toolbar({ toolChoice, onToolChange, onNewCanvas }: ToolbarProps) {
   const renderToolChoice = (choice: ToolChoice): React.JSX.Element => (
     <ToolbarButton
@@ -51,7 +53,7 @@ function Toolbar({ toolChoice, onToolChange, onNewCanvas }: ToolbarProps) {
         trigger={<ToolbarButton label="New Canvas" variant="default" />}
       >
         {/* TODO: Get actual allUsers list from dynamic stored state */}
-        <CreateCanvasMenu onCreate={onNewCanvas} allUsers={["joe", "oliver"]}/>
+        <CreateCanvasMenu onCreate={onNewCanvas} sharedUsers={sharedUsers}/>
       </PopoverMenu>
     </div>
   )
