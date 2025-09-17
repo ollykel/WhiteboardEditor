@@ -23,7 +23,7 @@ import { X } from 'lucide-react';
 
 // -- local types
 import type {
-  Whiteboard as APIWhiteboard
+  Whiteboard as APIWhiteboard,
 } from '@/types/APIProtocol';
 
 // -- program state
@@ -499,7 +499,8 @@ const Whiteboard = () => {
 const WrappedWhiteboard = () => {
   const socketRef = useRef<WebSocket | null>(null);
   const [whiteboardId, setWhiteboardId] = useState<WhiteboardIdType>("");
-  const [sharedUsers, setSharedUsers] = useState<APIWhiteboard['shared_users']>([]);
+
+
 
   const canvasObjectsByCanvas: Record<CanvasIdType, Record<CanvasObjectIdType, CanvasObjectModel>> = useSelector((state: RootState) => (
     selectCanvasObjectsByWhiteboard(state, whiteboardId)
@@ -550,7 +551,6 @@ const WrappedWhiteboard = () => {
       whiteboardId={whiteboardId}
       setWhiteboardId={setWhiteboardId}
       sharedUsers={sharedUsers}
-      setSharedUsers={setSharedUsers}
     >
       <Whiteboard />
     </WhiteboardProvider>
