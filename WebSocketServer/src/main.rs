@@ -92,23 +92,6 @@ async fn handle_connection(ws: WebSocket, whiteboard_id: WhiteboardIdType, conne
 
     println!("New client: {}", current_client_id);
 
-    // -- generate object id for whiteboard
-    let oid: ObjectId = match ObjectId::parse_str(&whiteboard_id) {
-        Err(e) => {
-            eprintln!("Couldn't parse ObjectId from {}: {}", whiteboard_id, e);
-
-            let err_msg = ServerSocketMessage::IndividualError {
-                client_id: current_client_id,
-                message: format!("Error fetching whiteboard {}", whiteboard_id)
-            };
-            
-            let _ = user_ws_tx.send(Message::text(serde_json::to_string(&err_msg).unwrap())).await;
-
-            return;
-        },
-        Ok(oid) => oid
-    };
-
     let shared_whiteboard_entry : SharedWhiteboardEntry = {
         // - Fetch whiteboard identified by id from program state
         // - TODO: If not present, try to fetch from the database
@@ -140,7 +123,7 @@ async fn handle_connection(ws: WebSocket, whiteboard_id: WhiteboardIdType, conne
                         Some(db) => db.collection::<WhiteboardMongoDBView>("whiteboards")
                 };
 
-                match whiteboard_coll.find_one(doc! { "_id": oid }).await {
+                match whiteboard_coll.find_one(doc! { "_id": whiteboard_id }).await {
                     Err(e) => {
                         // connection error: print and disconnect
                         eprintln!("Connection error; could not fetch whiteboard: {}", e);
@@ -179,7 +162,7 @@ async fn handle_connection(ws: WebSocket, whiteboard_id: WhiteboardIdType, conne
                             let (tx, _rx) = broadcast::channel::<ServerSocketMessage>(100);
                             let shared_whiteboard_entry = SharedWhiteboardEntry {
                                 whiteboard_ref: Arc::clone(&whiteboard_ref),
-                                whiteboard_id: oid.clone(),
+                                whiteboard_id: whiteboard_id.clone(),
                                 broadcaster: tx.clone(),
                                 active_clients: Arc::new(Mutex::new(HashMap::new())),
                                 diffs: Arc::new(Mutex::new(Vec::new())),
@@ -259,7 +242,7 @@ async fn handle_connection(ws: WebSocket, whiteboard_id: WhiteboardIdType, conne
                 },
                 Some(db) => db.collection::<WhiteboardMongoDBView>("whiteboards")
         };
-        let whiteboard_filter = doc! { "_id": oid };
+        let whiteboard_filter = doc! { "_id": whiteboard_id };
 
         async move {
             while let Some(Ok(msg)) = user_ws_rx.next().await {
