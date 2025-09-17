@@ -35,13 +35,13 @@ const ToolbarButton = React.forwardRef<HTMLButtonElement, ToolbarButtonProps>(
   )
 );
 
-const context = useContext(WhiteboardContext);
-if (!context) {
-  throw new Error('No WhiteboardContext provided');
-}
-const sharedUsers = context.sharedUsers;
-
 function Toolbar({ toolChoice, onToolChange, onNewCanvas }: ToolbarProps) {
+  const context = useContext(WhiteboardContext);
+  if (!context) {
+    throw new Error('No WhiteboardContext provided');
+  }
+  const sharedUsers = context.sharedUsers;
+
   const renderToolChoice = (choice: ToolChoice): React.JSX.Element => (
     <ToolbarButton
       label={getToolChoiceLabel(choice)}
@@ -60,7 +60,6 @@ function Toolbar({ toolChoice, onToolChange, onNewCanvas }: ToolbarProps) {
       <PopoverMenu
         trigger={<ToolbarButton label="New Canvas" variant="default" />}
       >
-        {/* TODO: Get actual allUsers list from dynamic stored state */}
         <CreateCanvasMenu 
           onCreate={onNewCanvas} 
           sharedUsers={(sharedUsers ?? []).filter(
