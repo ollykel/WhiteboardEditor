@@ -500,7 +500,16 @@ const WrappedWhiteboard = () => {
   const socketRef = useRef<WebSocket | null>(null);
   const [whiteboardId, setWhiteboardId] = useState<WhiteboardIdType>("");
 
+  const { data: whiteboardData } = useQuery({
+    queryKey: ['whiteboard', whiteboardId],
+    queryFn: async () => {
+      const res = await api.get(`/whiteboards/${whiteboardId}`);
+      if (res.status >= 400) throw new Error(res.data?.message || 'Failed');
+      return res.data;
+    },
+  });
 
+  const sharedUsers = whiteboardData?.shared_users ?? [];
 
   const canvasObjectsByCanvas: Record<CanvasIdType, Record<CanvasObjectIdType, CanvasObjectModel>> = useSelector((state: RootState) => (
     selectCanvasObjectsByWhiteboard(state, whiteboardId)
