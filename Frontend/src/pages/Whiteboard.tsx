@@ -499,6 +499,7 @@ const Whiteboard = () => {
 const WrappedWhiteboard = () => {
   const socketRef = useRef<WebSocket | null>(null);
   const [whiteboardId, setWhiteboardId] = useState<WhiteboardIdType>("");
+  const [sharedUsers, setSharedUsers] = useState<APIWhiteboard['shared_users']>([]);
 
   const canvasObjectsByCanvas: Record<CanvasIdType, Record<CanvasObjectIdType, CanvasObjectModel>> = useSelector((state: RootState) => (
     selectCanvasObjectsByWhiteboard(state, whiteboardId)
@@ -548,6 +549,8 @@ const WrappedWhiteboard = () => {
       setCurrentTool={setCurrentTool}
       whiteboardId={whiteboardId}
       setWhiteboardId={setWhiteboardId}
+      sharedUsers={sharedUsers}
+      setSharedUsers={setSharedUsers}
     >
       <Whiteboard />
     </WhiteboardProvider>
