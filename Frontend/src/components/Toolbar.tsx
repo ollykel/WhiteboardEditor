@@ -1,4 +1,6 @@
-import React from 'react';
+import React, { useContext } from 'react';
+
+import WhiteboardContext from '@/context/WhiteboardContext';
 
 import { getToolChoiceLabel } from '@/components/Tool';
 import PopoverMenu from '@/components/PopoverMenu'
@@ -31,7 +33,8 @@ const ToolbarButton = React.forwardRef<HTMLButtonElement, ToolbarButtonProps>(
   )
 );
 
-const sharedUsers = ["joe", "oliver"];
+const context = useContext(WhiteboardContext);
+const sharedUsers = context?.sharedUsers;
 
 function Toolbar({ toolChoice, onToolChange, onNewCanvas }: ToolbarProps) {
   const renderToolChoice = (choice: ToolChoice): React.JSX.Element => (

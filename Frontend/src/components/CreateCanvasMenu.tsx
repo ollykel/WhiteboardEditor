@@ -7,10 +7,11 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "@/components/ui/command";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ChevronsUpDown } from "lucide-react";
+import type { UserPermission } from '@/types/APIProtocol';
 
 interface CreateCanvasMenuProps {
   onCreate: (name: string, allowedUsers: string[]) => void
-  sharedUsers: string[];
+  sharedUsers: Extract<UserPermission, { type: 'id' }>[];
 }
 
 function CreateCanvasMenu({ onCreate, sharedUsers }: CreateCanvasMenuProps) {
@@ -71,14 +72,14 @@ function CreateCanvasMenu({ onCreate, sharedUsers }: CreateCanvasMenuProps) {
             <CommandInput placeholder='Search users...' />
             <CommandEmpty>No users found</CommandEmpty>
             <CommandGroup>
-              {sharedUsers.map((user) => (
+              {sharedUsers.map((userPerm) => (
                 <CommandItem
-                  key={user}
-                  onSelect={() => toggleUser(user)}
+                  key={userPerm.user._id}
+                  onSelect={() => toggleUser(userPerm.user._id)}
                   className='flex items-center gap-2'
                 >
-                  <Checkbox checked={selectedUsers.includes(user)} />
-                  <span>{user}</span>
+                  <Checkbox checked={selectedUsers.includes(userPerm.user._id)} />
+                  <span>{userPerm.user.username}</span>
                 </CommandItem>
               ))}
             </CommandGroup>
