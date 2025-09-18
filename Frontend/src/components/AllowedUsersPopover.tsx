@@ -1,6 +1,7 @@
 import { useState } from "react";
 
 import { 
+  Check,
   ChevronsUpDown,  
 } from "lucide-react";
 
@@ -9,9 +10,6 @@ import {
   PopoverContent,
   PopoverTrigger, 
 } from "@/components/ui/popover";
-import { 
-  Checkbox, 
-} from "@/components/ui/checkbox";
 import { 
   Command,
   CommandInput, 
@@ -66,11 +64,16 @@ const AllowedUsersPopover = ({ sharedUsers, allowedUsers, setAllowedUsers }: All
               .map((userPerm) => (
                 <CommandItem
                   key={userPerm.user._id}
-                  onSelect={() => toggleUser(userPerm.user._id)}
+                  value={userPerm.user._id}
                   className='flex items-center gap-2'
+                  onSelect={() => toggleUser(userPerm.user._id)}
                 >
-                  <Checkbox checked={allowedUsers.includes(userPerm.user._id)} />
-                  <span>{userPerm.user.username}</span>
+                  {userPerm.user.username}
+                  <Check 
+                    className={`ml-auto h-4 w-4 ${
+                      allowedUsers.includes(userPerm.user._id) ? "opacity-100" : "opacity-0"
+                    }`}             
+                  />
                 </CommandItem>
             ))}
           </CommandGroup>
