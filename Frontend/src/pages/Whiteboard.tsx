@@ -82,6 +82,7 @@ import ShareWhiteboardForm, {
 import type {
   SocketServerMessage,
   // ClientMessageCreateShapes,
+  ClientIdType,
   ClientMessageUpdateShapes,
   ClientMessageCreateCanvas,
   CanvasData,
@@ -156,7 +157,7 @@ const Whiteboard = () => {
       }
     }
   });
-  const [clientId, setClientId] = useState<number>(-1);
+  const [clientId, setClientId] = useState<ClientIdType>("");
   const [toolChoice, setToolChoice] = useState<ToolChoice>('rect');
   const whiteboardIdRef = useRef<WhiteboardIdType>(whiteboardId);
 

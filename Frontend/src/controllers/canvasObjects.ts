@@ -30,8 +30,7 @@ const controllerSetCanvasObjects = (
 ) => {
   const canvasKey: CanvasKeyType = [whiteboardId, canvasId];
   const canvasObjectsByKey: Record<string, CanvasObjectModel> = Object.fromEntries(
-    Object.entries(canvasObjects).map(([objIdStr, obj]) => {
-      const objId = parseInt(objIdStr);
+    Object.entries(canvasObjects).map(([objId, obj]) => {
       const objKey: CanvasObjectKeyType = [whiteboardId, canvasId, objId];
 
       return [objKey, obj];
@@ -40,7 +39,7 @@ const controllerSetCanvasObjects = (
 
   dispatch(setCanvasObjects(canvasObjectsByKey));
   dispatch(addObjectsByCanvas({
-    [canvasKey.toString()]: Object.keys(canvasObjects).map(id => [whiteboardId, canvasId, parseInt(id)])
+    [canvasKey.toString()]: Object.keys(canvasObjects).map(id => [whiteboardId, canvasId, id])
   }));
 };
 
