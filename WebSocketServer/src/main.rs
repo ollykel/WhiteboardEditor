@@ -83,6 +83,17 @@ async fn main() -> process::ExitCode {
 async fn handle_connection(ws: WebSocket, whiteboard_id: WhiteboardIdType, connection_state_ref: Arc<ConnectionState>) {
     let (mut user_ws_tx, mut user_ws_rx) = ws.split();
 
+    let db = match connection_state_ref
+        .mongo_client
+        .default_database() {
+            None => {
+                // No database specified in mongo uri
+                // Print error and disconnect early
+                panic!("Database connection error; could not fetch whiteboard - no default database defined in mongo uri");
+            },
+            Some(db) => db
+    };
+
     let current_client_id = {
         let mut next_client_id = connection_state_ref.next_client_id.lock().await;
         let client_id = *next_client_id;
@@ -94,7 +105,6 @@ async fn handle_connection(ws: WebSocket, whiteboard_id: WhiteboardIdType, conne
 
     let shared_whiteboard_entry : SharedWhiteboardEntry = {
         // - Fetch whiteboard identified by id from program state
-        // - TODO: If not present, try to fetch from the database
         // - If no such whiteboard, send an individual error message and disconnect
         let mut whiteboards_by_id = connection_state_ref.program_state.whiteboards.lock().await;
         let whiteboard_res = whiteboards_by_id.get(&whiteboard_id);
@@ -104,77 +114,40 @@ async fn handle_connection(ws: WebSocket, whiteboard_id: WhiteboardIdType, conne
                 // Try to fetch whiteboard from the database.
                 // If present, load into cache.
                 // Otherwise, return (disconnect) early.
-                let whiteboard_coll: Collection<WhiteboardMongoDBView> = match connection_state_ref
-                    .mongo_client
-                    .default_database() {
-                        None => {
-                            // No database specified in mongo uri
-                            // Print error and disconnect early
-                            eprintln!("Database connection error; could not fetch whiteboard - no default database defined in mongo uri");
-                            let err_msg = ServerSocketMessage::IndividualError {
-                                client_id: current_client_id,
-                                message: format!("Error fetching whiteboard {}", whiteboard_id)
-                            };
-                            
-                            let _ = user_ws_tx.send(Message::text(serde_json::to_string(&err_msg).unwrap())).await;
-
-                            return;
-                        },
-                        Some(db) => db.collection::<WhiteboardMongoDBView>("whiteboards")
-                };
-
-                match whiteboard_coll.find_one(doc! { "_id": whiteboard_id }).await {
-                    Err(e) => {
+                match get_whiteboard_by_id(&db, &whiteboard_id).await {
+                    None => {
                         // connection error: print and disconnect
-                        eprintln!("Connection error; could not fetch whiteboard: {}", e);
+                        eprintln!("Connection error; could not fetch whiteboard: not found in database");
 
                         let err_msg = ServerSocketMessage::IndividualError {
                             client_id: current_client_id,
-                            message: format!("Error fetching whiteboard {}", whiteboard_id)
+                            message: format!("Could not fetch whiteboard {}", whiteboard_id)
                         };
                         
                         let _ = user_ws_tx.send(Message::text(serde_json::to_string(&err_msg).unwrap())).await;
 
                         return;
                     },
-                    Ok(res) => match &res {
-                        None => {
-                            // No such whiteboard; send individual error and disconnect
-                            // IndividualError { client_id: ClientIdType, message: String },
-                            let err_msg = ServerSocketMessage::IndividualError {
-                                client_id: current_client_id,
-                                message: format!("Whiteboard {} not found", whiteboard_id)
-                            };
-                            
-                            let _ = user_ws_tx.send(Message::text(serde_json::to_string(&err_msg).unwrap())).await;
+                    Some(whiteboard) => {
+                        let whiteboard_id = whiteboard.id.clone();
+                        let whiteboard_ref = Arc::new(Mutex::new(whiteboard));
 
-                            // trigger early disconnect
-                            return;
-                        },
-                        Some(whiteboard_db_view) => {
-                            // Create new reference to whiteboard
-                            // TODO: actually fetch canvases using util function
-                            let whiteboard = whiteboard_db_view.to_whiteboard(vec![].as_slice());
-                            let whiteboard_id = whiteboard.id.clone();
-                            let whiteboard_ref = Arc::new(Mutex::new(whiteboard));
+                        // sender
+                        // TODO: replace 100 with value from a config
+                        let (tx, _rx) = broadcast::channel::<ServerSocketMessage>(100);
+                        let shared_whiteboard_entry = SharedWhiteboardEntry {
+                            whiteboard_ref: Arc::clone(&whiteboard_ref),
+                            whiteboard_id: whiteboard_id.clone(),
+                            broadcaster: tx.clone(),
+                            active_clients: Arc::new(Mutex::new(HashMap::new())),
+                            diffs: Arc::new(Mutex::new(Vec::new())),
+                        };
 
-                            // sender
-                            // TODO: replace 100 with value from a config
-                            let (tx, _rx) = broadcast::channel::<ServerSocketMessage>(100);
-                            let shared_whiteboard_entry = SharedWhiteboardEntry {
-                                whiteboard_ref: Arc::clone(&whiteboard_ref),
-                                whiteboard_id: whiteboard_id.clone(),
-                                broadcaster: tx.clone(),
-                                active_clients: Arc::new(Mutex::new(HashMap::new())),
-                                diffs: Arc::new(Mutex::new(Vec::new())),
-                            };
+                        // insert whiteboard into cache
+                        whiteboards_by_id.insert(whiteboard_id, shared_whiteboard_entry.clone());
 
-                            // insert whiteboard into cache
-                            whiteboards_by_id.insert(whiteboard_id, shared_whiteboard_entry.clone());
-
-                            // return new shared whiteboard entry
-                            shared_whiteboard_entry.clone()
-                        }
+                        // return new shared whiteboard entry
+                        shared_whiteboard_entry.clone()
                     }
                 }
             },
@@ -241,16 +214,12 @@ async fn handle_connection(ws: WebSocket, whiteboard_id: WhiteboardIdType, conne
             },
             Some(db) => db
         };
-        let whiteboard_coll: Collection<WhiteboardMongoDBView> = db.collection::<WhiteboardMongoDBView>(
-            "whiteboards"
-        );
         let canvas_coll: Collection<CanvasMongoDBView> = db.collection::<CanvasMongoDBView>(
             "canvases"
         );
         let shape_coll: Collection<CanvasObjectMongoDBView> = db.collection::<CanvasObjectMongoDBView>(
             "shapes"
         );
-        let whiteboard_filter = doc! { "_id": whiteboard_id };
 
         async move {
             while let Some(Ok(msg)) = user_ws_rx.next().await {
@@ -313,7 +282,7 @@ async fn handle_connection(ws: WebSocket, whiteboard_id: WhiteboardIdType, conne
                                             }
                                         };
                                     },
-                                    WhiteboardDiff::UpdateShapes { canvas_id: canvas_id , shapes: shapes } => {
+                                    WhiteboardDiff::UpdateShapes { canvas_id, shapes } => {
                                         for (obj_id, shape) in shapes.iter() {
                                             let query_doc = doc! { "_id": obj_id.clone() };
                                             let canvas_obj_doc = CanvasObjectMongoDBView {
