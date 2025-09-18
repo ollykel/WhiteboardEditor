@@ -222,6 +222,29 @@ impl CanvasMongoDBView {
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum UserPermissionEnum {
+    Own,
+    Edit,
+    View,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(tag = "type")]
+pub enum UserPermission {
+    #[serde(rename = "id")]
+    Id {
+        user_id: ObjectId,
+        permission: UserPermissionEnum,
+    },
+    #[serde(rename = "email")]
+    Email {
+        email: String,
+        permission: UserPermissionEnum,
+    }
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct WhiteboardMongoDBView {
     #[serde(rename = "_id")]
     pub id: ObjectId,
@@ -230,7 +253,7 @@ pub struct WhiteboardMongoDBView {
     #[serde(rename = "owner")]
     pub owner_id: ObjectId,
     #[serde(rename = "shared_users")]
-    pub shared_user_ids: Vec<ObjectId>
+    pub shared_user_ids: Vec<UserPermission>
 }
 
 impl WhiteboardMongoDBView {
@@ -246,7 +269,10 @@ impl WhiteboardMongoDBView {
                 })
                 .collect(),
             owner_id: self.owner_id.to_string(),
-            shared_user_ids: self.shared_user_ids.iter().map(|uid| uid.to_string()).collect()
+            shared_user_ids: self.shared_user_ids.iter().map(|perm| match perm {
+                UserPermission::Id { user_id, .. } => user_id.to_string(),
+                UserPermission::Email { email, .. } => email.clone(),
+            }).collect(),
         }
     }
 }
