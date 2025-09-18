@@ -61,7 +61,6 @@ router.get('/:whiteboardId', async (
       case 'ok':
       {
           const { whiteboard } = resp;
-          console.log('!! Whiteboard:', whiteboard);
           const validUserIdSet: Record<string, boolean> = Object.fromEntries([
             [whiteboard.owner.id, true],
             ...whiteboard.shared_users.filter(perm => perm.type === 'id').map(perm => [
@@ -105,7 +104,7 @@ router.post(
 
       switch (result.status) {
         case "success":
-          return res.status(200).json(result.whiteboard.toPublicView());
+          return res.status(200).json(result.whiteboard);
         case "no_whiteboard":
           return res.status(404).json({ error: "Whiteboard not found" });
         case "invalid_users":

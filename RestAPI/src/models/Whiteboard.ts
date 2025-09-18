@@ -37,8 +37,6 @@ export interface IShapeModel {
 }
 
 export interface IShapeDocument extends IShapeModel {
-  // unique id relative ot the canvas
-  id: number;
   // reference to the parent canvas
   canvas_id: Types.ObjectId;
 }
@@ -58,7 +56,6 @@ export type IShape =
 export const shapeSchema = new Schema<IShape>(
   // -- fields
   {
-    id: { type: Number, required: true },
     canvas_id: { type: Schema.Types.ObjectId, ref: 'Canvas', required: true },
     type: { type: String, enum: SHAPE_TYPE_ENUM, required: true },
   },
@@ -88,9 +85,9 @@ export const shapeSchema = new Schema<IShape>(
 export const Shape = model<IShape>("Shape", shapeSchema, "shapes");
 
 export interface ICanvasModel {
+  name: string;
   width: number;
   height: number;
-  name: string;
   time_created: Date;
   time_last_modified: Date;
 
@@ -100,8 +97,6 @@ export interface ICanvasModel {
 }
 
 export interface ICanvasDocument extends ICanvasModel {
-  // unique id relative to the whiteboard
-  id: number;
   // reference to parent whiteboard
   whiteboard_id: Types.ObjectId;
 }
@@ -145,10 +140,9 @@ export const canvasSchema = new Schema<ICanvas>(
   // -- fields
   {
     whiteboard_id: { type: Schema.Types.ObjectId, ref: 'Whiteboard', required: true },
-    id: { type: Number, required: true },
+    name: { type: String, required: true },
     width: { type: Number, required: true },
     height: { type: Number, required: true },
-    name: { type: String, required: true },
     time_created: { type: Date, default: Date.now },
     time_last_modified: { type: Date, default: Date.now },
 
