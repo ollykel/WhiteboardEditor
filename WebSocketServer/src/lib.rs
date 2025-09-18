@@ -140,6 +140,7 @@ pub struct WhiteboardClientView {
 #[serde(tag = "type", rename_all = "snake_case", rename_all_fields="camelCase")]
 pub enum WhiteboardDiff {
     CreateCanvas { name: String, width: i32, height: i32 },
+    DeleteCanvases { canvas_ids: Vec<CanvasIdType> },
     CreateShapes { canvas_id: CanvasIdType, shapes: HashMap<CanvasObjectIdType, ShapeModel> },
     UpdateShapes { canvas_id: CanvasIdType, shapes: HashMap<CanvasObjectIdType, ShapeModel> },
 }
@@ -525,6 +526,15 @@ pub async fn handle_client_message(client_state: &ClientState, client_msg_s: &st
                     for id in &canvas_ids {
                         whiteboard.canvases.remove(&id);
                     }// end for id in canvas_ids
+
+                    // valid message: add to diffs
+                    {
+                        let mut diffs = client_state.diffs.lock().await;
+                    
+                        diffs.push(WhiteboardDiff::DeleteCanvases {
+                            canvas_ids: canvas_ids.clone()
+                        });
+                    }
 
                     Some(ServerSocketMessage::DeleteCanvases{
                         client_id: client_state.client_id,

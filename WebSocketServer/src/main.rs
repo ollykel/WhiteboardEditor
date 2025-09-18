@@ -278,6 +278,41 @@ async fn handle_connection(ws: WebSocket, whiteboard_id: WhiteboardIdType, conne
                                             }
                                         };
                                     },
+                                    WhiteboardDiff::DeleteCanvases { canvas_ids } => {
+                                        println!("Deleting canvases from database: {:?} ...", canvas_ids);
+
+                                        // first delete contained canvas objects
+                                        let delete_objects_res = shape_coll.delete_many(doc! {
+                                            "canvas_id": {
+                                                "$in": canvas_ids.clone()
+                                            }
+                                        }).await;
+
+                                        match delete_objects_res {
+                                            Err(e) => {
+                                                eprintln!("DeleteCanvases object deletion failed: {}", e);
+                                            },
+                                            Ok(delete_result) => {
+                                                eprintln!("DeleteCanvases object deletion count {}", delete_result.deleted_count);
+                                            }
+                                        };
+
+                                        // then, delete canvas itself
+                                        let delete_canvas_res = canvas_coll.delete_many(doc! {
+                                            "_id": {
+                                                "$in": canvas_ids.clone()
+                                            }
+                                        }).await;
+
+                                        match delete_canvas_res {
+                                            Err(e) => {
+                                                eprintln!("DeleteCanvases canvas deletion failed: {}", e);
+                                            },
+                                            Ok(delete_result) => {
+                                                eprintln!("DeleteCanvases canvas deletion count {}", delete_result.deleted_count);
+                                            }
+                                        };
+                                    },
                                     WhiteboardDiff::CreateShapes { canvas_id, shapes } => {
                                         println!("Creating shapes in database for canvas {} ...", canvas_id);
 
