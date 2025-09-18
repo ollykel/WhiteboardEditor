@@ -115,7 +115,19 @@ async fn handle_connection(ws: WebSocket, whiteboard_id: WhiteboardIdType, conne
                 // If present, load into cache.
                 // Otherwise, return (disconnect) early.
                 match get_whiteboard_by_id(&db, &whiteboard_id).await {
-                    None => {
+                    Err(e) => {
+                        eprintln!("Could not fetch whiteboard from database: {}", e);
+
+                        let err_msg = ServerSocketMessage::IndividualError {
+                            client_id: current_client_id,
+                            message: format!("Error occurred fetching whiteboard {}", whiteboard_id)
+                        };
+
+                        let _ = user_ws_tx.send(Message::text(serde_json::to_string(&err_msg).unwrap())).await;
+
+                        return;
+                    },
+                    Ok(None) => {
                         // connection error: print and disconnect
                         eprintln!("Connection error; could not fetch whiteboard: not found in database");
 
@@ -128,7 +140,7 @@ async fn handle_connection(ws: WebSocket, whiteboard_id: WhiteboardIdType, conne
 
                         return;
                     },
-                    Some(whiteboard) => {
+                    Ok(Some(whiteboard)) => {
                         let whiteboard_id = whiteboard.id.clone();
                         let whiteboard_ref = Arc::new(Mutex::new(whiteboard));
 
@@ -145,6 +157,8 @@ async fn handle_connection(ws: WebSocket, whiteboard_id: WhiteboardIdType, conne
 
                         // insert whiteboard into cache
                         whiteboards_by_id.insert(whiteboard_id, shared_whiteboard_entry.clone());
+
+                        println!("Successfully fetched whiteboard {} from database", whiteboard_id);
 
                         // return new shared whiteboard entry
                         shared_whiteboard_entry.clone()
@@ -240,6 +254,8 @@ async fn handle_connection(ws: WebSocket, whiteboard_id: WhiteboardIdType, conne
                             for diff in diffs.iter() {
                                 match &diff {
                                     WhiteboardDiff::CreateCanvas { name, width, height } => {
+                                        println!("Creating canvas \"{}\" in database ...", name);
+
                                         let now = DateTime::now();
                                         let canvas_doc = CanvasMongoDBView {
                                             id: ObjectId::new(),
@@ -263,6 +279,8 @@ async fn handle_connection(ws: WebSocket, whiteboard_id: WhiteboardIdType, conne
                                         };
                                     },
                                     WhiteboardDiff::CreateShapes { canvas_id, shapes } => {
+                                        println!("Creating shapes in database for canvas {} ...", canvas_id);
+
                                         let canvas_obj_docs : Vec<CanvasObjectMongoDBView> = shapes.iter()
                                             .map(|(obj_id, shape)| CanvasObjectMongoDBView {
                                                 id: obj_id.clone(),
@@ -283,6 +301,8 @@ async fn handle_connection(ws: WebSocket, whiteboard_id: WhiteboardIdType, conne
                                         };
                                     },
                                     WhiteboardDiff::UpdateShapes { canvas_id, shapes } => {
+                                        println!("Updating shapes in database for canvas {} ...", canvas_id);
+
                                         for (obj_id, shape) in shapes.iter() {
                                             let query_doc = doc! { "_id": obj_id.clone() };
                                             let canvas_obj_doc = CanvasObjectMongoDBView {

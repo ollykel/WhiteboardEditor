@@ -74,7 +74,7 @@ pub struct CanvasObject {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "snake_case")]
 pub struct CanvasObjectMongoDBView {
     #[serde(rename = "_id")]
     pub id: ObjectId,
@@ -565,45 +565,31 @@ pub async fn connect_mongodb(uri: &str) -> mongodb::error::Result<Client> {
     Ok(client)
 }// end connect_mongodb
 
-pub async fn get_whiteboard_by_id(db: &Database, wid: &WhiteboardIdType) -> Option<Whiteboard> {
+pub async fn get_whiteboard_by_id(db: &Database, wid: &WhiteboardIdType) -> Result<Option<Whiteboard>, mongodb::error::Error> {
     let whiteboard_coll = db.collection::<WhiteboardMongoDBView>("whiteboards");
     let canvas_coll = db.collection::<CanvasMongoDBView>("canvases");
     let shape_coll = db.collection::<CanvasObjectMongoDBView>("shapes");
 
-    let whiteboard_view = match whiteboard_coll.find_one(doc! { "_id": wid.clone() }).await {
-        Err(_) | Ok(None) => {
-            return None;
-        },
-        Ok(Some(wb)) => wb
+    let whiteboard_view = match whiteboard_coll.find_one(doc! { "_id": wid.clone() }).await? {
+        None => { return Ok(None); },
+        Some(wb) => wb
     };
 
-    let canvas_views : Vec<CanvasMongoDBView> = match canvas_coll.find(doc! { "whiteboard_id": wid.clone() }).await {
-        Err(_) => {
-            return None;
-        },
-        Ok(canvas_cursor) => match canvas_cursor.try_collect().await {
-            Err(_) => vec![],
-            Ok(canvas_views) => canvas_views
-        }
-    };
-
+    let canvas_cursor = canvas_coll.find(doc! { "whiteboard_id": wid.clone() }).await?;
+    let canvas_views : Vec<CanvasMongoDBView> = canvas_cursor.try_collect().await?;
     let mut canvases = Vec::<Canvas>::new();
 
     for canvas_view in canvas_views.iter() {
-        let canvas_objects : Vec<CanvasObject> = match shape_coll.find(doc! { "canvas_id": canvas_view.id }).await {
-            Err(_) => vec![],
-            Ok(object_views_cursor) => match object_views_cursor.try_collect::<Vec<CanvasObjectMongoDBView>>().await {
-                Err(_) => vec![],
-                Ok(object_views) => object_views.iter()
-                    .map(|obj_view| obj_view.to_canvas_object())
-                    .collect()
-            }
-        };
+        let object_views_cursor = shape_coll.find(doc! { "canvas_id": canvas_view.id }).await?;
+        let object_views : Vec<CanvasObjectMongoDBView> = object_views_cursor.try_collect().await?;
+        let canvas_objects : Vec<CanvasObject> = object_views.iter()
+            .map(|obj_view| obj_view.to_canvas_object())
+            .collect();
 
         canvases.push(canvas_view.to_canvas(canvas_objects.as_slice()));
     }// end for canvas_view in canvas_views.iter()
 
-    Some(whiteboard_view.to_whiteboard(canvases.as_slice()))
+    Ok(Some(whiteboard_view.to_whiteboard(canvases.as_slice())))
 }// -- end fn get_whiteboard_by_id
 
 // -- Begin tests
