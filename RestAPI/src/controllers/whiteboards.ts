@@ -52,6 +52,18 @@ export const getWhiteboardById = async (whiteboardId: string): Promise<GetWhiteb
             ...perm,
             user: await User.findById(perm.user_id)
           });
+        case 'email':
+          // check if this email now belongs to a registered user
+          const user = await User.findOne({ email: perm.email });
+          if (user) {
+            return {
+              type: 'id' as const,
+              user_id: user.id,
+              user,
+              permission: perm.permission,
+            };
+          }
+          return perm; // keep as email if still unregistered
         default:
           return perm;
       }
