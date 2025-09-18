@@ -20,14 +20,15 @@ use serde::{Deserialize, Serialize};
 use mongodb::{
     bson::{
         doc,
-        oid::ObjectId
+        oid::ObjectId,
+        DateTime,
     },
     options::{
         ClientOptions,
         ServerApi,
-        ServerApiVersion
+        ServerApiVersion,
     },
-    Client
+    Client,
 };
 
 pub type ClientIdType = i32;
@@ -74,8 +75,7 @@ pub struct CanvasObject {
 #[serde(rename_all = "camelCase")]
 pub struct CanvasObjectMongoDBView {
     #[serde(rename = "_id")]
-    pub mongo_id: Option<ObjectId>,
-    pub id: CanvasObjectIdType,
+    pub id: ObjectId,
     pub canvas_id: ObjectId,
     #[serde(flatten)]
     pub shape: ShapeModel,
@@ -91,7 +91,6 @@ impl CanvasObjectMongoDBView {
     
     pub fn from_canvas_object(obj: &CanvasObject, canvas_id: &CanvasIdType) -> Self {
         Self {
-            mongo_id: None,
             id: obj.id,
             canvas_id: canvas_id.clone(),
             shape: obj.shape.clone(),
@@ -195,13 +194,39 @@ impl Canvas {
     }// end pub fn to_client_view(&self) -> CanvasClientView
 }
 
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(tag = "permission", rename_all = "camelCase")]
+pub enum WhiteboardPermissionEnum {
+    View,
+    Edit,
+    Own,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(tag = "type", rename_all = "camelCase", rename_all_fields = "snake_case")]
+pub enum WhiteboardPermissionType {
+    Id { user_id: ObjectId },
+    Email { email: String },
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub struct WhiteboardPermission {
+    #[serde(flatten)]
+    permission_type: WhiteboardPermissionType,
+    #[serde(flatten)]
+    permission: WhiteboardPermissionEnum,
+}
+
+pub type WhiteboardPermissionMongoDBView = WhiteboardPermission;
+
 #[derive(Clone, Serialize, Deserialize)]
 pub struct Whiteboard {
     pub id: WhiteboardIdType,
     pub name: String,
     pub canvases: HashMap<CanvasIdType, Canvas>,
     pub owner_id: UserIdType,
-    pub shared_user_ids: Vec<String>,
+    pub shared_users: Vec<WhiteboardPermission>,
 }
 
 impl Whiteboard {
@@ -236,27 +261,20 @@ pub struct SharedWhiteboardEntry {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct CanvasMongoDBView {
     #[serde(rename = "_id")]
-    pub id: CanvasIdType,
+    pub id: ObjectId,
+    pub whiteboard_id: ObjectId,
     pub width: i32,
     pub height: i32,
     pub name: String,
-    pub shapes: HashMap<String, ShapeModel>,
+    pub time_created: DateTime,
+    pub time_last_modified: DateTime,
     pub allowed_users: Option<Vec<ObjectId>>
 }
 
 impl CanvasMongoDBView {
-    pub fn to_canvas(&self) -> Canvas {
-        let shapes : HashMap<CanvasObjectIdType, ShapeModel> = self.shapes.iter()
-            .map(|(key, shape)| {
-                match key.parse::<CanvasObjectIdType>() {
-                    Err(_) => None,
-                    Ok(key) => {
-                        Some((key, shape.clone()))
-                    }
-                }
-            })
-            .filter(|val| val.is_some())
-            .map(|val| val.unwrap())
+    pub fn to_canvas(&self, canvas_objects: &[CanvasObject]) -> Canvas {
+        let shapes : HashMap<CanvasObjectIdType, ShapeModel> = canvas_objects.iter()
+            .map(|obj| (obj.id, obj.shape.clone()))
             .collect();
 
         Canvas {
@@ -279,23 +297,22 @@ pub struct WhiteboardMongoDBView {
     #[serde(rename = "_id")]
     pub id: ObjectId,
     pub name: String,
-    pub canvases: Vec<CanvasMongoDBView>,
     #[serde(rename = "owner")]
     pub owner_id: ObjectId,
     #[serde(rename = "shared_users")]
-    pub shared_user_ids: Vec<ObjectId>
+    pub shared_users: Vec<WhiteboardPermissionMongoDBView>,
 }
 
 impl WhiteboardMongoDBView {
-    pub fn to_whiteboard(&self) -> Whiteboard {
+    pub fn to_whiteboard(&self, canvases: &[Canvas]) -> Whiteboard {
         Whiteboard {
             id: self.id.clone(),
             name: self.name.clone(),
-            canvases: self.canvases.iter()
-                .map(|db_view| (db_view.id.clone(), db_view.to_canvas()) )
+            canvases: canvases.iter()
+                .map(|canvas| (canvas.id.clone(), canvas.clone()))
                 .collect(),
             owner_id: self.owner_id.clone(),
-            shared_user_ids: self.shared_user_ids.iter().map(|uid| uid.to_string()).collect()
+            shared_users: self.shared_users.clone(),
         }
     }
 }
@@ -414,7 +431,7 @@ pub async fn handle_client_message(client_state: &ClientState, client_msg_s: &st
                             todo!()
                         },
                         Some(canvas) => {
-                            let mut new_shapes = HashMap::<CanvasObjectIdType, ShapeModel>::new();
+                            let new_shapes = HashMap::<CanvasObjectIdType, ShapeModel>::new();
 
                             for (obj_id_s, shape) in shapes.iter() {
                                 match obj_id_s.parse::<CanvasObjectIdType>() {
@@ -555,7 +572,7 @@ mod tests {
                 name: String::from("Test"),
                 canvases: HashMap::new(),
                 owner_id: ObjectId::new(),
-                shared_user_ids: vec![],
+                shared_users: vec![],
             })),
             active_clients: Arc::new(Mutex::new(HashMap::new())),
             diffs: Arc::new(Mutex::new(Vec::new())),
@@ -670,7 +687,7 @@ mod tests {
                     )
                 ]),
                 owner_id: ObjectId::new(),
-                shared_user_ids: vec![],
+                shared_users: vec![],
             })),
             active_clients: Arc::new(Mutex::new(HashMap::new())),
             diffs: Arc::new(Mutex::new(Vec::new())),

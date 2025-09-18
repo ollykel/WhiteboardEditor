@@ -24,6 +24,7 @@ use warp::Filter;
 use mongodb::{
     bson::{
         doc,
+        oid::ObjectId,
         DateTime
     },
     Collection
@@ -152,7 +153,8 @@ async fn handle_connection(ws: WebSocket, whiteboard_id: WhiteboardIdType, conne
                         },
                         Some(whiteboard_db_view) => {
                             // Create new reference to whiteboard
-                            let whiteboard = whiteboard_db_view.to_whiteboard();
+                            // TODO: actually fetch canvases using util function
+                            let whiteboard = whiteboard_db_view.to_whiteboard(vec![].as_slice());
                             let whiteboard_id = whiteboard.id.clone();
                             let whiteboard_ref = Arc::new(Mutex::new(whiteboard));
 
@@ -223,24 +225,31 @@ async fn handle_connection(ws: WebSocket, whiteboard_id: WhiteboardIdType, conne
     let recv_task = tokio::spawn({
         let tx = tx.clone();
         let client_state_ref = Arc::clone(&client_state_ref);
-        let whiteboard_coll: Collection<WhiteboardMongoDBView> = match connection_state_ref
-            .mongo_client
-            .default_database() {
-                None => {
-                    // No database specified in mongo uri
-                    // Print error and disconnect early
-                    eprintln!("Database connection error; could not fetch whiteboard - no default database defined in mongo uri");
-                    let err_msg = ServerSocketMessage::IndividualError {
-                        client_id: current_client_id,
-                        message: format!("Error fetching whiteboard {}", whiteboard_id)
-                    };
-                    
-                    let _ = tx.send(err_msg);
+        let db = match connection_state_ref.mongo_client.default_database() {
+            None => {
+                // No database specified in mongo uri
+                // Print error and disconnect early
+                eprintln!("Database connection error; could not fetch whiteboard - no default database defined in mongo uri");
+                let err_msg = ServerSocketMessage::IndividualError {
+                    client_id: current_client_id,
+                    message: format!("Error fetching whiteboard {}", whiteboard_id)
+                };
+                
+                let _ = tx.send(err_msg);
 
-                    return;
-                },
-                Some(db) => db.collection::<WhiteboardMongoDBView>("whiteboards")
+                return;
+            },
+            Some(db) => db
         };
+        let whiteboard_coll: Collection<WhiteboardMongoDBView> = db.collection::<WhiteboardMongoDBView>(
+            "whiteboards"
+        );
+        let canvas_coll: Collection<CanvasMongoDBView> = db.collection::<CanvasMongoDBView>(
+            "canvases"
+        );
+        let shape_coll: Collection<CanvasObjectMongoDBView> = db.collection::<CanvasObjectMongoDBView>(
+            "shapes"
+        );
         let whiteboard_filter = doc! { "_id": whiteboard_id };
 
         async move {
@@ -260,37 +269,31 @@ async fn handle_connection(ws: WebSocket, whiteboard_id: WhiteboardIdType, conne
 
                         if ! diffs.is_empty() {
                             for diff in diffs.iter() {
-                                match diff {
+                                match &diff {
                                     WhiteboardDiff::CreateCanvas { name, width, height } => {
                                         let now = DateTime::now();
-                                        let update_res = whiteboard_coll.update_one(
-                                            whiteboard_filter.clone(),
-                                            doc! {
-                                                "$push": {
-                                                    "canvases": {
-                                                        "name": name.clone(),
-                                                        "width": width,
-                                                        "height": height,
-                                                        "time_created": now,
-                                                        "time_last_modified": now,
-                                                        "allowed_users":  Vec::<i32>::new(),
-                                                        "shapes": {}
-                                                    }
-                                                }
-                                            }
-                                        ).await;
+                                        let canvas_doc = CanvasMongoDBView {
+                                            id: ObjectId::new(),
+                                            whiteboard_id: whiteboard_id.clone(),
+                                            name: name.clone(),
+                                            width: *width,
+                                            height: *height,
+                                            time_created: now.clone(),
+                                            time_last_modified: now.clone(),
+                                            allowed_users: None,
+                                        };
+                                        let create_canvas_res = canvas_coll.insert_one(&canvas_doc).await;
 
-                                        match update_res {
+                                        match create_canvas_res {
                                             Err(e) => {
-                                                eprintln!("CreateCanvas update failed: {}", e);
+                                                eprintln!("CreateCanvas insert failed: {}", e);
                                             },
-                                            Ok(update) => {
-                                                eprintln!("CreateCanvas matched count: {}", update.matched_count);
-                                                eprintln!("CreateCanvas modified count: {}", update.modified_count);
+                                            Ok(insert) => {
+                                                eprintln!("CreateCanvas new document id: {}", insert.inserted_id);
                                             }
                                         };
                                     },
-                                    WhiteboardDiff::CreateShapes { canvas_id: _canvas_id , shapes: _shapes } => {
+                                    WhiteboardDiff::CreateShapes { canvas_id, shapes } => {
                                         // TODO: implement
                                     },
                                     WhiteboardDiff::UpdateShapes { canvas_id: _canvas_id , shapes: _shapes } => {
