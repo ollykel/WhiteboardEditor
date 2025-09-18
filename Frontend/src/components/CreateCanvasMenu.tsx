@@ -26,8 +26,6 @@ function CreateCanvasMenu({ onCreate, sharedUsers }: CreateCanvasMenuProps) {
         ? prev.filter((u) => u !== user)
         : [...prev, user]
       );
-
-    setOpen(false);
   };
 
   const handleSubmit = () => {

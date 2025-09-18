@@ -15,33 +15,18 @@ import {
   DialogHeader, 
   DialogTitle, 
 } from "@/components/ui/dialog";
-import { 
-  Popover, 
-  PopoverContent, 
-  PopoverTrigger, 
-} from "@/components/ui/popover";
-import { 
-  Command, 
-  CommandEmpty, 
-  CommandGroup, 
-  CommandInput, 
-  CommandItem, 
-} from "@/components/ui/command";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Button } from "@/components/ui/button";
-import { ChevronsUpDown } from "lucide-react";
+import { Button } from "./ui/button";
 
 import { store } from "@/store";
 import WhiteboardContext from "@/context/WhiteboardContext";
 import { deleteCanvas } from "@/controllers";
+import AllowedUsersPopover from "@/components/AllowedUsersPopover";
+
 import type { 
   ClientMessageDeleteCanvases, 
   CanvasIdType, 
   WhiteboardIdType 
 } from "@/types/WebSocketProtocol";
-import type {
-  UserPermission
-} from "@/types/APIProtocol";
 
 interface CanvasMenuProps {
   allowedUsers: string[];
@@ -52,7 +37,6 @@ interface CanvasMenuProps {
 
 function CanvasMenu({ allowedUsers, setAllowedUsers, canvasId, whiteboardId }: CanvasMenuProps) {
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [popoverOpen, setPopoverOpen] = useState(false);
   const dispatch = store.dispatch;
 
   const context = useContext(WhiteboardContext);
@@ -64,15 +48,6 @@ function CanvasMenu({ allowedUsers, setAllowedUsers, canvasId, whiteboardId }: C
     socketRef, 
     sharedUsers
   } = context;
-
-  const toggleUser = (user: string) => {
-    if (allowedUsers.includes(user)) {
-      setAllowedUsers(allowedUsers.filter(u => u !== user));
-    }
-    else {
-      setAllowedUsers([...allowedUsers, user])
-    }
-  };
 
   const handleDelete = () => {
     // update Redux
@@ -145,41 +120,11 @@ function CanvasMenu({ allowedUsers, setAllowedUsers, canvasId, whiteboardId }: C
             <DialogTitle>Edit Allowed Users</DialogTitle>
           </DialogHeader>
 
-          <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
-            <PopoverTrigger asChild>
-              <Button
-                variant="outline"
-                role="combobox"
-                className="justify-between"
-              >
-                {allowedUsers.length > 0
-                  ? `${allowedUsers.length}${allowedUsers.length === 1 ? ' user selected' : ' users selected'}`
-                  : "Select users"
-                }
-                <ChevronsUpDown className='ml-2 h-4 w-4 shrink-0 opacity-50' />
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className='w-[250px] p-0'>
-              <Command>
-                <CommandInput placeholder='Search users...' />
-                <CommandEmpty>No users found</CommandEmpty>
-                <CommandGroup>
-                  {sharedUsers
-                    .filter((u): u is Extract<UserPermission, { type: "id" }> => u.type === "id")
-                    .map((userPerm) => (
-                      <CommandItem
-                        key={userPerm.user._id}
-                        onSelect={() => toggleUser(userPerm.user._id)}
-                        className='flex items-center gap-2'
-                      >
-                        <Checkbox checked={allowedUsers.includes(userPerm.user._id)} />
-                        <span>{userPerm.user.username}</span>
-                      </CommandItem>
-                  ))}
-                </CommandGroup>
-              </Command>
-            </PopoverContent>
-          </Popover>
+          <AllowedUsersPopover 
+            sharedUsers={sharedUsers}
+            allowedUsers={allowedUsers}
+            setAllowedUsers={setAllowedUsers}
+          />
 
           <div className="flex justify-end gap-2 pt-4">
             <Button variant="secondary" onClick={() => setDialogOpen(false)}>
