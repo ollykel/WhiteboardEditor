@@ -139,8 +139,8 @@ pub struct WhiteboardClientView {
 #[serde(tag = "type", rename_all = "snake_case", rename_all_fields="camelCase")]
 pub enum WhiteboardDiff {
     CreateCanvas { name: String, width: i32, height: i32 },
-    CreateShapes { canvas_id: CanvasIdType, shapes: Vec<ShapeModel> },
-    UpdateShapes { canvas_id: CanvasIdType, shapes: HashMap<String, ShapeModel> },
+    CreateShapes { canvas_id: CanvasIdType, shapes: HashMap<CanvasObjectIdType, ShapeModel> },
+    UpdateShapes { canvas_id: CanvasIdType, shapes: HashMap<CanvasObjectIdType, ShapeModel> },
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -379,22 +379,22 @@ pub async fn handle_client_message(client_state: &ClientState, client_msg_s: &st
                         Some(canvas) => {
                             let mut new_shapes = HashMap::<CanvasObjectIdType, ShapeModel>::new();
 
-                            // valid input: add to diffs
-                            {
-                                let mut diffs = client_state.diffs.lock().await;
-                            
-                                diffs.push(WhiteboardDiff::CreateShapes{
-                                    canvas_id: canvas_id,
-                                    shapes: shapes.clone()
-                                });
-                            }
-
                             for shape in shapes.iter() {
                                 let obj_id = ObjectId::new();
 
                                 new_shapes.insert(obj_id.clone(), shape.clone());
                                 canvas.shapes.insert(obj_id.clone(), shape.clone());
                             }// end for (idx, &mut shape) in new_shapes.iter_mut().enumerate()
+
+                            // valid input: add to diffs
+                            {
+                                let mut diffs = client_state.diffs.lock().await;
+                            
+                                diffs.push(WhiteboardDiff::CreateShapes{
+                                    canvas_id: canvas_id,
+                                    shapes: new_shapes.clone()
+                                });
+                            }
 
                             Some(ServerSocketMessage::CreateShapes{
                                 client_id: client_state.client_id,
@@ -406,7 +406,7 @@ pub async fn handle_client_message(client_state: &ClientState, client_msg_s: &st
                 },
                 ClientSocketMessage::UpdateShapes{ canvas_id, ref shapes } => {
                     let mut whiteboard = client_state.whiteboard_ref.lock().await;
-                    println!("Creating shape on canvas {} ...", canvas_id);
+                    println!("Updating shapes on canvas {} ...", canvas_id);
 
                     match whiteboard.canvases.get_mut(&canvas_id) {
                         None => {
@@ -414,24 +414,12 @@ pub async fn handle_client_message(client_state: &ClientState, client_msg_s: &st
                             todo!()
                         },
                         Some(canvas) => {
-                            let mut new_shapes = shapes.clone();
-
-                            // valid input: add to diffs
-                            {
-                                let mut diffs = client_state.diffs.lock().await;
-                            
-                                diffs.push(WhiteboardDiff::UpdateShapes{
-                                    canvas_id: canvas_id,
-                                    shapes: shapes.clone()
-                                });
-                            }
+                            let mut new_shapes = HashMap::<CanvasObjectIdType, ShapeModel>::new();
 
                             for (obj_id_s, shape) in shapes.iter() {
                                 match obj_id_s.parse::<CanvasObjectIdType>() {
                                     Ok(obj_id) => {
-                                        if ! canvas.shapes.contains_key(&obj_id) {
-                                            new_shapes.remove(obj_id_s);
-                                        } else {
+                                        if canvas.shapes.contains_key(&obj_id) {
                                             canvas.shapes.insert(obj_id, shape.clone());
                                         }
                                     },
@@ -441,10 +429,22 @@ pub async fn handle_client_message(client_state: &ClientState, client_msg_s: &st
                                 };
                             }// end for (&obj_id, &shape) in shapes.iter_mut()
 
+                            // valid input: add to diffs
+                            {
+                                let mut diffs = client_state.diffs.lock().await;
+                            
+                                diffs.push(WhiteboardDiff::UpdateShapes{
+                                    canvas_id: canvas_id,
+                                    shapes: new_shapes.clone()
+                                });
+                            }
+
                             Some(ServerSocketMessage::UpdateShapes{
                                 client_id: client_state.client_id,
                                 canvas_id: canvas_id,
-                                shapes: new_shapes
+                                shapes: new_shapes.iter()
+                                    .map(|(obj_id, shape)| (obj_id.to_string(), shape.clone()))
+                                    .collect()
                             })
                         }
                     }
