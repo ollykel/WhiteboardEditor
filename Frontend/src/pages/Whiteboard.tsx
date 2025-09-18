@@ -90,10 +90,6 @@ import type {
   WhiteboardAttribs,
 } from '@/types/WebSocketProtocol';
 
-import type {
-  UserPermission,
-} from '@/types/APIProtocol';
-
 import { useUser } from '@/hooks/useUser';
 
 // -- Allowed Users Redux reducers
@@ -504,7 +500,6 @@ const Whiteboard = () => {
 const WrappedWhiteboard = () => {
   const socketRef = useRef<WebSocket | null>(null);
   const [whiteboardId, setWhiteboardId] = useState<WhiteboardIdType>("");
-  const queryClient = useQueryClient();
 
   const { data: whiteboardData, isLoading: isWhiteboardDataLoading } = useQuery({
     queryKey: ['whiteboard', whiteboardId],
@@ -523,59 +518,6 @@ const WrappedWhiteboard = () => {
 
   const sharedUsers = whiteboardData?.shared_users ?? [];
   console.log("Current shared users:", sharedUsers);
-  
-  // Initialize sharedUsers with creator if available and no shared users exist
-  useEffect(() => {
-    const initializeSharedUsers = async () => {
-      console.log('Initializing shared users. Current data:', {
-        whiteboardId,
-        whiteboardData,
-        isLoading: isWhiteboardDataLoading
-      });
-
-      // Wait for whiteboard data to be loaded
-      if (isWhiteboardDataLoading || !whiteboardData || !whiteboardId) {
-        return;
-      }
-
-      // Check if we need to initialize shared users
-      if (!whiteboardData.shared_users || whiteboardData.shared_users.length === 0) {
-        console.log('No shared users found, initializing with owner...');
-        const owner = whiteboardData.owner || whiteboardData.creator;
-        
-        if (owner) {
-          console.log('Owner found:', owner);
-          const creatorPerm: UserPermission = {
-            type: 'id',
-            user: owner,
-            user_id: owner.id,
-            permission: 'own'
-          };
-          
-          try {
-            console.log('Updating whiteboard with initial shared user:', creatorPerm);
-            // Update the whiteboard in the database with the creator as shared user
-            const response = await api.post(`/whiteboards/${whiteboardId}/share`, {
-              userPermissions: [creatorPerm]
-            });
-            console.log('Update response:', response.data);
-            
-            // Invalidate the query to trigger a refetch
-            await queryClient.invalidateQueries({ queryKey: ['whiteboard', whiteboardId] });
-            console.log('Query invalidated, should trigger refresh');
-          } catch (error) {
-            console.error('Failed to initialize shared users:', error);
-          }
-        } else {
-          console.error('No owner or creator found for whiteboard:', whiteboardData);
-        }
-      } else {
-        console.log('Shared users already exist:', whiteboardData.shared_users);
-      }
-    };
-
-    initializeSharedUsers();
-  }, [whiteboardId, whiteboardData, isWhiteboardDataLoading, queryClient]);
 
   const canvasObjectsByCanvas: Record<CanvasIdType, Record<CanvasObjectIdType, CanvasObjectModel>> = useSelector((state: RootState) => (
     selectCanvasObjectsByWhiteboard(state, whiteboardId)

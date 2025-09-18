@@ -22,6 +22,7 @@ import type {
 
 export interface CreateWhiteboardRequest extends AuthorizedRequestBody {
   name: string;
+  collaboratorEmails?: string[];
 }
 
 export type GetWhiteboardRes = 
@@ -58,6 +59,8 @@ export const getWhiteboardById = async (whiteboardId: string): Promise<GetWhiteb
 
     whiteboardObj.shared_users = sharedUsers;
 
+    console.log("Returning whiteboard:", JSON.stringify(whiteboardObj, null, 2));
+
     return ({ status: 'ok', whiteboard: whiteboardObj });
   }
 };
@@ -73,21 +76,36 @@ export const createWhiteboard = async (
   try {
     const { authUser, name } = req.body;
     const { id: ownerId } = authUser;
+    console.log("createWhiteboard req.body: ", req.body);
 
     // initialize every new whiteboard with a single empty canvas
     const defaultCanvas = new Canvas({
       width: 512,
       height: 512,
       name: "Main Canvas",  // Give a default name to the canvas
-      allowed_users: [],
+      allowed_users: [ownerId],
       shapes: {}
     });
+
+    // Create initial shared_users array with owner having 'own' permission
+    const ownerPermission: IWhiteboardUserPermission = {
+      type: 'id',
+      user_id: ownerId,
+      permission: 'own'
+    };
+
+    // Add collaborator emails if provided
+    const collaboratorPermissions: IWhiteboardUserPermission[] = (req.body.collaboratorEmails || []).map(email => ({
+      type: 'email',
+      email,
+      permission: 'edit'
+    }));
 
     const whiteboard = new Whiteboard({
       name,
       canvases: [defaultCanvas],
       owner: ownerId,
-      shared_users: []
+      shared_users: [ownerPermission, ...collaboratorPermissions]
     });
 
     console.log('Attempting to create new whiteboard:', whiteboard);
