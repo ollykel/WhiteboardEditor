@@ -24,7 +24,6 @@ use warp::Filter;
 use mongodb::{
     bson::{
         doc,
-        oid::ObjectId,
         DateTime
     },
     Collection
