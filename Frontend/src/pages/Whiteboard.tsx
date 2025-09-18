@@ -444,7 +444,6 @@ const Whiteboard = () => {
                   shapeAttributes={shapeAttributesState}
                   currentTool={toolChoice}
                   disabled={!hasAccess}
-                  allUsers={Object.values(activeUsers)} // TODO: Change to allowed users
                   whiteboardId={whiteboardId}
                 />
               );

@@ -34,19 +34,23 @@ import { ChevronsUpDown } from "lucide-react";
 import { store } from "@/store";
 import WhiteboardContext from "@/context/WhiteboardContext";
 import { deleteCanvas } from "@/controllers";
-import type { ClientMessageDeleteCanvases } from "@/types/WebSocketProtocol";
-
-import type { CanvasIdType, WhiteboardIdType } from "@/types/WebSocketProtocol";
+import type { 
+  ClientMessageDeleteCanvases, 
+  CanvasIdType, 
+  WhiteboardIdType 
+} from "@/types/WebSocketProtocol";
+import type {
+  UserPermission
+} from "@/types/APIProtocol";
 
 interface CanvasMenuProps {
   allowedUsers: string[];
   setAllowedUsers: (users: string[]) => void;
-  allUsers: string[];
   canvasId: CanvasIdType;
   whiteboardId: WhiteboardIdType;
 }
 
-function CanvasMenu({ allowedUsers, setAllowedUsers, allUsers, canvasId, whiteboardId }: CanvasMenuProps) {
+function CanvasMenu({ allowedUsers, setAllowedUsers, canvasId, whiteboardId }: CanvasMenuProps) {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [popoverOpen, setPopoverOpen] = useState(false);
   const dispatch = store.dispatch;
@@ -56,7 +60,10 @@ function CanvasMenu({ allowedUsers, setAllowedUsers, allUsers, canvasId, whitebo
     throw new Error("CanvasMenu must be used inside a WhiteboardProvider");
   }
 
-  const { socketRef } = context;
+  const { 
+    socketRef, 
+    sharedUsers
+  } = context;
 
   const toggleUser = (user: string) => {
     if (allowedUsers.includes(user)) {
@@ -146,7 +153,7 @@ function CanvasMenu({ allowedUsers, setAllowedUsers, allUsers, canvasId, whitebo
                 className="justify-between"
               >
                 {allowedUsers.length > 0
-                  ? `${allowedUsers.length} user(s) selected`
+                  ? `${allowedUsers.length}${allowedUsers.length === 1 ? ' user selected' : ' users selected'}`
                   : "Select users"
                 }
                 <ChevronsUpDown className='ml-2 h-4 w-4 shrink-0 opacity-50' />
@@ -157,15 +164,17 @@ function CanvasMenu({ allowedUsers, setAllowedUsers, allUsers, canvasId, whitebo
                 <CommandInput placeholder='Search users...' />
                 <CommandEmpty>No users found</CommandEmpty>
                 <CommandGroup>
-                  {allUsers.map((user) => (
-                    <CommandItem
-                      key={user}
-                      onSelect={() => toggleUser(user)}
-                      className='flex items-center gap-2'
-                    >
-                      <Checkbox checked={allowedUsers.includes(user)} />
-                      <span>{user}</span>
-                    </CommandItem>
+                  {sharedUsers
+                    .filter((u): u is Extract<UserPermission, { type: "id" }> => u.type === "id")
+                    .map((userPerm) => (
+                      <CommandItem
+                        key={userPerm.user._id}
+                        onSelect={() => toggleUser(userPerm.user._id)}
+                        className='flex items-center gap-2'
+                      >
+                        <Checkbox checked={allowedUsers.includes(userPerm.user._id)} />
+                        <span>{userPerm.user.username}</span>
+                      </CommandItem>
                   ))}
                 </CommandGroup>
               </Command>
