@@ -39,7 +39,7 @@ afterAll(disconnectFromDatabase);
 //
 // =============================================================================
 const validateUser = (user: IUser, fieldValues: {} | any[]) => {
-  expect(user).toHaveProperty('_id');
+  expect(user).toHaveProperty('id');
   expect(user).toHaveProperty('email');
   expect(user).toHaveProperty('username');
   expect(user).not.toHaveProperty('passwordHashed');
