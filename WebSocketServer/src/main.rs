@@ -295,6 +295,24 @@ async fn handle_connection(ws: WebSocket, whiteboard_id: WhiteboardIdType, conne
                                     },
                                     WhiteboardDiff::CreateShapes { canvas_id, shapes } => {
                                         // TODO: implement
+                                        let canvas_obj_docs : Vec<CanvasObjectMongoDBView> = shapes.iter()
+                                            .map(|(obj_id, shape)| CanvasObjectMongoDBView {
+                                                id: obj_id.clone(),
+                                                canvas_id: canvas_id.clone(),
+                                                shape: shape.clone()
+                                            })
+                                            .collect();
+
+                                        let create_shapes_res = shape_coll.insert_many(&canvas_obj_docs).await;
+
+                                        match create_shapes_res {
+                                            Err(e) => {
+                                                eprintln!("CreateShapes insert failed: {}", e);
+                                            },
+                                            Ok(insert) => {
+                                                eprintln!("CreateShapes new document ids: {:?}", insert.inserted_ids);
+                                            }
+                                        };
                                     },
                                     WhiteboardDiff::UpdateShapes { canvas_id: _canvas_id , shapes: _shapes } => {
                                         // TODO: implement
