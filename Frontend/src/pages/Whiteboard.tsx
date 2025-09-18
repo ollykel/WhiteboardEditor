@@ -126,7 +126,7 @@ const Whiteboard = () => {
   }
 
   if (! context) {
-    throw new Error('No WhiteboardContext provided');
+    throw new Error('No WhiteboardContext provided in Whiteboard');
   }
 
   const {

@@ -15,17 +15,9 @@ import type { User } from "@/types/UserAuth";
 import CreateWhiteboardModal, {
   type CreateWhiteboardFormData
 } from '@/components/CreateWhiteboardModal';
-import WhiteboardContext from '@/context/WhiteboardContext';
-import { useContext } from 'react';
 
 const Dashboard = (): React.JSX.Element => {
   const navigate = useNavigate();
-  const context = useContext(WhiteboardContext);
-
-  if (! context) {
-    throw new Error('No WhiteboardContext provided');
-  }
-
   const title: string = "<Whiteboard App>";
   const user: User | null = useUser().user;
 
@@ -42,9 +34,6 @@ const Dashboard = (): React.JSX.Element => {
     } else {
       const { _id: id } = res.data;
       const redirectUrl = `/whiteboard/${id}`;
-
-      // update whiteboard context for sharedUsers before navigating
-      context.setSharedUsers(res.data.shared_users);
 
       navigate(redirectUrl);
     }
