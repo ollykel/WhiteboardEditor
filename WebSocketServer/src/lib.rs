@@ -110,18 +110,18 @@ pub struct UserSummary {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CanvasClientView {
-    pub id: CanvasIdType,
+    pub id: String,
     pub width: i32,
     pub height: i32,
     pub name: String,
-    pub shapes: HashMap<CanvasObjectIdType, ShapeModel>,
+    pub shapes: HashMap<String, ShapeModel>,
     pub allowed_users: Vec<ObjectId>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct WhiteboardClientView {
-    pub id: WhiteboardIdType,
+    pub id: String,
     pub name: String,
     pub canvases: Vec<CanvasClientView>,
 }
@@ -149,10 +149,11 @@ pub enum WhiteboardDiff {
 pub enum ServerSocketMessage {
     InitClient { client_id: ClientIdType, whiteboard: WhiteboardClientView },
     ActiveUsers { users: Vec<UserSummary>},
-    CreateShapes { client_id: ClientIdType, canvas_id: CanvasIdType, shapes: HashMap<CanvasObjectIdType, ShapeModel> },
-    UpdateShapes { client_id: ClientIdType, canvas_id: CanvasIdType, shapes: HashMap<String, ShapeModel> },
-    CreateCanvas { client_id: ClientIdType, canvas_id: CanvasIdType, width: i32, height: i32, name: String, allowed_users: Vec<ObjectId> },
-    DeleteCanvases { client_id: ClientIdType, canvas_ids: Vec<CanvasIdType> },
+    // TODO: replace HashMaps with Vectors, so object ids don't need to be cast to strings
+    CreateShapes { client_id: ClientIdType, canvas_id: String, shapes: HashMap<String, ShapeModel> },
+    UpdateShapes { client_id: ClientIdType, canvas_id: String, shapes: HashMap<String, ShapeModel> },
+    CreateCanvas { client_id: ClientIdType, canvas_id: String, width: i32, height: i32, name: String, allowed_users: Vec<ObjectId> },
+    DeleteCanvases { client_id: ClientIdType, canvas_ids: Vec<String> },
     IndividualError { client_id: ClientIdType, message: String },
     BroadcastError { message: String },
 }
@@ -183,11 +184,14 @@ impl Canvas {
         // At the moment, the client view is identical to the Canvas type itself, but this may not
         // always be the case.
         CanvasClientView {
-            id: self.id.clone(),
+            id: self.id.to_string(),
             width: self.width,
             height: self.height,
             name: self.name.clone(),
-            shapes: self.shapes.clone(),
+            // shapes: self.shapes.clone(),
+            shapes: self.shapes.iter()
+                .map(|(obj_id, shape)| (obj_id.to_string(), shape.clone()))
+                .collect(),
             allowed_users: match &self.allowed_users {
                 Some(set) => set.iter().copied().collect(),
                 None => vec![], // empty array means open to all
@@ -236,7 +240,7 @@ impl Whiteboard {
         // At the moment, the client view is identical to the Canvas type itself, but this may not
         // always be the case.
         WhiteboardClientView {
-            id: self.id.clone(),
+            id: self.id.to_string(),
             name: self.name.clone(),
             canvases: self.canvases.iter()
                 .map(|(_, c)| c.to_client_view())
@@ -417,8 +421,10 @@ pub async fn handle_client_message(client_state: &ClientState, client_msg_s: &st
 
                             Some(ServerSocketMessage::CreateShapes{
                                 client_id: client_state.client_id,
-                                canvas_id: canvas_id,
-                                shapes: new_shapes
+                                canvas_id: canvas_id.to_string(),
+                                shapes: new_shapes.iter()
+                                    .map(|(obj_id, shape)| (obj_id.to_string(), shape.clone()))
+                                    .collect()
                             })
                         }
                     }
@@ -460,7 +466,7 @@ pub async fn handle_client_message(client_state: &ClientState, client_msg_s: &st
 
                             Some(ServerSocketMessage::UpdateShapes{
                                 client_id: client_state.client_id,
-                                canvas_id: canvas_id,
+                                canvas_id: canvas_id.to_string(),
                                 shapes: new_shapes.iter()
                                     .map(|(obj_id, shape)| (obj_id.to_string(), shape.clone()))
                                     .collect()
@@ -505,7 +511,7 @@ pub async fn handle_client_message(client_state: &ClientState, client_msg_s: &st
 
                     Some(ServerSocketMessage::CreateCanvas{
                         client_id: client_state.client_id,
-                        canvas_id: new_canvas_id,
+                        canvas_id: new_canvas_id.to_string(),
                         width: width,
                         height: height,
                         name: name.clone(),
@@ -522,7 +528,9 @@ pub async fn handle_client_message(client_state: &ClientState, client_msg_s: &st
 
                     Some(ServerSocketMessage::DeleteCanvases{
                         client_id: client_state.client_id,
-                        canvas_ids: canvas_ids
+                        canvas_ids: canvas_ids.iter()
+                            .map(|id| id.to_string())
+                            .collect()
                     })
                 },
             }
