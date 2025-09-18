@@ -261,13 +261,14 @@ async fn handle_connection(ws: WebSocket, whiteboard_id: WhiteboardIdType, conne
                         if ! diffs.is_empty() {
                             for diff in diffs.iter() {
                                 match diff {
-                                    WhiteboardDiff::CreateCanvas { width, height } => {
+                                    WhiteboardDiff::CreateCanvas { name, width, height } => {
                                         let now = DateTime::now();
                                         let update_res = whiteboard_coll.update_one(
                                             whiteboard_filter.clone(),
                                             doc! {
                                                 "$push": {
                                                     "canvases": {
+                                                        "name": name.clone(),
                                                         "width": width,
                                                         "height": height,
                                                         "time_created": now,

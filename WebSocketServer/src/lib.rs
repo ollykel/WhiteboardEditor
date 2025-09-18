@@ -138,7 +138,7 @@ pub struct WhiteboardClientView {
 #[derive(Debug, Clone, Serialize)]
 #[serde(tag = "type", rename_all = "snake_case", rename_all_fields="camelCase")]
 pub enum WhiteboardDiff {
-    CreateCanvas { width: i32, height: i32 },
+    CreateCanvas { name: String, width: i32, height: i32 },
     CreateShapes { canvas_id: CanvasIdType, shapes: Vec<ShapeModel> },
     UpdateShapes { canvas_id: CanvasIdType, shapes: HashMap<String, ShapeModel> },
 }
@@ -465,8 +465,9 @@ pub async fn handle_client_message(client_state: &ClientState, client_msg_s: &st
                         let mut diffs = client_state.diffs.lock().await;
                     
                         diffs.push(WhiteboardDiff::CreateCanvas{
-                             width: width,
-                             height: height
+                            name: name.clone(),
+                            width: width,
+                            height: height
                         });
                     }
                     
