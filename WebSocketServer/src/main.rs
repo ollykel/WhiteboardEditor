@@ -294,7 +294,6 @@ async fn handle_connection(ws: WebSocket, whiteboard_id: WhiteboardIdType, conne
                                         };
                                     },
                                     WhiteboardDiff::CreateShapes { canvas_id, shapes } => {
-                                        // TODO: implement
                                         let canvas_obj_docs : Vec<CanvasObjectMongoDBView> = shapes.iter()
                                             .map(|(obj_id, shape)| CanvasObjectMongoDBView {
                                                 id: obj_id.clone(),
@@ -314,8 +313,28 @@ async fn handle_connection(ws: WebSocket, whiteboard_id: WhiteboardIdType, conne
                                             }
                                         };
                                     },
-                                    WhiteboardDiff::UpdateShapes { canvas_id: _canvas_id , shapes: _shapes } => {
-                                        // TODO: implement
+                                    WhiteboardDiff::UpdateShapes { canvas_id: canvas_id , shapes: shapes } => {
+                                        for (obj_id, shape) in shapes.iter() {
+                                            let query_doc = doc! { "_id": obj_id.clone() };
+                                            let canvas_obj_doc = CanvasObjectMongoDBView {
+                                                id: obj_id.clone(),
+                                                canvas_id: canvas_id.clone(),
+                                                shape: shape.clone()
+                                            };
+
+                                            let replace_shape_res = shape_coll.replace_one(query_doc, &canvas_obj_doc).await;
+
+                                            match replace_shape_res {
+                                                Err(e) => {
+                                                    eprintln!("UpdateShapes replace failed: {}", e);
+                                                },
+                                                Ok(update) => {
+                                                    eprintln!("UpdateShapes matched_count: {}", update.matched_count);
+                                                    eprintln!("UpdateShapes modified_count: {}", update.modified_count);
+                                                    eprintln!("UpdateShapes upserted_id: {:?}", update.upserted_id);
+                                                }
+                                            };
+                                        }// end for (obj_id, shape) in shapes.iter()
                                     }
                                 }
                             }// -- end for &diff in diffs
