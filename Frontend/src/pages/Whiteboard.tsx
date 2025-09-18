@@ -516,8 +516,15 @@ const WrappedWhiteboard = () => {
   console.log("Current whiteboard data:", whiteboardData);
   console.log("Loading status:", isWhiteboardDataLoading);
 
-  const sharedUsers = whiteboardData?.shared_users ?? [];
+  // update the state of sharedUsers whenever whiteboardData changes
+  const [sharedUsers, setSharedUsers] = useState<APIWhiteboard['shared_users']>([]);
   console.log("Current shared users:", sharedUsers);
+
+  useEffect(() => {
+    if (whiteboardData?.shared_users) {
+      setSharedUsers(whiteboardData.shared_users);
+    }
+  }, [whiteboardData])
 
   const canvasObjectsByCanvas: Record<CanvasIdType, Record<CanvasObjectIdType, CanvasObjectModel>> = useSelector((state: RootState) => (
     selectCanvasObjectsByWhiteboard(state, whiteboardId)
@@ -568,6 +575,7 @@ const WrappedWhiteboard = () => {
       whiteboardId={whiteboardId}
       setWhiteboardId={setWhiteboardId}
       sharedUsers={sharedUsers}
+      setSharedUsers={setSharedUsers}
     >
       <Whiteboard />
     </WhiteboardProvider>
