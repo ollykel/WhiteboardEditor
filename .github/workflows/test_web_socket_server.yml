@@ -27,10 +27,8 @@ jobs:
       - name: Cache build dependencies
         id: cache-cargo
         uses: actions/cache@v4
-        env:
-          DOCKER_CACHE: .docker
         with:
-          path: ${DOCKER_CACHE}
+          path: ${{ github.workspace }}/.docker
           key: ${{ runner.os }}-cargo-${{ hashFiles('WebSocketServer/Cargo.toml') }}
           restore-keys: |
             ${{ runner.os }}-cargo-
@@ -38,14 +36,14 @@ jobs:
         id: setup-cache
         if: steps.cache-cargo.outputs.cache-hit != 'true'
         env:
-          DOCKER_CACHE: .docker
+          DOCKER_CACHE: ${{ github.workspace }}/.docker
         run: |
           mkdir -p ${DOCKER_CACHE}
       - name: build
         env:
           WHITEBOARD_EDITOR_CR_URI: ghcr.io/${{ github.repository_owner }}
           WHITEBOARD_EDITOR_TAG: latest
-          DOCKER_CACHE: .docker
+          DOCKER_CACHE: ${{ github.workspace }}/.docker
         run: |
           docker compose build web_socket_server_builder
       - name: push
