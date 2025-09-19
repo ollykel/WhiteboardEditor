@@ -24,17 +24,17 @@ jobs:
                 "containerd-snapshotter": true
               }
             }
-      - name: Cache build dependencies
-        id: cache-cargo
+      - name: Set up Docker cache
+        id: cache-setup
         uses: actions/cache@v4
         with:
           path: ${{ github.workspace }}/.docker
-          key: ${{ runner.os }}-cargo-${{ hashFiles('WebSocketServer/Cargo.toml') }}
+          key: ${{ runner.os }}-web-socket-server-${{ hashFiles('WebSocketServer/Cargo.toml') }}
           restore-keys: |
-            ${{ runner.os }}-cargo-
+            ${{ runner.os }}-web-socket-server-
       - name: Build with cache
         id: build-cached
-        if: steps.cache-cargo.outputs.cache-hit == 'true'
+        if: steps.cache-setup.outputs.cache-hit == 'true'
         env:
           WHITEBOARD_EDITOR_CR_URI: ghcr.io/${{ github.repository_owner }}
           WHITEBOARD_EDITOR_TAG: latest
@@ -45,7 +45,7 @@ jobs:
           docker compose build web_socket_server_builder
       - name: Build without cache
         id: build-no-cache
-        if: steps.cache-cargo.outputs.cache-hit != 'true'
+        if: steps.cache-setup.outputs.cache-hit != 'true'
         env:
           WHITEBOARD_EDITOR_CR_URI: ghcr.io/${{ github.repository_owner }}
           WHITEBOARD_EDITOR_TAG: latest
