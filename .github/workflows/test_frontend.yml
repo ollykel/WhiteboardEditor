@@ -55,7 +55,28 @@ jobs:
                 "containerd-snapshotter": true
               }
             }
-      - name: build
+      - name: Set up Docker cache
+        id: cache-setup
+        uses: actions/cache@v4
+        with:
+          path: ${{ runner.temp }}/docker
+          key: ${{ runner.os }}-frontend-${{ hashFiles('Frontend/package.json') }}
+          restore-keys: |
+            ${{ runner.os }}-frontend-
+      - name: Build without cache
+        id: build-no-cache
+        if: steps.cache-setup.outputs.cache-hit != 'true'
+        env:
+          DOCKER_CACHE: ${{ runner.temp }}/docker
+        run: |
+          docker compose build --no-cache frontend
+
+          echo 'service "frontend" built successfully'
+      - name: Build with cache
+        id: build-cached
+        if: steps.cache-setup.outputs.cache-hit == 'true'
+        env:
+          DOCKER_CACHE: ${{ runner.temp }}/docker
         run: |
           docker compose build frontend
 
