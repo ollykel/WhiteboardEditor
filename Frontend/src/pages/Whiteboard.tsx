@@ -500,6 +500,7 @@ const Whiteboard = () => {
 
 const WrappedWhiteboard = () => {
   const socketRef = useRef<WebSocket | null>(null);
+  console.log("socketRef: ", socketRef);
   const [whiteboardId, setWhiteboardId] = useState<WhiteboardIdType>("");
 
   const { data: whiteboardData, isLoading: isWhiteboardDataLoading } = useQuery({
@@ -530,6 +531,8 @@ const WrappedWhiteboard = () => {
   const canvasObjectsByCanvas: Record<CanvasIdType, Record<CanvasObjectIdType, CanvasObjectModel>> = useSelector((state: RootState) => (
     selectCanvasObjectsByWhiteboard(state, whiteboardId)
   ));
+
+  console.log("canvasObjects: ", canvasObjectsByCanvas);
 
   const handleUpdateShapes = (canvasId: CanvasIdType, shapes: Record<CanvasObjectIdType, CanvasObjectModel>) => {
     if (socketRef.current) {
