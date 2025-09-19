@@ -123,17 +123,22 @@ const userSchema = new Schema<IUser>(
     minimize: false,
 
     // -- data transformation
+    toObject: {
+      getters: true,
+      virtuals: true,
+      transform: (_doc: IUser, ret: Partial<IUserDocument>): IUserPublicView => {
+        delete ret.passwordHashed;
+
+        return ret as IUserPublicView;
+      }
+    },
     toJSON: {
       getters: true,
       virtuals: true,
-      transform: (_doc: IUser, ret: IUserDocument, _options: any): IUserPublicView => {
-        const {
-          _id,
-          passwordHashed: _passwordHashed,
-          ...out
-        } = ret;
+      transform: (_doc: IUser, ret: Partial<IUserDocument>): IUserPublicView => {
+        delete ret.passwordHashed;
 
-        return out;
+        return ret as IUserPublicView;
       }
     },
 
@@ -156,4 +161,4 @@ userSchema.virtual('id').get(function() {
 });
 
 // -- User Model
-export const User = model<IUser>("User", userSchema);
+export const User = model<IUser>("User", userSchema, "users");

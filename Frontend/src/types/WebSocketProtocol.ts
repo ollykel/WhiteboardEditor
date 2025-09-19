@@ -13,10 +13,12 @@ import type {
 } from '@/types/CanvasObjectModel';
 
 // The unique identifier for clients within a web socket session.
-export type ClientIdType = number;
+// -- string represents Mongo ObjectId
+export type ClientIdType = string;
 
 // Unique identifier for each canvas within a whiteboard
-export type CanvasIdType = number;
+// -- string represents Mongo ObjectId
+export type CanvasIdType = string;
 
 // Unique identifier for each whiteboard
 export type WhiteboardIdType = string;
@@ -32,6 +34,8 @@ export interface CanvasAttribs {
   width: number;
   height: number;
   name: string;
+  timeCreated?: string;
+  timeLastModified?: string;
 }
 
 // Contains nested data

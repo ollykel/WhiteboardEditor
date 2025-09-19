@@ -11,7 +11,8 @@ import type {
 
 export type ShapeColor = string;
 
-export type CanvasObjectIdType = number;
+// -- string represents Mongo ObjectId
+export type CanvasObjectIdType = string;
 
 export interface CanvasObjectBase {
   strokeColor: ShapeColor;

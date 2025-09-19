@@ -85,6 +85,9 @@ services:
     volumes:
       # initialization script
       - ./TestDatabase/init-db.js:/docker-entrypoint-initdb.d/init-db.js:ro
+    ports:
+      # exposed for testing purposes
+      - ${WHITEBOARD_EDITOR_TEST_DB_PORT-3004}:27017
     healthcheck:
       test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
       interval: 10s
