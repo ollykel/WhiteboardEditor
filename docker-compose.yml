@@ -80,6 +80,10 @@ services:
     # Handles RESTful operations on database
     build:
       context: RestAPI
+      cache_from:
+        - type=local,src=${DOCKER_CACHE-${HOME}/.cache/docker}
+      cache_to:
+        - type=local,dest=${DOCKER_CACHE-${HOME}/.cache/docker}
     image: ${WHITEBOARD_EDITOR_CR_URI-whiteboard_editor}/rest_api:${WHITEBOARD_EDITOR_TAG-latest}
     environment:
       # make sure to set values in .env
