@@ -28,8 +28,8 @@ jobs:
         id: cache-setup
         uses: actions/cache@v4
         with:
-          path: ${{ github.workspace }}/.docker
-          key: ${{ runner.os }}-web-socket-server-${{ hashFiles('WebSocketServer/Cargo.toml') }}
+          path: ${{ runner.temp }}/docker
+          key: ${{ runner.os }}-web-socket-server-${{ hashFiles('${{ github.workspace }}/WebSocketServer/Cargo.toml') }}
           restore-keys: |
             ${{ runner.os }}-web-socket-server-
       - name: Build with cache
@@ -38,10 +38,8 @@ jobs:
         env:
           WHITEBOARD_EDITOR_CR_URI: ghcr.io/${{ github.repository_owner }}
           WHITEBOARD_EDITOR_TAG: latest
-          DOCKER_CACHE: ${{ github.workspace }}/.docker
+          DOCKER_CACHE: ${{ runner.temp }}/docker
         run: |
-          echo "Building with cache at directory \"${DOCKER_CACHE}\""
-
           docker compose build web_socket_server_builder
       - name: Build without cache
         id: build-no-cache
@@ -49,10 +47,8 @@ jobs:
         env:
           WHITEBOARD_EDITOR_CR_URI: ghcr.io/${{ github.repository_owner }}
           WHITEBOARD_EDITOR_TAG: latest
-          DOCKER_CACHE: ${{ github.workspace }}/.docker
+          DOCKER_CACHE: ${{ runner.temp }}/docker
         run: |
-          echo "Building new cache at directory \"${DOCKER_CACHE}\""
-
           docker compose build --no-cache web_socket_server_builder
       - name: push
         env:
