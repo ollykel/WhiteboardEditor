@@ -82,7 +82,6 @@ import ShareWhiteboardForm, {
 import type {
   SocketServerMessage,
   // ClientMessageCreateShapes,
-  ClientIdType,
   ClientMessageUpdateShapes,
   ClientMessageCreateCanvas,
   CanvasData,
@@ -157,7 +156,6 @@ const Whiteboard = () => {
       }
     }
   });
-  const [clientId, setClientId] = useState<ClientIdType>("");
   const [toolChoice, setToolChoice] = useState<ToolChoice>('rect');
   const whiteboardIdRef = useRef<WhiteboardIdType>(whiteboardId);
   console.log("whiteboard data 1: ", whiteboardData); // degbugging
@@ -253,10 +251,9 @@ const Whiteboard = () => {
         switch (msg.type) {
           case 'init_client':
             {
-              const { clientId: initClientId, whiteboard } = msg;
+              const { whiteboard } = msg;
 
               setWhiteboardId(whiteboard.id);
-              setClientId(initClientId);
               addWhiteboard(dispatch, whiteboard);
             }
             break;
@@ -436,7 +433,7 @@ const Whiteboard = () => {
           {/* Display Canvases */}
           <div className="flex flex-1 flex-row justify-center flex-wrap">
             {canvasesSorted.map(({ id: canvasId, width, height, name, shapes, allowedUsers }: CanvasData) => {
-              const hasAccess = allowedUsers.length === 0 || allowedUsers.includes(clientId);
+              const hasAccess = allowedUsers.length === 0 || allowedUsers.includes(user!.id);
               return (
                 <CanvasCard
                   id={canvasId}
