@@ -4,7 +4,14 @@ services:
   reverse_proxy:
     # Maps urls to ports to various services.
     # Main entry point for external clients.
-    build: ReverseProxy
+    build:
+      context: ReverseProxy
+      cache_from:
+        - type=gha
+        - type=local,src=${DOCKER_CACHE-${HOME}/.cache/docker}
+      cache_to:
+        - type=gha
+        - type=local,dest=${DOCKER_CACHE-${HOME}/.cache/docker}
     image: ${WHITEBOARD_EDITOR_CR_URI-whiteboard_editor}/reverse_proxy:${WHITEBOARD_EDITOR_TAG-latest}
     ports:
       - ${WHITEBOARD_EDITOR_HTTP_PORT-8080}:8080
@@ -27,7 +34,14 @@ services:
   frontend:
     # Frontend code to serve to client.
     # Built using Vite, served with nginx
-    build: Frontend
+    build:
+      context: Frontend
+      cache_from:
+        - type=gha
+        - type=local,src=${DOCKER_CACHE-${HOME}/.cache/docker}
+      cache_to:
+        - type=gha
+        - type=local,dest=${DOCKER_CACHE-${HOME}/.cache/docker}
     image: ${WHITEBOARD_EDITOR_CR_URI-whiteboard_editor}/frontend:${WHITEBOARD_EDITOR_TAG-latest}
     depends_on:
       - web_socket_server
@@ -40,6 +54,12 @@ services:
     build:
       context: WebSocketServer
       target: builder
+      cache_from:
+        - type=gha
+        - type=local,src=${DOCKER_CACHE-${HOME}/.cache/docker}
+      cache_to:
+        - type=gha
+        - type=local,dest=${DOCKER_CACHE-${HOME}/.cache/docker}
     image: ${WHITEBOARD_EDITOR_CR_URI-whiteboard_editor}/web_socket_server_builder:${WHITEBOARD_EDITOR_TAG-latest}
 
   web_socket_server:
@@ -50,6 +70,12 @@ services:
     build:
       context: WebSocketServer
       target: final
+      cache_from:
+        - type=gha
+        - type=local,src=${DOCKER_CACHE-${HOME}/.cache/docker}
+      cache_to:
+        - type=gha
+        - type=local,dest=${DOCKER_CACHE-${HOME}/.cache/docker}
     image: ${WHITEBOARD_EDITOR_CR_URI-whiteboard_editor}/web_socket_server:${WHITEBOARD_EDITOR_TAG-latest}
     environment:
       # Make sure to set MONGO_URI in .env
@@ -60,7 +86,14 @@ services:
   
   rest_api:
     # Handles RESTful operations on database
-    build: RestAPI
+    build:
+      context: RestAPI
+      cache_from:
+        - type=gha
+        - type=local,src=${DOCKER_CACHE-${HOME}/.cache/docker}
+      cache_to:
+        - type=gha
+        - type=local,dest=${DOCKER_CACHE-${HOME}/.cache/docker}
     image: ${WHITEBOARD_EDITOR_CR_URI-whiteboard_editor}/rest_api:${WHITEBOARD_EDITOR_TAG-latest}
     environment:
       # make sure to set values in .env
