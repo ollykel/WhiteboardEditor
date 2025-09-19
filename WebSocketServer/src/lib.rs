@@ -19,18 +19,23 @@ use tokio::sync::broadcast;
 use serde::{Deserialize, Serialize};
 
 use mongodb::{
-    bson::{
-        doc,
-        oid::ObjectId,
-        DateTime,
-    },
     options::{
         ClientOptions,
         ServerApi,
         ServerApiVersion,
     },
+    bson::{
+        self,
+        doc,
+        oid::ObjectId,
+    },
     Client,
     Database,
+};
+
+use chrono::{
+    self,
+    Utc,
 };
 
 pub type ClientIdType = i32;
@@ -114,6 +119,8 @@ pub struct CanvasClientView {
     pub width: i32,
     pub height: i32,
     pub name: String,
+    pub time_created: String,           // rfc3339-encoded datetime
+    pub time_last_modified: String,     // rfc3339-encoded datetime
     pub shapes: HashMap<String, ShapeModel>,
     pub allowed_users: Vec<ObjectId>,
 }
@@ -169,13 +176,15 @@ pub enum ClientSocketMessage {
     Login { user_id: String, username: String },
 }
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone)]
 pub struct Canvas {
     pub id: CanvasIdType,
     pub next_shape_id_base: u64,
     pub width: i32,
     pub height: i32,
     pub name: String,
+    pub time_created: chrono::DateTime<Utc>,
+    pub time_last_modified: chrono::DateTime<Utc>,
     pub shapes: HashMap<CanvasObjectIdType, ShapeModel>,
     pub allowed_users: Option<HashSet<ObjectId>>, // None = open to all
 }
@@ -193,6 +202,8 @@ impl Canvas {
             shapes: self.shapes.iter()
                 .map(|(obj_id, shape)| (obj_id.to_string(), shape.clone()))
                 .collect(),
+            time_created: self.time_created.to_rfc3339(),
+            time_last_modified: self.time_last_modified.to_rfc3339(),
             allowed_users: match &self.allowed_users {
                 Some(set) => set.iter().copied().collect(),
                 None => vec![], // empty array means open to all
@@ -227,7 +238,7 @@ pub struct WhiteboardPermission {
 
 pub type WhiteboardPermissionMongoDBView = WhiteboardPermission;
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone)]
 pub struct Whiteboard {
     pub id: WhiteboardIdType,
     pub name: String,
@@ -273,8 +284,8 @@ pub struct CanvasMongoDBView {
     pub width: i32,
     pub height: i32,
     pub name: String,
-    pub time_created: DateTime,
-    pub time_last_modified: DateTime,
+    pub time_created: bson::DateTime,
+    pub time_last_modified: bson::DateTime,
     pub allowed_users: Option<Vec<ObjectId>>
 }
 
@@ -290,6 +301,8 @@ impl CanvasMongoDBView {
             width: self.width,
             height: self.height,
             name: self.name.clone(),
+            time_created: dt_bson_to_chrono_utc(&self.time_created),
+            time_last_modified: dt_bson_to_chrono_utc(&self.time_last_modified),
             shapes: shapes,
             allowed_users: match &self.allowed_users {
                 None => None,
@@ -357,6 +370,23 @@ pub struct ConnectionState {
     pub mongo_client: Client,
     pub next_client_id: Mutex<ClientIdType>,
     pub program_state: ProgramState,
+}
+
+// === misc. utils ================================================================================
+//
+// ================================================================================================
+
+pub fn dt_bson_to_chrono_utc(dt: &bson::DateTime) -> chrono::DateTime::<Utc> {
+    match chrono::DateTime::<Utc>::from_timestamp_millis(dt.timestamp_millis()) {
+        Some(dt) => dt,
+        None => {
+            panic!("Could not parse bson datetime {} into chrono datetime", dt);
+        }
+    }
+}
+
+pub fn dt_chrono_utc_to_bson(dt: &chrono::DateTime<Utc>) -> bson::DateTime {
+    bson::DateTime::from_millis(dt.timestamp_millis())
 }
 
 // Handle raw messages from clients.
@@ -505,6 +535,8 @@ pub async fn handle_client_message(client_state: &ClientState, client_msg_s: &st
                             width: width,
                             height: height,
                             name: name.clone(),
+                            time_created: Utc::now(),
+                            time_last_modified: Utc::now(),
                             shapes: HashMap::<CanvasObjectIdType, ShapeModel>::new(),
                             allowed_users: Some(allowed),
                         }

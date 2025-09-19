@@ -22,12 +22,12 @@ use warp::ws::{Message, WebSocket};
 use warp::Filter;
 
 use mongodb::{
+    Collection,
     bson::{
+        self,
         doc,
         oid::ObjectId,
-        DateTime
-    },
-    Collection
+    }
 };
 
 // -- local imports
@@ -256,7 +256,7 @@ async fn handle_connection(ws: WebSocket, whiteboard_id: WhiteboardIdType, conne
                                     WhiteboardDiff::CreateCanvas { name, width, height } => {
                                         println!("Creating canvas \"{}\" in database ...", name);
 
-                                        let now = DateTime::now();
+                                        let now = bson::DateTime::now();
                                         let canvas_doc = CanvasMongoDBView {
                                             id: ObjectId::new(),
                                             whiteboard_id: whiteboard_id.clone(),

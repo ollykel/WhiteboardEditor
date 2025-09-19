@@ -34,6 +34,8 @@ export interface CanvasAttribs {
   width: number;
   height: number;
   name: string;
+  timeCreated?: string;
+  timeLastModified?: string;
 }
 
 // Contains nested data
