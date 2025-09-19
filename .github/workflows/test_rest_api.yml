@@ -56,7 +56,6 @@ jobs:
     steps:
         # check out repo
       - uses: actions/checkout@v5
-        # set up test database
       - name: Set up Docker
         uses: docker/setup-docker-action@v4
         with:
@@ -72,7 +71,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ runner.temp }}/docker
-          key: ${{ runner.os }}-rest-api-run-supertest-${{ hashFiles('RestAPI/package.json') }}
+          key: ${{ runner.os }}-rest-api-run-supertest-${{ hashFiles('RestAPI/package.json', '.github/workflows/test_rest_api.yml') }}
           restore-keys: |
             ${{ runner.os }}-rest-api-run-supertest-
       - name: Set up test env
