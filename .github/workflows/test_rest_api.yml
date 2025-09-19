@@ -113,12 +113,6 @@ jobs:
           docker compose -p ${{ github.job }} build rest_api
 
           echo 'service "rest_api" built successfully'
-      - name: Print rest api initial logs
-        id: print-initial-logs
-        run: |
-          sleep 3
-
-          docker compose -p ${{ github.job }} logs rest_api
       - name: Run supertest
         id: run-supertest
         run: docker compose -p ${{ github.job }} run --entrypoint 'yarn test' rest_api
