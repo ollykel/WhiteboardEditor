@@ -198,6 +198,10 @@ const Whiteboard = () => {
     return selectCanvasesWithObjectsByWhiteboardId(state, whiteboardId)
   });
 
+  const canvasesSorted = [...canvases];
+
+  canvasesSorted.sort((a, b) => a.id < b.id ? -1 : 1);
+
   // TODO: remove debug
   console.log('Canvases:', canvases);
 
@@ -430,7 +434,7 @@ const Whiteboard = () => {
 
           {/* Display Canvases */}
           <div className="flex flex-1 flex-row justify-center flex-wrap">
-            {canvases.map(({ id: canvasId, width, height, name, shapes, allowedUsers }: CanvasData) => {
+            {canvasesSorted.map(({ id: canvasId, width, height, name, shapes, allowedUsers }: CanvasData) => {
               const hasAccess = allowedUsers.length === 0 || allowedUsers.includes(clientId);
               return (
                 <CanvasCard
