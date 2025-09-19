@@ -29,9 +29,9 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ runner.temp }}/docker
-          key: ${{ runner.os }}-rest-api-${{ hashFiles('RestAPI/package.json') }}
+          key: ${{ runner.os }}-rest-api-test-build-${{ hashFiles('RestAPI/package.json') }}
           restore-keys: |
-            ${{ runner.os }}-rest-api-
+            ${{ runner.os }}-rest-api-test-build-
       - name: Build without cache
         id: build-no-cache
         if: steps.cache-setup.outputs.cache-hit != 'true'
@@ -53,7 +53,6 @@ jobs:
   run_supertest:
     # Run supertest tests within the rest_api container
     runs-on: ubuntu-24.04
-    needs: test_build_rest_api
     steps:
         # check out repo
       - uses: actions/checkout@v5
@@ -73,9 +72,9 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ runner.temp }}/docker
-          key: ${{ runner.os }}-rest-api-${{ hashFiles('RestAPI/package.json') }}
+          key: ${{ runner.os }}-rest-api-run-supertest-${{ hashFiles('RestAPI/package.json') }}
           restore-keys: |
-            ${{ runner.os }}-rest-api-
+            ${{ runner.os }}-rest-api-run-supertest-
       - name: Set up test env
         env:
           TEST_ENV: |
