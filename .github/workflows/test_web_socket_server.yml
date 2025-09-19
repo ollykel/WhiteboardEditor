@@ -9,8 +9,9 @@ on:
     on:
       - opened
 jobs:
-  build_and_push_web_socket_server:
-    # Build web_socket_server_builder and push to container registry
+  run_cargo_tests_web_socket_server:
+    # Build web_socket_server_builder and run cargo tests within
+    # web_socket_server_builder
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v5
@@ -36,8 +37,6 @@ jobs:
         id: build-cached
         if: steps.cache-setup.outputs.cache-hit == 'true'
         env:
-          WHITEBOARD_EDITOR_CR_URI: ghcr.io/${{ github.repository_owner }}
-          WHITEBOARD_EDITOR_TAG: latest
           DOCKER_CACHE: ${{ runner.temp }}/docker
         run: |
           docker compose build web_socket_server_builder
@@ -45,32 +44,10 @@ jobs:
         id: build-no-cache
         if: steps.cache-setup.outputs.cache-hit != 'true'
         env:
-          WHITEBOARD_EDITOR_CR_URI: ghcr.io/${{ github.repository_owner }}
-          WHITEBOARD_EDITOR_TAG: latest
           DOCKER_CACHE: ${{ runner.temp }}/docker
         run: |
           docker compose build --no-cache web_socket_server_builder
-      - name: push
-        env:
-          CR_USER: ${{ github.actor }}
-          CR_PASS: ${{ secrets.GITHUB_TOKEN }}
-          WHITEBOARD_EDITOR_CR_URI: ghcr.io/${{ github.repository_owner }}
-          WHITEBOARD_EDITOR_TAG: latest
+      - name: Run Cargo tests
+        id: run-cargo-tests
         run: |
-          # Log into container registry
-          printenv CR_PASS | docker login ghcr.io -u "${CR_USER}" --password-stdin
-          docker compose push web_socket_server_builder
-
-  run_tests_web_socket_server:
-    # Pulls web_socket_server_builder image from container registry and runs
-    # unit tests.
-    runs-on: ubuntu-24.04
-    needs: build_and_push_web_socket_server
-    container:
-      image: ghcr.io/${{ github.repository_owner }}/web_socket_server_builder:latest
-    defaults:
-      run:
-        working-directory: /app
-    steps:
-      - name: Run Cargo Tests
-        run: cargo test
+          docker compose run --entrypoint 'cargo test' web_socket_server_builder
