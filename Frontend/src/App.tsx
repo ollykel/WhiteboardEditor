@@ -8,6 +8,9 @@ import AccountSettings from '@/pages/AccountSettings';
 import { AuthProvider } from '@/context/AuthContext';
 import ProtectedRoute from '@/components/ProtectedRoute';
 
+// -- TODO: remove
+THIS IS INVALID CODE
+
 const App = () => {
   const queryClient = new QueryClient();
 
