@@ -29,9 +29,9 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ runner.temp }}/docker
-          key: ${{ runner.os }}-rest-api-test-build-${{ hashFiles('RestAPI/package.json') }}
+          key: ${{ runner.os }}-rest-api-test-build-${{ hashFiles('RestAPI/package.json', '.github/workflows/test_rest_api.yml') }}
           restore-keys: |
-            ${{ runner.os }}-rest-api-test-build-
+            ${{ runner.os }}-rest-api-
       - name: Build without cache
         id: build-no-cache
         if: steps.cache-setup.outputs.cache-hit != 'true'
@@ -73,7 +73,7 @@ jobs:
           path: ${{ runner.temp }}/docker
           key: ${{ runner.os }}-rest-api-run-supertest-${{ hashFiles('RestAPI/package.json', '.github/workflows/test_rest_api.yml') }}
           restore-keys: |
-            ${{ runner.os }}-rest-api-run-supertest-
+            ${{ runner.os }}-rest-api-
       - name: Set up test env
         env:
           TEST_ENV: |
