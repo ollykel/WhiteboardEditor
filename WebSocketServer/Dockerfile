@@ -29,6 +29,9 @@ COPY --from=planner /app/recipe.json recipe.json
 COPY Cargo.toml Cargo.lock ./
 RUN cargo chef cook --release --recipe-path recipe.json
 
+# Prepare tests
+RUN cargo chef cook --tests --recipe-path recipe.json
+
 # ---- Stage 3: Application build ----
 FROM rust:1.88 AS builder
 
