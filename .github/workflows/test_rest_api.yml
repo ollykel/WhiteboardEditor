@@ -24,7 +24,28 @@ jobs:
                 "containerd-snapshotter": true
               }
             }
-      - name: build
+      - name: Set up Docker cache
+        id: cache-setup
+        uses: actions/cache@v4
+        with:
+          path: ${{ runner.temp }}/docker
+          key: ${{ runner.os }}-rest-api-${{ hashFiles('RestAPI/package.json') }}
+          restore-keys: |
+            ${{ runner.os }}-rest-api-
+      - name: Build without cache
+        id: build-no-cache
+        if: steps.cache-setup.outputs.cache-hit != 'true'
+        env:
+          DOCKER_CACHE: ${{ runner.temp }}/docker
+        run: |
+          docker compose build --no-cache rest_api
+
+          echo 'service "rest_api" built successfully'
+      - name: Build with cache
+        id: build-cached
+        if: steps.cache-setup.outputs.cache-hit == 'true'
+        env:
+          DOCKER_CACHE: ${{ runner.temp }}/docker
         run: |
           docker compose build rest_api
 
@@ -32,6 +53,7 @@ jobs:
   run_supertest:
     # Run supertest tests within the rest_api container
     runs-on: ubuntu-24.04
+    needs: test_build_rest_api
     steps:
         # check out repo
       - uses: actions/checkout@v5
@@ -46,13 +68,20 @@ jobs:
                 "containerd-snapshotter": true
               }
             }
-      - name: Start test database
-        shell: bash
-        run: |
-          docker compose -p ${{ github.job }} up --build -d test_db
+      - name: Set up Docker cache
+        id: cache-setup
+        uses: actions/cache@v4
+        with:
+          path: ${{ runner.temp }}/docker
+          key: ${{ runner.os }}-rest-api-${{ hashFiles('RestAPI/package.json') }}
+          restore-keys: |
+            ${{ runner.os }}-rest-api-
       - name: Set up test env
         env:
           TEST_ENV: |
+            # Docker cache location
+            DOCKER_CACHE="${{ runner.temp }}/docker"
+
             # Secret for signing JSON Web Tokens (JWTs)
             # Should be at least 64 characters in length
             WHITEBOARD_EDITOR_JWT_SECRET=2KUU6DNUY6XGBL2NQFXDXGGVOJ63A75RYSZ5SKD3PMYPCXC6L3I3WRDZER5JA4GC2SOQ2K6W66JUQ3XMM3QT6PXC4UKAFXDDDIIRP4A=
@@ -68,20 +97,38 @@ jobs:
             WHITEBOARD_EDITOR_REST_API_PORT=3001
         run: |
           printenv TEST_ENV > .env
-      - name: docker compose up
-        run: docker compose -p ${{ github.job }} up --build -d rest_api
+      - name: Start test database
+        shell: bash
+        run: |
+          docker compose -p ${{ github.job }} up --build -d test_db
+      - name: Build without cache
+        id: build-no-cache
+        if: steps.cache-setup.outputs.cache-hit != 'true'
+        run: |
+          docker compose -p ${{ github.job }} build --no-cache rest_api
+
+          echo 'service "rest_api" built successfully'
+      - name: Build with cache
+        id: build-cached
+        if: steps.cache-setup.outputs.cache-hit == 'true'
+        run: |
+          docker compose -p ${{ github.job }} build rest_api
+
+          echo 'service "rest_api" built successfully'
       - name: Print rest api initial logs
+        id: print-initial-logs
         run: |
           sleep 3
 
           docker compose -p ${{ github.job }} logs rest_api
       - name: Run supertest
-        run: docker compose -p ${{ github.job }} exec rest_api yarn run test
+        id: run-supertest
+        run: docker compose -p ${{ github.job }} run --entrypoint 'yarn test' rest_api
       - name: Tear down test database
+        id: tear-down-test-db
         if: always()
         shell: bash
         run: |
-          docker compose -p ${{ github.job }} down -v test_db
-      - name: Tear down docker compose
-        if: always()
-        run: docker compose -p ${{ github.job }} down
+          # Just run for all services, in case we started more services than
+          # just test_db.
+          docker compose -p ${{ github.job }} down -v
