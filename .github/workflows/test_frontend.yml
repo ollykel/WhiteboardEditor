@@ -60,7 +60,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ runner.temp }}/docker
-          key: ${{ runner.os }}-frontend-${{ hashFiles('Frontend/package.json') }}
+          key: ${{ runner.os }}-frontend-${{ hashFiles('docker-compose.yml', 'Frontend/Dockerfile', 'Frontend/package.json', 'Frontend/package-lock.json', '.github/workflows/test_frontend.yml') }}
           restore-keys: |
             ${{ runner.os }}-frontend-
       - name: Build without cache

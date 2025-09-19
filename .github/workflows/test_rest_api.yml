@@ -29,7 +29,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ runner.temp }}/docker
-          key: ${{ runner.os }}-rest-api-test-build-${{ hashFiles('RestAPI/package.json', '.github/workflows/test_rest_api.yml') }}
+          key: ${{ runner.os }}-rest-api-test-build-${{ hashFiles('docker-compose.yml', 'RestAPI/Dockerfile', 'RestAPI/package.json', 'RestAPI/yarn.lock', '.github/workflows/test_rest_api.yml') }}
           restore-keys: |
             ${{ runner.os }}-rest-api-
       - name: Build without cache
@@ -71,7 +71,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ runner.temp }}/docker
-          key: ${{ runner.os }}-rest-api-run-supertest-${{ hashFiles('RestAPI/package.json', '.github/workflows/test_rest_api.yml') }}
+          key: ${{ runner.os }}-rest-api-run-supertest-${{ hashFiles('docker-compose.yml', 'RestAPI/Dockerfile', 'RestAPI/package.json', 'RestAPI/yarn.lock', '.github/workflows/test_rest_api.yml') }}
           restore-keys: |
             ${{ runner.os }}-rest-api-
       - name: Set up test env

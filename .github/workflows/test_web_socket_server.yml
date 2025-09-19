@@ -29,7 +29,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ runner.temp }}/docker
-          key: ${{ runner.os }}-web-socket-server-${{ hashFiles('WebSocketServer/Cargo.toml', 'WebSocketServer/Cargo.lock') }}
+          key: ${{ runner.os }}-web-socket-server-${{ hashFiles('docker-compose.yml', 'WebSocketServer/Dockerfile', 'WebSocketServer/Cargo.toml', 'WebSocketServer/Cargo.lock', '.github/workflows/test_web_socket_server.yml') }}
           restore-keys: |
             ${{ runner.os }}-web-socket-server-
       - name: Build with cache
