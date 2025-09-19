@@ -30,8 +30,7 @@ export const normalizeCanvas = (
   const { id: canvasId } = canvas;
   const canvasAttribs: Partial<CanvasData> = { ...canvas };
   const canvasKey: CanvasKeyType = [whiteboardId, canvasId];
-  const canvasObjects = Object.fromEntries(Object.entries(canvas.shapes).map(([objIdStr, obj]) => {
-    const objId = parseInt(objIdStr);
+  const canvasObjects = Object.fromEntries(Object.entries(canvas.shapes).map(([objId, obj]) => {
     const objKey: CanvasObjectKeyType = [whiteboardId, canvasId, objId];
 
     return [objKey.toString(), obj];
@@ -47,8 +46,7 @@ export const normalizeCanvas = (
     }),
     canvasObjects,
     canvasObjectsByCanvas: {
-      [canvasKey.toString()]: Object.keys(canvas.shapes).map((objIdStr) => {
-        const objId = parseInt(objIdStr);
+      [canvasKey.toString()]: Object.keys(canvas.shapes).map((objId) => {
         const objKey: CanvasObjectKeyType = [whiteboardId, canvasId, objId];
 
         return objKey;

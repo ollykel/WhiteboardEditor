@@ -12,3 +12,8 @@ export interface DocumentBase {
   id: Types.ObjectId;
   _id?: Types.ObjectId;
 }
+
+export interface DocumentViewMethods<PublicViewType, AttribViewType> {
+  toPublicView: () => PublicViewType;
+  toAttribView: () => AttribViewType;
+}

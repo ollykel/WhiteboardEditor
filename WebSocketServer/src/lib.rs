@@ -5,37 +5,46 @@ use std::{
     collections::{
         HashSet,
         HashMap,
-    }
+    },
 };
 
 // -- third party imports
 
 use futures::{
     lock::Mutex,
+    TryStreamExt,
 };
 
 use tokio::sync::broadcast;
 use serde::{Deserialize, Serialize};
 
 use mongodb::{
-    bson::{
-        doc,
-        oid::ObjectId
-    },
     options::{
         ClientOptions,
         ServerApi,
-        ServerApiVersion
+        ServerApiVersion,
     },
-    Client
+    bson::{
+        self,
+        doc,
+        oid::ObjectId,
+    },
+    Client,
+    Database,
+};
+
+use chrono::{
+    self,
+    Utc,
 };
 
 pub type ClientIdType = i32;
-pub type CanvasIdType = i32;
-pub type CanvasObjectIdType = i32;
-pub type WhiteboardIdType = String;
+pub type CanvasIdType = ObjectId;
+pub type CanvasObjectIdType = ObjectId;
+pub type WhiteboardIdType = ObjectId;
+pub type UserIdType = ObjectId;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "snake_case", rename_all_fields="camelCase")]
 pub enum ShapeModel {
     Rect {
@@ -48,7 +57,6 @@ pub enum ShapeModel {
         fill_color: String
     },
     Ellipse {
-        id: Option<CanvasObjectIdType>,
         x: f64,
         y: f64,
         radius_x: f64,
@@ -58,11 +66,43 @@ pub enum ShapeModel {
         fill_color: String
     },
     Vector {
-        id: Option<CanvasObjectIdType>,
         points: Vec<f64>,
         stroke_width: f64,
         stroke_color: String
     },
+}
+
+#[derive(Debug, Clone)]
+pub struct CanvasObject {
+    pub id: CanvasObjectIdType,
+    pub shape: ShapeModel,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub struct CanvasObjectMongoDBView {
+    #[serde(rename = "_id")]
+    pub id: ObjectId,
+    pub canvas_id: ObjectId,
+    #[serde(flatten)]
+    pub shape: ShapeModel,
+}
+
+impl CanvasObjectMongoDBView {
+    pub fn to_canvas_object(&self) -> CanvasObject {
+        CanvasObject {
+            id: self.id.clone(),
+            shape: self.shape.clone()
+        }
+    }
+    
+    pub fn from_canvas_object(obj: &CanvasObject, canvas_id: &CanvasIdType) -> Self {
+        Self {
+            id: obj.id,
+            canvas_id: canvas_id.clone(),
+            shape: obj.shape.clone(),
+        }
+    }
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -75,20 +115,41 @@ pub struct UserSummary {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CanvasClientView {
-    pub id: CanvasIdType,
-    pub width: u64,
-    pub height: u64,
+    pub id: String,
+    pub width: i32,
+    pub height: i32,
     pub name: String,
-    pub shapes: HashMap<CanvasObjectIdType, ShapeModel>,
+    pub time_created: String,           // rfc3339-encoded datetime
+    pub time_last_modified: String,     // rfc3339-encoded datetime
+    pub shapes: HashMap<String, ShapeModel>,
     pub allowed_users: Vec<ObjectId>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct WhiteboardClientView {
-    pub id: WhiteboardIdType,
+    pub id: String,
     pub name: String,
     pub canvases: Vec<CanvasClientView>,
+}
+
+// === WhiteboardDiff =============================================================================
+//
+// Defines an atomic change to be made to the state of the Whiteboard.
+//
+// Largely overlaps with the ServerSocketMessage and ClientSocketMessage enums defined below.
+//
+// TODO: refactor ServerSocketMessage and ClientSocketMessage to incorporate WhiteboardDiff,
+// instead of duplicating the given fields.
+//
+// ================================================================================================
+#[derive(Debug, Clone, Serialize)]
+#[serde(tag = "type", rename_all = "snake_case", rename_all_fields="camelCase")]
+pub enum WhiteboardDiff {
+    CreateCanvas { name: String, width: i32, height: i32 },
+    DeleteCanvases { canvas_ids: Vec<CanvasIdType> },
+    CreateShapes { canvas_id: CanvasIdType, shapes: HashMap<CanvasObjectIdType, ShapeModel> },
+    UpdateShapes { canvas_id: CanvasIdType, shapes: HashMap<CanvasObjectIdType, ShapeModel> },
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -96,10 +157,11 @@ pub struct WhiteboardClientView {
 pub enum ServerSocketMessage {
     InitClient { client_id: ClientIdType, whiteboard: WhiteboardClientView },
     ActiveUsers { users: Vec<UserSummary>},
-    CreateShapes { client_id: ClientIdType, canvas_id: CanvasIdType, shapes: HashMap<CanvasObjectIdType, ShapeModel> },
-    UpdateShapes { client_id: ClientIdType, canvas_id: CanvasIdType, shapes: HashMap<String, ShapeModel> },
-    CreateCanvas { client_id: ClientIdType, canvas_id: CanvasIdType, width: u64, height: u64, name: String, allowed_users: Vec<ObjectId> },
-    DeleteCanvases { client_id: ClientIdType, canvas_ids: Vec<CanvasIdType> },
+    // TODO: replace HashMaps with Vectors, so object ids don't need to be cast to strings
+    CreateShapes { client_id: ClientIdType, canvas_id: String, shapes: HashMap<String, ShapeModel> },
+    UpdateShapes { client_id: ClientIdType, canvas_id: String, shapes: HashMap<String, ShapeModel> },
+    CreateCanvas { client_id: ClientIdType, canvas_id: String, width: i32, height: i32, name: String, allowed_users: Vec<ObjectId> },
+    DeleteCanvases { client_id: ClientIdType, canvas_ids: Vec<String> },
     IndividualError { client_id: ClientIdType, message: String },
     BroadcastError { message: String },
 }
@@ -109,19 +171,21 @@ pub enum ServerSocketMessage {
 pub enum ClientSocketMessage {
     CreateShapes { canvas_id: CanvasIdType, shapes: Vec<ShapeModel> },
     UpdateShapes { canvas_id: CanvasIdType, shapes: HashMap<String, ShapeModel> },
-    CreateCanvas { width: u64, height: u64, name: String },
+    CreateCanvas { width: i32, height: i32, name: String },
     DeleteCanvases { canvas_ids: Vec<CanvasIdType> },
     Login { user_id: String, username: String },
 }
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone)]
 pub struct Canvas {
     pub id: CanvasIdType,
-    pub width: u64,
-    pub height: u64,
+    pub next_shape_id_base: u64,
+    pub width: i32,
+    pub height: i32,
     pub name: String,
+    pub time_created: chrono::DateTime<Utc>,
+    pub time_last_modified: chrono::DateTime<Utc>,
     pub shapes: HashMap<CanvasObjectIdType, ShapeModel>,
-    pub next_shape_id: CanvasObjectIdType,
     pub allowed_users: Option<HashSet<ObjectId>>, // None = open to all
 }
 
@@ -130,11 +194,16 @@ impl Canvas {
         // At the moment, the client view is identical to the Canvas type itself, but this may not
         // always be the case.
         CanvasClientView {
-            id: self.id,
+            id: self.id.to_string(),
             width: self.width,
             height: self.height,
             name: self.name.clone(),
-            shapes: self.shapes.clone(),
+            // shapes: self.shapes.clone(),
+            shapes: self.shapes.iter()
+                .map(|(obj_id, shape)| (obj_id.to_string(), shape.clone()))
+                .collect(),
+            time_created: self.time_created.to_rfc3339(),
+            time_last_modified: self.time_last_modified.to_rfc3339(),
             allowed_users: match &self.allowed_users {
                 Some(set) => set.iter().copied().collect(),
                 None => vec![], // empty array means open to all
@@ -143,13 +212,39 @@ impl Canvas {
     }// end pub fn to_client_view(&self) -> CanvasClientView
 }
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(tag = "permission", rename_all = "camelCase")]
+pub enum WhiteboardPermissionEnum {
+    View,
+    Edit,
+    Own,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(tag = "type", rename_all = "camelCase", rename_all_fields = "snake_case")]
+pub enum WhiteboardPermissionType {
+    Id { user_id: ObjectId },
+    Email { email: String },
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub struct WhiteboardPermission {
+    #[serde(flatten)]
+    permission_type: WhiteboardPermissionType,
+    #[serde(flatten)]
+    permission: WhiteboardPermissionEnum,
+}
+
+pub type WhiteboardPermissionMongoDBView = WhiteboardPermission;
+
+#[derive(Clone)]
 pub struct Whiteboard {
     pub id: WhiteboardIdType,
     pub name: String,
     pub canvases: HashMap<CanvasIdType, Canvas>,
-    pub owner_id: String,
-    pub shared_user_ids: Vec<String>,
+    pub owner_id: UserIdType,
+    pub shared_users: Vec<WhiteboardPermission>,
 }
 
 impl Whiteboard {
@@ -157,7 +252,7 @@ impl Whiteboard {
         // At the moment, the client view is identical to the Canvas type itself, but this may not
         // always be the case.
         WhiteboardClientView {
-            id: self.id.clone(),
+            id: self.id.to_string(),
             name: self.name.clone(),
             canvases: self.canvases.iter()
                 .map(|(_, c)| c.to_client_view())
@@ -175,44 +270,40 @@ impl Whiteboard {
 #[derive(Clone)]
 pub struct SharedWhiteboardEntry {
     pub whiteboard_ref: Arc<Mutex<Whiteboard>>,
+    pub whiteboard_id: WhiteboardIdType,
     pub broadcaster: broadcast::Sender<ServerSocketMessage>,
     pub active_clients: Arc<Mutex<HashMap<ClientIdType, UserSummary>>>,
+    pub diffs: Arc<Mutex<Vec<WhiteboardDiff>>>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct CanvasMongoDBView {
-    pub width: u64,
-    pub height: u64,
+    #[serde(rename = "_id")]
+    pub id: ObjectId,
+    pub whiteboard_id: ObjectId,
+    pub width: i32,
+    pub height: i32,
     pub name: String,
-    pub shapes: HashMap<String, ShapeModel>,
+    pub time_created: bson::DateTime,
+    pub time_last_modified: bson::DateTime,
     pub allowed_users: Option<Vec<ObjectId>>
 }
 
 impl CanvasMongoDBView {
-    pub fn to_canvas(&self, id: CanvasIdType) -> Canvas {
-        let mut next_shape_id : CanvasObjectIdType = CanvasObjectIdType::MIN;
-        let shapes : HashMap<CanvasObjectIdType, ShapeModel> = self.shapes.iter()
-            .map(|(key, shape)| {
-                match key.parse::<CanvasObjectIdType>() {
-                    Err(_) => None,
-                    Ok(key) => {
-                        next_shape_id = CanvasObjectIdType::max(next_shape_id, key);
-
-                        Some((key, shape.clone()))
-                    }
-                }
-            })
-            .filter(|val| val.is_some())
-            .map(|val| val.unwrap())
+    pub fn to_canvas(&self, canvas_objects: &[CanvasObject]) -> Canvas {
+        let shapes : HashMap<CanvasObjectIdType, ShapeModel> = canvas_objects.iter()
+            .map(|obj| (obj.id, obj.shape.clone()))
             .collect();
 
         Canvas {
-            id: id,
+            id: self.id.clone(),
+            next_shape_id_base: 0,
             width: self.width,
             height: self.height,
             name: self.name.clone(),
+            time_created: dt_bson_to_chrono_utc(&self.time_created),
+            time_last_modified: dt_bson_to_chrono_utc(&self.time_last_modified),
             shapes: shapes,
-            next_shape_id: next_shape_id,
             allowed_users: match &self.allowed_users {
                 None => None,
                 Some(users) => Some(users.iter().map(|uid| uid.clone()).collect())
@@ -249,30 +340,22 @@ pub struct WhiteboardMongoDBView {
     #[serde(rename = "_id")]
     pub id: ObjectId,
     pub name: String,
-    pub canvases: Vec<CanvasMongoDBView>,
     #[serde(rename = "owner")]
     pub owner_id: ObjectId,
     #[serde(rename = "shared_users")]
-    pub shared_user_ids: Vec<UserPermission>
+    pub shared_users: Vec<WhiteboardPermissionMongoDBView>,
 }
 
 impl WhiteboardMongoDBView {
-    pub fn to_whiteboard(&self) -> Whiteboard {
+    pub fn to_whiteboard(&self, canvases: &[Canvas]) -> Whiteboard {
         Whiteboard {
-            id: self.id.to_string(),
+            id: self.id.clone(),
             name: self.name.clone(),
-            canvases: self.canvases.iter()
-                .enumerate()
-                .map(|(idx, db_view)| {
-                    let canvas_id: CanvasIdType = idx.try_into().unwrap();
-                    (canvas_id, db_view.to_canvas(canvas_id))
-                })
+            canvases: canvases.iter()
+                .map(|canvas| (canvas.id.clone(), canvas.clone()))
                 .collect(),
-            owner_id: self.owner_id.to_string(),
-            shared_user_ids: self.shared_user_ids.iter().map(|perm| match perm {
-                UserPermission::Id { user_id, .. } => user_id.to_string(),
-                UserPermission::Email { email, .. } => email.clone(),
-            }).collect(),
+            owner_id: self.owner_id.clone(),
+            shared_users: self.shared_users.clone(),
         }
     }
 }
@@ -298,6 +381,7 @@ pub struct ClientState {
     pub client_id: ClientIdType,
     pub whiteboard_ref: Arc<Mutex<Whiteboard>>,
     pub active_clients: Arc<Mutex<HashMap<ClientIdType, UserSummary>>>,
+    pub diffs: Arc<Mutex<Vec<WhiteboardDiff>>>,
 }
 
 // === Connection State ===========================================================================
@@ -309,6 +393,23 @@ pub struct ConnectionState {
     pub mongo_client: Client,
     pub next_client_id: Mutex<ClientIdType>,
     pub program_state: ProgramState,
+}
+
+// === misc. utils ================================================================================
+//
+// ================================================================================================
+
+pub fn dt_bson_to_chrono_utc(dt: &bson::DateTime) -> chrono::DateTime::<Utc> {
+    match chrono::DateTime::<Utc>::from_timestamp_millis(dt.timestamp_millis()) {
+        Some(dt) => dt,
+        None => {
+            panic!("Could not parse bson datetime {} into chrono datetime", dt);
+        }
+    }
+}
+
+pub fn dt_chrono_utc_to_bson(dt: &chrono::DateTime<Utc>) -> bson::DateTime {
+    bson::DateTime::from_millis(dt.timestamp_millis())
 }
 
 // Handle raw messages from clients.
@@ -356,24 +457,35 @@ pub async fn handle_client_message(client_state: &ClientState, client_msg_s: &st
                             let mut new_shapes = HashMap::<CanvasObjectIdType, ShapeModel>::new();
 
                             for shape in shapes.iter() {
-                                let obj_id = canvas.next_shape_id;
+                                let obj_id = ObjectId::new();
 
-                                new_shapes.insert(obj_id, shape.clone());
-                                canvas.shapes.insert(obj_id, shape.clone());
-                                canvas.next_shape_id += 1;
+                                new_shapes.insert(obj_id.clone(), shape.clone());
+                                canvas.shapes.insert(obj_id.clone(), shape.clone());
                             }// end for (idx, &mut shape) in new_shapes.iter_mut().enumerate()
+
+                            // valid input: add to diffs
+                            {
+                                let mut diffs = client_state.diffs.lock().await;
+                            
+                                diffs.push(WhiteboardDiff::CreateShapes{
+                                    canvas_id: canvas_id,
+                                    shapes: new_shapes.clone()
+                                });
+                            }
 
                             Some(ServerSocketMessage::CreateShapes{
                                 client_id: client_state.client_id,
-                                canvas_id: canvas_id,
-                                shapes: new_shapes
+                                canvas_id: canvas_id.to_string(),
+                                shapes: new_shapes.iter()
+                                    .map(|(obj_id, shape)| (obj_id.to_string(), shape.clone()))
+                                    .collect()
                             })
                         }
                     }
                 },
                 ClientSocketMessage::UpdateShapes{ canvas_id, ref shapes } => {
                     let mut whiteboard = client_state.whiteboard_ref.lock().await;
-                    println!("Creating shape on canvas {} ...", canvas_id);
+                    println!("Updating shapes on canvas {} ...", canvas_id);
 
                     match whiteboard.canvases.get_mut(&canvas_id) {
                         None => {
@@ -381,14 +493,12 @@ pub async fn handle_client_message(client_state: &ClientState, client_msg_s: &st
                             todo!()
                         },
                         Some(canvas) => {
-                            let mut new_shapes = shapes.clone();
+                            let new_shapes = HashMap::<CanvasObjectIdType, ShapeModel>::new();
 
                             for (obj_id_s, shape) in shapes.iter() {
                                 match obj_id_s.parse::<CanvasObjectIdType>() {
                                     Ok(obj_id) => {
-                                        if ! canvas.shapes.contains_key(&obj_id) {
-                                            new_shapes.remove(obj_id_s);
-                                        } else {
+                                        if canvas.shapes.contains_key(&obj_id) {
                                             canvas.shapes.insert(obj_id, shape.clone());
                                         }
                                     },
@@ -398,17 +508,29 @@ pub async fn handle_client_message(client_state: &ClientState, client_msg_s: &st
                                 };
                             }// end for (&obj_id, &shape) in shapes.iter_mut()
 
+                            // valid input: add to diffs
+                            {
+                                let mut diffs = client_state.diffs.lock().await;
+                            
+                                diffs.push(WhiteboardDiff::UpdateShapes{
+                                    canvas_id: canvas_id,
+                                    shapes: new_shapes.clone()
+                                });
+                            }
+
                             Some(ServerSocketMessage::UpdateShapes{
                                 client_id: client_state.client_id,
-                                canvas_id: canvas_id,
-                                shapes: new_shapes
+                                canvas_id: canvas_id.to_string(),
+                                shapes: new_shapes.iter()
+                                    .map(|(obj_id, shape)| (obj_id.to_string(), shape.clone()))
+                                    .collect()
                             })
                         }
                     }
                 },
                 ClientSocketMessage::CreateCanvas { width, height, name } => {
                     let mut whiteboard = client_state.whiteboard_ref.lock().await;
-                    let new_canvas_id = whiteboard.canvases.len() as CanvasIdType;
+                    let new_canvas_id = ObjectId::new();
                     let mut allowed = HashSet::<ObjectId>::new();
 
                     // Initialize new canvas with only current user allowed to edit
@@ -416,23 +538,36 @@ pub async fn handle_client_message(client_state: &ClientState, client_msg_s: &st
                     allowed.insert(ObjectId::new());
 
                     let allowed_users_vec = allowed.iter().copied().collect::<Vec<_>>();
+
+                    // valid input: add to diffs
+                    {
+                        let mut diffs = client_state.diffs.lock().await;
+                    
+                        diffs.push(WhiteboardDiff::CreateCanvas{
+                            name: name.clone(),
+                            width: width,
+                            height: height
+                        });
+                    }
                     
                     whiteboard.canvases.insert(
                         new_canvas_id,
-                        Canvas{
+                        Canvas {
                             id: new_canvas_id,
+                            next_shape_id_base: 0,
                             width: width,
                             height: height,
                             name: name.clone(),
+                            time_created: Utc::now(),
+                            time_last_modified: Utc::now(),
                             shapes: HashMap::<CanvasObjectIdType, ShapeModel>::new(),
-                            next_shape_id: 0,
                             allowed_users: Some(allowed),
                         }
                     );
 
                     Some(ServerSocketMessage::CreateCanvas{
                         client_id: client_state.client_id,
-                        canvas_id: new_canvas_id,
+                        canvas_id: new_canvas_id.to_string(),
                         width: width,
                         height: height,
                         name: name.clone(),
@@ -447,9 +582,20 @@ pub async fn handle_client_message(client_state: &ClientState, client_msg_s: &st
                         whiteboard.canvases.remove(&id);
                     }// end for id in canvas_ids
 
+                    // valid message: add to diffs
+                    {
+                        let mut diffs = client_state.diffs.lock().await;
+                    
+                        diffs.push(WhiteboardDiff::DeleteCanvases {
+                            canvas_ids: canvas_ids.clone()
+                        });
+                    }
+
                     Some(ServerSocketMessage::DeleteCanvases{
                         client_id: client_state.client_id,
-                        canvas_ids: canvas_ids
+                        canvas_ids: canvas_ids.iter()
+                            .map(|id| id.to_string())
+                            .collect()
                     })
                 },
             }
@@ -484,6 +630,33 @@ pub async fn connect_mongodb(uri: &str) -> mongodb::error::Result<Client> {
     Ok(client)
 }// end connect_mongodb
 
+pub async fn get_whiteboard_by_id(db: &Database, wid: &WhiteboardIdType) -> Result<Option<Whiteboard>, mongodb::error::Error> {
+    let whiteboard_coll = db.collection::<WhiteboardMongoDBView>("whiteboards");
+    let canvas_coll = db.collection::<CanvasMongoDBView>("canvases");
+    let shape_coll = db.collection::<CanvasObjectMongoDBView>("shapes");
+
+    let whiteboard_view = match whiteboard_coll.find_one(doc! { "_id": wid.clone() }).await? {
+        None => { return Ok(None); },
+        Some(wb) => wb
+    };
+
+    let canvas_cursor = canvas_coll.find(doc! { "whiteboard_id": wid.clone() }).await?;
+    let canvas_views : Vec<CanvasMongoDBView> = canvas_cursor.try_collect().await?;
+    let mut canvases = Vec::<Canvas>::new();
+
+    for canvas_view in canvas_views.iter() {
+        let object_views_cursor = shape_coll.find(doc! { "canvas_id": canvas_view.id }).await?;
+        let object_views : Vec<CanvasObjectMongoDBView> = object_views_cursor.try_collect().await?;
+        let canvas_objects : Vec<CanvasObject> = object_views.iter()
+            .map(|obj_view| obj_view.to_canvas_object())
+            .collect();
+
+        canvases.push(canvas_view.to_canvas(canvas_objects.as_slice()));
+    }// end for canvas_view in canvas_views.iter()
+
+    Ok(Some(whiteboard_view.to_whiteboard(canvases.as_slice())))
+}// -- end fn get_whiteboard_by_id
+
 // -- Begin tests
 #[cfg(test)]
 mod tests {
@@ -497,13 +670,14 @@ mod tests {
         let client_state = ClientState {
             client_id: test_client_id,
             whiteboard_ref: Arc::new(Mutex::new(Whiteboard {
-                id: String::from("abcd"),
+                id: ObjectId::new(),
                 name: String::from("Test"),
                 canvases: HashMap::new(),
-                owner_id: String::from("aaaa"),
-                shared_user_ids: vec![],
+                owner_id: ObjectId::new(),
+                shared_users: vec![],
             })),
             active_clients: Arc::new(Mutex::new(HashMap::new())),
+            diffs: Arc::new(Mutex::new(Vec::new())),
         };
 
         let resp = handle_client_message(&client_state, client_msg_s).await;
@@ -516,6 +690,177 @@ mod tests {
                         panic!("Expected client_id = {}; got {}", test_client_id, client_id);
                     } else {
                         // success
+                    }
+                },
+                _ => panic!("Expected ServerSocketMessage::IndividualError, got {:?}", server_msg)
+            }
+        };
+    }
+
+    #[tokio::test]
+    async fn handle_client_message_create_shapes() {
+        let f64_prec: f64 = 1.0e-16;
+        let test_client_id = 0;
+        let canvas_a_id = ObjectId::new();
+        let shapes_expected = vec![
+            ShapeModel::Rect {
+                x: 100.0,
+                y: 100.0,
+                width: 64.0,
+                height: 64.0,
+                stroke_width: 1.0,
+                stroke_color: String::from("#333333"),
+                fill_color: String::from("#ff0000"),
+            },
+            ShapeModel::Rect {
+                x: 200.0,
+                y: 200.0,
+                width: 64.0,
+                height: 64.0,
+                stroke_width: 1.0,
+                stroke_color: String::from("#333333"),
+                fill_color: String::from("#ff0000"),
+            },
+            ShapeModel::Rect {
+                x: 300.0,
+                y: 300.0,
+                width: 64.0,
+                height: 64.0,
+                stroke_width: 1.0,
+                stroke_color: String::from("#333333"),
+                fill_color: String::from("#ff0000"),
+            },
+        ];
+        let client_msg_s = format!(r##"
+        {{
+            "type": "create_shapes",
+            "canvasId": "{}",
+            "shapes": [
+                {{
+                    "type": "rect",
+                    "x": 100,
+                    "y": 100,
+                    "width": 64,
+                    "height": 64,
+                    "strokeWidth": 1,
+                    "strokeColor": "#333333",
+                    "fillColor": "#ff0000"
+                }},
+                {{
+                    "type": "rect",
+                    "x": 200,
+                    "y": 200,
+                    "width": 64,
+                    "height": 64,
+                    "strokeWidth": 1,
+                    "strokeColor": "#333333",
+                    "fillColor": "#ff0000"
+                }},
+                {{
+                    "type": "rect",
+                    "x": 300,
+                    "y": 300,
+                    "width": 64,
+                    "height": 64,
+                    "strokeWidth": 1,
+                    "strokeColor": "#333333",
+                    "fillColor": "#ff0000"
+                }}
+            ]
+        }}
+        "##, canvas_a_id);
+        let client_state = ClientState {
+            client_id: test_client_id,
+            whiteboard_ref: Arc::new(Mutex::new(Whiteboard {
+                id: ObjectId::new(),
+                name: String::from("Test"),
+                canvases: HashMap::from([
+                    (
+                        canvas_a_id.clone(),
+                        Canvas {
+                            id: canvas_a_id.clone(),
+                            next_shape_id_base: 0,
+                            width: 512,
+                            height: 512,
+                            name: String::from("Canvas A"),
+                            time_created: Utc::now(),
+                            time_last_modified: Utc::now(),
+                            shapes: HashMap::new(),
+                            allowed_users: None, // None = open to all
+                        }
+                    )
+                ]),
+                owner_id: ObjectId::new(),
+                shared_users: vec![],
+            })),
+            active_clients: Arc::new(Mutex::new(HashMap::new())),
+            diffs: Arc::new(Mutex::new(Vec::new())),
+        };
+
+        let resp = handle_client_message(&client_state, &client_msg_s).await;
+
+        match resp {
+            None => panic!("Expected some client message, got None"),
+            // CreateShapes { client_id: ClientIdType, canvas_id: CanvasIdType, shapes: HashMap<CanvasObjectIdType, ShapeModel> },
+            Some(server_msg) => match server_msg {
+                ServerSocketMessage::CreateShapes { client_id, canvas_id, shapes } => {
+                    if client_id != test_client_id {
+                        panic!("Expected client_id = {}; got {}", test_client_id, client_id);
+                    } else if canvas_id != canvas_a_id.to_string() {
+                        panic!("Expected canvas_id = {}; got {}", canvas_a_id, canvas_id);
+                    } else if shapes.len() != shapes_expected.len() {
+                        panic!(
+                            r#"
+                            Expected shapes map to contain {} items; got {}
+
+                            Shapes: {:?}
+                            "#,
+                            shapes_expected.len(),
+                            shapes.len(),
+                            shapes
+                        );
+                    } else {
+                        // success
+                        let mut shapes_entries : Vec<(&String, &ShapeModel)> = shapes.iter()
+                            .collect();
+
+                        shapes_entries.sort_by_key(|(obj_id, _)| (*obj_id).clone());
+
+                        for (ref shape_entry, ref shape_expected) in shapes_entries.iter().zip(shapes_expected.iter()) {
+                            let (_, shape) = shape_entry;
+
+                            match (shape, shape_expected) {
+                                (
+                                    ShapeModel::Rect { x, y, width, height, stroke_width, stroke_color, fill_color },
+                                    ShapeModel::Rect { x: x_exp, y: y_exp, width: width_exp, height: height_exp, stroke_width: stroke_width_exp, stroke_color: stroke_color_exp, fill_color: fill_color_exp }
+                                ) => {
+                                    if (x - x_exp).abs() > f64_prec {
+                                        panic!("Expected shape x = {}; got {}", x, x_exp);
+                                    }
+                                    if (y - y_exp).abs() > f64_prec {
+                                        panic!("Expected shape y = {}; got {}", y, y_exp);
+                                    }
+                                    if (width - width_exp).abs() > f64_prec {
+                                        panic!("Expected shape width = {}; got {}", width, width_exp);
+                                    }
+                                    if (height - height_exp).abs() > f64_prec {
+                                        panic!("Expected shape height = {}; got {}", height, height_exp);
+                                    }
+                                    if (stroke_width - stroke_width_exp).abs() > f64_prec {
+                                        panic!("Expected shape stroke_width = {}; got {}", stroke_width, stroke_width_exp);
+                                    }
+                                    if stroke_color != stroke_color_exp {
+                                        panic!("Expected shape stroke_color = {}; got {}", stroke_color, stroke_color_exp);
+                                    }
+                                    if fill_color != fill_color_exp {
+                                        panic!("Expected shape fill_color = {}; got {}", fill_color, fill_color_exp);
+                                    }
+                                },
+                                (_, _) => panic!("Expected Rect; got {:?}", shape)
+                            };
+
+                            // success
+                        }
                     }
                 },
                 _ => panic!("Expected ServerSocketMessage::IndividualError, got {:?}", server_msg)
