@@ -17,6 +17,8 @@ function CreateCanvasMenu({ onCreate }: CreateCanvasMenuProps) {
   if (!context) {
     throw new Error("throw new Error('No WhiteboardContext provided');")
   }
+  const newCanvasAllowedUsers = context.newCanvasAllowedUsers;
+  const setNewCanvasAllowedUsers = context.setNewCanvasAllowedUsers;
 
   const handleSubmit = () => {
     if (!canvasName.trim()) {
@@ -43,8 +45,8 @@ function CreateCanvasMenu({ onCreate }: CreateCanvasMenuProps) {
       <Label htmlFor="users">Allowed Users</Label>
       
       <AllowedUsersPopover 
-        whiteboardId={whiteboardId}
-        canvasId={canvasId}
+        selected={newCanvasAllowedUsers}
+        onChange={setNewCanvasAllowedUsers}
       />
 
       <Button className="mt-2" onClick={handleSubmit}>
