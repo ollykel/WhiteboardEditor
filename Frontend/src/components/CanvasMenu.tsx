@@ -28,7 +28,9 @@ import AllowedUsersPopover from "@/components/AllowedUsersPopover";
 import type { 
   ClientMessageDeleteCanvases, 
   CanvasIdType, 
-  WhiteboardIdType 
+  WhiteboardIdType ,
+  CanvasKeyType,
+  UserSummary,
 } from "@/types/WebSocketProtocol";
 import { useSelector } from "react-redux";
 import { selectAllowedUsersByCanvas, setAllowedUsersByCanvas } from "@/store/allowedUsers/allowedUsersByCanvasSlice";
@@ -43,7 +45,7 @@ function CanvasMenu({ canvasId, whiteboardId }: CanvasMenuProps) {
   const [dialogOpen, setDialogOpen] = useState(false);
   const dispatch = store.dispatch;
   const allowedUsers = useSelector((state: RootState) =>
-    selectAllowedUsersByCanvas(state.allowedUsersByCanvas, [whiteboardId, canvasId]) ?? []
+    selectAllowedUsersByCanvas(state, [whiteboardId, canvasId]) ?? []
   );
 
   const context = useContext(WhiteboardContext);
@@ -54,12 +56,21 @@ function CanvasMenu({ canvasId, whiteboardId }: CanvasMenuProps) {
     socketRef, 
   } = context;
 
-  const handleUpdateAllowedUsers = (newUsers: User) => {
+  const handleUpdateAllowedUsers = (newUsers: User[]) => {
     // Map to proper type
-    const usersToSend = newUsers;
+    const usersToSend: UserSummary[] = newUsers.map(u => ({
+      userId: u._id,
+      username: u.username,
+    }));
 
     // Update Redux
-    dispatch(setAllowedUsersByCanvas({ [whiteboardId, canvasId]: usersToSend }));
+    const canvasKey: CanvasKeyType = [whiteboardId, canvasId];
+    const canvasKeyString = canvasKey.join(", ");
+    dispatch(
+      setAllowedUsersByCanvas({ 
+        [canvasKeyString]: usersToSend
+      })
+    );
 
     // Send WS message
     if (socketRef.current) {
@@ -143,7 +154,11 @@ function CanvasMenu({ canvasId, whiteboardId }: CanvasMenuProps) {
           </DialogHeader>
 
           <AllowedUsersPopover 
-            selected={allowedUsers}
+            selected={allowedUsers.map(u => ({
+              _id: u.userId,
+              username: u.username,
+              email: "",
+            }))}
             onChange={handleUpdateAllowedUsers}
           />
 

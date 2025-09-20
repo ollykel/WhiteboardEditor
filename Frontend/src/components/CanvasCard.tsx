@@ -1,3 +1,8 @@
+import { useSelector } from "react-redux";
+
+import { type RootState } from "@/store";
+import { selectAllowedUsersByCanvas } from "@/store/allowedUsers/allowedUsersByCanvasSlice";
+
 import Canvas from "./Canvas";
 import CanvasMenu from "./CanvasMenu";
 
@@ -11,11 +16,16 @@ interface CanvasCardProps extends CanvasProps {
 
 function CanvasCard(props: CanvasCardProps) {
   const { id, title, whiteboardId } = props;
+  const allowedUsers = useSelector((state: RootState) =>
+    selectAllowedUsersByCanvas(state, [whiteboardId, id]) ?? []
+  );
 
   return (
     <div className="flex flex-col p-6">
       {/* Active Users */}
-      <div className="text-center">Active Users: </div>
+      <div className="text-center">
+        Allowed Users: {allowedUsers.map(u => u.username).join(', ')}
+      </div>
       {/* Title */}
       <div className="text-center p-4">{title}</div>
       {/* Konva Canvas */}
