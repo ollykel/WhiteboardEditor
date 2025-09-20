@@ -54,7 +54,7 @@ const AllowedUsersPopover = ({ selected, onChange }: AllowedUsersPopoverProps) =
 
   const toggleUser = (user: ObjectID) => {
     const next = selected.includes(user)
-      ? selected.filter(u => u !== user)
+      ? selected.filter(u => u.id !== user.id)
       : [...selected, user];
     onChange(next);
   };
