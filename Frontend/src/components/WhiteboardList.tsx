@@ -15,8 +15,8 @@
 
 // -- local imports
 import type {
-  WhiteboardAttribs
-} from '@/types/WebSocketProtocol';
+  Whiteboard
+} from '@/types/APIProtocol';
 
 import WhiteboardCard from '@/components/WhiteboardCard';
 
@@ -26,7 +26,7 @@ export type WhiteboardListProps =
   // derived should not expose any such information to the client.
   | { status: 'error';  message: string; }
   | { status: 'loading'; }
-  | { status: 'ready'; whiteboardsAttribs: WhiteboardAttribs[]; }
+  | { status: 'ready'; whiteboardsAttribs: Whiteboard[]; }
 ;
 
 const WhiteboardList = (props: WhiteboardListProps): React.JSX.Element => {
@@ -70,7 +70,7 @@ const WhiteboardList = (props: WhiteboardListProps): React.JSX.Element => {
           {
               whiteboardsAttribs.map(attribs => (
                 <li
-                  key={attribs.id}
+                  key={attribs._id}
                 >
                   <WhiteboardCard
                     {...attribs}
