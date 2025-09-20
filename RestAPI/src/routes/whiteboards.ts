@@ -63,8 +63,8 @@ router.get('/:whiteboardId', async (
           const { whiteboard } = resp;
           const validUserIdSet: Record<string, boolean> = Object.fromEntries([
             [whiteboard.owner.id, true],
-            ...whiteboard.shared_users.filter(perm => perm.type === 'id').map(perm => [
-              perm.user_id, true
+            ...whiteboard.shared_users.filter(perm => perm.type === 'user').map(perm => [
+              perm.user?._id ?? perm.user, true
             ])
           ]);
 

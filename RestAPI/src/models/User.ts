@@ -2,7 +2,7 @@ import {
   Schema,
   model,
   Types,
-  Document
+  type Document,
 } from "mongoose";
 
 import type {
@@ -34,7 +34,9 @@ type UserProtectedFields =
 // =============================================================================
 
 // -- User with id and other basic document info
-export type IUserDocument = IUserModel & DocumentBase;
+export interface IUserDocument extends IUserModel {
+  _id: Types.ObjectId;
+}
 
 // -- User, excluding sensitive fields
 export type IUserPublicView = Omit<IUserDocument, UserProtectedFields>;
@@ -50,7 +52,11 @@ interface IUserMethods {
 }
 
 // -- User as a Mongo document
-export type IUser = IUserDocument & Document & IUserMethods;
+export type IUser = 
+  & IUserDocument
+  & IUserMethods
+  & Document
+;
 
 
 // === REST Request Body Definitions ===========================================
@@ -91,7 +97,6 @@ export type DeleteUserRequest = AuthorizedRequestBody & DeleteUserData;
 
 const toPublicView = (user: IUserDocument): IUserPublicView => {
   const {
-    _id,
     passwordHashed,
     ...out
   } = user;
@@ -123,18 +128,7 @@ const userSchema = new Schema<IUser>(
     minimize: false,
 
     // -- data transformation
-    toObject: {
-      getters: true,
-      virtuals: true,
-      transform: (_doc: IUser, ret: Partial<IUserDocument>): IUserPublicView => {
-        delete ret.passwordHashed;
-
-        return ret as IUserPublicView;
-      }
-    },
     toJSON: {
-      getters: true,
-      virtuals: true,
       transform: (_doc: IUser, ret: Partial<IUserDocument>): IUserPublicView => {
         delete ret.passwordHashed;
 
@@ -146,19 +140,14 @@ const userSchema = new Schema<IUser>(
     methods: {
       // -- Data transfer mappings
       toPublicView(): IUserPublicView {
-        return toPublicView(this.toObject({ virtuals: true }));
+        return toPublicView(this.toObject());
       },// -- end toPublicView
       toAttribView(): IUserAttribView {
-        return toAttribView(this.toObject({ virtuals: true }));
+        return toAttribView(this.toObject());
       }// -- end toAttribView
     }
   }
 );// -- end userSchema
-
-// -- virtual fields
-userSchema.virtual('id').get(function() {
-  return this._id;
-});
 
 // -- User Model
 export const User = model<IUser>("User", userSchema, "users");

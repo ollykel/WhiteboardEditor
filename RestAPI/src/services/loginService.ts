@@ -40,7 +40,7 @@ export const loginService = async (
 
   if (!user) throw new Error("Invalid credentials, user not found");
 
-  const userId = user.toPublicView().id;
+  const userId = user.toPublicView()._id;
 
   // Check password
   const valid = await bcrypt.compare(password, user.passwordHashed);

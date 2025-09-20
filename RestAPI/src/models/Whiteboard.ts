@@ -11,9 +11,8 @@ import type {
   DocumentViewMethods
 } from './Model';
 
-import type {
-  IUser,
-  UserIdType
+import {
+  type IUser,
 } from './User';
 
 export type WhiteboardIdType = Types.ObjectId;
@@ -154,7 +153,7 @@ export const canvasSchema = new Schema<ICanvas>(
       virtuals: true
     },
     toJSON: {
-      virtuals: true
+      virtuals: false
     },
     // -- instance methods
     methods: {
@@ -211,8 +210,8 @@ export interface IWhiteboardUserPermissionBase {
 }
 
 export interface IWhiteboardUserPermissionById extends IWhiteboardUserPermissionBase {
-  type: 'id';
-  user_id: Types.ObjectId;
+  type: 'user';
+  user: Types.ObjectId;
 }
 
 export interface IWhiteboardUserPermissionByEmail extends IWhiteboardUserPermissionBase {
@@ -236,9 +235,12 @@ export const WhiteboardUserPermission = model<IWhiteboardUserPermissionBase>(
   'WhiteboardUserPermission', whiteboardUserPermissionSchema, "whiteboardUserPermissions"
 );
 
-export const WhiteboardUserPermissionById = WhiteboardUserPermission.discriminator<IWhiteboardUserPermissionById>('id', new Schema({
-  user_id: { type: Types.ObjectId, ref: "User", required: true }
-}));
+export const WhiteboardUserPermissionById = WhiteboardUserPermission.discriminator<IWhiteboardUserPermissionById>(
+  'user',
+  new Schema({
+    user: { type: Types.ObjectId, ref: "User", required: true },
+  })
+);
 
 export const WhiteboardUserPermissionByEmail = WhiteboardUserPermission.discriminator<IWhiteboardUserPermissionByEmail>('email', new Schema({
   email: { type: String, required: true }
@@ -247,7 +249,7 @@ export const WhiteboardUserPermissionByEmail = WhiteboardUserPermission.discrimi
 export interface IWhiteboardModel {
   name: string;
   time_created: Date;
-  owner: UserIdType;        // reference to User
+  owner: IUser;        // reference to User
 
   // -- vector fields: exclude from attribute view
   canvases: ICanvas[];
@@ -283,8 +285,8 @@ export type IWhiteboard =
 export interface IWhiteboardSchema extends Model<IWhiteboard> {
   findFull: (options: Record<string, any>) => Promise<IWhiteboard[]>;
   findAttribViews: (options: Record<string, any>) => Promise<IWhiteboardAttribView[]>;
-  findCanvases: (options: Record<string, any>) => Promise<ICanvas[]>;
-  findSharedUsers: (options: Record<string, any>) => Promise<IWhiteboardUserPermission[]>;
+  findCanvasesByWhiteboardId: (whiteboardId: Types.ObjectId) => Promise<ICanvasAttribView[] | null>;
+  findSharedUsersByWhiteboardId: (whiteboardId: Types.ObjectId) => Promise<IWhiteboardUserPermission[] | null>;
 }
 
 const whiteboardToAttribView = (wb: IWhiteboardDocument): IWhiteboardAttribView => {
@@ -309,7 +311,7 @@ const whiteboardSchema = new Schema<IWhiteboard, IWhiteboardSchema>(
       virtuals: true
     },
     toJSON: {
-      virtuals: true,
+      virtuals: false,
     },
     // -- instance methods
     methods: {
@@ -335,20 +337,36 @@ const whiteboardSchema = new Schema<IWhiteboard, IWhiteboardSchema>(
             ],
           });
       },
-      findAttribViews(options: Record<string, any>) {
+      findAttribViews(options: Record<string, any>): Promise<IWhiteboardAttribView[]> {
         return this.find(options)
           .select(WHITEBOARD_VECTOR_FIELDS
             .map(field => `-${field}`)
             .join(' ')
-          );
+          )
+          .populate({
+            path: 'owner',
+          });
       },
-      findCanvases(options: Record<string, any>) {
-        return this.find(options)
+      async findCanvasesByWhiteboardId(whiteboardId: Types.ObjectId): Promise<ICanvasAttribView[] | null> {
+        const res : Partial<IWhiteboard> | null = await this.findById(whiteboardId)
+          .populate('canvases')
           .select("canvases");
+
+        if ((! res) || (! Array.isArray(res.canvases))) {
+          return null;
+        } else {
+          return res.canvases;
+        }
       },
-      findSharedUsers(options: Record<string, any>) {
-        return this.find(options)
+      async findSharedUsersByWhiteboardId(whiteboardId: Types.ObjectId): Promise<IWhiteboardUserPermission[] | null> {
+        const res : Partial<IWhiteboard> | null = await this.findById(whiteboardId)
           .select("shared_users");
+
+        if ((! res) || (! Array.isArray(res.shared_users))) {
+          return null;
+        } else {
+          return res.shared_users;
+        }
       }
     },
   }
@@ -359,10 +377,6 @@ whiteboardSchema.virtual('canvases', {
   localField: '_id',
   foreignField: 'whiteboard_id',
   justOne: false,
-});
-
-whiteboardSchema.pre('find', function() {
-  this.populate('canvases');
 });
 
 export const Whiteboard = model<IWhiteboard, IWhiteboardSchema>("Whiteboard", whiteboardSchema, "whiteboards");
