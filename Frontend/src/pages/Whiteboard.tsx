@@ -88,7 +88,6 @@ import type {
   CanvasIdType,
   WhiteboardIdType,
   WhiteboardAttribs,
-  UserSummary,
 } from '@/types/WebSocketProtocol';
 
 import { useUser } from '@/hooks/useUser';
@@ -134,6 +133,7 @@ const Whiteboard = () => {
     socketRef,
     setWhiteboardId,
     sharedUsers,
+    newCanvasAllowedUsers,
   } = context;
 
   // -- prop-derived state
@@ -215,9 +215,7 @@ const Whiteboard = () => {
   // } = whiteboardData || {};
 
   // --- misc functions
-  const handleNewCanvas = (name: string, allowedUsers: UserSummary[]) => {
-    // update React Query state with new users?
-
+  const handleNewCanvas = (name: string) => {
     // Send message to server.
     // Server will echo response back, and actually inserting the new canvas
     // will be handled by handleServerMessage.
@@ -228,7 +226,7 @@ const Whiteboard = () => {
         width: 512,
         height: 512,
         name,
-        allowedUsers,
+        allowedUsers: newCanvasAllowedUsers,
       });
 
       socketRef.current.send(JSON.stringify(createCanvasMsg));

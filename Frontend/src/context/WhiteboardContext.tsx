@@ -15,6 +15,7 @@ import type {
 
 import type {
   CanvasIdType,
+  UserSummary,
   WhiteboardIdType,
 } from '@/types/WebSocketProtocol';
 
@@ -31,8 +32,8 @@ export interface WhiteboardContextType {
   setWhiteboardId: React.Dispatch<React.SetStateAction<WhiteboardIdType>>;
   sharedUsers: UserPermission[];
   setSharedUsers: React.Dispatch<React.SetStateAction<UserPermission[]>>;
-  newCanvasAllowedUsers: string[];
-  setNewCanvasAllowedUsers: React.Dispatch<React.SetStateAction<string[]>>;
+  newCanvasAllowedUsers: UserSummary[];
+  setNewCanvasAllowedUsers: React.Dispatch<React.SetStateAction<UserSummary[]>>;
 }
 
 export type WhiteboardProvidersProps = WhiteboardContextType;
