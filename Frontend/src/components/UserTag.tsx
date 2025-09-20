@@ -106,6 +106,21 @@ const userTagVariants = cva(
   }
 );
 
+// -- standardize size of lucide-react X icon across variant sizes
+const getIconSizeByTagSize = (tagSize: EnumUserTagSize): number => {
+  switch (tagSize) {
+    case 'small':
+      return 18;
+    case 'medium':
+      return 24;
+    case 'large':
+      return 32;
+    default:
+      // -- we should never get here
+      throw new Error(`Unhandled case: ${tagSize}`);
+  }
+};
+
 interface UserTagBaseProps extends UserTagPropsBase {
   role: EnumUserTagRole;
   onClick?: () => any;
@@ -170,7 +185,7 @@ export const UserTagBriefDeleter = ({
         onClick={() => onDelete(user)}
         className="hover:cursor-pointer p-1 inline-block align-middle"
       >
-        <X size={18} />
+        <X size={getIconSizeByTagSize(baseProps.size)} />
       </button>
       <span>{username} ({email})</span>
     </UserTagBase>
@@ -217,7 +232,7 @@ export const UserTagUsernameDeleter = ({
         onClick={() => onDelete(user)}
         className="hover:cursor-pointer p-1 inline-block align-middle"
       >
-        <X size={18} />
+        <X size={getIconSizeByTagSize(baseProps.size)} />
       </button>
       <span>{username}</span>
     </UserTagBase>
@@ -265,7 +280,7 @@ export const UserTagEmailDeleter = ({
         onClick={() => onDelete(user)}
         className="hover:cursor-pointer p-1 inline-block align-middle"
       >
-        <X size={18} />
+        <X size={getIconSizeByTagSize(baseProps.size)} />
       </button>
       <span>{email}</span>
     </UserTagBase>
