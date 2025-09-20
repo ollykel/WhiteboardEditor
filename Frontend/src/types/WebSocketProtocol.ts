@@ -42,7 +42,7 @@ export interface CanvasAttribs {
 // Contains nested data
 export interface CanvasData extends CanvasAttribs {
   shapes: Record<CanvasObjectIdType, CanvasObjectModel>,
-  allowedUsers: UserSummary[];
+  allowedUsers: ObjectID[];
 }
 
 // Ensure unique id by including whiteboard id
@@ -101,7 +101,7 @@ export interface ServerMessageCreateCanvas {
   width: number;
   height: number;
   name: string;
-  allowedUsers: UserSummary[];
+  allowedUsers: ObjectID[];
 }
 
 export interface ServerMessageDeleteCanvases {
@@ -168,7 +168,7 @@ export interface ClientMessageCreateCanvas {
   width: number;
   height: number;
   name: string;
-  allowedUsers?: UserSummary[];
+  allowedUsers?: ObjectID[];
 }
 
 // Notify server that client has deleted canvases

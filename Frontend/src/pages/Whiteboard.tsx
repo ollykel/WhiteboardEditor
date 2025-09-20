@@ -76,7 +76,8 @@ import shapeAttributesReducer from '@/reducers/shapeAttributesReducer';
 import type { ToolChoice } from '@/components/Tool';
 import type {
   CanvasObjectIdType,
-  CanvasObjectModel
+  CanvasObjectModel,
+  ObjectID
 } from '@/types/CanvasObjectModel';
 import ShareWhiteboardForm, {
   type ShareWhiteboardFormData
@@ -222,9 +223,8 @@ const Whiteboard = () => {
   // --- misc functions
   const handleNewCanvas = (name: string) => {
     // Mapping to match types
-    const wsAllowedUsers: UserSummary[] = newCanvasAllowedUsers.map(u => ({
-      userId: u._id,
-      username: u.username,
+    const wsAllowedUsers: ObjectID[] = newCanvasAllowedUsers.map(u => ({
+      id: u._id,
     }))
 
     // Send message to server.
@@ -465,7 +465,7 @@ const Whiteboard = () => {
           <div className="flex flex-1 flex-row justify-center flex-wrap">
             {canvasesSorted.map(({ id: canvasId, width, height, name, shapes, allowedUsers }: CanvasData) => {
               const hasAccess = user
-                ? allowedUsers.length === 0 || allowedUsers.some((u) => u.userId === user.id)
+                ? allowedUsers.length === 0 || allowedUsers.some(u => u.id === user.id)
                 : false;
               return (
                 <CanvasCard
