@@ -6,7 +6,10 @@ function YourWhiteboards() {
       <div className="text-2xl font-bold">
         Your Whiteboards
       </div>
-      <WhiteboardCard id="dummyYourID" /> {/* TODO: Map the list of your whiteboards */}
+      <WhiteboardCard
+        id="dummyYourID"
+        name="Dummy Whiteboard"
+      /> {/* TODO: Map the list of your whiteboards */}
     </div>
   );
 }
