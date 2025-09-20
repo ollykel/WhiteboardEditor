@@ -5,29 +5,29 @@ import {
 
 // -- local imports
 import type {
-  ClientIdType,
-  CanvasKeyType
+  UserSummary,
+  CanvasKeyType,
 } from '@/types/WebSocketProtocol';
 
 const allowedUsersByCanvasSlice = createSlice({
   name: 'allowedUsersByCanvas',
   // Will store data in a <whiteboard_id, canvas_id> => ClientId[] format
-  initialState: {} as Record<string, ClientIdType[]>,
+  initialState: {} as Record<string, UserSummary[]>,
   reducers: {
-    setAllowedUsersByCanvas(state, action: PayloadAction<Record<string, ClientIdType[]>>) {
+    setAllowedUsersByCanvas(state, action: PayloadAction<Record<string, UserSummary[]>>) {
       return {
         ...state,
         ...action.payload
       };
     },
-    addAllowedUsersByCanvas(state, action: PayloadAction<Record<string, ClientIdType[]>>) {
+    addAllowedUsersByCanvas(state, action: PayloadAction<Record<string, UserSummary[]>>) {
       const out = { ...state };
 
-      Object.entries(action.payload).forEach(([id, clientIds]) => {
+      Object.entries(action.payload).forEach(([id, users]) => {
         if (id.toString() in state) {
-          out[id] = [...state[id], ...clientIds];
+          out[id] = [...state[id], ...users];
         } else {
-          out[id] = clientIds;
+          out[id] = users;
         }
       });
 
