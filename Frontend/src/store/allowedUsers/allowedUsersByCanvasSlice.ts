@@ -11,7 +11,7 @@ import type {
 
 const allowedUsersByCanvasSlice = createSlice({
   name: 'allowedUsersByCanvas',
-  // Will store data in a <whiteboard_id, canvas_id> => ClientId[] format
+  // Will store data in a <whiteboard_id, canvas_id> => UserSummary[] format
   initialState: {} as Record<string, UserSummary[]>,
   reducers: {
     setAllowedUsersByCanvas(state, action: PayloadAction<Record<string, UserSummary[]>>) {

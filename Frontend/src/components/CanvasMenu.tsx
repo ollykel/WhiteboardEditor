@@ -17,7 +17,10 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "./ui/button";
 
-import { store } from "@/store";
+import { 
+  store,
+  type RootState,
+} from "@/store";
 import WhiteboardContext from "@/context/WhiteboardContext";
 import { deleteCanvas } from "@/controllers";
 import AllowedUsersPopover from "@/components/AllowedUsersPopover";
@@ -27,27 +30,46 @@ import type {
   CanvasIdType, 
   WhiteboardIdType 
 } from "@/types/WebSocketProtocol";
+import { useSelector } from "react-redux";
+import { selectAllowedUsersByCanvas, setAllowedUsersByCanvas } from "@/store/allowedUsers/allowedUsersByCanvasSlice";
+import type { User } from "@/types/APIProtocol";
 
 interface CanvasMenuProps {
-  allowedUsers: string[];
-  setAllowedUsers: (users: string[]) => void;
   canvasId: CanvasIdType;
   whiteboardId: WhiteboardIdType;
 }
 
-function CanvasMenu({ allowedUsers, setAllowedUsers, canvasId, whiteboardId }: CanvasMenuProps) {
+function CanvasMenu({ canvasId, whiteboardId }: CanvasMenuProps) {
   const [dialogOpen, setDialogOpen] = useState(false);
   const dispatch = store.dispatch;
+  const allowedUsers = useSelector((state: RootState) =>
+    selectAllowedUsersByCanvas(state.allowedUsersByCanvas, [whiteboardId, canvasId]) ?? []
+  );
 
   const context = useContext(WhiteboardContext);
   if (!context) {
     throw new Error("CanvasMenu must be used inside a WhiteboardProvider");
   }
-
   const { 
     socketRef, 
-    sharedUsers
   } = context;
+
+  const handleUpdateAllowedUsers = (newUsers: User) => {
+    // Map to proper type
+    const usersToSend = newUsers;
+
+    // Update Redux
+    dispatch(setAllowedUsersByCanvas({ [whiteboardId, canvasId]: usersToSend }));
+
+    // Send WS message
+    if (socketRef.current) {
+      socketRef.current.send(JSON.stringify({
+        type: 'update_canvas_allowed_users',
+        canvasId,
+        allowedUsers: usersToSend,
+      }));
+    }
+  };
 
   const handleDelete = () => {
     // update Redux
@@ -62,23 +84,23 @@ function CanvasMenu({ allowedUsers, setAllowedUsers, canvasId, whiteboardId }: C
 
       socketRef.current.send(JSON.stringify(msg));
     }
-  }
+  };
 
   const handleDownload = () => {
     console.log("download clicked");
-  }
+  };
 
   const handleViewMain = () => {
     console.log("view main screen clicked")
-  }
+  };
 
   const handleRequestAccess = () => {
     console.log("request access clicked");
-  }
+  };
 
   const handleMerge = () => {
     console.log("merge clicked");
-  }
+  };
 
   return (
     <div>
@@ -121,9 +143,8 @@ function CanvasMenu({ allowedUsers, setAllowedUsers, canvasId, whiteboardId }: C
           </DialogHeader>
 
           <AllowedUsersPopover 
-            sharedUsers={sharedUsers}
-            allowedUsers={allowedUsers}
-            setAllowedUsers={setAllowedUsers}
+            selected={allowedUsers}
+            onChange={handleUpdateAllowedUsers}
           />
 
           <div className="flex justify-end gap-2 pt-4">

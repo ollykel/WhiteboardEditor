@@ -1,5 +1,3 @@
-import { useState } from "react";
-
 import Canvas from "./Canvas";
 import CanvasMenu from "./CanvasMenu";
 
@@ -13,9 +11,6 @@ interface CanvasCardProps extends CanvasProps {
 
 function CanvasCard(props: CanvasCardProps) {
   const { id, title, whiteboardId } = props;
-
-  // TODO: Use context to get dynamic state from database(?) outside card
-  const [allowedUsers, setAllowedUsers] = useState<string[]>(["joe"]);
 
   return (
     <div className="flex flex-col p-6">
@@ -31,8 +26,6 @@ function CanvasCard(props: CanvasCardProps) {
       <div className="currently-drawing">Joe is drawing...</div>
       {/* Canvas Menu */}
       <CanvasMenu 
-        allowedUsers={allowedUsers}
-        setAllowedUsers={setAllowedUsers}
         canvasId={id}
         whiteboardId={whiteboardId}
       />
