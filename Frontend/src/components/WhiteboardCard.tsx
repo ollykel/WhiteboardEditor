@@ -15,6 +15,7 @@ function WhiteboardCard({
   _id,
   name,
   owner,
+  shared_users: sharedUsers
 }: WhiteboardProps) {
   const { user } = useUser();
 
@@ -35,7 +36,24 @@ function WhiteboardCard({
             (<>{owner.username} ({owner.email})</>)
           }
         </h2>
+
+        {/** List shared users **/}
         <h3 className="">Collaborators: </h3>
+        <ul>
+          {sharedUsers?.map(perm => {
+            if (perm.type === 'user') {
+              return (
+                <li key={`user:${perm.user._id}`}>
+                  {perm.user.username} {`<${perm.user.email}>`} ({perm.permission})
+                </li>
+              );
+            } else {
+                <li key={`email:${perm.email}`}>
+                  {perm.email} ({perm.permission})
+                </li>
+            }
+          })}
+        </ul>
       </div>
     </Link>
   );
