@@ -10,7 +10,6 @@ import type {
   CanvasObjectIdType,
   CanvasObjectModel,
   CanvasObjectRecord,
-  ObjectID
 } from '@/types/CanvasObjectModel';
 
 // The unique identifier for clients within a web socket session.
@@ -42,7 +41,7 @@ export interface CanvasAttribs {
 // Contains nested data
 export interface CanvasData extends CanvasAttribs {
   shapes: Record<CanvasObjectIdType, CanvasObjectModel>,
-  allowedUsers: ObjectID[];
+  allowedUsers: string[];
 }
 
 // Ensure unique id by including whiteboard id
@@ -101,7 +100,7 @@ export interface ServerMessageCreateCanvas {
   width: number;
   height: number;
   name: string;
-  allowedUsers: ObjectID[];
+  allowedUsers: string[];
 }
 
 export interface ServerMessageDeleteCanvases {
@@ -124,7 +123,7 @@ export interface ServerMessageBroadcastError {
 export interface ServerMessageUpdateAllowedUsers {
   type: 'update_canvas_allowed_users';
   canvasId: string;
-  allowedUsers: ObjectID[];
+  allowedUsers: string[];
 }
 
 // Tagged union of all possible client-server messages
@@ -168,7 +167,7 @@ export interface ClientMessageCreateCanvas {
   width: number;
   height: number;
   name: string;
-  allowedUsers?: ObjectID[];
+  allowedUsers?: string[];
 }
 
 // Notify server that client has deleted canvases
@@ -181,7 +180,7 @@ export interface ClientMessageDeleteCanvases {
 export interface ClientMessageUpdateAllowedUsers {
   type: "update_canvas_allowed_users";
   canvasId: string;
-  allowedUsers: ObjectID[];
+  allowedUsers: string[];
 }
 
 // Tagged union of all possible client-server messages

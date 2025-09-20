@@ -33,7 +33,6 @@ import type {
 } from "@/types/WebSocketProtocol";
 import { useSelector } from "react-redux";
 import { selectAllowedUsersByCanvas, setAllowedUsersByCanvas } from "@/store/allowedUsers/allowedUsersByCanvasSlice";
-import type { ObjectID } from "@/types/CanvasObjectModel";
 
 interface CanvasMenuProps {
   canvasId: CanvasIdType;
@@ -55,7 +54,7 @@ function CanvasMenu({ canvasId, whiteboardId }: CanvasMenuProps) {
     socketRef, 
   } = context;
 
-  const handleUpdateAllowedUsers = (newUsers: ObjectID[]) => {
+  const handleUpdateAllowedUsers = (newUsers: string[]) => {
     // Update Redux
     const canvasKey: CanvasKeyType = [whiteboardId, canvasId];
     const canvasKeyString = canvasKey.join(", ");

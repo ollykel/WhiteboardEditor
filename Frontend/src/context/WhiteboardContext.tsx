@@ -11,7 +11,6 @@ import type {
 import type {
   CanvasObjectIdType,
   CanvasObjectModel,
-  ObjectID
 } from '@/types/CanvasObjectModel';
 
 import type {
@@ -32,8 +31,8 @@ export interface WhiteboardContextType {
   setWhiteboardId: React.Dispatch<React.SetStateAction<WhiteboardIdType>>;
   sharedUsers: UserPermission[];
   setSharedUsers: React.Dispatch<React.SetStateAction<UserPermission[]>>;
-  newCanvasAllowedUsers: ObjectID[];
-  setNewCanvasAllowedUsers: React.Dispatch<React.SetStateAction<ObjectID[]>>;
+  newCanvasAllowedUsers: string[];
+  setNewCanvasAllowedUsers: React.Dispatch<React.SetStateAction<string[]>>;
 }
 
 export type WhiteboardProvidersProps = WhiteboardContextType;

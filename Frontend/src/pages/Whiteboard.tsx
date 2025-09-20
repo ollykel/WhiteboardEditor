@@ -24,7 +24,6 @@ import { X } from 'lucide-react';
 // -- local types
 import type {
   Whiteboard as APIWhiteboard,
-  UserPermission,
 } from '@/types/APIProtocol';
 
 // -- program state
@@ -76,7 +75,6 @@ import type { ToolChoice } from '@/components/Tool';
 import type {
   CanvasObjectIdType,
   CanvasObjectModel,
-  ObjectID
 } from '@/types/CanvasObjectModel';
 import ShareWhiteboardForm, {
   type ShareWhiteboardFormData
@@ -221,7 +219,7 @@ const Whiteboard = () => {
   // --- misc functions
   const handleNewCanvas = (name: string) => {
     // Mapping to match types
-    const wsAllowedUsers: ObjectID[] = newCanvasAllowedUsers
+
 
     // Send message to server.
     // Server will echo response back, and actually inserting the new canvas
@@ -233,7 +231,7 @@ const Whiteboard = () => {
         width: 512,
         height: 512,
         name,
-        allowedUsers: wsAllowedUsers,
+        allowedUsers: newCanvasAllowedUsers,
       });
 
       socketRef.current.send(JSON.stringify(createCanvasMsg));
@@ -313,19 +311,11 @@ const Whiteboard = () => {
             break;
           case 'update_canvas_allowed_users': 
           {
-            const { canvasId, allowedUsers: allowedUserIds } = msg;
+            const { canvasId, allowedUsers } = msg;
             const canvasKey: CanvasKeyType = [whiteboardIdRef.current, canvasId];
             const canvasKeyString = canvasKey.join(', ');
 
-            // map Ids to UserSummaries
-            const allowedUserIDs: ObjectID[] = sharedUsers
-              .filter((u): u is Extract<UserPermission, { type: 'id' }> => u.type === 'id')
-              .filter(u => allowedUserIds.some((id) => id.toString() === u.user_id))
-              .map(u => ({
-                id: u.user_id,
-              }));
-
-            dispatch(setAllowedUsersByCanvas({ [canvasKeyString]: allowedUserIDs }));
+            dispatch(setAllowedUsersByCanvas({ [canvasKeyString]: allowedUsers }));
           }
           break;
           case 'individual_error':
@@ -460,7 +450,7 @@ const Whiteboard = () => {
           <div className="flex flex-1 flex-row justify-center flex-wrap">
             {canvasesSorted.map(({ id: canvasId, width, height, name, shapes, allowedUsers }: CanvasData) => {
               const hasAccess = user
-                ? allowedUsers.length === 0 || allowedUsers.some(u => u.id === user.id)
+                ? allowedUsers.length === 0 || allowedUsers.includes(user.id)
                 : false;
               return (
                 <CanvasCard
@@ -529,7 +519,7 @@ const Whiteboard = () => {
 const WrappedWhiteboard = () => {
   const socketRef = useRef<WebSocket | null>(null);
   const [whiteboardId, setWhiteboardId] = useState<WhiteboardIdType>("");
-  const [newCanvasAllowedUsers, setNewCanvasAllowedUsers] = useState<ObjectID[]>([]);
+  const [newCanvasAllowedUsers, setNewCanvasAllowedUsers] = useState<string[]>([]);
 
   const { data: whiteboardData, isLoading: isWhiteboardDataLoading } = useQuery({
     queryKey: ['whiteboard', whiteboardId],

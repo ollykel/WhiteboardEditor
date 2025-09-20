@@ -7,20 +7,19 @@ import {
 import type {
   CanvasKeyType,
 } from '@/types/WebSocketProtocol';
-import type { ObjectID } from '@/types/CanvasObjectModel';
 
 const allowedUsersByCanvasSlice = createSlice({
   name: 'allowedUsersByCanvas',
-  // Will store data in a <whiteboard_id, canvas_id> => ObjectID[] format
-  initialState: {} as Record<string, ObjectID[]>,
+  // Will store data in a <whiteboard_id, canvas_id> => string[] format
+  initialState: {} as Record<string, string[]>,
   reducers: {
-    setAllowedUsersByCanvas(state, action: PayloadAction<Record<string, ObjectID[]>>) {
+    setAllowedUsersByCanvas(state, action: PayloadAction<Record<string, string[]>>) {
       return {
         ...state,
         ...action.payload
       };
     },
-    addAllowedUsersByCanvas(state, action: PayloadAction<Record<string, ObjectID[]>>) {
+    addAllowedUsersByCanvas(state, action: PayloadAction<Record<string, string[]>>) {
       const out = { ...state };
 
       Object.entries(action.payload).forEach(([id, users]) => {
