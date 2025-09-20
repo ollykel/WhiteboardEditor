@@ -46,7 +46,7 @@ function CreateCanvasMenu({ onCreate }: CreateCanvasMenuProps) {
       
       <AllowedUsersPopover 
         selected={newCanvasAllowedUsers}
-        onChange={}
+        onChange={setNewCanvasAllowedUsers}
       />
 
       <Button className="mt-2" onClick={handleSubmit}>

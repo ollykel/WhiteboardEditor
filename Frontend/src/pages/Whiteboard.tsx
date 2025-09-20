@@ -25,6 +25,7 @@ import { X } from 'lucide-react';
 import type {
   Whiteboard as APIWhiteboard,
   UserPermission,
+  User,
 } from '@/types/APIProtocol';
 
 // -- program state
@@ -533,11 +534,7 @@ const Whiteboard = () => {
 const WrappedWhiteboard = () => {
   const socketRef = useRef<WebSocket | null>(null);
   const [whiteboardId, setWhiteboardId] = useState<WhiteboardIdType>("");
-  const context = useContext(WhiteboardContext);
-  if (!context) {
-    throw new Error('No WhiteboardContext provided in Whiteboard');
-  }
-  const { newCanvasAllowedUsers, setNewCanvasAllowedUsers } = context;
+  const [newCanvasAllowedUsers, setNewCanvasAllowedUsers] = useState<User[]>([]);
 
   const { data: whiteboardData, isLoading: isWhiteboardDataLoading } = useQuery({
     queryKey: ['whiteboard', whiteboardId],
