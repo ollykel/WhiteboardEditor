@@ -263,7 +263,6 @@ type WhiteboardVectorFields =
 
 const WHITEBOARD_VECTOR_FIELDS = [
   "canvases",
-  "shared_users"
 ];
 
 // === Data Transfer Objects ===================================================
@@ -343,9 +342,17 @@ const whiteboardSchema = new Schema<IWhiteboard, IWhiteboardSchema>(
             .map(field => `-${field}`)
             .join(' ')
           )
-          .populate({
-            path: 'owner',
-          });
+          .populate([
+            {
+              path: 'owner'
+            },
+            {
+              path: 'shared_users',
+              populate: [
+                { path: 'user' },
+              ]
+            }
+          ]);
       },
       async findCanvasesByWhiteboardId(whiteboardId: Types.ObjectId): Promise<ICanvasAttribView[] | null> {
         const res : Partial<IWhiteboard> | null = await this.findById(whiteboardId)
