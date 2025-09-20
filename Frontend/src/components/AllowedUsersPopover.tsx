@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 import { 
   Check,
@@ -19,24 +20,47 @@ import {
 } from "@/components/ui/command";
 import { Button } from "@/components/ui/button";
 
-import type { UserPermission } from "@/types/APIProtocol";
+import api from "@/api/axios";
+
+import type { 
+  UserPermission,
+  Whiteboard as APIWhiteboard,
+} from "@/types/APIProtocol";
 
 interface AllowedUsersPopoverProps {
-  sharedUsers: UserPermission[];
-  allowedUsers: string[];
-  setAllowedUsers: (users: string[]) => void;
-}
+  whiteboardId: string,
+  canvasId: string,
+};
 
-const AllowedUsersPopover = ({ sharedUsers, allowedUsers, setAllowedUsers }: AllowedUsersPopoverProps) => {
+const AllowedUsersPopover = ({ whiteboardId, canvasId }: AllowedUsersPopoverProps) => {
   const [open, setOpen] = useState(false);
+  const queryClient = useQueryClient();
+  const { data: whiteboard } = useQuery<APIWhiteboard>({
+    queryKey: ["whiteboard", whiteboardId],
+  });
 
-  const toggleUser = (user: string) => {
-    if (allowedUsers.includes(user)) {
-      setAllowedUsers(allowedUsers.filter(u => u !== user));
+  const canvas = whiteboard?.canvases?.find(c => c.id === canvasId);
+  const allowedUsers = canvas?.allowed_users ?? [];
+  const sharedUsers = whiteboard?.shared_users ?? [];
+
+  // mutation to update allowed users on backend
+  const updateAllowedUsers = useMutation({
+    mutationFn: async (newUsers: string[]) => {
+      await api.post(`canvases/${canvasId}/allowed-users`, { allowedUsers: newUsers });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["whiteboard", whiteboardId] });
     }
-    else {
-      setAllowedUsers([...allowedUsers, user])
-    }
+  })
+  
+  const allowedUserIds = allowedUsers.map(u => u._id);
+
+  const toggleUser = (userId: string) => {
+    const next = allowedUserIds.includes(userId)
+      ? allowedUserIds.filter(id => id !== userId)
+      : [...allowedUserIds, userId];
+
+    updateAllowedUsers.mutate(next);
   };
 
   return (
@@ -65,13 +89,13 @@ const AllowedUsersPopover = ({ sharedUsers, allowedUsers, setAllowedUsers }: All
                 <CommandItem
                   key={userPerm.user._id}
                   value={userPerm.user._id}
-                  className='flex items-center gap-2'
                   onSelect={() => toggleUser(userPerm.user._id)}
+                  className='flex items-center gap-2'
                 >
                   {userPerm.user.username}
                   <Check 
                     className={`ml-auto h-4 w-4 ${
-                      allowedUsers.includes(userPerm.user._id) ? "opacity-100" : "opacity-0"
+                      allowedUsers.includes(userPerm.user) ? "opacity-100" : "opacity-0"
                     }`}             
                   />
                 </CommandItem>

@@ -131,7 +131,8 @@ const Whiteboard = () => {
 
   const {
     socketRef,
-    setWhiteboardId
+    setWhiteboardId,
+    sharedUsers,
   } = context;
 
   // -- prop-derived state
@@ -208,12 +209,14 @@ const Whiteboard = () => {
   const title = currWhiteboard?.name ?? 'Loading whiteboard ...';
   const isActive = !!socketRef.current;
   const isReady = isActive && (! (isWhiteboardLoading || isWhiteboardFetching));
-  const {
-    shared_users: sharedUsers
-  } = whiteboardData || {};
+  // const {
+  //   shared_users: sharedUsers
+  // } = whiteboardData || {};
 
   // --- misc functions
   const handleNewCanvas = (name: string, allowedUsers: string[]) => {
+    // update React Query state with new users
+
     // Send message to server.
     // Server will echo response back, and actually inserting the new canvas
     // will be handled by handleServerMessage.
