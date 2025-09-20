@@ -88,6 +88,7 @@ import type {
   CanvasIdType,
   WhiteboardIdType,
   WhiteboardAttribs,
+  UserSummary,
 } from '@/types/WebSocketProtocol';
 
 import { useUser } from '@/hooks/useUser';
@@ -216,6 +217,12 @@ const Whiteboard = () => {
 
   // --- misc functions
   const handleNewCanvas = (name: string) => {
+    // Mapping to match types
+    const wsAllowedUsers: UserSummary[] = newCanvasAllowedUsers.map(u => ({
+      userId: u._id,
+      username: u.username,
+    }))
+
     // Send message to server.
     // Server will echo response back, and actually inserting the new canvas
     // will be handled by handleServerMessage.
@@ -226,7 +233,7 @@ const Whiteboard = () => {
         width: 512,
         height: 512,
         name,
-        allowedUsers: newCanvasAllowedUsers,
+        allowedUsers: wsAllowedUsers,
       });
 
       socketRef.current.send(JSON.stringify(createCanvasMsg));
