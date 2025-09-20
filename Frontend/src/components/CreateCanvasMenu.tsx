@@ -43,9 +43,8 @@ function CreateCanvasMenu({ onCreate, sharedUsers }: CreateCanvasMenuProps) {
       <Label htmlFor="users">Allowed Users</Label>
       
       <AllowedUsersPopover 
-        sharedUsers={sharedUsers}
-        allowedUsers={allowedUsers}
-        setAllowedUsers={setAllowedUsers}
+        whiteboardId={whiteboardId}
+        canvasId={canvasId}
       />
 
       <Button className="mt-2" onClick={handleSubmit}>

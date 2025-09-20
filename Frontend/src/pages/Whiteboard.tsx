@@ -215,7 +215,7 @@ const Whiteboard = () => {
 
   // --- misc functions
   const handleNewCanvas = (name: string, allowedUsers: string[]) => {
-    // update React Query state with new users
+    // update React Query state with new users?
 
     // Send message to server.
     // Server will echo response back, and actually inserting the new canvas

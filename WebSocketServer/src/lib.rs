@@ -171,7 +171,7 @@ pub enum ServerSocketMessage {
 pub enum ClientSocketMessage {
     CreateShapes { canvas_id: CanvasIdType, shapes: Vec<ShapeModel> },
     UpdateShapes { canvas_id: CanvasIdType, shapes: HashMap<String, ShapeModel> },
-    CreateCanvas { width: i32, height: i32, name: String },
+    CreateCanvas { width: i32, height: i32, name: String, allowed_users: HashSet::<ObjectId> },
     DeleteCanvases { canvas_ids: Vec<CanvasIdType> },
     Login { user_id: String, username: String },
 }
@@ -528,16 +528,18 @@ pub async fn handle_client_message(client_state: &ClientState, client_msg_s: &st
                         }
                     }
                 },
-                ClientSocketMessage::CreateCanvas { width, height, name } => {
+                ClientSocketMessage::CreateCanvas { width, height, name, allowed_users } => {
                     let mut whiteboard = client_state.whiteboard_ref.lock().await;
                     let new_canvas_id = ObjectId::new();
-                    let mut allowed = HashSet::<ObjectId>::new();
+
+                    // -- allowed_users passed in as parameter from AllowedUsersPopover
+                    // let mut allowed = HashSet::<ObjectId>::new();
 
                     // Initialize new canvas with only current user allowed to edit
                     // TODO: actually fetch user's id from database
-                    allowed.insert(ObjectId::new());
+                    // allowed_users.insert(ObjectId::new());
 
-                    let allowed_users_vec = allowed.iter().copied().collect::<Vec<_>>();
+                    let allowed_users_vec = allowed_users.iter().copied().collect::<Vec<_>>();
 
                     // valid input: add to diffs
                     {
@@ -546,7 +548,7 @@ pub async fn handle_client_message(client_state: &ClientState, client_msg_s: &st
                         diffs.push(WhiteboardDiff::CreateCanvas{
                             name: name.clone(),
                             width: width,
-                            height: height
+                            height: height,
                         });
                     }
                     
@@ -561,7 +563,7 @@ pub async fn handle_client_message(client_state: &ClientState, client_msg_s: &st
                             time_created: Utc::now(),
                             time_last_modified: Utc::now(),
                             shapes: HashMap::<CanvasObjectIdType, ShapeModel>::new(),
-                            allowed_users: Some(allowed),
+                            allowed_users: Some(allowed_users),
                         }
                     );
 
