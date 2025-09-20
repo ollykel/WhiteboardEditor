@@ -24,35 +24,23 @@ import api from "@/api/axios";
 
 import type { 
   UserPermission,
-  Whiteboard as APIWhiteboard,
 } from "@/types/APIProtocol";
 import type { UserSummary } from "@/types/WebSocketProtocol";
 
 interface AllowedUsersPopoverProps {
-  selected: UserSummary;
-  
+  selected: UserSummary[]; // current allowed users
+  onChange: (next: UserSummary[]) => void; // notify parent of changes
 };
 
 const AllowedUsersPopover = ({  }: AllowedUsersPopoverProps) => {
   const [open, setOpen] = useState(false);
-  const queryClient = useQueryClient();
-  const { data: whiteboard } = useQuery<APIWhiteboard>({
-    queryKey: ["whiteboard", whiteboardId],
-  });
+  
 
   const canvas = whiteboard?.canvases?.find(c => c.id === canvasId);
   const allowedUsers = canvas?.allowed_users ?? [];
   const sharedUsers = whiteboard?.shared_users ?? [];
 
-  // mutation to update allowed users on backend
-  const updateAllowedUsers = useMutation({
-    mutationFn: async (newUsers: string[]) => {
-      await api.post(`canvases/${canvasId}/allowed-users`, { allowedUsers: newUsers });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["whiteboard", whiteboardId] });
-    }
-  })
+  
 
   const allowedUserIds = allowedUsers.map(u => u._id);
 
