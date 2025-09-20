@@ -86,12 +86,14 @@ import type {
   ClientMessageCreateCanvas,
   CanvasData,
   CanvasIdType,
+  CanvasKeyType,
   WhiteboardIdType,
   WhiteboardAttribs,
   UserSummary,
 } from '@/types/WebSocketProtocol';
 
 import { useUser } from '@/hooks/useUser';
+import { setAllowedUsersByCanvas } from '@/store/allowedUsers/allowedUsersByCanvasSlice';
 
 // -- Allowed Users Redux reducers
 // import { 
@@ -311,6 +313,15 @@ const Whiteboard = () => {
               }// end for (const canvasId of canvasIds)
             }
             break;
+          case 'update_canvas_allowed_users': 
+          {
+            const { canvasId, allowedUsers } = msg;
+            const canvasKey: CanvasKeyType = [whiteboardIdRef.current, canvasId];
+            const canvasKeyString = canvasKey.join(', ');
+
+            dispatch(setAllowedUsersByCanvas({ [canvasKeyString]: allowedUsers }));
+          }
+          break;
           case 'individual_error':
           case 'broadcast_error':
             {

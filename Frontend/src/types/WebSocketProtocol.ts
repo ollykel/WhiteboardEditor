@@ -120,6 +120,12 @@ export interface ServerMessageBroadcastError {
   message: string;
 }
 
+export interface ServerMessageUpdateAllowedUsers {
+  type: 'update_canvas_allowed_users';
+  canvasId: string;
+  allowedUsers: UserSummary[];
+}
+
 // Tagged union of all possible client-server messages
 export type SocketServerMessage =
   | ServerMessageInitClient
@@ -129,7 +135,8 @@ export type SocketServerMessage =
   | ServerMessageCreateCanvas
   | ServerMessageDeleteCanvases
   | ServerMessageIndividualError
-  | ServerMessageBroadcastError;
+  | ServerMessageBroadcastError
+  | ServerMessageUpdateAllowedUsers;
 
 // ========================== CLIENT → SERVER ==================================
 
@@ -169,10 +176,18 @@ export interface ClientMessageDeleteCanvases {
   canvasIds: CanvasIdType[];
 }
 
+// Notify server that client has updated allowed users in a canvas
+export interface ClientMessageUpdateAllowedUsers {
+  type: "update_canvas_allowed_users";
+  canvasId: string;
+  allowedUsers: UserSummary[];
+}
+
 // Tagged union of all possible client-server messages
 export type SocketClientMessage =
   | ClientMessageLogin
   | ClientMessageCreateShapes
   | ClientMessageUpdateShapes
   | ClientMessageCreateCanvas
-  | ClientMessageDeleteCanvases;
+  | ClientMessageDeleteCanvases
+  | ClientMessageUpdateAllowedUsers;
