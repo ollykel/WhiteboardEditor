@@ -24,7 +24,7 @@ function CanvasCard(props: CanvasCardProps) {
     <div className="flex flex-col p-6">
       {/* Active Users */}
       <div className="text-center">
-        Allowed Users: {allowedUsers.map(u => u.username).join(', ')}
+        Allowed Users: {allowedUsers.join(', ')} {/* TODO: Map to usernames */}
       </div>
       {/* Title */}
       <div className="text-center p-4">{title}</div>

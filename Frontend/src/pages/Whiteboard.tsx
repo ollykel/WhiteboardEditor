@@ -25,7 +25,6 @@ import { X } from 'lucide-react';
 import type {
   Whiteboard as APIWhiteboard,
   UserPermission,
-  User,
 } from '@/types/APIProtocol';
 
 // -- program state
@@ -92,7 +91,6 @@ import type {
   CanvasKeyType,
   WhiteboardIdType,
   WhiteboardAttribs,
-  UserSummary,
 } from '@/types/WebSocketProtocol';
 
 import { useUser } from '@/hooks/useUser';
@@ -223,9 +221,7 @@ const Whiteboard = () => {
   // --- misc functions
   const handleNewCanvas = (name: string) => {
     // Mapping to match types
-    const wsAllowedUsers: ObjectID[] = newCanvasAllowedUsers.map(u => ({
-      id: u._id,
-    }))
+    const wsAllowedUsers: ObjectID[] = newCanvasAllowedUsers
 
     // Send message to server.
     // Server will echo response back, and actually inserting the new canvas
@@ -322,15 +318,14 @@ const Whiteboard = () => {
             const canvasKeyString = canvasKey.join(', ');
 
             // map Ids to UserSummaries
-            const allowedUserSummaries: UserSummary[] = sharedUsers
+            const allowedUserIDs: ObjectID[] = sharedUsers
               .filter((u): u is Extract<UserPermission, { type: 'id' }> => u.type === 'id')
               .filter(u => allowedUserIds.some((id) => id.toString() === u.user_id))
               .map(u => ({
-                userId: u.user_id,
-                username: u.user.username,
+                id: u.user_id,
               }));
 
-            dispatch(setAllowedUsersByCanvas({ [canvasKeyString]: allowedUserSummaries }));
+            dispatch(setAllowedUsersByCanvas({ [canvasKeyString]: allowedUserIDs }));
           }
           break;
           case 'individual_error':
@@ -534,7 +529,7 @@ const Whiteboard = () => {
 const WrappedWhiteboard = () => {
   const socketRef = useRef<WebSocket | null>(null);
   const [whiteboardId, setWhiteboardId] = useState<WhiteboardIdType>("");
-  const [newCanvasAllowedUsers, setNewCanvasAllowedUsers] = useState<User[]>([]);
+  const [newCanvasAllowedUsers, setNewCanvasAllowedUsers] = useState<ObjectID[]>([]);
 
   const { data: whiteboardData, isLoading: isWhiteboardDataLoading } = useQuery({
     queryKey: ['whiteboard', whiteboardId],

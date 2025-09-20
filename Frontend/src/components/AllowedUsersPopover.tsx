@@ -28,14 +28,14 @@ import { Button } from "@/components/ui/button";
 import type { 
   UserPermission,
   Whiteboard as APIWhiteboard,
-  User,
 } from "@/types/APIProtocol";
 
 import WhiteboardContext from "@/context/WhiteboardContext";
+import type { ObjectID } from "@/types/CanvasObjectModel";
 
 interface AllowedUsersPopoverProps {
-  selected: User[]; // current allowed users
-  onChange: (next: User[]) => void; // notify parent of changes
+  selected: ObjectID[]; // current allowed users
+  onChange: (next: ObjectID[]) => void; // notify parent of changes
 };
 
 const AllowedUsersPopover = ({ selected, onChange }: AllowedUsersPopoverProps) => {
@@ -52,7 +52,7 @@ const AllowedUsersPopover = ({ selected, onChange }: AllowedUsersPopoverProps) =
   });
   const sharedUsers = whiteboard?.shared_users ?? [];
 
-  const toggleUser = (user: User) => {
+  const toggleUser = (user: ObjectID) => {
     const next = selected.includes(user)
       ? selected.filter(u => u !== user)
       : [...selected, user];
@@ -85,13 +85,13 @@ const AllowedUsersPopover = ({ selected, onChange }: AllowedUsersPopoverProps) =
                 <CommandItem
                   key={userPerm.user._id}
                   value={userPerm.user._id}
-                  onSelect={() => toggleUser(userPerm.user)}
+                  onSelect={() => toggleUser({ id: userPerm.user._id })}
                   className='flex items-center gap-2'
                 >
                   {userPerm.user.username}
                   <Check 
                     className={`ml-auto h-4 w-4 ${
-                      selected.includes(userPerm.user) ? "opacity-100" : "opacity-0"
+                      selected.some(u => u.id === userPerm.user._id) ? "opacity-100" : "opacity-0"
                     }`}             
                   />
                 </CommandItem>

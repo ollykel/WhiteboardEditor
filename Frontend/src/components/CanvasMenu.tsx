@@ -30,11 +30,10 @@ import type {
   CanvasIdType, 
   WhiteboardIdType ,
   CanvasKeyType,
-  UserSummary,
 } from "@/types/WebSocketProtocol";
 import { useSelector } from "react-redux";
 import { selectAllowedUsersByCanvas, setAllowedUsersByCanvas } from "@/store/allowedUsers/allowedUsersByCanvasSlice";
-import type { User } from "@/types/APIProtocol";
+import type { ObjectID } from "@/types/CanvasObjectModel";
 
 interface CanvasMenuProps {
   canvasId: CanvasIdType;
@@ -56,19 +55,13 @@ function CanvasMenu({ canvasId, whiteboardId }: CanvasMenuProps) {
     socketRef, 
   } = context;
 
-  const handleUpdateAllowedUsers = (newUsers: User[]) => {
-    // Map to proper type
-    const usersToSend: UserSummary[] = newUsers.map(u => ({
-      userId: u._id,
-      username: u.username,
-    }));
-
+  const handleUpdateAllowedUsers = (newUsers: ObjectID[]) => {
     // Update Redux
     const canvasKey: CanvasKeyType = [whiteboardId, canvasId];
     const canvasKeyString = canvasKey.join(", ");
     dispatch(
       setAllowedUsersByCanvas({ 
-        [canvasKeyString]: usersToSend
+        [canvasKeyString]: newUsers
       })
     );
 
@@ -77,7 +70,7 @@ function CanvasMenu({ canvasId, whiteboardId }: CanvasMenuProps) {
       socketRef.current.send(JSON.stringify({
         type: 'update_canvas_allowed_users',
         canvasId,
-        allowedUsers: usersToSend.map(u => u.userId),
+        allowedUsers: newUsers,
       }));
     }
   };
@@ -154,11 +147,7 @@ function CanvasMenu({ canvasId, whiteboardId }: CanvasMenuProps) {
           </DialogHeader>
 
           <AllowedUsersPopover 
-            selected={allowedUsers.map(u => ({
-              _id: u.userId,
-              username: u.username,
-              email: "",
-            }))}
+            selected={allowedUsers}
             onChange={handleUpdateAllowedUsers}
           />
 

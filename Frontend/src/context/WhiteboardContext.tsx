@@ -10,7 +10,8 @@ import type {
 
 import type {
   CanvasObjectIdType,
-  CanvasObjectModel
+  CanvasObjectModel,
+  ObjectID
 } from '@/types/CanvasObjectModel';
 
 import type {
@@ -20,7 +21,6 @@ import type {
 
 import type {
   UserPermission,
-  User,
 } from '@/types/APIProtocol'
 
 export interface WhiteboardContextType {
@@ -32,8 +32,8 @@ export interface WhiteboardContextType {
   setWhiteboardId: React.Dispatch<React.SetStateAction<WhiteboardIdType>>;
   sharedUsers: UserPermission[];
   setSharedUsers: React.Dispatch<React.SetStateAction<UserPermission[]>>;
-  newCanvasAllowedUsers: User[];
-  setNewCanvasAllowedUsers: React.Dispatch<React.SetStateAction<User[]>>;
+  newCanvasAllowedUsers: ObjectID[];
+  setNewCanvasAllowedUsers: React.Dispatch<React.SetStateAction<ObjectID[]>>;
 }
 
 export type WhiteboardProvidersProps = WhiteboardContextType;

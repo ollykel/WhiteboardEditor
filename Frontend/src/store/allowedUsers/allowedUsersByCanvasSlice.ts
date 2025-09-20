@@ -5,22 +5,22 @@ import {
 
 // -- local imports
 import type {
-  UserSummary,
   CanvasKeyType,
 } from '@/types/WebSocketProtocol';
+import type { ObjectID } from '@/types/CanvasObjectModel';
 
 const allowedUsersByCanvasSlice = createSlice({
   name: 'allowedUsersByCanvas',
-  // Will store data in a <whiteboard_id, canvas_id> => UserSummary[] format
-  initialState: {} as Record<string, UserSummary[]>,
+  // Will store data in a <whiteboard_id, canvas_id> => ObjectID[] format
+  initialState: {} as Record<string, ObjectID[]>,
   reducers: {
-    setAllowedUsersByCanvas(state, action: PayloadAction<Record<string, UserSummary[]>>) {
+    setAllowedUsersByCanvas(state, action: PayloadAction<Record<string, ObjectID[]>>) {
       return {
         ...state,
         ...action.payload
       };
     },
-    addAllowedUsersByCanvas(state, action: PayloadAction<Record<string, UserSummary[]>>) {
+    addAllowedUsersByCanvas(state, action: PayloadAction<Record<string, ObjectID[]>>) {
       const out = { ...state };
 
       Object.entries(action.payload).forEach(([id, users]) => {
