@@ -88,6 +88,7 @@ import type {
   CanvasIdType,
   WhiteboardIdType,
   WhiteboardAttribs,
+  UserSummary,
 } from '@/types/WebSocketProtocol';
 
 import { useUser } from '@/hooks/useUser';
@@ -214,7 +215,7 @@ const Whiteboard = () => {
   // } = whiteboardData || {};
 
   // --- misc functions
-  const handleNewCanvas = (name: string, allowedUsers: string[]) => {
+  const handleNewCanvas = (name: string, allowedUsers: UserSummary[]) => {
     // update React Query state with new users?
 
     // Send message to server.
@@ -436,7 +437,7 @@ const Whiteboard = () => {
           {/* Display Canvases */}
           <div className="flex flex-1 flex-row justify-center flex-wrap">
             {canvasesSorted.map(({ id: canvasId, width, height, name, shapes, allowedUsers }: CanvasData) => {
-              const hasAccess = allowedUsers.length === 0 || allowedUsers.includes(user!.id);
+              const hasAccess = allowedUsers.length === 0 || allowedUsers.includes(user!);
               return (
                 <CanvasCard
                   id={canvasId}
@@ -503,8 +504,12 @@ const Whiteboard = () => {
 
 const WrappedWhiteboard = () => {
   const socketRef = useRef<WebSocket | null>(null);
-  console.log("socketRef: ", socketRef);
   const [whiteboardId, setWhiteboardId] = useState<WhiteboardIdType>("");
+  const context = useContext(WhiteboardContext);
+  if (!context) {
+    throw new Error('No WhiteboardContext provided in Whiteboard');
+  }
+  const { newCanvasAllowedUsers, setNewCanvasAllowedUsers } = context;
 
   const { data: whiteboardData, isLoading: isWhiteboardDataLoading } = useQuery({
     queryKey: ['whiteboard', whiteboardId],
@@ -583,6 +588,8 @@ const WrappedWhiteboard = () => {
       setWhiteboardId={setWhiteboardId}
       sharedUsers={sharedUsers}
       setSharedUsers={setSharedUsers}
+      newCanvasAllowedUsers={newCanvasAllowedUsers}
+      setNewCanvasAllowedUsers={setNewCanvasAllowedUsers}
     >
       <Whiteboard />
     </WhiteboardProvider>
