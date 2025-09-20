@@ -164,6 +164,7 @@ pub enum ServerSocketMessage {
     DeleteCanvases { client_id: ClientIdType, canvas_ids: Vec<String> },
     IndividualError { client_id: ClientIdType, message: String },
     BroadcastError { message: String },
+    UpdateCanvasAllowedUsers { client_id: ClientIdType, canvas_id: CanvasIdType, allowed_users: Vec<ObjectId>}
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -174,6 +175,7 @@ pub enum ClientSocketMessage {
     CreateCanvas { width: i32, height: i32, name: String, allowed_users: HashSet::<ObjectId> },
     DeleteCanvases { canvas_ids: Vec<CanvasIdType> },
     Login { user_id: String, username: String },
+    UpdateCanvasAllowedUsers { canvas_id: CanvasIdType, allowed_users: HashSet<ObjectId>}
 }
 
 #[derive(Clone)]
@@ -600,6 +602,36 @@ pub async fn handle_client_message(client_state: &ClientState, client_msg_s: &st
                             .collect()
                     })
                 },
+                ClientSocketMessage::UpdateCanvasAllowedUsers { canvas_id, allowed_users } => {
+                    let mut whiteboard = client_state.whiteboard_ref.lock().await;
+
+                    match whiteboard.canvases.get_mut(&canvas_id) {
+                        None => {
+                            // canvas doesn't exist
+                            return Some(ServerSocketMessage::IndividualError {
+                                client_id: client_state.client_id,
+                                message: format!("Canvas {} not found", canvas_id),
+                            });
+                        },
+                        Some(canvas) => {
+                            // update allowed users
+                            canvas.allowed_users = Some(allowed_users.clone());
+
+                            // optionally, record a diff
+                            // {
+                            //     let mut diffs = client_state.diffs.lock().await;
+                            //     // you could define a WhiteboardDiff variant like UpdateAllowedUsers if needed
+                            // }
+
+                            // broadcast to all users
+                            Some(ServerSocketMessage::UpdateCanvasAllowedUsers { 
+                                client_id: client_state.client_id, 
+                                canvas_id: canvas_id, 
+                                allowed_users: allowed_users.into_iter().collect(), 
+                            })
+                        }
+                    }
+                }
             }
         },
         Err(e) => {
