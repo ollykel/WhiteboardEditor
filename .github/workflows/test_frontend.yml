@@ -14,6 +14,16 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v5
+      - name: Set up Docker
+        uses: docker/setup-docker-action@v4
+        with:
+          daemon-config: |
+            {
+              "debug": true,
+              "features": {
+                "containerd-snapshotter": true
+              }
+            }
       - name: install
         run: |
           # install dependencies via yarn
@@ -35,7 +45,38 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v5
-      - name: build
+      - name: Set up Docker
+        uses: docker/setup-docker-action@v4
+        with:
+          daemon-config: |
+            {
+              "debug": true,
+              "features": {
+                "containerd-snapshotter": true
+              }
+            }
+      - name: Set up Docker cache
+        id: cache-setup
+        uses: actions/cache@v4
+        with:
+          path: ${{ runner.temp }}/docker
+          key: ${{ runner.os }}-frontend-${{ hashFiles('docker-compose.yml', 'Frontend/Dockerfile', 'Frontend/package.json', 'Frontend/package-lock.json', '.github/workflows/test_frontend.yml') }}
+          restore-keys: |
+            ${{ runner.os }}-frontend-
+      - name: Build without cache
+        id: build-no-cache
+        if: steps.cache-setup.outputs.cache-hit != 'true'
+        env:
+          DOCKER_CACHE: ${{ runner.temp }}/docker
+        run: |
+          docker compose build --no-cache frontend
+
+          echo 'service "frontend" built successfully'
+      - name: Build with cache
+        id: build-cached
+        if: steps.cache-setup.outputs.cache-hit == 'true'
+        env:
+          DOCKER_CACHE: ${{ runner.temp }}/docker
         run: |
           docker compose build frontend
 
