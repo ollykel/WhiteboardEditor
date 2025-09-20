@@ -24,6 +24,7 @@ import { X } from 'lucide-react';
 // -- local types
 import type {
   Whiteboard as APIWhiteboard,
+  UserPermission,
 } from '@/types/APIProtocol';
 
 // -- program state
@@ -315,11 +316,20 @@ const Whiteboard = () => {
             break;
           case 'update_canvas_allowed_users': 
           {
-            const { canvasId, allowedUsers } = msg;
+            const { canvasId, allowedUsers: allowedUserIds } = msg;
             const canvasKey: CanvasKeyType = [whiteboardIdRef.current, canvasId];
             const canvasKeyString = canvasKey.join(', ');
 
-            dispatch(setAllowedUsersByCanvas({ [canvasKeyString]: allowedUsers }));
+            // map Ids to UserSummaries
+            const allowedUserSummaries: UserSummary[] = sharedUsers
+              .filter((u): u is Extract<UserPermission, { type: 'id' }> => u.type === 'id')
+              .filter(u => allowedUserIds.some((id) => id.toString() === u.user_id))
+              .map(u => ({
+                userId: u.user_id,
+                username: u.user.username,
+              }));
+
+            dispatch(setAllowedUsersByCanvas({ [canvasKeyString]: allowedUserSummaries }));
           }
           break;
           case 'individual_error':

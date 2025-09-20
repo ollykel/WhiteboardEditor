@@ -77,7 +77,7 @@ function CanvasMenu({ canvasId, whiteboardId }: CanvasMenuProps) {
       socketRef.current.send(JSON.stringify({
         type: 'update_canvas_allowed_users',
         canvasId,
-        allowedUsers: usersToSend,
+        allowedUsers: usersToSend.map(u => u.userId),
       }));
     }
   };

@@ -9,7 +9,8 @@
 import type {
   CanvasObjectIdType,
   CanvasObjectModel,
-  CanvasObjectRecord
+  CanvasObjectRecord,
+  ObjectID
 } from '@/types/CanvasObjectModel';
 
 // The unique identifier for clients within a web socket session.
@@ -123,7 +124,7 @@ export interface ServerMessageBroadcastError {
 export interface ServerMessageUpdateAllowedUsers {
   type: 'update_canvas_allowed_users';
   canvasId: string;
-  allowedUsers: UserSummary[];
+  allowedUsers: ObjectID[];
 }
 
 // Tagged union of all possible client-server messages
@@ -180,7 +181,7 @@ export interface ClientMessageDeleteCanvases {
 export interface ClientMessageUpdateAllowedUsers {
   type: "update_canvas_allowed_users";
   canvasId: string;
-  allowedUsers: UserSummary[];
+  allowedUsers: ObjectID[];
 }
 
 // Tagged union of all possible client-server messages
