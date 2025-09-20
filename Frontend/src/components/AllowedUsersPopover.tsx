@@ -1,5 +1,10 @@
-import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { 
+  useState,
+  useContext,
+ } from "react";
+import { 
+  useQuery 
+} from "@tanstack/react-query";
 
 import { 
   Check,
@@ -20,36 +25,38 @@ import {
 } from "@/components/ui/command";
 import { Button } from "@/components/ui/button";
 
-import api from "@/api/axios";
-
 import type { 
   UserPermission,
+  Whiteboard as APIWhiteboard,
+  User,
 } from "@/types/APIProtocol";
-import type { UserSummary } from "@/types/WebSocketProtocol";
+
+import WhiteboardContext from "@/context/WhiteboardContext";
 
 interface AllowedUsersPopoverProps {
-  selected: UserSummary[]; // current allowed users
-  onChange: (next: UserSummary[]) => void; // notify parent of changes
+  selected: User[]; // current allowed users
+  onChange: (next: User[]) => void; // notify parent of changes
 };
 
-const AllowedUsersPopover = ({  }: AllowedUsersPopoverProps) => {
+const AllowedUsersPopover = ({ selected, onChange }: AllowedUsersPopoverProps) => {
   const [open, setOpen] = useState(false);
-  
 
-  const canvas = whiteboard?.canvases?.find(c => c.id === canvasId);
-  const allowedUsers = canvas?.allowed_users ?? [];
+  const context = useContext(WhiteboardContext);
+  if (!context) {
+    throw new Error("throw new Error('No WhiteboardContext provided');");
+  }
+  const whiteboardId = context.whiteboardId;
+  
+  const { data: whiteboard } = useQuery<APIWhiteboard>({
+    queryKey: ["whiteboard", whiteboardId],
+  });
   const sharedUsers = whiteboard?.shared_users ?? [];
 
-  
-
-  const allowedUserIds = allowedUsers.map(u => u._id);
-
-  const toggleUser = (userId: string) => {
-    const next = allowedUserIds.includes(userId)
-      ? allowedUserIds.filter(id => id !== userId)
-      : [...allowedUserIds, userId];
-
-    updateAllowedUsers.mutate(next);
+  const toggleUser = (user: User) => {
+    const next = selected.includes(user)
+      ? selected.filter(u => u !== user)
+      : [...selected, user];
+    onChange(next);
   };
 
   return (
@@ -60,8 +67,8 @@ const AllowedUsersPopover = ({  }: AllowedUsersPopoverProps) => {
           role="combobox"
           className="justify-between"
         >
-          {allowedUsers.length > 0
-            ? `${allowedUsers.length}${allowedUsers.length === 1 ? ' user selected' : ' users selected'}`
+          {selected.length > 0
+            ? `${selected.length}${selected.length === 1 ? ' user selected' : ' users selected'}`
             : "Select users"
           }
           <ChevronsUpDown className='ml-2 h-4 w-4 shrink-0 opacity-50' />
@@ -78,13 +85,13 @@ const AllowedUsersPopover = ({  }: AllowedUsersPopoverProps) => {
                 <CommandItem
                   key={userPerm.user._id}
                   value={userPerm.user._id}
-                  onSelect={() => toggleUser(userPerm.user._id)}
+                  onSelect={() => toggleUser(userPerm.user)}
                   className='flex items-center gap-2'
                 >
                   {userPerm.user.username}
                   <Check 
                     className={`ml-auto h-4 w-4 ${
-                      allowedUsers.includes(userPerm.user) ? "opacity-100" : "opacity-0"
+                      selected.includes(userPerm.user) ? "opacity-100" : "opacity-0"
                     }`}             
                   />
                 </CommandItem>
