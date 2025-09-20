@@ -30,6 +30,14 @@ following from the repository root directory:
 docker compose build
 ```
 
+To get caching to work correctly on your first attempt, you may need to run this
+command with the --no-cache option:
+
+```
+docker compose build --no-cache
+```
+
+
 ### Run
 
 To run the Whiteboard Editor, simply run the following from the repository root
