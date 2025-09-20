@@ -26,13 +26,14 @@ import type {
   UserPermission,
   Whiteboard as APIWhiteboard,
 } from "@/types/APIProtocol";
+import type { UserSummary } from "@/types/WebSocketProtocol";
 
 interface AllowedUsersPopoverProps {
-  whiteboardId: string,
-  canvasId: string,
+  selected: UserSummary;
+  
 };
 
-const AllowedUsersPopover = ({ whiteboardId, canvasId }: AllowedUsersPopoverProps) => {
+const AllowedUsersPopover = ({  }: AllowedUsersPopoverProps) => {
   const [open, setOpen] = useState(false);
   const queryClient = useQueryClient();
   const { data: whiteboard } = useQuery<APIWhiteboard>({
@@ -52,7 +53,7 @@ const AllowedUsersPopover = ({ whiteboardId, canvasId }: AllowedUsersPopoverProp
       queryClient.invalidateQueries({ queryKey: ["whiteboard", whiteboardId] });
     }
   })
-  
+
   const allowedUserIds = allowedUsers.map(u => u._id);
 
   const toggleUser = (userId: string) => {

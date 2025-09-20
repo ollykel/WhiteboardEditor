@@ -1,21 +1,22 @@
-import { useState } from 'react';
+import { useContext, useState } from 'react';
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import AllowedUsersPopover from '@/components/AllowedUsersPopover';
 
-import type { UserPermission } from '@/types/APIProtocol';
+import WhiteboardContext from '@/context/WhiteboardContext';
 
 interface CreateCanvasMenuProps {
-  onCreate: (name: string, allowedUsers: string[]) => void
-  sharedUsers: UserPermission[];
+  onCreate: (name: string) => void
 }
 
-function CreateCanvasMenu({ onCreate, sharedUsers }: CreateCanvasMenuProps) {
-  console.log("Shared users: ", sharedUsers); // Debugging
+function CreateCanvasMenu({ onCreate }: CreateCanvasMenuProps) {
   const [canvasName, setCanvasName] = useState("");
-  const [allowedUsers, setAllowedUsers] = useState<string[]>([]);
+  const context = useContext(WhiteboardContext);
+  if (!context) {
+    throw new Error("throw new Error('No WhiteboardContext provided');")
+  }
 
   const handleSubmit = () => {
     if (!canvasName.trim()) {
@@ -23,9 +24,8 @@ function CreateCanvasMenu({ onCreate, sharedUsers }: CreateCanvasMenuProps) {
       return;
     }
 
-    onCreate(canvasName, allowedUsers);
+    onCreate(canvasName);
     setCanvasName("");
-    setAllowedUsers([]);
   }
 
   return (

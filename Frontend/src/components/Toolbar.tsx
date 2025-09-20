@@ -7,12 +7,11 @@ import PopoverMenu from '@/components/PopoverMenu'
 import CreateCanvasMenu from '@/components/CreateCanvasMenu'
 
 import type { ToolChoice } from '@/components/Tool';
-import type { UserPermission } from '@/types/APIProtocol';
 
 interface ToolbarProps {
   toolChoice: ToolChoice;
   onToolChange: (choice: ToolChoice) => void;
-  onNewCanvas: (name: string, allowedUsers: string[]) => void;
+  onNewCanvas: (name: string) => void;
 }
 
 interface ToolbarButtonProps {
@@ -63,10 +62,7 @@ function Toolbar({ toolChoice, onToolChange, onNewCanvas }: ToolbarProps) {
         trigger={<ToolbarButton label="New Canvas" variant="default" />}
       >
         <CreateCanvasMenu 
-          onCreate={onNewCanvas} 
-          sharedUsers={(sharedUsers ?? []).filter(
-            (u): u is Extract<UserPermission, { type: "id" }> => u.type === "id"
-          )}
+          onCreate={onNewCanvas}
         />
       </PopoverMenu>
     </div>
