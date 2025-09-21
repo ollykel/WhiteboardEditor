@@ -135,7 +135,8 @@ pub struct WhiteboardClientView {
 
 // === WhiteboardDiff =============================================================================
 //
-// Defines an atomic change to be made to the state of the Whiteboard.
+// Defines an atomic change to be made to the state of the Whiteboard. Used to indicate changes
+// that should be written to the database.
 //
 // Largely overlaps with the ServerSocketMessage and ClientSocketMessage enums defined below.
 //
@@ -150,6 +151,7 @@ pub enum WhiteboardDiff {
     DeleteCanvases { canvas_ids: Vec<CanvasIdType> },
     CreateShapes { canvas_id: CanvasIdType, shapes: HashMap<CanvasObjectIdType, ShapeModel> },
     UpdateShapes { canvas_id: CanvasIdType, shapes: HashMap<CanvasObjectIdType, ShapeModel> },
+    UpdateCanvasAllowedUsers { canvas_id: CanvasIdType, allowed_users: Vec<ObjectId> },
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -617,17 +619,25 @@ pub async fn handle_client_message(client_state: &ClientState, client_msg_s: &st
                             // update allowed users
                             canvas.allowed_users = Some(allowed_users.clone());
 
-                            // optionally, record a diff
-                            // {
-                            //     let mut diffs = client_state.diffs.lock().await;
-                            //     // you could define a WhiteboardDiff variant like UpdateAllowedUsers if needed
-                            // }
+                            // record a diff so changes get written back to database
+                            {
+                                let mut diffs = client_state.diffs.lock().await;
+
+                                diffs.push(WhiteboardDiff::UpdateCanvasAllowedUsers{
+                                    canvas_id: canvas_id, 
+                                    allowed_users: allowed_users.iter()
+                                        .map(|oid| *oid)
+                                        .collect(), 
+                                });
+                            }
 
                             // broadcast to all users
                             Some(ServerSocketMessage::UpdateCanvasAllowedUsers { 
                                 client_id: client_state.client_id, 
                                 canvas_id: canvas_id, 
-                                allowed_users: allowed_users.into_iter().collect(), 
+                                allowed_users: allowed_users.iter()
+                                    .map(|oid| *oid)
+                                    .collect(), 
                             })
                         }
                     }
