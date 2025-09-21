@@ -1,6 +1,10 @@
 // -- std imports
 import { Request, Response, Router } from "express";
 
+import {
+  Types,
+} from 'mongoose';
+
 // -- local imports
 import {
   SetInclusionOptionType
@@ -113,26 +117,34 @@ router.delete('/me', async (
   }
 });
 
-// === GET /users/me/shared_whiteboards ========================================
+// === GET /users/:userId:/shared_whiteboards ==================================
 //
-// Get summaries (attribute views) of all whiteboards shared with the
-// authenticated user. By default, spans all permissions.
+// Get summaries (attribute views) of all whiteboards shared with a given user.
+// If passed "me" as the userId, fetches for the authenticated user.
+// By default, spans all permissions.
 //
 // TODO: implement queries to filter by permission type.
 //
 // =============================================================================
-router.get('/me/shared_whiteboards', async (
-  req: Request<{}, any, AuthorizedRequestBody>,
+router.get('/:userId/shared_whiteboards', async (
+  req: Request<{ userId: Types.ObjectId | 'me' }, any, AuthorizedRequestBody>,
   res: Response,
 ) => {
+  const {
+    userId,
+  } = req.params;
   const { authUser } = req.body;
-  const { id: userId } = authUser;
+  const { id: authUserId } = authUser;
 
+  const targetUserId = (userId === 'me') ?
+    authUserId
+    : userId;
+    
   const includeOpts: SetInclusionOptionType<string> = ({
     type: 'all',
   });
 
-  const resp = await getSharedWhiteboardsByUser(userId, includeOpts);
+  const resp = await getSharedWhiteboardsByUser(targetUserId, includeOpts);
 
   switch (resp.status) {
       case 'server_error':
