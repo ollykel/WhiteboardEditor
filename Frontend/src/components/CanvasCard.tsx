@@ -27,6 +27,10 @@ interface CanvasCardProps extends CanvasProps {
   whiteboardId: WhiteboardIdType;
 }
 
+// Ugly workaround for now
+// TODO: rewrite selectAllowedUsersByCanvas selector to use memoization
+const EMPTY_ALLOWED_USER_IDS: string[] = [];
+
 function CanvasCard(props: CanvasCardProps) {
   const userCacheContext = useContext(UserCacheContext);
 
@@ -39,7 +43,7 @@ function CanvasCard(props: CanvasCardProps) {
   const { id, title, whiteboardId } = props;
   const allowedUserIds = useSelector((state: RootState) =>
     selectAllowedUsersByCanvas(state, [whiteboardId, id])
-  ) ?? [];
+  ) ?? EMPTY_ALLOWED_USER_IDS;
   const [allowedUsers, setAllowedUsers] = useState<User[]>([]);
 
   useEffect(
