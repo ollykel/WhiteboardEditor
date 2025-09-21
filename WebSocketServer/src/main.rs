@@ -246,6 +246,10 @@ async fn handle_connection(ws: WebSocket, whiteboard_id: WhiteboardIdType, conne
                         msg_s
                     ).await;
 
+                    if let Some(ref resp) = resp {
+                        println!("Client response: {:?}", resp);
+                    }
+
                     // -- update database, if there are diffs
                     {
                         let mut diffs = client_state_ref.diffs.lock().await;
