@@ -150,6 +150,7 @@ export const deleteUser = async (userId: Types.ObjectId): Promise<Result<IUserPu
 export type GetSharedWhiteboardsByUserRes =
   | { status: 'server_error'; }
   | { status: 'user_not_found'; }
+  | { status: 'bad_request'; message: string; }
   | { status: 'ok'; whiteboards: IWhiteboardAttribView[]; }
 ;
 
@@ -158,6 +159,13 @@ export const getSharedWhiteboardsByUser = async (
   includePermissionOpts: SetInclusionOptionType<IWhiteboardPermissionEnum>,
 ): Promise<GetSharedWhiteboardsByUserRes> => {
   try {
+    if (! Types.ObjectId.isValid(userId)) {
+      return ({
+        status: 'bad_request',
+        message: 'Invalid user id',
+      });
+    }
+
     const permissionsFilter : object = (() => {
       switch (includePermissionOpts.type) {
         case 'all':

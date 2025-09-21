@@ -154,6 +154,8 @@ router.get('/:userId/shared_whiteboards', async (
         // authentication middleware by this point. Nevertheless, the controller
         // still accounts for the possibility.
         return res.status(403).json({ message: 'Invalid user' });
+      case 'bad_request':
+        return res.status(400).json({ message: resp.message });
       case 'ok':
         return res.status(200).json(resp.whiteboards);
       default:
