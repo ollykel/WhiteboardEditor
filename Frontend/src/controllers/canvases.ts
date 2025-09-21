@@ -18,6 +18,10 @@ import {
 } from '@/store/canvasObjects/canvasObjectsByCanvasSlice';
 
 import {
+  setAllowedUsersByCanvas
+} from '@/store/allowedUsers/allowedUsersByCanvasSlice';
+
+import {
   setCanvases,
   removeCanvases
 } from '@/store/canvases/canvasesSlice';
@@ -39,12 +43,14 @@ export const addCanvas = (
   const {
     canvases,
     canvasObjects,
-    canvasObjectsByCanvas
+    canvasObjectsByCanvas,
+    allowedUsersByCanvas
   } = normalizeCanvas(whiteboardId, canvas);
 
   dispatch(setCanvases(canvases));
   dispatch(setCanvasObjects(canvasObjects));
   dispatch(setObjectsByCanvas(canvasObjectsByCanvas));
+  dispatch(setAllowedUsersByCanvas(allowedUsersByCanvas));
   dispatch(addCanvasesByWhiteboard({
     [whiteboardId]: [[whiteboardId, canvas.id]]
   }));
