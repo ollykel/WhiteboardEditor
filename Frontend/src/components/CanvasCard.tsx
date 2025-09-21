@@ -1,4 +1,12 @@
-import { useSelector } from "react-redux";
+import {
+  useState,
+  useContext,
+  useEffect,
+} from 'react';
+
+import {
+  useSelector,
+} from "react-redux";
 
 import { type RootState } from "@/store";
 import { selectAllowedUsersByCanvas } from "@/store/allowedUsers/allowedUsersByCanvasSlice";
@@ -8,6 +16,11 @@ import CanvasMenu from "./CanvasMenu";
 
 import type { CanvasProps } from '@/components/Canvas';
 import type { WhiteboardIdType } from "@/types/WebSocketProtocol";
+import type {
+  User,
+} from "@/types/APIProtocol";
+
+import UserCacheContext from '@/context/UserCacheContext';
 
 interface CanvasCardProps extends CanvasProps {
   title: string;
@@ -15,16 +28,39 @@ interface CanvasCardProps extends CanvasProps {
 }
 
 function CanvasCard(props: CanvasCardProps) {
+  const userCacheContext = useContext(UserCacheContext);
+
+  if (! userCacheContext) {
+    throw new Error('User cache context not provided');
+  }
+  const {
+    getUserById,
+  } = userCacheContext;
   const { id, title, whiteboardId } = props;
-  const allowedUsers = useSelector((state: RootState) =>
+  const allowedUserIds = useSelector((state: RootState) =>
     selectAllowedUsersByCanvas(state, [whiteboardId, id]) ?? []
+  );
+  const [allowedUsers, setAllowedUsers] = useState<User[]>([]);
+
+  useEffect(
+    () => {
+      const mapUsers = async () => {
+        const newAllowedUsers = (await Promise.all(allowedUserIds.map(uid => getUserById(uid))))
+          .filter(user => !!user);
+
+        setAllowedUsers(newAllowedUsers);
+      };
+
+      mapUsers();
+    },
+    [allowedUserIds, getUserById]
   );
 
   return (
     <div className="flex flex-col p-6">
       {/* Active Users */}
       <div className="text-center">
-        Allowed Users: {allowedUsers.join(', ')} {/* TODO: Map to usernames */}
+        Allowed Users: {allowedUsers.map(user => user.username).join(', ')} {/* TODO: Map to usernames */}
       </div>
       {/* Title */}
       <div className="text-center p-4">{title}</div>
