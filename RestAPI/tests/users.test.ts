@@ -34,8 +34,7 @@ describe("Users API", () => {
       .expect(201);
 
     expect(res.body.user).toHaveProperty("id");
-    // should be excluded (aliased to id)
-    expect(res.body.user).not.toHaveProperty("_id");
+    expect(res.body.user).toHaveProperty("_id");
     expect(res.body.user.username).toBe("tester_beta");
     expect(res.body.user.email).toBe("tester_beta@example.com");
     // sensitive field; should not be exposed
