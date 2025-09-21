@@ -122,7 +122,7 @@ pub struct CanvasClientView {
     pub time_created: String,           // rfc3339-encoded datetime
     pub time_last_modified: String,     // rfc3339-encoded datetime
     pub shapes: HashMap<String, ShapeModel>,
-    pub allowed_users: Vec<ObjectId>,
+    pub allowed_users: Vec<String>,     // cast ObjectId to string for proper client-side parsing
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -209,7 +209,9 @@ impl Canvas {
             time_created: self.time_created.to_rfc3339(),
             time_last_modified: self.time_last_modified.to_rfc3339(),
             allowed_users: match &self.allowed_users {
-                Some(set) => set.iter().copied().collect(),
+                Some(set) => set.iter()
+                    .map(|oid| oid.to_string())
+                    .collect(),
                 None => vec![], // empty array means open to all
             },
         }
