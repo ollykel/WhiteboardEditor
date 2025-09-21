@@ -9,7 +9,7 @@
 import type {
   CanvasObjectIdType,
   CanvasObjectModel,
-  CanvasObjectRecord
+  CanvasObjectRecord,
 } from '@/types/CanvasObjectModel';
 
 // The unique identifier for clients within a web socket session.
@@ -41,7 +41,7 @@ export interface CanvasAttribs {
 // Contains nested data
 export interface CanvasData extends CanvasAttribs {
   shapes: Record<CanvasObjectIdType, CanvasObjectModel>,
-  allowedUsers: ClientIdType[];
+  allowedUsers: string[];
 }
 
 // Ensure unique id by including whiteboard id
@@ -100,7 +100,7 @@ export interface ServerMessageCreateCanvas {
   width: number;
   height: number;
   name: string;
-  allowedUsers: ClientIdType[];
+  allowedUsers: string[];
 }
 
 export interface ServerMessageDeleteCanvases {
@@ -120,6 +120,12 @@ export interface ServerMessageBroadcastError {
   message: string;
 }
 
+export interface ServerMessageUpdateAllowedUsers {
+  type: 'update_canvas_allowed_users';
+  canvasId: string;
+  allowedUsers: string[];
+}
+
 // Tagged union of all possible client-server messages
 export type SocketServerMessage =
   | ServerMessageInitClient
@@ -129,7 +135,8 @@ export type SocketServerMessage =
   | ServerMessageCreateCanvas
   | ServerMessageDeleteCanvases
   | ServerMessageIndividualError
-  | ServerMessageBroadcastError;
+  | ServerMessageBroadcastError
+  | ServerMessageUpdateAllowedUsers;
 
 // ========================== CLIENT → SERVER ==================================
 
@@ -169,10 +176,18 @@ export interface ClientMessageDeleteCanvases {
   canvasIds: CanvasIdType[];
 }
 
+// Notify server that client has updated allowed users in a canvas
+export interface ClientMessageUpdateAllowedUsers {
+  type: "update_canvas_allowed_users";
+  canvasId: string;
+  allowedUsers: string[];
+}
+
 // Tagged union of all possible client-server messages
 export type SocketClientMessage =
   | ClientMessageLogin
   | ClientMessageCreateShapes
   | ClientMessageUpdateShapes
   | ClientMessageCreateCanvas
-  | ClientMessageDeleteCanvases;
+  | ClientMessageDeleteCanvases
+  | ClientMessageUpdateAllowedUsers;

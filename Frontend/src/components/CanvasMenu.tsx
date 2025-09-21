@@ -15,55 +15,53 @@ import {
   DialogHeader, 
   DialogTitle, 
 } from "@/components/ui/dialog";
-import { 
-  Popover, 
-  PopoverContent, 
-  PopoverTrigger, 
-} from "@/components/ui/popover";
-import { 
-  Command, 
-  CommandEmpty, 
-  CommandGroup, 
-  CommandInput, 
-  CommandItem, 
-} from "@/components/ui/command";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Button } from "@/components/ui/button";
-import { ChevronsUpDown } from "lucide-react";
+import { Button } from "./ui/button";
 
-import { store } from "@/store";
+import { 
+  store,
+  type RootState,
+} from "@/store";
 import WhiteboardContext from "@/context/WhiteboardContext";
 import { deleteCanvas } from "@/controllers";
-import type { ClientMessageDeleteCanvases } from "@/types/WebSocketProtocol";
+import AllowedUsersPopover from "@/components/AllowedUsersPopover";
 
-import type { CanvasIdType, WhiteboardIdType } from "@/types/WebSocketProtocol";
+import type { 
+  ClientMessageDeleteCanvases, 
+  CanvasIdType, 
+  WhiteboardIdType,
+} from "@/types/WebSocketProtocol";
+import { useSelector } from "react-redux";
+import { selectAllowedUsersByCanvas } from "@/store/allowedUsers/allowedUsersByCanvasSlice";
 
 interface CanvasMenuProps {
-  allowedUsers: string[];
-  setAllowedUsers: (users: string[]) => void;
-  allUsers: string[];
   canvasId: CanvasIdType;
   whiteboardId: WhiteboardIdType;
 }
 
-function CanvasMenu({ allowedUsers, setAllowedUsers, allUsers, canvasId, whiteboardId }: CanvasMenuProps) {
+function CanvasMenu({ canvasId, whiteboardId }: CanvasMenuProps) {
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [popoverOpen, setPopoverOpen] = useState(false);
   const dispatch = store.dispatch;
+  const allowedUsers = useSelector((state: RootState) =>
+    selectAllowedUsersByCanvas(state, [whiteboardId, canvasId]) ?? []
+  );
+  const [selectedUsers, setSelectedUsers] = useState<string[]>(allowedUsers);
 
   const context = useContext(WhiteboardContext);
   if (!context) {
     throw new Error("CanvasMenu must be used inside a WhiteboardProvider");
   }
+  const { 
+    socketRef, 
+  } = context;
 
-  const { socketRef } = context;
-
-  const toggleUser = (user: string) => {
-    if (allowedUsers.includes(user)) {
-      setAllowedUsers(allowedUsers.filter(u => u !== user));
-    }
-    else {
-      setAllowedUsers([...allowedUsers, user])
+  const handleUpdateAllowedUsers = (allowedUsers: string[]) => {
+    // Send WS message
+    if (socketRef.current) {
+      socketRef.current.send(JSON.stringify({
+        type: 'update_canvas_allowed_users',
+        canvasId,
+        allowedUsers: allowedUsers,
+      }));
     }
   };
 
@@ -80,23 +78,23 @@ function CanvasMenu({ allowedUsers, setAllowedUsers, allUsers, canvasId, whitebo
 
       socketRef.current.send(JSON.stringify(msg));
     }
-  }
+  };
 
   const handleDownload = () => {
     console.log("download clicked");
-  }
+  };
 
   const handleViewMain = () => {
     console.log("view main screen clicked")
-  }
+  };
 
   const handleRequestAccess = () => {
     console.log("request access clicked");
-  }
+  };
 
   const handleMerge = () => {
     console.log("merge clicked");
-  }
+  };
 
   return (
     <div>
@@ -138,46 +136,24 @@ function CanvasMenu({ allowedUsers, setAllowedUsers, allUsers, canvasId, whitebo
             <DialogTitle>Edit Allowed Users</DialogTitle>
           </DialogHeader>
 
-          <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
-            <PopoverTrigger asChild>
-              <Button
-                variant="outline"
-                role="combobox"
-                className="justify-between"
-              >
-                {allowedUsers.length > 0
-                  ? `${allowedUsers.length} user(s) selected`
-                  : "Select users"
-                }
-                <ChevronsUpDown className='ml-2 h-4 w-4 shrink-0 opacity-50' />
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className='w-[250px] p-0'>
-              <Command>
-                <CommandInput placeholder='Search users...' />
-                <CommandEmpty>No users found</CommandEmpty>
-                <CommandGroup>
-                  {allUsers.map((user) => (
-                    <CommandItem
-                      key={user}
-                      onSelect={() => toggleUser(user)}
-                      className='flex items-center gap-2'
-                    >
-                      <Checkbox checked={allowedUsers.includes(user)} />
-                      <span>{user}</span>
-                    </CommandItem>
-                  ))}
-                </CommandGroup>
-              </Command>
-            </PopoverContent>
-          </Popover>
+          <AllowedUsersPopover 
+            selected={selectedUsers}
+            onChange={setSelectedUsers}
+          />
 
           <div className="flex justify-end gap-2 pt-4">
-            <Button variant="secondary" onClick={() => setDialogOpen(false)}>
+            <Button variant="secondary" onClick={() => {
+              setSelectedUsers(allowedUsers); // Reset to original selection
+              setDialogOpen(false);
+            }}>
               Cancel
             </Button>
-            {/* TODO: Implement save functionality */}
-            <Button onClick={() => setDialogOpen(false)}>Save</Button>
+            <Button onClick={() => {
+              handleUpdateAllowedUsers(selectedUsers);
+              setDialogOpen(false);
+            }}>
+              Save
+            </Button>
           </div>
         </DialogContent>
       </Dialog>

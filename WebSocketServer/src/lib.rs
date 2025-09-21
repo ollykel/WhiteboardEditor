@@ -122,7 +122,7 @@ pub struct CanvasClientView {
     pub time_created: String,           // rfc3339-encoded datetime
     pub time_last_modified: String,     // rfc3339-encoded datetime
     pub shapes: HashMap<String, ShapeModel>,
-    pub allowed_users: Vec<ObjectId>,
+    pub allowed_users: Vec<String>,     // cast ObjectId to string for proper client-side parsing
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -135,7 +135,8 @@ pub struct WhiteboardClientView {
 
 // === WhiteboardDiff =============================================================================
 //
-// Defines an atomic change to be made to the state of the Whiteboard.
+// Defines an atomic change to be made to the state of the Whiteboard. Used to indicate changes
+// that should be written to the database.
 //
 // Largely overlaps with the ServerSocketMessage and ClientSocketMessage enums defined below.
 //
@@ -150,6 +151,7 @@ pub enum WhiteboardDiff {
     DeleteCanvases { canvas_ids: Vec<CanvasIdType> },
     CreateShapes { canvas_id: CanvasIdType, shapes: HashMap<CanvasObjectIdType, ShapeModel> },
     UpdateShapes { canvas_id: CanvasIdType, shapes: HashMap<CanvasObjectIdType, ShapeModel> },
+    UpdateCanvasAllowedUsers { canvas_id: CanvasIdType, allowed_users: Vec<ObjectId> },
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -160,10 +162,11 @@ pub enum ServerSocketMessage {
     // TODO: replace HashMaps with Vectors, so object ids don't need to be cast to strings
     CreateShapes { client_id: ClientIdType, canvas_id: String, shapes: HashMap<String, ShapeModel> },
     UpdateShapes { client_id: ClientIdType, canvas_id: String, shapes: HashMap<String, ShapeModel> },
-    CreateCanvas { client_id: ClientIdType, canvas_id: String, width: i32, height: i32, name: String, allowed_users: Vec<ObjectId> },
+    CreateCanvas { client_id: ClientIdType, canvas_id: String, width: i32, height: i32, name: String, allowed_users: Vec<String> },
     DeleteCanvases { client_id: ClientIdType, canvas_ids: Vec<String> },
     IndividualError { client_id: ClientIdType, message: String },
     BroadcastError { message: String },
+    UpdateCanvasAllowedUsers { client_id: ClientIdType, canvas_id: String, allowed_users: Vec<String>},
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -171,9 +174,10 @@ pub enum ServerSocketMessage {
 pub enum ClientSocketMessage {
     CreateShapes { canvas_id: CanvasIdType, shapes: Vec<ShapeModel> },
     UpdateShapes { canvas_id: CanvasIdType, shapes: HashMap<String, ShapeModel> },
-    CreateCanvas { width: i32, height: i32, name: String },
+    CreateCanvas { width: i32, height: i32, name: String, allowed_users: HashSet::<ObjectId> },
     DeleteCanvases { canvas_ids: Vec<CanvasIdType> },
     Login { user_id: String, username: String },
+    UpdateCanvasAllowedUsers { canvas_id: CanvasIdType, allowed_users: HashSet<ObjectId>}
 }
 
 #[derive(Clone)]
@@ -205,7 +209,9 @@ impl Canvas {
             time_created: self.time_created.to_rfc3339(),
             time_last_modified: self.time_last_modified.to_rfc3339(),
             allowed_users: match &self.allowed_users {
-                Some(set) => set.iter().copied().collect(),
+                Some(set) => set.iter()
+                    .map(|oid| oid.to_string())
+                    .collect(),
                 None => vec![], // empty array means open to all
             },
         }
@@ -309,6 +315,29 @@ impl CanvasMongoDBView {
                 Some(users) => Some(users.iter().map(|uid| uid.clone()).collect())
             }
         }
+    }
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum UserPermissionEnum {
+    Own,
+    Edit,
+    View,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(tag = "type")]
+pub enum UserPermission {
+    #[serde(rename = "id")]
+    Id {
+        user_id: ObjectId,
+        permission: UserPermissionEnum,
+    },
+    #[serde(rename = "email")]
+    Email {
+        email: String,
+        permission: UserPermissionEnum,
     }
 }
 
@@ -505,16 +534,18 @@ pub async fn handle_client_message(client_state: &ClientState, client_msg_s: &st
                         }
                     }
                 },
-                ClientSocketMessage::CreateCanvas { width, height, name } => {
+                ClientSocketMessage::CreateCanvas { width, height, name, allowed_users } => {
                     let mut whiteboard = client_state.whiteboard_ref.lock().await;
                     let new_canvas_id = ObjectId::new();
-                    let mut allowed = HashSet::<ObjectId>::new();
+
+                    // -- allowed_users passed in as parameter from AllowedUsersPopover
+                    // let mut allowed = HashSet::<ObjectId>::new();
 
                     // Initialize new canvas with only current user allowed to edit
                     // TODO: actually fetch user's id from database
-                    allowed.insert(ObjectId::new());
+                    // allowed_users.insert(ObjectId::new());
 
-                    let allowed_users_vec = allowed.iter().copied().collect::<Vec<_>>();
+                    let allowed_users_vec = allowed_users.iter().copied().collect::<Vec<_>>();
 
                     // valid input: add to diffs
                     {
@@ -523,7 +554,7 @@ pub async fn handle_client_message(client_state: &ClientState, client_msg_s: &st
                         diffs.push(WhiteboardDiff::CreateCanvas{
                             name: name.clone(),
                             width: width,
-                            height: height
+                            height: height,
                         });
                     }
                     
@@ -538,7 +569,7 @@ pub async fn handle_client_message(client_state: &ClientState, client_msg_s: &st
                             time_created: Utc::now(),
                             time_last_modified: Utc::now(),
                             shapes: HashMap::<CanvasObjectIdType, ShapeModel>::new(),
-                            allowed_users: Some(allowed),
+                            allowed_users: Some(allowed_users),
                         }
                     );
 
@@ -548,7 +579,9 @@ pub async fn handle_client_message(client_state: &ClientState, client_msg_s: &st
                         width: width,
                         height: height,
                         name: name.clone(),
-                        allowed_users: allowed_users_vec,
+                        allowed_users: allowed_users_vec.iter()
+                            .map(|oid| oid.to_string())
+                            .collect(),
                     })
                 },
                 ClientSocketMessage::DeleteCanvases { canvas_ids } => {
@@ -575,6 +608,44 @@ pub async fn handle_client_message(client_state: &ClientState, client_msg_s: &st
                             .collect()
                     })
                 },
+                ClientSocketMessage::UpdateCanvasAllowedUsers { canvas_id, allowed_users } => {
+                    let mut whiteboard = client_state.whiteboard_ref.lock().await;
+
+                    match whiteboard.canvases.get_mut(&canvas_id) {
+                        None => {
+                            // canvas doesn't exist
+                            return Some(ServerSocketMessage::IndividualError {
+                                client_id: client_state.client_id,
+                                message: format!("Canvas {} not found", canvas_id),
+                            });
+                        },
+                        Some(canvas) => {
+                            // update allowed users
+                            canvas.allowed_users = Some(allowed_users.clone());
+
+                            // record a diff so changes get written back to database
+                            {
+                                let mut diffs = client_state.diffs.lock().await;
+
+                                diffs.push(WhiteboardDiff::UpdateCanvasAllowedUsers{
+                                    canvas_id: canvas_id, 
+                                    allowed_users: allowed_users.iter()
+                                        .map(|oid| *oid)
+                                        .collect(), 
+                                });
+                            }
+
+                            // broadcast to all users
+                            Some(ServerSocketMessage::UpdateCanvasAllowedUsers { 
+                                client_id: client_state.client_id, 
+                                canvas_id: canvas_id.to_string(), 
+                                allowed_users: allowed_users.iter()
+                                    .map(|oid| oid.to_string())
+                                    .collect(), 
+                            })
+                        }
+                    }
+                }
             }
         },
         Err(e) => {

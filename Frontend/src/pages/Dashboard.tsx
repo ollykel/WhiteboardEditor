@@ -18,7 +18,6 @@ import CreateWhiteboardModal, {
 
 const Dashboard = (): React.JSX.Element => {
   const navigate = useNavigate();
-
   const title: string = "<Whiteboard App>";
   const user: User | null = useUser().user;
 

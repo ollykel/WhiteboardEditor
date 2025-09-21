@@ -15,6 +15,7 @@ export interface CanvasNormal {
   canvases: Record<string, CanvasAttribs>;
   canvasObjects: Record<string, CanvasObjectModel>;
   canvasObjectsByCanvas: Record<string, CanvasObjectKeyType[]>;
+  allowedUsersByCanvas: Record<string, string[]>;
 }
 
 // === normalizeCanvas =========================================================
@@ -35,6 +36,9 @@ export const normalizeCanvas = (
 
     return [objKey.toString(), obj];
   }));
+  const allowedUsersByCanvas = {
+    [canvasKey.toString()]: canvasAttribs.allowedUsers || [],
+  };
 
   // remove vector fields from canvasAttribs
   delete canvasAttribs.shapes;
@@ -51,6 +55,7 @@ export const normalizeCanvas = (
 
         return objKey;
       })
-    }
+    },
+    allowedUsersByCanvas,
   });
 };

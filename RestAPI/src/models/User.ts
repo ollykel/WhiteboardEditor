@@ -91,7 +91,6 @@ export type DeleteUserRequest = AuthorizedRequestBody & DeleteUserData;
 
 const toPublicView = (user: IUserDocument): IUserPublicView => {
   const {
-    _id,
     passwordHashed,
     ...out
   } = user;

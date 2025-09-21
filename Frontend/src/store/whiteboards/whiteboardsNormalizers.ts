@@ -30,7 +30,8 @@ export const normalizeWhiteboard = (
   const {
     canvases,
     canvasObjects,
-    canvasObjectsByCanvas
+    canvasObjectsByCanvas,
+    allowedUsersByCanvas,
   } = whiteboard.canvases
     .map((canvas: CanvasData) => normalizeCanvas(id, canvas))
     .reduce(
@@ -40,12 +41,17 @@ export const normalizeWhiteboard = (
       canvasObjectsByCanvas: ({
         ...accum.canvasObjectsByCanvas,
         ...curr.canvasObjectsByCanvas
-      })
+      }),
+      allowedUsersByCanvas: ({
+        ...accum.allowedUsersByCanvas,
+        ...curr.allowedUsersByCanvas
+      }),
     }),
     {
       canvases: {},
       canvasObjects: {},
-      canvasObjectsByCanvas: {}
+      canvasObjectsByCanvas: {},
+      allowedUsersByCanvas: {},
     }
   );
 
@@ -62,6 +68,7 @@ export const normalizeWhiteboard = (
       })
     },
     canvasObjects,
-    canvasObjectsByCanvas
+    canvasObjectsByCanvas,
+    allowedUsersByCanvas,
   });
 };
