@@ -162,11 +162,11 @@ pub enum ServerSocketMessage {
     // TODO: replace HashMaps with Vectors, so object ids don't need to be cast to strings
     CreateShapes { client_id: ClientIdType, canvas_id: String, shapes: HashMap<String, ShapeModel> },
     UpdateShapes { client_id: ClientIdType, canvas_id: String, shapes: HashMap<String, ShapeModel> },
-    CreateCanvas { client_id: ClientIdType, canvas_id: String, width: i32, height: i32, name: String, allowed_users: Vec<ObjectId> },
+    CreateCanvas { client_id: ClientIdType, canvas_id: String, width: i32, height: i32, name: String, allowed_users: Vec<String> },
     DeleteCanvases { client_id: ClientIdType, canvas_ids: Vec<String> },
     IndividualError { client_id: ClientIdType, message: String },
     BroadcastError { message: String },
-    UpdateCanvasAllowedUsers { client_id: ClientIdType, canvas_id: CanvasIdType, allowed_users: Vec<ObjectId>}
+    UpdateCanvasAllowedUsers { client_id: ClientIdType, canvas_id: CanvasIdType, allowed_users: Vec<String>},
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -579,7 +579,9 @@ pub async fn handle_client_message(client_state: &ClientState, client_msg_s: &st
                         width: width,
                         height: height,
                         name: name.clone(),
-                        allowed_users: allowed_users_vec,
+                        allowed_users: allowed_users_vec.iter()
+                            .map(|oid| oid.to_string())
+                            .collect(),
                     })
                 },
                 ClientSocketMessage::DeleteCanvases { canvas_ids } => {
@@ -638,7 +640,7 @@ pub async fn handle_client_message(client_state: &ClientState, client_msg_s: &st
                                 client_id: client_state.client_id, 
                                 canvas_id: canvas_id, 
                                 allowed_users: allowed_users.iter()
-                                    .map(|oid| *oid)
+                                    .map(|oid| oid.to_string())
                                     .collect(), 
                             })
                         }
