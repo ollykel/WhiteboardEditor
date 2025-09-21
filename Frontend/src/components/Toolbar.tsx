@@ -4,14 +4,14 @@ import WhiteboardContext from '@/context/WhiteboardContext';
 
 import { getToolChoiceLabel } from '@/components/Tool';
 import PopoverMenu from '@/components/PopoverMenu'
-import CreateCanvasMenu from '@/components/CreateCanvasMenu'
+import CreateCanvasMenu, { type NewCanvas } from '@/components/CreateCanvasMenu'
 
 import type { ToolChoice } from '@/components/Tool';
 
 interface ToolbarProps {
   toolChoice: ToolChoice;
   onToolChange: (choice: ToolChoice) => void;
-  onNewCanvas: (name: string) => void;
+  onNewCanvas: (canvas: NewCanvas) => void;
 }
 
 interface ToolbarButtonProps {
@@ -66,8 +66,8 @@ function Toolbar({ toolChoice, onToolChange, onNewCanvas }: ToolbarProps) {
         trigger={<ToolbarButton label="New Canvas" variant="default" />}
       >
         <CreateCanvasMenu 
-          onCreate={(name) => {
-            onNewCanvas(name);
+          onCreate={(canvas) => {
+            onNewCanvas(canvas);
             setNewCanvasOpen(false); // close popover after creating
           }}
         />

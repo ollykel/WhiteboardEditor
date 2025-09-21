@@ -1,24 +1,23 @@
-import { useContext, useState } from 'react';
+import { useState } from 'react';
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import AllowedUsersPopover from '@/components/AllowedUsersPopover';
 
-import WhiteboardContext from '@/context/WhiteboardContext';
-
 interface CreateCanvasMenuProps {
-  onCreate: (name: string) => void
+  onCreate: (canvas: NewCanvas) => void
+}
+
+// Add more fields later (height, width, etc.)
+export interface  NewCanvas {
+  canvasName: string;
+  allowedUsers: string[];
 }
 
 function CreateCanvasMenu({ onCreate }: CreateCanvasMenuProps) {
   const [canvasName, setCanvasName] = useState("");
-  const context = useContext(WhiteboardContext);
-  if (!context) {
-    throw new Error("throw new Error('No WhiteboardContext provided');")
-  }
-  const newCanvasAllowedUsers = context.newCanvasAllowedUsers;
-  const setNewCanvasAllowedUsers = context.setNewCanvasAllowedUsers;
+  const [newCanvasAllowedUsers, setNewCanvasAllowedUsers] = useState<string[]>([]);
 
   const handleSubmit = () => {
     if (!canvasName.trim()) {
@@ -26,7 +25,11 @@ function CreateCanvasMenu({ onCreate }: CreateCanvasMenuProps) {
       return;
     }
 
-    onCreate(canvasName);
+    onCreate({
+      canvasName,
+      allowedUsers: newCanvasAllowedUsers,
+    });
+    
     setCanvasName("");
     setNewCanvasAllowedUsers([]);
   }

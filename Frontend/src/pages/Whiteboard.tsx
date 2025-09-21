@@ -72,6 +72,7 @@ import HeaderButton from '@/components/HeaderButton';
 import HeaderAuthed from '@/components/HeaderAuthed';
 import shapeAttributesReducer from '@/reducers/shapeAttributesReducer';
 import type { ToolChoice } from '@/components/Tool';
+import { type NewCanvas } from '@/components/CreateCanvasMenu';
 import type {
   CanvasObjectIdType,
   CanvasObjectModel,
@@ -135,7 +136,6 @@ const Whiteboard = () => {
     socketRef,
     setWhiteboardId,
     sharedUsers,
-    newCanvasAllowedUsers,
   } = context;
 
   // -- prop-derived state
@@ -217,10 +217,7 @@ const Whiteboard = () => {
   // } = whiteboardData || {};
 
   // --- misc functions
-  const handleNewCanvas = (name: string) => {
-    // Mapping to match types
-
-
+  const handleNewCanvas = (canvas: NewCanvas) => {
     // Send message to server.
     // Server will echo response back, and actually inserting the new canvas
     // will be handled by handleServerMessage.
@@ -230,8 +227,8 @@ const Whiteboard = () => {
         type: 'create_canvas',
         width: 512,
         height: 512,
-        name,
-        allowedUsers: newCanvasAllowedUsers,
+        name: canvas.canvasName,
+        allowedUsers: canvas.allowedUsers,
       });
 
       socketRef.current.send(JSON.stringify(createCanvasMsg));
