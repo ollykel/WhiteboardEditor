@@ -16,8 +16,32 @@ import {
 
 import { loginService } from "../services/loginService";
 
-export const getUser = async (userId: Types.ObjectId): Promise<IUser | null> => {
-  return await User.findOne({ _id: userId });
+export type GetUserByIdRes =
+  | { status: 'bad_request'; message: string; }
+  | { status: 'not_found'; }
+  | { status: 'ok'; user: IUser; }
+;
+
+export const getUserById = async (userId: Types.ObjectId): Promise<GetUserByIdRes> => {
+  if (! Types.ObjectId.isValid(userId)) {
+    return ({
+      status: 'bad_request',
+      message: `Invalid object id: ${userId}`,
+    });
+  }
+
+  const user = await User.findOne({ _id: userId });
+
+  if (! user) {
+    return ({
+      status: 'not_found',
+    });
+  } else {
+    return ({
+      status: 'ok',
+      user,
+    });
+  }
 };// end getUser
 
 export const createUser = async (
