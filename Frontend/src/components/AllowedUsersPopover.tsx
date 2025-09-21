@@ -52,8 +52,8 @@ const AllowedUsersPopover = ({ selected, onChange }: AllowedUsersPopoverProps) =
   const sharedUsers = whiteboard?.shared_users ?? [];
 
   const toggleUser = (user: string) => {
-    const next = selected.some(u => u === user)
-      ? selected.filter(u => u !== user)
+    const next = selected.includes(user)
+      ? selected.filter((u: string) => u !== user)
       : [...selected, user];
     onChange(next);
   };

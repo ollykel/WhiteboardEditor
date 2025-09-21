@@ -45,6 +45,7 @@ function CanvasMenu({ canvasId, whiteboardId }: CanvasMenuProps) {
   const allowedUsers = useSelector((state: RootState) =>
     selectAllowedUsersByCanvas(state, [whiteboardId, canvasId]) ?? []
   );
+  const [selectedUsers, setSelectedUsers] = useState<string[]>(allowedUsers);
 
   const context = useContext(WhiteboardContext);
   if (!context) {
@@ -146,16 +147,23 @@ function CanvasMenu({ canvasId, whiteboardId }: CanvasMenuProps) {
           </DialogHeader>
 
           <AllowedUsersPopover 
-            selected={allowedUsers}
-            onChange={handleUpdateAllowedUsers}
+            selected={selectedUsers}
+            onChange={setSelectedUsers}
           />
 
           <div className="flex justify-end gap-2 pt-4">
-            <Button variant="secondary" onClick={() => setDialogOpen(false)}>
+            <Button variant="secondary" onClick={() => {
+              setSelectedUsers(allowedUsers); // Reset to original selection
+              setDialogOpen(false);
+            }}>
               Cancel
             </Button>
-            {/* TODO: Implement save functionality */}
-            <Button onClick={() => setDialogOpen(false)}>Save</Button>
+            <Button onClick={() => {
+              handleUpdateAllowedUsers(selectedUsers);
+              setDialogOpen(false);
+            }}>
+              Save
+            </Button>
           </div>
         </DialogContent>
       </Dialog>

@@ -28,6 +28,7 @@ function CreateCanvasMenu({ onCreate }: CreateCanvasMenuProps) {
 
     onCreate(canvasName);
     setCanvasName("");
+    setNewCanvasAllowedUsers([]);
   }
 
   return (

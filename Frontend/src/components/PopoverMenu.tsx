@@ -5,11 +5,19 @@ interface PopoverMenuProps {
   trigger: ReactNode
   children: ReactNode
   width?: string // allow flexible width
+  open?: boolean; // optional controlled open state
+  onOpenChange?: (open: boolean) => void; // optional callback for state changes
 }
 
-function PopoverMenu({ trigger, children, width = "w-64" }: PopoverMenuProps) {
+function PopoverMenu({ 
+  trigger,
+  children,
+  width = "w-64",
+  open,
+  onOpenChange,
+}: PopoverMenuProps) {
   return (
-    <Popover>
+    <Popover open={open} onOpenChange={onOpenChange}>
       <PopoverTrigger asChild>
         {trigger}
       </PopoverTrigger>

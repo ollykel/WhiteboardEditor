@@ -1,4 +1,4 @@
-import React, { useContext } from 'react';
+import React, { useContext, useState } from 'react';
 
 import WhiteboardContext from '@/context/WhiteboardContext';
 
@@ -35,6 +35,8 @@ const ToolbarButton = React.forwardRef<HTMLButtonElement, ToolbarButtonProps>(
 );
 
 function Toolbar({ toolChoice, onToolChange, onNewCanvas }: ToolbarProps) {
+  const [newCanvasOpen, setNewCanvasOpen] = useState(false);
+  
   const context = useContext(WhiteboardContext);
   console.log("toolbar context: ", context); // degbugging
   if (!context) {
@@ -59,10 +61,15 @@ function Toolbar({ toolChoice, onToolChange, onNewCanvas }: ToolbarProps) {
       {/** Additional, non-tool choices **/}
       <ToolbarButton label="Import Image" variant="default" />
       <PopoverMenu
+        open={newCanvasOpen}
+        onOpenChange={setNewCanvasOpen}
         trigger={<ToolbarButton label="New Canvas" variant="default" />}
       >
         <CreateCanvasMenu 
-          onCreate={onNewCanvas}
+          onCreate={(name) => {
+            onNewCanvas(name);
+            setNewCanvasOpen(false); // close popover after creating
+          }}
         />
       </PopoverMenu>
     </div>
