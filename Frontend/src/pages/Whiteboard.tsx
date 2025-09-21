@@ -477,12 +477,12 @@ const Whiteboard = () => {
                   userPermissions
                 } = data;
 
-                const res = await api.post(`/whiteboards/${whiteboardId}/share`, ({
+                const res = await api.post(`/whiteboards/${whiteboardId}/shared_users`, ({
                   userPermissions
                 }));
 
                 if (res.status >= 400) {
-                  console.error('POST /whiteboards/:id/share failed:', res.data);
+                  console.error('POST /whiteboards/:id/shared_users failed:', res.data);
                 } else {
                   console.log('Share request submitted successfully');
                   alert('Share request submitted successfully');

@@ -87,7 +87,7 @@ export interface ShareWhiteboardRequestBody extends AuthorizedRequestBody {
 
 // --- Share whiteboard with other users
 router.post(
-  "/:id/share",
+  "/:id/shared_users",
   async (
     req: Request<{ id: WhiteboardIdType }, any, ShareWhiteboardRequestBody>,
     res: Response
