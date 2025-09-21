@@ -25,7 +25,9 @@ export interface WhiteboardNormal extends CanvasNormal {
 export const normalizeWhiteboard = (
   whiteboard: WhiteboardData
 ): WhiteboardNormal => {
-  const { id, name } = whiteboard;
+  const {
+    id,
+  } = whiteboard;
 
   const {
     canvases,
@@ -51,7 +53,7 @@ export const normalizeWhiteboard = (
 
   return ({
     whiteboards: {
-      [id]: ({ id, name })
+      [id]: whiteboard
     },
     canvases,
     canvasesByWhiteboard: {

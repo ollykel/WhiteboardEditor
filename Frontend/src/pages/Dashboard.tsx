@@ -40,7 +40,7 @@ const Dashboard = (): React.JSX.Element => {
     isFetching: isOwnWhiteboardsFetching,
     data: ownWhiteboards,
   } = useQuery<Whiteboard[]>({
-    queryKey: [user?.id, 'dashboard', 'whiteboards', 'own'],
+    queryKey: [user?._id, 'dashboard', 'whiteboards', 'own'],
     queryFn: async () => {
       const res = await api.get('/whiteboards/own');
 
