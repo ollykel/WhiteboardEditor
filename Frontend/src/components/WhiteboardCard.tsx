@@ -61,10 +61,14 @@ function WhiteboardCard({
         {/** List shared users **/}
         <h3 className="">Collaborators: </h3>
         <ul
-          className="flex flex-row"
+          className="flex flex-row flex-wrap"
         >
           {sharedUsers?.map(perm => {
             if (perm.type === 'user') {
+              if ((typeof perm.user) !== 'object') {
+                throw new Error(`User must be object; received ${perm.user}`);
+              }
+
               return (
                 <li key={`user:${perm.user._id}`}>
                   <UserTagBrief

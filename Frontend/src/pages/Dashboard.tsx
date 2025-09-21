@@ -52,6 +52,24 @@ const Dashboard = (): React.JSX.Element => {
     }
   });
 
+  const {
+    isError: isSharedWhiteboardsError,
+    isLoading: isSharedWhiteboardsLoading,
+    isFetching: isSharedWhiteboardsFetching,
+    data: sharedWhiteboards,
+  } = useQuery<Whiteboard[]>({
+    queryKey: [user?._id, 'dashboard', 'whiteboards', 'shared'],
+    queryFn: async () => {
+      const res = await api.get('/users/me/shared_whiteboards');
+
+      if (res.status >= 400) {
+        throw new Error('Bad API call');
+      } else {
+        return res.data;
+      }
+    }
+  });
+
   if (! user) {
     throw new Error('No user found on authenticated page');
   }
@@ -88,7 +106,6 @@ const Dashboard = (): React.JSX.Element => {
         <h1 className="my-2 text-2xl font-bold font-mono">
           Your Whiteboards
         </h1>
-        {/** TODO: replace mock data **/}
         {(() => {
           if (isOwnWhiteboardsError) {
             return (
@@ -109,7 +126,28 @@ const Dashboard = (): React.JSX.Element => {
           }
         })()}
 
-        <SharedWhiteboards />
+        <h1 className="my-2 text-2xl font-bold font-mono">
+          Shared Whiteboards
+        </h1>
+        {(() => {
+          if (isSharedWhiteboardsError) {
+            return (
+              <WhiteboardList
+                status="error"
+                message={`${isSharedWhiteboardsError}`}
+              />
+            );
+          } else if (isSharedWhiteboardsLoading || isSharedWhiteboardsFetching) {
+            return (<WhiteboardList status="loading" />);
+          } else {
+            return (
+              <WhiteboardList
+                status="ready"
+                whiteboardsAttribs={sharedWhiteboards || []}
+              />
+            );
+          }
+        })()}
       </main>
     </>
   );

@@ -63,23 +63,31 @@ const WhiteboardList = (props: WhiteboardListProps): React.JSX.Element => {
           whiteboardsAttribs
         } = props;
 
-        return (
-          <ul
-            className="flex flex-row flex-wrap"
-          >
-          {
-              whiteboardsAttribs.map(attribs => (
-                <li
-                  key={attribs._id}
-                >
-                  <WhiteboardCard
-                    {...attribs}
-                  />
-                </li>
-              ))
-          }
-          </ul>
-        );
+        if (whiteboardsAttribs.length < 1) {
+          return (
+            <p className="text-lg font-bold font-arial text-gray-400 italic">
+              No whiteboards to display
+            </p>
+          );
+        } else {
+          return (
+            <ul
+              className="flex flex-row flex-wrap"
+            >
+            {
+                whiteboardsAttribs.map(attribs => (
+                  <li
+                    key={attribs._id}
+                  >
+                    <WhiteboardCard
+                      {...attribs}
+                    />
+                  </li>
+                ))
+            }
+            </ul>
+          );
+        }
     }
     default:
     {
