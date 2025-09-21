@@ -9,6 +9,14 @@ A place to create diagrams collaboratively.
 The Whiteboard Editor requires Docker to run. [Follow instructions to install
 Docker on your OS.](https://docs.docker.com/desktop/)
 
+Building with Docker requires the containerd image store.
+
+To enable containerd image store with Docker Desktop, follow the instructions
+[here](https://docs.docker.com/desktop/features/containerd/).
+
+To enable containerd image store with Docker Engine, follow the instructions
+[here](https://docs.docker.com/engine/storage/containerd/#enable-containerd-image-store-on-docker-engine).
+
 ### Configure Settings
 
 Copy example.env to .env and fill out the required values.
@@ -21,6 +29,14 @@ following from the repository root directory:
 ```
 docker compose build
 ```
+
+To get caching to work correctly on your first attempt, you may need to run this
+command with the --no-cache option:
+
+```
+docker compose build --no-cache
+```
+
 
 ### Run
 
