@@ -6,9 +6,7 @@
 
 // -- std imports
 import React, {
-  useState,
   useRef,
-  useEffect,
   createContext,
   type PropsWithChildren,
 } from 'react';
@@ -36,15 +34,7 @@ const UserCacheContext = createContext<UserCacheContextType | undefined>(undefin
 export const UserCacheProvider = ({
   children
 }: PropsWithChildren<object>): React.JSX.Element => {
-  const [usersById, setUsersById] = useState<Record<string, User>>({});
-  const usersByIdRef = useRef<Record<string, User>>(usersById);
-
-  useEffect(
-    () => {
-      usersByIdRef.current = usersById;
-    },
-    [usersById]
-  );
+  const usersByIdRef = useRef<Record<string, User>>({});
 
   const getUserById = async (userId: string): Promise<User | null> => {
     if (userId in usersByIdRef.current) {
@@ -59,10 +49,7 @@ export const UserCacheProvider = ({
       } else {
         const user = res.data;
 
-        setUsersById(prevUsersById => ({
-          ...prevUsersById,
-          [userId]: user,
-        }));
+        usersByIdRef.current[userId] = user;
 
         return user;
       }
@@ -79,20 +66,14 @@ export const UserCacheProvider = ({
     } else {
       const user = res.data;
 
-      setUsersById(prevUsersById => ({
-        ...prevUsersById,
-        [userId]: user,
-      }));
+      usersByIdRef.current[userId] = user;
 
       return user;
     }
   };// end fetchUserById
 
   const setUserById = (userId: string, user: User) => {
-    setUsersById(prevUsersById => ({
-      ...prevUsersById,
-      [userId]: user,
-    }));
+    usersByIdRef.current[userId] = user;
   };// end fetchUserById
 
   return (
