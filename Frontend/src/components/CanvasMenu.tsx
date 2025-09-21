@@ -28,11 +28,10 @@ import AllowedUsersPopover from "@/components/AllowedUsersPopover";
 import type { 
   ClientMessageDeleteCanvases, 
   CanvasIdType, 
-  WhiteboardIdType ,
-  CanvasKeyType,
+  WhiteboardIdType,
 } from "@/types/WebSocketProtocol";
 import { useSelector } from "react-redux";
-import { selectAllowedUsersByCanvas, setAllowedUsersByCanvas } from "@/store/allowedUsers/allowedUsersByCanvasSlice";
+import { selectAllowedUsersByCanvas } from "@/store/allowedUsers/allowedUsersByCanvasSlice";
 
 interface CanvasMenuProps {
   canvasId: CanvasIdType;
@@ -55,22 +54,13 @@ function CanvasMenu({ canvasId, whiteboardId }: CanvasMenuProps) {
     socketRef, 
   } = context;
 
-  const handleUpdateAllowedUsers = (newUsers: string[]) => {
-    // Update Redux
-    const canvasKey: CanvasKeyType = [whiteboardId, canvasId];
-    const canvasKeyString = canvasKey.join(", ");
-    dispatch(
-      setAllowedUsersByCanvas({ 
-        [canvasKeyString]: newUsers
-      })
-    );
-
+  const handleUpdateAllowedUsers = (allowedUsers: string[]) => {
     // Send WS message
     if (socketRef.current) {
       socketRef.current.send(JSON.stringify({
         type: 'update_canvas_allowed_users',
         canvasId,
-        allowedUsers: newUsers,
+        allowedUsers: allowedUsers,
       }));
     }
   };

@@ -313,7 +313,7 @@ const Whiteboard = () => {
           {
             const { canvasId, allowedUsers } = msg;
             const canvasKey: CanvasKeyType = [whiteboardIdRef.current, canvasId];
-            const canvasKeyString = canvasKey.join(', ');
+            const canvasKeyString = canvasKey.toString();
 
             dispatch(setAllowedUsersByCanvas({ [canvasKeyString]: allowedUsers }));
           }
