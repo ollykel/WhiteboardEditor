@@ -38,8 +38,8 @@ function CanvasCard(props: CanvasCardProps) {
   } = userCacheContext;
   const { id, title, whiteboardId } = props;
   const allowedUserIds = useSelector((state: RootState) =>
-    selectAllowedUsersByCanvas(state, [whiteboardId, id]) ?? []
-  );
+    selectAllowedUsersByCanvas(state, [whiteboardId, id])
+  ) ?? [];
   const [allowedUsers, setAllowedUsers] = useState<User[]>([]);
 
   useEffect(
