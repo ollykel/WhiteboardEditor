@@ -477,8 +477,25 @@ const Whiteboard = () => {
                   userPermissions
                 } = data;
 
+                const userPermissionsFinal = userPermissions.map(perm => {
+                  if (perm.type === 'user') {
+                    if ((typeof perm.user) === 'object') {
+                      // extract object id
+                      return ({
+                        ...perm,
+                        user: perm.user._id
+                      });
+                    } else {
+                      // already object id
+                      return perm;
+                    }
+                  } else {
+                    return perm;
+                  }
+                });
+
                 const res = await api.post(`/whiteboards/${whiteboardId}/shared_users`, ({
-                  userPermissions
+                  userPermissions: userPermissionsFinal
                 }));
 
                 if (res.status >= 400) {

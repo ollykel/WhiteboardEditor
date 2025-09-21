@@ -13,6 +13,9 @@ import type {
   CanvasObjectModel
 } from '@/types/CanvasObjectModel';
 
+// -- For now, just a basic representation for a MongoDB ObjectId
+export type ObjectIdType = string;
+
 // === User ====================================================================
 //
 // Basic data about a user.
@@ -56,7 +59,7 @@ export const USER_PERMISSION_TYPES = [
 //
 // =============================================================================
 export type UserPermission =
-  | { type: 'user'; user: User; permission: UserPermissionEnum; }
+  | { type: 'user'; user: User | ObjectIdType; permission: UserPermissionEnum; }
   | { type: 'email'; email: string; permission: UserPermissionEnum; }
 ;
 
