@@ -1,10 +1,17 @@
+// -- std imports
 import { Request, Response, Router } from "express";
+
+// -- local imports
+import {
+  SetInclusionOptionType
+} from '../utils';
 
 import {
   getUser,
   createUser,
   patchUser,
-  deleteUser
+  deleteUser,
+  getSharedWhiteboardsByUser,
 } from "../controllers/users";
 
 import {
@@ -104,6 +111,44 @@ router.delete('/me', async (
   } else {
     res.status(200).json(resp.data);
   }
+});
+
+// === GET /users/me/shared_whiteboards ========================================
+//
+// Get summaries (attribute views) of all whiteboards shared with the
+// authenticated user. By default, spans all permissions.
+//
+// TODO: implement queries to filter by permission type.
+//
+// =============================================================================
+router.get('/me/shared_whiteboards', async (
+  req: Request<{}, any, AuthorizedRequestBody>,
+  res: Response,
+) => {
+  const { authUser } = req.body;
+  const { id: userId } = authUser;
+
+  const includeOpts: SetInclusionOptionType<string> = ({
+    type: 'all',
+  });
+
+  const resp = await getSharedWhiteboardsByUser(userId, includeOpts);
+
+  switch (resp.status) {
+      case 'server_error':
+        return res.status(500).json({ message: 'Unexpected server error' });
+      case 'user_not_found':
+        // This _shouldn't_ happen in our case, since we've already passed the
+        // authentication middleware by this point. Nevertheless, the controller
+        // still accounts for the possibility.
+        return res.status(403).json({ message: 'Invalid user' });
+      case 'ok':
+        return res.status(200).json(resp.whiteboards);
+      default:
+        // Shouldn't get here. If we get here, there is a case we haven't
+        // accounted for.
+        throw new Error(`Unexpected case: ${resp}`);
+  }// end switch (resp.status)
 });
 
 export default router;
