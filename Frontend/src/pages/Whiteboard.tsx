@@ -500,6 +500,7 @@ const Whiteboard = () => {
 
                 if (res.status >= 400) {
                   console.error('POST /whiteboards/:id/shared_users failed:', res.data);
+                  alert(`Share request failed: ${JSON.stringify(res.data)}`);
                 } else {
                   console.log('Share request submitted successfully');
                   alert('Share request submitted successfully');
