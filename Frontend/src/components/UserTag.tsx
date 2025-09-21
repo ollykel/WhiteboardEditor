@@ -37,47 +37,48 @@ type EnumUserTagRole =
 ;
 
 interface UserTagPropsBase {
-  className?: string;
   size: EnumUserTagSize;
+  className?: string;
+  note?: string | React.JSX.Element;
 }
 
 // -- displays just username and email; optional functionality on click
 interface UserTagPropsBrief extends UserTagPropsBase {
   variant: 'brief';
   user: Pick<User, 'username' | 'email'> & Partial<User>;
-  onClick?: (user: Pick<User, 'username' | 'email'> & Partial<User>) => any;
+  onClick?: (user: Pick<User, 'username' | 'email'> & Partial<User>) => void;
 }
 
 // -- displays just username and email, with a delete button; optional functionality on click
 interface UserTagPropsBriefDeleter extends Omit<UserTagPropsBrief, 'variant'> {
   variant: 'brief_deleter'
-  onDelete: (user: Pick<User, 'username' | 'email'> & Partial<User>) => any;
+  onDelete: (user: Pick<User, 'username' | 'email'> & Partial<User>) => void;
 }
 
 // -- displays just username; optional functionality on click
 interface UserTagPropsUsername extends UserTagPropsBase {
   variant: 'username';
   user: Pick<User, 'username'> & Partial<User>;
-  onClick?: (user: Pick<User, 'username'> & Partial<User>) => any;
+  onClick?: (user: Pick<User, 'username'> & Partial<User>) => void;
 }
 
 // -- displays just username, with a delete button; optional functionality on click
 interface UserTagPropsUsernameDeleter extends Omit<UserTagPropsUsername, 'variant'> {
   variant: 'username_deleter'
-  onDelete: (user: Pick<User, 'username'> & Partial<User>) => any;
+  onDelete: (user: Pick<User, 'username'> & Partial<User>) => void;
 }
 
 // -- displays just email; optional functionality on click
 interface UserTagPropsEmail extends UserTagPropsBase {
   variant: 'email';
   user: Pick<User, 'email'> & Partial<User>;
-  onClick?: (user: Pick<User, 'email'> & Partial<User>) => any;
+  onClick?: (user: Pick<User, 'email'> & Partial<User>) => void;
 }
 
 // -- displays just email, with a delete button; optional functionality on click
 interface UserTagPropsEmailDeleter extends Omit<UserTagPropsEmail, 'variant'> {
   variant: 'email_deleter'
-  onDelete: (user: Pick<User, 'email'> & Partial<User>) => any;
+  onDelete: (user: Pick<User, 'email'> & Partial<User>) => void;
 }
 
 export type UserTagProps = 
@@ -90,12 +91,12 @@ export type UserTagProps =
 ;
 
 const userTagVariants = cva(
-  "inline-block align-middle rounded-2xl bg-gray-200 border-gray-600",
+  "inline-block align-middle rounded-2xl bg-gray-200 border-gray-600 font-semibold",
   {
     variants: {
       role: {
         default: "",
-        button: "hover:cursor-pointer",
+        button: "hover:cursor-pointer hover:text-gray-200 hover:bg-gray-600",
       },
       size: {
         small: "m-2 px-2 py-1 text-sm",
@@ -123,13 +124,14 @@ const getIconSizeByTagSize = (tagSize: EnumUserTagSize): number => {
 
 interface UserTagBaseProps extends UserTagPropsBase {
   role: EnumUserTagRole;
-  onClick?: () => any;
+  onClick?: () => void;
 }
 
 const UserTagBase = ({
-  className,
   size,
   role,
+  className,
+  note,
   onClick,
   children,
 }: React.PropsWithChildren<UserTagBaseProps>): React.JSX.Element => {
@@ -139,6 +141,7 @@ const UserTagBase = ({
       onClick={onClick}
     >
       {children}
+      {note}
     </div>
   );
 };
@@ -147,7 +150,7 @@ export const UserTagBrief = ({
   user,
   onClick,
   ...baseProps
-}: UserTagPropsBrief): React.JSX.Element => {
+}: Omit<UserTagPropsBrief, 'variant'>): React.JSX.Element => {
   const {
     username,
     email,
@@ -159,7 +162,7 @@ export const UserTagBrief = ({
       role={onClick ? 'button' : 'default'}
       onClick={onClick && (() => onClick(user))}
     >
-      <span>{username} ({email})</span>
+      <span>{username} {`<${email}>`}</span>
     </UserTagBase>
   );
 };
@@ -169,7 +172,7 @@ export const UserTagBriefDeleter = ({
   onClick,
   onDelete,
   ...baseProps
-}: UserTagPropsBriefDeleter): React.JSX.Element => {
+}: Omit<UserTagPropsBriefDeleter, 'variant'>): React.JSX.Element => {
   const {
     username,
     email,
@@ -196,7 +199,7 @@ export const UserTagUsername = ({
   user,
   onClick,
   ...baseProps
-}: UserTagPropsUsername): React.JSX.Element => {
+}: Omit<UserTagPropsUsername, 'variant'>): React.JSX.Element => {
   const {
     username
   } = user;
@@ -217,7 +220,7 @@ export const UserTagUsernameDeleter = ({
   onClick,
   onDelete,
   ...baseProps
-}: UserTagPropsUsernameDeleter): React.JSX.Element => {
+}: Omit<UserTagPropsUsernameDeleter, 'variant'>): React.JSX.Element => {
   const {
     username,
   } = user;
@@ -244,7 +247,7 @@ export const UserTagEmail = ({
   user,
   onClick,
   ...baseProps
-}: UserTagPropsEmail): React.JSX.Element => {
+}: Omit<UserTagPropsEmail, 'variant'>): React.JSX.Element => {
   const {
     email,
   } = user;
@@ -265,7 +268,7 @@ export const UserTagEmailDeleter = ({
   onClick,
   onDelete,
   ...baseProps
-}: UserTagPropsEmailDeleter): React.JSX.Element => {
+}: Omit<UserTagPropsEmailDeleter, 'variant'>): React.JSX.Element => {
   const {
     email,
   } = user;
