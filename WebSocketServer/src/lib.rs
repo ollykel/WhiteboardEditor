@@ -166,7 +166,7 @@ pub enum ServerSocketMessage {
     DeleteCanvases { client_id: ClientIdType, canvas_ids: Vec<String> },
     IndividualError { client_id: ClientIdType, message: String },
     BroadcastError { message: String },
-    UpdateCanvasAllowedUsers { client_id: ClientIdType, canvas_id: CanvasIdType, allowed_users: Vec<String>},
+    UpdateCanvasAllowedUsers { client_id: ClientIdType, canvas_id: String, allowed_users: Vec<String>},
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -638,7 +638,7 @@ pub async fn handle_client_message(client_state: &ClientState, client_msg_s: &st
                             // broadcast to all users
                             Some(ServerSocketMessage::UpdateCanvasAllowedUsers { 
                                 client_id: client_state.client_id, 
-                                canvas_id: canvas_id, 
+                                canvas_id: canvas_id.to_string(), 
                                 allowed_users: allowed_users.iter()
                                     .map(|oid| oid.to_string())
                                     .collect(), 
