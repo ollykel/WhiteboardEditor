@@ -13,18 +13,11 @@ jobs:
     # run linter
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v5
-      - name: Set up Docker
-        uses: docker/setup-docker-action@v4
-        with:
-          daemon-config: |
-            {
-              "debug": true,
-              "features": {
-                "containerd-snapshotter": true
-              }
-            }
-      - name: install
+      - name: Checkout repository
+        id: checkout-repo
+        uses: actions/checkout@v5
+      - name: Install dependencies
+        id: install-dependencies
         run: |
           # install dependencies via yarn
           cd Frontend
@@ -32,7 +25,8 @@ jobs:
           yarn install
 
           echo 'service "frontend" installed dependencies successfully'
-      - name: lint
+      - name: Run lint
+        id: lint
         run: |
           cd Frontend
 
