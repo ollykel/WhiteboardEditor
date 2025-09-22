@@ -45,8 +45,9 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: WebSocketServer
+          target: builder
           push: false
-          tags: ghcr.io/${{ github.repository_owner }}/${{ github.repository_id }}/web_socket_server:test
+          tags: ghcr.io/${{ github.repository_owner }}/${{ github.repository_id }}/web_socket_server_builder:test
 
           # cache settings
           cache-from: type=registry,ref=ghcr.io/${{ github.repository_owner }}/${{ github.repository_id }}/web_socket_server:buildcache
@@ -55,4 +56,4 @@ jobs:
       - name: Run Cargo tests
         id: run-cargo-tests
         run: |
-          docker run --entrypoint 'cargo test' ghcr.io/${{ github.repository_owner }}/${{ github.repository_id }}/web_socket_server:test
+          docker run --entrypoint 'cargo test' ghcr.io/${{ github.repository_owner }}/${{ github.repository_id }}/web_socket_server_builder:test
