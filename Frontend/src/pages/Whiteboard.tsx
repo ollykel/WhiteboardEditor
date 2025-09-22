@@ -23,7 +23,7 @@ import { X } from 'lucide-react';
 
 // -- local types
 import type {
-  Whiteboard as APIWhiteboard
+  Whiteboard as APIWhiteboard,
 } from '@/types/APIProtocol';
 
 // -- program state
@@ -72,9 +72,10 @@ import HeaderButton from '@/components/HeaderButton';
 import HeaderAuthed from '@/components/HeaderAuthed';
 import shapeAttributesReducer from '@/reducers/shapeAttributesReducer';
 import type { ToolChoice } from '@/components/Tool';
+import { type NewCanvas } from '@/components/CreateCanvasMenu';
 import type {
   CanvasObjectIdType,
-  CanvasObjectModel
+  CanvasObjectModel,
 } from '@/types/CanvasObjectModel';
 import ShareWhiteboardForm, {
   type ShareWhiteboardFormData
@@ -82,16 +83,17 @@ import ShareWhiteboardForm, {
 import type {
   SocketServerMessage,
   // ClientMessageCreateShapes,
-  ClientIdType,
   ClientMessageUpdateShapes,
   ClientMessageCreateCanvas,
   CanvasData,
   CanvasIdType,
+  CanvasKeyType,
   WhiteboardIdType,
   WhiteboardAttribs,
 } from '@/types/WebSocketProtocol';
 
 import { useUser } from '@/hooks/useUser';
+import { setAllowedUsersByCanvas } from '@/store/allowedUsers/allowedUsersByCanvasSlice';
 
 // -- Allowed Users Redux reducers
 // import { 
@@ -127,12 +129,13 @@ const Whiteboard = () => {
   }
 
   if (! context) {
-    throw new Error('No WhiteboardContext provided');
+    throw new Error('No WhiteboardContext provided in Whiteboard');
   }
 
   const {
     socketRef,
-    setWhiteboardId
+    setWhiteboardId,
+    sharedUsers,
   } = context;
 
   // -- prop-derived state
@@ -157,9 +160,9 @@ const Whiteboard = () => {
       }
     }
   });
-  const [clientId, setClientId] = useState<ClientIdType>("");
   const [toolChoice, setToolChoice] = useState<ToolChoice>('rect');
   const whiteboardIdRef = useRef<WhiteboardIdType>(whiteboardId);
+  console.log("whiteboard data 1: ", whiteboardData); // degbugging
 
   // alert user of any errors fetching whiteboard
   useEffect(
@@ -209,12 +212,12 @@ const Whiteboard = () => {
   const title = currWhiteboard?.name ?? 'Loading whiteboard ...';
   const isActive = !!socketRef.current;
   const isReady = isActive && (! (isWhiteboardLoading || isWhiteboardFetching));
-  const {
-    shared_users: sharedUsers
-  } = whiteboardData || {};
+  // const {
+  //   shared_users: sharedUsers
+  // } = whiteboardData || {};
 
   // --- misc functions
-  const handleNewCanvas = (name: string, allowedUsers: string[]) => {
+  const handleNewCanvas = (canvas: NewCanvas) => {
     // Send message to server.
     // Server will echo response back, and actually inserting the new canvas
     // will be handled by handleServerMessage.
@@ -224,8 +227,8 @@ const Whiteboard = () => {
         type: 'create_canvas',
         width: 512,
         height: 512,
-        name,
-        allowedUsers,
+        name: canvas.canvasName,
+        allowedUsers: canvas.allowedUsers,
       });
 
       socketRef.current.send(JSON.stringify(createCanvasMsg));
@@ -252,10 +255,9 @@ const Whiteboard = () => {
         switch (msg.type) {
           case 'init_client':
             {
-              const { clientId: initClientId, whiteboard } = msg;
+              const { whiteboard } = msg;
 
               setWhiteboardId(whiteboard.id);
-              setClientId(initClientId);
               addWhiteboard(dispatch, whiteboard);
             }
             break;
@@ -304,6 +306,15 @@ const Whiteboard = () => {
               }// end for (const canvasId of canvasIds)
             }
             break;
+          case 'update_canvas_allowed_users': 
+          {
+            const { canvasId, allowedUsers } = msg;
+            const canvasKey: CanvasKeyType = [whiteboardIdRef.current, canvasId];
+            const canvasKeyString = canvasKey.toString();
+
+            dispatch(setAllowedUsersByCanvas({ [canvasKeyString]: allowedUsers }));
+          }
+          break;
           case 'individual_error':
           case 'broadcast_error':
             {
@@ -435,7 +446,9 @@ const Whiteboard = () => {
           {/* Display Canvases */}
           <div className="flex flex-1 flex-row justify-center flex-wrap">
             {canvasesSorted.map(({ id: canvasId, width, height, name, shapes, allowedUsers }: CanvasData) => {
-              const hasAccess = allowedUsers.length === 0 || allowedUsers.includes(clientId);
+              const hasAccess = user
+                ? allowedUsers.length === 0 || allowedUsers.includes(user.id)
+                : false;
               return (
                 <CanvasCard
                   id={canvasId}
@@ -448,7 +461,6 @@ const Whiteboard = () => {
                   shapeAttributes={shapeAttributesState}
                   currentTool={toolChoice}
                   disabled={!hasAccess}
-                  allUsers={Object.values(activeUsers)} // TODO: Change to allowed users
                   whiteboardId={whiteboardId}
                 />
               );
@@ -522,10 +534,38 @@ const Whiteboard = () => {
 const WrappedWhiteboard = () => {
   const socketRef = useRef<WebSocket | null>(null);
   const [whiteboardId, setWhiteboardId] = useState<WhiteboardIdType>("");
+  const [newCanvasAllowedUsers, setNewCanvasAllowedUsers] = useState<string[]>([]);
+
+  const { data: whiteboardData, isLoading: isWhiteboardDataLoading } = useQuery({
+    queryKey: ['whiteboard', whiteboardId],
+    enabled: !!whiteboardId, // Only run query when whiteboardId exists
+    queryFn: async () => {
+      if (!whiteboardId) throw new Error('No whiteboard ID provided');
+      console.log('Fetching whiteboard data for ID:', whiteboardId);
+      const res = await api.get(`/whiteboards/${whiteboardId}`);
+      if (res.status >= 400) throw new Error(res.data?.message || 'Failed');
+      console.log('API Response:', res.data);
+      return res.data;
+    },
+  });
+  console.log("Current whiteboard data:", whiteboardData);
+  console.log("Loading status:", isWhiteboardDataLoading);
+
+  // update the state of sharedUsers whenever whiteboardData changes
+  const [sharedUsers, setSharedUsers] = useState<APIWhiteboard['shared_users']>([]);
+  console.log("Current shared users:", sharedUsers);
+
+  useEffect(() => {
+    if (whiteboardData?.shared_users) {
+      setSharedUsers(whiteboardData.shared_users);
+    }
+  }, [whiteboardData])
 
   const canvasObjectsByCanvas: Record<CanvasIdType, Record<CanvasObjectIdType, CanvasObjectModel>> = useSelector((state: RootState) => (
     selectCanvasObjectsByWhiteboard(state, whiteboardId)
   ));
+
+  console.log("canvasObjects: ", canvasObjectsByCanvas);
 
   const handleUpdateShapes = (canvasId: CanvasIdType, shapes: Record<CanvasObjectIdType, CanvasObjectModel>) => {
     if (socketRef.current) {
@@ -571,6 +611,10 @@ const WrappedWhiteboard = () => {
       setCurrentTool={setCurrentTool}
       whiteboardId={whiteboardId}
       setWhiteboardId={setWhiteboardId}
+      sharedUsers={sharedUsers}
+      setSharedUsers={setSharedUsers}
+      newCanvasAllowedUsers={newCanvasAllowedUsers}
+      setNewCanvasAllowedUsers={setNewCanvasAllowedUsers}
     >
       <Whiteboard />
     </WhiteboardProvider>

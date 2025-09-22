@@ -19,7 +19,6 @@ import type {
 
 // -- components
 import HeaderAuthed from "@/components/HeaderAuthed";
-import SharedWhiteboards from "@/components/SharedWhiteboards";
 import { useUser } from "@/hooks/useUser";
 import type { User } from "@/types/UserAuth";
 import CreateWhiteboardModal, {
@@ -29,8 +28,6 @@ import WhiteboardList from '@/components/WhiteboardList';
 
 const Dashboard = (): React.JSX.Element => {
   const navigate = useNavigate();
-  // const queryClient = useQueryClient();
-
   const title: string = "<Whiteboard App>";
   const user: User | null = useUser().user;
 

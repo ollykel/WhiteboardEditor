@@ -121,13 +121,15 @@ const CreateWhiteboardModal = ({
   const handleSubmit = (ev: React.FormEvent<HTMLFormElement>) => {
     ev.preventDefault();
 
-    const data = ({
+    const collaboratorEmails = Object.keys(emailSet);
+    const data = {
       ...formInputs,
-      collaboratorEmails: Object.keys(emailSet)
-    });
+      collaboratorEmails
+    };
 
-    if (! data.name) {
+    if (!data.name) {
       alert('Name required');
+      return;
     }
 
     onSubmit(data);

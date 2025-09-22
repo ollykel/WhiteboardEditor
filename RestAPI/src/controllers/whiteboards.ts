@@ -25,6 +25,7 @@ import type {
 
 export interface CreateWhiteboardRequest extends AuthorizedRequestBody {
   name: string;
+  collaboratorEmails?: string[];
 }
 
 export type GetWhiteboardRes = 
@@ -51,9 +52,40 @@ export const getWhiteboardById = async (whiteboardId: string): Promise<GetWhiteb
   if (! whiteboard) {
     return ({ status: 'not_found' });
   } else {
+    const sharedUsers: IWhiteboardUserPermission[] = await Promise.all(whiteboard.shared_users.map(async (perm: IWhiteboardUserPermission) => {
+      switch (perm.type) {
+        case 'user':
+          return perm;
+        case 'email':
+          // check if this email now belongs to a registered user
+          const user = await User.findOne({ email: perm.email });
+
+          if (user) {
+            return ({
+              type: 'user',
+              user: user._id,
+              permission: perm.permission,
+            });
+          }
+          return perm; // keep as email if still unregistered
+        default:
+          return perm;
+      }
+    }));
+
+    whiteboard.shared_users = sharedUsers;
+
+    console.log("Returning whiteboard:", JSON.stringify(whiteboard, null, 2));
+
     return ({
       status: 'ok',
-      whiteboard
+      // -- convert user ids to users
+      whiteboard: await whiteboard.populate({
+        path: 'shared_users',
+        populate: {
+          path: 'user'
+        }
+      })
     });
   }
 };
@@ -87,12 +119,52 @@ export const createWhiteboard = async (
   try {
     const { authUser, name } = req.body;
     const { id: ownerId } = authUser;
+    console.log("createWhiteboard req.body: ", req.body);
+    
+    // Give owner 'own' permission for shared_users
+    const ownerPermission: IWhiteboardUserPermission = {
+      type: 'user',
+      user: ownerId,
+      permission: 'own'
+    };
+
+    // Get collaborator emails if provided
+    const collaboratorEmails: string[] = req.body.collaboratorEmails || [];
+
+    // Fetch users whose emails match
+    const foundUsers = await User.find({ email: { $in: collaboratorEmails } });
+
+    // Create quick lookup
+    const foundEmails = new Set(foundUsers.map(u => u.email));
+
+    // Permissions for users that exist in DB
+    const collarboratorPermissionsFromUsers: IWhiteboardUserPermission[] =
+      foundUsers.map(user => ({
+        type: 'user',
+        user: user._id,
+        permission: 'edit',
+      }));
+
+    // For emails that don't match an account, keep them as email permissions
+    const collarboratorPermissionsFromEmail: IWhiteboardUserPermission[] = 
+      collaboratorEmails
+        .filter(email => !foundEmails.has(email))
+        .map(email => ({
+          type: 'email',
+          email,
+          permission: 'edit',
+        }));
+
+    const collaboratorPermissions = [
+      ...collarboratorPermissionsFromUsers,
+      ...collarboratorPermissionsFromEmail
+    ];
 
     const whiteboard = new Whiteboard({
       name,
       // canvases: [defaultCanvas], // TODO: remove
       owner: ownerId,
-      shared_users: []
+      shared_users: [ownerPermission, ...collaboratorPermissions]
     });
 
     console.log('Attempting to create new whiteboard:', whiteboard);

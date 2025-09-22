@@ -11,7 +11,7 @@ import {
 } from '../utils';
 
 import {
-  getUser,
+  getUserById,
   createUser,
   patchUser,
   deleteUser,
@@ -45,26 +45,32 @@ router.post("/", async (
 // --- Routes below are authenticated
 router.use(authenticateJWT);
 
-// === GET /users/me ===========================================================
+// === GET /users/:userId ======================================================
 //
 // Fetch the authenticated user's data.
 //
 // =============================================================================
-router.get("/me", async (
-  req: Request<{}, any, AuthorizedRequestBody>,
+router.get("/:userId", async (
+  req: Request<{ userId: Types.ObjectId | 'me'}, any, AuthorizedRequestBody>,
   res: Response
 ) => {
-  const { authUser } = req.body;
-  const { id: userId } = authUser;
-  const user = await getUser(userId);
+    const { authUser } = req.body;
+    const { id: authUserId } = authUser;
+    const { userId } = req.params;
+    const targetUserId = (userId === 'me') ? authUserId : userId;
 
-  if (! user) {
-    res.status(404).json({
-      message: `Could not find user with id ${userId}`
-    });
-  } else {
-    res.status(200).json(user);
-  }
+    const resp = await getUserById(targetUserId);
+    
+    switch (resp.status) {
+      case 'bad_request':
+        return res.status(400).json({ message: resp.message });
+      case 'not_found':
+        return res.status(404).json({ message: `User ${targetUserId} not found` });
+      case 'ok':
+        return res.status(200).json(resp.user.toAttribView());
+      default:
+        throw new Error(`Unhandled case: ${resp}`);
+    }
 });
 
 // === PATCH /users/me =========================================================
@@ -76,25 +82,40 @@ router.patch("/me", async (
   req: Request<{}, any, PatchUserRequest>,
   res: Response
 ) => {
-  const { authUser } = req.body;
-  const patchData: Partial<PatchUserRequest> = ({ ...req.body });
-  const { id: userId } = authUser;
-  const user = await getUser(userId);
+    const { authUser } = req.body;
+    const patchData: Partial<PatchUserRequest> = ({ ...req.body });
+    const { id: userId } = authUser;
+    const resp = await getUserById(userId);
 
-  if (! user) {
-    res.status(400).json({
-      message: `Could not find user with id ${userId}`
-    });
-  } else {
-    delete patchData.authUser;
-    const patchUserRes = await patchUser(user, patchData);
+    switch (resp.status) {
+        case 'bad_request':
+          return res.status(400).json({ message: resp.message });
+        case 'not_found':
+          return res.status(404).json({ message: `User ${userId} not found` });
+        case 'ok':
+        {
+            const {
+              user,
+            } = resp;
 
-    if (patchUserRes.type === 'error') {
-      res.status(400).json({ message: patchUserRes.message });
-    } else {
-      res.status(201).json(patchUserRes.data);
+            if (! user) {
+              return res.status(400).json({
+                message: `Could not find user with id ${userId}`
+              });
+            } else {
+              delete patchData.authUser;
+              const patchUserRes = await patchUser(user, patchData);
+
+              if (patchUserRes.type === 'error') {
+                return res.status(400).json({ message: patchUserRes.message });
+              } else {
+                return res.status(201).json(patchUserRes.data);
+              }
+            }
+        }
+        default:
+          throw new Error(`Unhandled case: ${resp}`);
     }
-  }
 });
 
 // === DELETE /users/me ========================================================

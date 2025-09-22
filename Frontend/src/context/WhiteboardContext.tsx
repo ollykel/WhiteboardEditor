@@ -10,13 +10,17 @@ import type {
 
 import type {
   CanvasObjectIdType,
-  CanvasObjectModel
+  CanvasObjectModel,
 } from '@/types/CanvasObjectModel';
 
 import type {
   CanvasIdType,
-  WhiteboardIdType
+  WhiteboardIdType,
 } from '@/types/WebSocketProtocol';
+
+import type {
+  UserPermission,
+} from '@/types/APIProtocol'
 
 export interface WhiteboardContextType {
   socketRef: RefObject<WebSocket | null>;
@@ -25,6 +29,10 @@ export interface WhiteboardContextType {
   setCurrentTool: React.Dispatch<React.SetStateAction<ToolChoice>>;
   whiteboardId: WhiteboardIdType;
   setWhiteboardId: React.Dispatch<React.SetStateAction<WhiteboardIdType>>;
+  sharedUsers: UserPermission[];
+  setSharedUsers: React.Dispatch<React.SetStateAction<UserPermission[]>>;
+  newCanvasAllowedUsers: string[];
+  setNewCanvasAllowedUsers: React.Dispatch<React.SetStateAction<string[]>>;
 }
 
 export type WhiteboardProvidersProps = WhiteboardContextType;
@@ -39,7 +47,12 @@ const WhiteboardProvider = (props: PropsWithChildren<WhiteboardProvidersProps>):
     setCurrentTool,
     whiteboardId,
     setWhiteboardId,
-    children
+    children,
+    sharedUsers,
+    setSharedUsers,
+    newCanvasAllowedUsers,
+    setNewCanvasAllowedUsers,
+
   } = props;
 
   return (
@@ -49,7 +62,11 @@ const WhiteboardProvider = (props: PropsWithChildren<WhiteboardProvidersProps>):
       currentTool,
       setCurrentTool,
       whiteboardId,
-      setWhiteboardId
+      setWhiteboardId,
+      sharedUsers,
+      setSharedUsers,
+      newCanvasAllowedUsers,
+      setNewCanvasAllowedUsers,
     }}>
       {children}
     </WhiteboardContext.Provider>

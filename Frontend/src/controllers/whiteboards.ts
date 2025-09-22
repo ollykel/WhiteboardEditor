@@ -23,6 +23,10 @@ import {
 } from '@/store/canvases/canvasesByWhiteboardSlice';
 
 import {
+  setAllowedUsersByCanvas,
+} from '@/store/allowedUsers/allowedUsersByCanvasSlice';
+
+import {
   normalizeWhiteboard
 } from '@/store/whiteboards/whiteboardsNormalizers';
 
@@ -39,7 +43,8 @@ export const addWhiteboard = (
     canvases,
     canvasesByWhiteboard,
     canvasObjects,
-    canvasObjectsByCanvas
+    canvasObjectsByCanvas,
+    allowedUsersByCanvas,
   } = normalizeWhiteboard(whiteboard);
 
   dispatch(setWhiteboards(whiteboards));
@@ -47,4 +52,5 @@ export const addWhiteboard = (
   dispatch(setCanvasObjects(canvasObjects));
   dispatch(setObjectsByCanvas(canvasObjectsByCanvas));
   dispatch(setCanvasesByWhiteboard(canvasesByWhiteboard));
+  dispatch(setAllowedUsersByCanvas(allowedUsersByCanvas));
 };

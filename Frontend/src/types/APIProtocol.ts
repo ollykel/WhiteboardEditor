@@ -96,6 +96,6 @@ export interface Whiteboard {
   name: string;
   owner: User;
   time_created: Date;
-  shared_users?: UserPermission[];
+  shared_users: UserPermission[];
   canvases?: Canvas[];
 }

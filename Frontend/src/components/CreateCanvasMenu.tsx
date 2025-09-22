@@ -3,30 +3,21 @@ import { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "@/components/ui/command";
-import { Checkbox } from "@/components/ui/checkbox";
-import { ChevronsUpDown } from "lucide-react";
+import AllowedUsersPopover from '@/components/AllowedUsersPopover';
 
 interface CreateCanvasMenuProps {
-  onCreate: (name: string, allowedUsers: string[]) => void
-  allUsers: string[];
+  onCreate: (canvas: NewCanvas) => void
 }
 
-function CreateCanvasMenu({ onCreate, allUsers }: CreateCanvasMenuProps) {
+// Add more fields later (height, width, etc.)
+export interface  NewCanvas {
+  canvasName: string;
+  allowedUsers: string[];
+}
+
+function CreateCanvasMenu({ onCreate }: CreateCanvasMenuProps) {
   const [canvasName, setCanvasName] = useState("");
-  const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
-  const [open, setOpen] = useState(false);
-
-  const toggleUser = (user: string) => {
-    setSelectedUsers((prev) =>
-      prev.includes(user)
-        ? prev.filter((u) => u !== user)
-        : [...prev, user]
-      );
-
-    setOpen(false);
-  };
+  const [newCanvasAllowedUsers, setNewCanvasAllowedUsers] = useState<string[]>([]);
 
   const handleSubmit = () => {
     if (!canvasName.trim()) {
@@ -34,9 +25,13 @@ function CreateCanvasMenu({ onCreate, allUsers }: CreateCanvasMenuProps) {
       return;
     }
 
-    onCreate(canvasName, selectedUsers)
-    setCanvasName("")
-    setSelectedUsers([])
+    onCreate({
+      canvasName,
+      allowedUsers: newCanvasAllowedUsers,
+    });
+    
+    setCanvasName("");
+    setNewCanvasAllowedUsers([]);
   }
 
   return (
@@ -52,39 +47,11 @@ function CreateCanvasMenu({ onCreate, allUsers }: CreateCanvasMenuProps) {
       />
 
       <Label htmlFor="users">Allowed Users</Label>
-      <Popover open={open} onOpenChange={setOpen}>
-        <PopoverTrigger asChild>
-          <Button
-            variant="outline"
-            role="combobox"
-            className="justify-between"
-          >
-            {selectedUsers.length > 0
-              ? `${selectedUsers.length}${selectedUsers.length === 1 ? ' user selected' : ' users selected'}`
-              : "Select users"
-            }
-            <ChevronsUpDown className='ml-2 h-4 w-4 shrink-0 opacity-50' />
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent className='w-[250px] p-0'>
-          <Command>
-            <CommandInput placeholder='Search users...' />
-            <CommandEmpty>No users found</CommandEmpty>
-            <CommandGroup>
-              {allUsers.map((user) => (
-                <CommandItem
-                  key={user}
-                  onSelect={() => toggleUser(user)}
-                  className='flex items-center gap-2'
-                >
-                  <Checkbox checked={selectedUsers.includes(user)} />
-                  <span>{user}</span>
-                </CommandItem>
-              ))}
-            </CommandGroup>
-          </Command>
-        </PopoverContent>
-      </Popover>
+      
+      <AllowedUsersPopover 
+        selected={newCanvasAllowedUsers}
+        onChange={setNewCanvasAllowedUsers}
+      />
 
       <Button className="mt-2" onClick={handleSubmit}>
         Create

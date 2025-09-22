@@ -246,6 +246,10 @@ async fn handle_connection(ws: WebSocket, whiteboard_id: WhiteboardIdType, conne
                         msg_s
                     ).await;
 
+                    if let Some(ref resp) = resp {
+                        println!("Client response: {:?}", resp);
+                    }
+
                     // -- update database, if there are diffs
                     {
                         let mut diffs = client_state_ref.diffs.lock().await;
@@ -359,7 +363,33 @@ async fn handle_connection(ws: WebSocket, whiteboard_id: WhiteboardIdType, conne
                                                 }
                                             };
                                         }// end for (obj_id, shape) in shapes.iter()
-                                    }
+                                    },
+                                    WhiteboardDiff::UpdateCanvasAllowedUsers { canvas_id, allowed_users } => {
+                                        println!("Updating allowed users in database for canvas {} ...", canvas_id);
+
+                                        let query = doc! {
+                                            "_id": canvas_id,
+                                        };
+
+                                        let operator = doc! {
+                                            "$set": {
+                                                "allowed_users": allowed_users.clone()
+                                            }
+                                        };
+
+                                        let update_allowed_users_res = canvas_coll.update_one(query, operator).await;
+
+                                        match update_allowed_users_res {
+                                            Err(e) => {
+                                                eprintln!("UpdateCanvasAllowedUsers update failed: {}", e);
+                                            },
+                                            Ok(update) => {
+                                                eprintln!("UpdateCanvasAllowedUsers matched_count: {}", update.matched_count);
+                                                eprintln!("UpdateCanvasAllowedUsers modified_count: {}", update.modified_count);
+                                                eprintln!("UpdateCanvasAllowedUsers upserted_id: {:?}", update.upserted_id);
+                                            }
+                                        };
+                                    },
                                 }
                             }// -- end for &diff in diffs
 

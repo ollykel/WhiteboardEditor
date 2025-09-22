@@ -1,14 +1,17 @@
-import React from 'react';
+import React, { useContext, useState } from 'react';
+
+import WhiteboardContext from '@/context/WhiteboardContext';
 
 import { getToolChoiceLabel } from '@/components/Tool';
 import PopoverMenu from '@/components/PopoverMenu'
-import CreateCanvasMenu from '@/components/CreateCanvasMenu'
+import CreateCanvasMenu, { type NewCanvas } from '@/components/CreateCanvasMenu'
+
 import type { ToolChoice } from '@/components/Tool';
 
 interface ToolbarProps {
   toolChoice: ToolChoice;
   onToolChange: (choice: ToolChoice) => void;
-  onNewCanvas: (name: string, allowedUsers: string[]) => void;
+  onNewCanvas: (canvas: NewCanvas) => void;
 }
 
 interface ToolbarButtonProps {
@@ -32,6 +35,16 @@ const ToolbarButton = React.forwardRef<HTMLButtonElement, ToolbarButtonProps>(
 );
 
 function Toolbar({ toolChoice, onToolChange, onNewCanvas }: ToolbarProps) {
+  const [newCanvasOpen, setNewCanvasOpen] = useState(false);
+  
+  const context = useContext(WhiteboardContext);
+  console.log("toolbar context: ", context); // degbugging
+  if (!context) {
+    throw new Error('No WhiteboardContext provided');
+  }
+  const sharedUsers = context.sharedUsers;
+  console.log("toolbar sharedUsers: ", sharedUsers); // degbugging
+
   const renderToolChoice = (choice: ToolChoice): React.JSX.Element => (
     <ToolbarButton
       label={getToolChoiceLabel(choice)}
@@ -48,10 +61,16 @@ function Toolbar({ toolChoice, onToolChange, onNewCanvas }: ToolbarProps) {
       {/** Additional, non-tool choices **/}
       <ToolbarButton label="Import Image" variant="default" />
       <PopoverMenu
+        open={newCanvasOpen}
+        onOpenChange={setNewCanvasOpen}
         trigger={<ToolbarButton label="New Canvas" variant="default" />}
       >
-        {/* TODO: Get actual allUsers list from dynamic stored state */}
-        <CreateCanvasMenu onCreate={onNewCanvas} allUsers={["joe", "oliver"]}/>
+        <CreateCanvasMenu 
+          onCreate={(canvas) => {
+            onNewCanvas(canvas);
+            setNewCanvasOpen(false); // close popover after creating
+          }}
+        />
       </PopoverMenu>
     </div>
   )
