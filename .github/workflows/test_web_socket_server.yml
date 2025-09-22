@@ -56,4 +56,4 @@ jobs:
       - name: Run Cargo tests
         id: run-cargo-tests
         run: |
-          docker run --entrypoint 'cargo test' ghcr.io/${{ github.repository_owner }}/${{ github.repository_id }}/web_socket_server_builder:test
+          docker run ghcr.io/${{ github.repository_owner }}/${{ github.repository_id }}/web_socket_server_builder:test cargo test
