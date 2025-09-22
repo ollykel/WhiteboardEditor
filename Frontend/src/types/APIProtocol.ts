@@ -59,7 +59,7 @@ export const USER_PERMISSION_TYPES = [
 //
 // =============================================================================
 export type UserPermission =
-  | { type: 'user'; user: User | ObjectIdType; permission: UserPermissionEnum; }
+  | { type: 'user'; user: User; permission: UserPermissionEnum; }
   | { type: 'email'; email: string; permission: UserPermissionEnum; }
 ;
 

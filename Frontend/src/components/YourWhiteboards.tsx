@@ -15,6 +15,7 @@ function YourWhiteboards() {
           username: 'Dummy User',
           email: 'dummy@example.com'
         }}
+        shared_users={[]}
       /> {/* TODO: Map the list of your whiteboards */}
     </div>
   );

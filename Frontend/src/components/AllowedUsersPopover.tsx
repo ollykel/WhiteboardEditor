@@ -148,7 +148,7 @@ const AllowedUsersPopover = ({ selected, onChange }: AllowedUsersPopoverProps) =
               ),
               'ready': () => (
                 sharedUsers
-                  .filter((u): u is Extract<UserPermission, { type: "id" }> => u.type === "id")
+                  .filter((u): u is Extract<UserPermission, { type: "user" }> => u.type === "user")
                   .map((userPerm) => (
                     <CommandItem
                       key={userPerm.user._id}

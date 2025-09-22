@@ -447,7 +447,7 @@ const Whiteboard = () => {
           <div className="flex flex-1 flex-row justify-center flex-wrap">
             {canvasesSorted.map(({ id: canvasId, width, height, name, shapes, allowedUsers }: CanvasData) => {
               const hasAccess = user
-                ? allowedUsers.length === 0 || allowedUsers.includes(user.id)
+                ? allowedUsers.length === 0 || allowedUsers.includes(user._id)
                 : false;
               return (
                 <CanvasCard
