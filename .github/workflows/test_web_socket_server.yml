@@ -1,4 +1,8 @@
 # Test web_socket_server service
+
+x-anchors:
+  registry_uri: &registry_uri ghcr.io/${{ github.repository }}/web_socket_server
+
 on:
   push:
     paths:
@@ -13,8 +17,13 @@ jobs:
     # Build web_socket_server_builder and run cargo tests within
     # web_socket_server_builder
     runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      packages: write
     steps:
-      - uses: actions/checkout@v5
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
       - name: Set up Docker
         uses: docker/setup-docker-action@v4
         with:
@@ -25,29 +34,28 @@ jobs:
                 "containerd-snapshotter": true
               }
             }
-      - name: Set up Docker cache
-        id: cache-setup
-        uses: actions/cache@v4
+
+      - name: Log into Github Container Registry
+        id: login-ghcr
+        uses: docker/login-action@v3
         with:
-          path: ${{ runner.temp }}/docker
-          key: ${{ runner.os }}-web-socket-server-${{ hashFiles('docker-compose.yml', 'WebSocketServer/Dockerfile', 'WebSocketServer/Cargo.toml', 'WebSocketServer/Cargo.lock', '.github/workflows/test_web_socket_server.yml') }}
-          restore-keys: |
-            ${{ runner.os }}-web-socket-server-
-      - name: Build with cache
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build with Container Registry cache
         id: build-cached
-        if: steps.cache-setup.outputs.cache-hit == 'true'
-        env:
-          DOCKER_CACHE: ${{ runner.temp }}/docker
-        run: |
-          docker compose build web_socket_server_builder
-      - name: Build without cache
-        id: build-no-cache
-        if: steps.cache-setup.outputs.cache-hit != 'true'
-        env:
-          DOCKER_CACHE: ${{ runner.temp }}/docker
-        run: |
-          docker compose build --no-cache web_socket_server_builder
+        uses: docker/build-push-action@v6
+        with:
+          context: WebSocketServer
+          push: false
+          tags: *registry_uri:test
+
+          # cache settings
+          cache-from: type=registry,ref=*registry_uri:buildcache
+          cache-to: type=registry,ref=*registry_uri:buildcache,mode=max
+
       - name: Run Cargo tests
         id: run-cargo-tests
         run: |
-          docker compose run --entrypoint 'cargo test' web_socket_server_builder
+          docker run --entrypoint 'cargo test' *registry_uri:test
