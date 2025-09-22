@@ -1,4 +1,6 @@
 # Test rest_api service
+name: Test Rest API
+
 on:
   push:
     paths:
@@ -8,9 +10,11 @@ on:
   pull_request:
     on:
       - opened
+
 jobs:
   run_supertest_rest_api:
     # make sure image builds
+    name: Run Supertest on Rest API
     runs-on: ubuntu-24.04
     steps:
       - name: Checkout repository

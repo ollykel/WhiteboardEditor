@@ -1,4 +1,6 @@
 # Test reverse_proxy service
+name: Test Reverse Proxy
+
 on:
   push:
     paths:
@@ -11,6 +13,7 @@ on:
 jobs:
   test_build_reverse_proxy:
     # ensure the image builds successfully
+    name: Test Build Reverse Proxy
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v5

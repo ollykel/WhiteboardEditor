@@ -1,4 +1,5 @@
 # Test web_socket_server service
+name: Test Web Socket Server
 
 on:
   push:
@@ -13,6 +14,7 @@ jobs:
   run_cargo_tests_web_socket_server:
     # Build web_socket_server_builder and run cargo tests within
     # web_socket_server_builder
+    name: Run Cargo Unit Tests
     runs-on: ubuntu-24.04
     permissions:
       contents: read
