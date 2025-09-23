@@ -62,9 +62,9 @@ router.get('/:whiteboardId', async (
       {
           const { whiteboard } = resp;
           const validUserIdSet: Record<string, boolean> = Object.fromEntries([
-            [whiteboard.owner.id, true],
+            [whiteboard.owner._id?.toString(), true],
             ...whiteboard.shared_users.filter(perm => perm.type === 'user').map(perm => [
-              perm.user?._id ?? perm.user, true
+              perm.user._id, true 
             ])
           ]);
 
@@ -73,7 +73,7 @@ router.get('/:whiteboardId', async (
               message: 'You are not authorized to view this resource'
             });
           } else {
-            return res.status(200).json(whiteboard);
+            return res.status(200).json(whiteboard.toPublicView());
           }
       }
       default:

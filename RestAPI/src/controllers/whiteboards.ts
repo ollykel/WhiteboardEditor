@@ -39,53 +39,67 @@ export const getWhiteboardById = async (whiteboardId: string): Promise<GetWhiteb
     return ({ status: 'invalid_id' });
   }
 
-  const whiteboard = await Whiteboard.findById(whiteboardId)
+  let whiteboard = await Whiteboard.findById(whiteboardId)
     .select('-canvases')
-    .populate('owner')
-    .populate({
-      path: 'shared_users',
-      populate: [
-        'user'
-      ]
-    });
+    .populate([
+      {
+        path: 'owner',
+      },
+      {
+        path: 'shared_users',
+        populate: {
+          path: 'user',
+        },
+      },
+    ]);
 
   if (! whiteboard) {
     return ({ status: 'not_found' });
   } else {
-    const sharedUsers: IWhiteboardUserPermission[] = await Promise.all(whiteboard.shared_users.map(async (perm: IWhiteboardUserPermission) => {
+    // track whether we change any email-based permissions to user-based
+    // permissions
+    let haveSharedUsersChanged = false;
+    const sharedUsers: IWhiteboardUserPermission[] = await Promise.all(whiteboard.shared_users
+        .map(async (perm: IWhiteboardUserPermission) => {
       switch (perm.type) {
         case 'user':
           return perm;
         case 'email':
           // check if this email now belongs to a registered user
           const user = await User.findOne({ email: perm.email });
+          console.log('!! Found email-identified user:', user);
 
           if (user) {
+            haveSharedUsersChanged = true;
             return ({
               type: 'user',
               user: user._id,
               permission: perm.permission,
             });
+          } else {
+            return perm; // keep as email if still unregistered
           }
-          return perm; // keep as email if still unregistered
         default:
           return perm;
       }
     }));
 
-    whiteboard.shared_users = sharedUsers;
+    if (haveSharedUsersChanged) {
+      // reset the whiteboard's shared_users field in-database, then refetch the
+      // whiteboard
+      whiteboard.set('shared_users', sharedUsers);
+      whiteboard = await whiteboard.save();
+    }
+
+    if (! whiteboard) {
+      throw new Error(`Whiteboard ${whiteboardId} not properly (re-)fetched`);
+    }
 
     console.log("Returning whiteboard:", JSON.stringify(whiteboard, null, 2));
 
     return ({
       status: 'ok',
-      // -- convert user ids to users
-      whiteboard: await whiteboard.populate({
-        path: 'shared_users',
-        populate: {
-          path: 'user'
-        }
-      })
+      whiteboard,
     });
   }
 };
