@@ -22,7 +22,7 @@ export type ObjectIdType = string;
 //
 // =============================================================================
 export interface User {
-  _id: string;
+  id: string;
   email: string;
   username: string;
 }
@@ -92,7 +92,7 @@ export interface Canvas {
 //
 // =============================================================================
 export interface Whiteboard {
-  _id: string;
+  id: string;
   name: string;
   owner: User;
   time_created: Date;

@@ -151,15 +151,15 @@ const AllowedUsersPopover = ({ selected, onChange }: AllowedUsersPopoverProps) =
                   .filter((u): u is Extract<UserPermission, { type: "user" }> => u.type === "user")
                   .map((userPerm) => (
                     <CommandItem
-                      key={userPerm.user._id}
-                      value={userPerm.user._id}
-                      onSelect={() => toggleUser(userPerm.user._id)}
+                      key={userPerm.user.id}
+                      value={userPerm.user.id}
+                      onSelect={() => toggleUser(userPerm.user.id)}
                       className='flex items-center gap-2'
                     >
                       {userPerm.user.username}
                       <Check 
                         className={`ml-auto h-4 w-4 ${
-                          selected.includes(userPerm.user._id) ? "opacity-100" : "opacity-0"
+                          selected.includes(userPerm.user.id) ? "opacity-100" : "opacity-0"
                         }`}             
                       />
                     </CommandItem>

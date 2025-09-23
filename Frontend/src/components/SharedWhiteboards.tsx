@@ -8,11 +8,11 @@ function SharedWhiteboards() {
       </div>
       {/* TODO: Map the list of shared whiteboards */}
       <WhiteboardCard
-        _id="dummySharedID"
+        id="dummySharedID"
         name="Dummy Shared Whiteboard"
         time_created={new Date()}
         owner={{
-          _id: 'efgh',
+          id: 'efgh',
           username: 'Bob',
           email: 'bob@example.com',
         }}

@@ -336,7 +336,7 @@ const Whiteboard = () => {
       if (user) {
         const loginMessage = {
           type: "login",
-          userId: user._id,
+          userId: user.id,
           username: user.username,
         };
         console.log('Sending login message:', loginMessage);
@@ -447,7 +447,7 @@ const Whiteboard = () => {
           <div className="flex flex-1 flex-row justify-center flex-wrap">
             {canvasesSorted.map(({ id: canvasId, width, height, name, shapes, allowedUsers }: CanvasData) => {
               const hasAccess = user
-                ? allowedUsers.length === 0 || allowedUsers.includes(user._id)
+                ? allowedUsers.length === 0 || allowedUsers.includes(user.id)
                 : false;
               return (
                 <CanvasCard
@@ -495,7 +495,7 @@ const Whiteboard = () => {
                       // extract object id
                       return ({
                         ...perm,
-                        user: perm.user._id
+                        user: perm.user.id
                       });
                     } else {
                       // already object id

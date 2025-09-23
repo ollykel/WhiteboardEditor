@@ -7,11 +7,11 @@ function YourWhiteboards() {
         Your Whiteboards
       </div>
       <WhiteboardCard
-        _id="dummyYourID"
+        id="dummyYourID"
         name="Dummy Whiteboard"
         time_created={new Date()}
         owner={{
-          _id: 'abcd',
+          id: 'abcd',
           username: 'Dummy User',
           email: 'dummy@example.com'
         }}

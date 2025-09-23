@@ -77,7 +77,7 @@ const WhiteboardList = (props: WhiteboardListProps): React.JSX.Element => {
             {
                 whiteboardsAttribs.map(attribs => (
                   <li
-                    key={attribs._id}
+                    key={attribs.id}
                   >
                     <WhiteboardCard
                       {...attribs}

@@ -18,7 +18,7 @@ import {
 export type WhiteboardProps = Whiteboard;
 
 function WhiteboardCard({
-  _id,
+  id,
   name,
   owner,
   shared_users: sharedUsers
@@ -42,8 +42,8 @@ function WhiteboardCard({
 
   return (
     <Link 
-      key={_id}
-      to={`/whiteboard/${_id}`}
+      key={id}
+      to={`/whiteboard/${id}`}
       className="flex flex-col justify-center m-10 w-120 rounded-xl shadow bg-stone-50 hover:bg-gray-200"
     >
       {/** TODO: replace with actual preview image, with a standard fallback image in /static **/}
@@ -51,7 +51,7 @@ function WhiteboardCard({
       <div className="p-5">
         <h1 className=" text-lg font-bold">{name}</h1>
         <h2 className="">
-          Owner: {user?._id === owner._id ?
+          Owner: {user?.id === owner.id ?
             (<strong>You</strong>)
             :
             (<>{owner.username} ({owner.email})</>)
@@ -70,7 +70,7 @@ function WhiteboardCard({
               }
 
               return (
-                <li key={`user:${perm.user._id}`}>
+                <li key={`user:${perm.user.id}`}>
                   <UserTagBrief
                     size="small"
                     user={perm.user}
