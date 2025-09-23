@@ -3,7 +3,7 @@ import React, {
 } from 'react';
 
 import Konva from 'konva';
-import { Text } from 'react-konva';
+import { Rect, Text } from 'react-konva';
 
 import type {
   OperationDispatcher,
@@ -27,15 +27,19 @@ const useTextDispatcher = ({
 }: OperationDispatcherProps
 ): OperationDispatcher => {
   const [mouseDownCoords, setMouseDownCoords] = useState<EventCoords | null>(null);
+  const [mouseCoords, setMouseCoords] = useState<EventCoords | null>(null);
 
   const handlePointerDown = (ev: Konva.KonvaEventObject<MouseEvent>) => {
     const { offsetX, offsetY } = ev.evt;
 
     setMouseDownCoords({ x: offsetX, y: offsetY }); 
+    setMouseCoords({ x: offsetX, y: offsetY });
   };
 
-  const handlePointerMove = (_ev: Konva.KonvaEventObject<MouseEvent>) => {
-    // Nothing to do
+  const handlePointerMove = (ev: Konva.KonvaEventObject<MouseEvent>) => {
+    const { offsetX, offsetY } = ev.evt;
+
+    setMouseCoords({ x: offsetX, y: offsetY });
   };
 
   const handlePointerUp = (ev: Konva.KonvaEventObject<MouseEvent>) => {
@@ -61,7 +65,24 @@ const useTextDispatcher = ({
     }
   };
 
-  const getPreview = () => null;
+  const getPreview = (): React.JSX.Element | null => {
+    if (mouseDownCoords && mouseCoords) {
+      const { x: xA, y: yA } = mouseDownCoords;
+      const { x: xB, y: yB } = mouseCoords;
+
+      return (
+        <Rect
+          x={Math.min(xA, xB)}
+          y={Math.min(yA, yB)}
+          width={Math.abs(xA - xB)}
+          height={Math.abs(yA - yB)}
+          fill="#ffaaaa"
+        />
+      );
+    } else {
+      return null;
+    }
+  };
 
   const renderShape = (
     _key: string | number,
