@@ -1,9 +1,9 @@
 import {
   Schema,
+  model,
   Types,
-  Document,
-  Model,
-  model
+  type Document,
+  type Model,
 } from "mongoose";
 
 import type {
@@ -61,6 +61,21 @@ export const shapeSchema = new Schema<IShape>(
   {
     // -- misc. options
     strict: false,
+
+    // -- serialization options
+    toObject: {
+      virtuals: false,
+    },
+    toJSON: {
+      virtuals: false,
+      transform: (_, ret) => {
+        ret.id = ret._id;
+        delete ret._id;
+
+        return ret;
+      },
+    },
+
     // -- instance methods
     methods: {
       toPublicView() {
@@ -80,6 +95,10 @@ export const shapeSchema = new Schema<IShape>(
     }
   }
 );
+
+shapeSchema.virtual('id').get(function() {
+  return this._id;
+});
 
 export const Shape = model<IShape>("Shape", shapeSchema, "shapes");
 
@@ -150,10 +169,16 @@ export const canvasSchema = new Schema<ICanvas>(
   },
   {
     toObject: {
-      virtuals: true
+      virtuals: false,
     },
     toJSON: {
-      virtuals: false
+      virtuals: false,
+      transform: (_, ret) => {
+        ret.id = ret._id;
+        delete ret._id;
+
+        return ret;
+      },
     },
     // -- instance methods
     methods: {
@@ -182,11 +207,18 @@ export const canvasSchema = new Schema<ICanvas>(
           .select(CANVAS_VECTOR_FIELDS
             .map(field => `-${field}`)
             .join(' ')
-          );
+          )
+          .populate({
+            path: 'allowed_users',
+          });
       }
     },
   }
 );
+
+canvasSchema.virtual('id').get(function() {
+  return this._id;
+});
 
 canvasSchema.virtual('shapes', {
   ref: 'Shape',
@@ -224,27 +256,14 @@ export type IWhiteboardUserPermission =
   | IWhiteboardUserPermissionByEmail
 ;
 
-const whiteboardUserPermissionSchema = new Schema<IWhiteboardUserPermissionBase>({
-    permission: { type: String, enum: ['view', 'edit', 'own'], required: true }
-  }, {
-    discriminatorKey: 'type'
+const whiteboardUserPermissionSchema = new Schema<IWhiteboardUserPermission>(
+  {
+    permission: { type: String, enum: ['view', 'edit', 'own'], required: true },
+  },
+  {
+    discriminatorKey: 'type',
   }
 );
-
-export const WhiteboardUserPermission = model<IWhiteboardUserPermissionBase>(
-  'WhiteboardUserPermission', whiteboardUserPermissionSchema, "whiteboardUserPermissions"
-);
-
-export const WhiteboardUserPermissionById = WhiteboardUserPermission.discriminator<IWhiteboardUserPermissionById>(
-  'user',
-  new Schema({
-    user: { type: Types.ObjectId, ref: "User", required: true },
-  })
-);
-
-export const WhiteboardUserPermissionByEmail = WhiteboardUserPermission.discriminator<IWhiteboardUserPermissionByEmail>('email', new Schema({
-  email: { type: String, required: true }
-}));
 
 export interface IWhiteboardModel {
   name: string;
@@ -303,14 +322,20 @@ const whiteboardSchema = new Schema<IWhiteboard, IWhiteboardSchema>(
     name: { type: String, required: true },
     time_created: { type: Date, default: Date.now },
     owner: { type: Schema.Types.ObjectId, ref: "User", required: true },
-    shared_users: [whiteboardUserPermissionSchema]
+    shared_users: [whiteboardUserPermissionSchema],
   },
   {
     toObject: {
-      virtuals: true
+      virtuals: false,
     },
     toJSON: {
-      virtuals: false,
+      virtuals: true,
+      transform: (_, ret: IWhiteboard) => {
+        ret.id = ret._id;
+        delete ret._id;
+
+        return ret;
+      },
     },
     // -- instance methods
     methods: {
@@ -331,8 +356,12 @@ const whiteboardSchema = new Schema<IWhiteboard, IWhiteboardSchema>(
           .populate({
             path: 'canvases',
             populate: [
-              { path: 'shapes' },
-              { path: 'allowed_users' },
+              {
+                path: 'shapes',
+              },
+              {
+                path: 'allowed_users',
+              },
             ],
           });
       },
@@ -344,12 +373,14 @@ const whiteboardSchema = new Schema<IWhiteboard, IWhiteboardSchema>(
           )
           .populate([
             {
-              path: 'owner'
+              path: 'owner',
             },
             {
               path: 'shared_users',
               populate: [
-                { path: 'user' },
+                {
+                  path: 'user',
+                },
               ]
             }
           ]);
@@ -378,6 +409,20 @@ const whiteboardSchema = new Schema<IWhiteboard, IWhiteboardSchema>(
     },
   }
 );
+
+const sharedUsersArraySchema = whiteboardSchema.path('shared_users').schema;
+
+sharedUsersArraySchema.discriminator('user', new Schema({
+  user: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+}));
+
+sharedUsersArraySchema.discriminator('email', new Schema({
+  email: { type: String, required: true },
+}));
+
+whiteboardSchema.virtual('id').get(function() {
+  return this._id;
+});
 
 whiteboardSchema.virtual('canvases', {
   ref: 'Canvas',
