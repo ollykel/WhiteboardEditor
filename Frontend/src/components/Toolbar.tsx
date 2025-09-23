@@ -20,7 +20,7 @@ interface ToolbarButtonProps {
   onClick?: () => void;
 
 }
-const tools: ToolChoice[] = ["hand", "vector", "rect", "ellipse"];
+const tools: ToolChoice[] = ["hand", "vector", "rect", "ellipse", "text"];
 
 const ToolbarButton = React.forwardRef<HTMLButtonElement, ToolbarButtonProps>(
   ({ label, variant, onClick }, ref) => (
