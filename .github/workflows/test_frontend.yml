@@ -1,4 +1,6 @@
 # Test frontend service
+name: Test Frontend
+
 on:
   push:
     paths:
@@ -11,20 +13,15 @@ on:
 jobs:
   test_lint_frontend:
     # run linter
+    name: Test Lint Frontend
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v5
-      - name: Set up Docker
-        uses: docker/setup-docker-action@v4
-        with:
-          daemon-config: |
-            {
-              "debug": true,
-              "features": {
-                "containerd-snapshotter": true
-              }
-            }
-      - name: install
+      - name: Checkout repository
+        id: checkout-repo
+        uses: actions/checkout@v5
+
+      - name: Install dependencies
+        id: install-dependencies
         run: |
           # install dependencies via yarn
           cd Frontend
@@ -32,7 +29,9 @@ jobs:
           yarn install
 
           echo 'service "frontend" installed dependencies successfully'
-      - name: lint
+
+      - name: Run lint
+        id: lint
         run: |
           cd Frontend
 
@@ -42,10 +41,15 @@ jobs:
 
   test_build_frontend:
     # make sure image builds
+    name: Test Build Frontend
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v5
+      - name: Checkout repository
+        id: checkout-repo
+        uses: actions/checkout@v5
+
       - name: Set up Docker
+        id: docker-setup
         uses: docker/setup-docker-action@v4
         with:
           daemon-config: |
@@ -55,29 +59,24 @@ jobs:
                 "containerd-snapshotter": true
               }
             }
-      - name: Set up Docker cache
-        id: cache-setup
-        uses: actions/cache@v4
+
+      - name: Log into Github Container Registry
+        id: login-ghcr
+        uses: docker/login-action@v3
         with:
-          path: ${{ runner.temp }}/docker
-          key: ${{ runner.os }}-frontend-${{ hashFiles('docker-compose.yml', 'Frontend/Dockerfile', 'Frontend/package.json', 'Frontend/package-lock.json', '.github/workflows/test_frontend.yml') }}
-          restore-keys: |
-            ${{ runner.os }}-frontend-
-      - name: Build without cache
-        id: build-no-cache
-        if: steps.cache-setup.outputs.cache-hit != 'true'
-        env:
-          DOCKER_CACHE: ${{ runner.temp }}/docker
-        run: |
-          docker compose build --no-cache frontend
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
-          echo 'service "frontend" built successfully'
-      - name: Build with cache
-        id: build-cached
-        if: steps.cache-setup.outputs.cache-hit == 'true'
-        env:
-          DOCKER_CACHE: ${{ runner.temp }}/docker
-        run: |
-          docker compose build frontend
+      - name: Build frontend
+        id: build-frontend-cached
+        uses: docker/build-push-action@v6
+        with:
+          context: Frontend
+          push: false
+          tags: ghcr.io/${{ github.repository_owner }}/${{ github.repository_id }}/frontend:test
 
-          echo 'service "frontend" built successfully'
+          # cache settings
+          cache-from: type=registry,ref=ghcr.io/${{ github.repository_owner }}/${{ github.repository_id }}/frontend:buildcache
+          cache-to: type=registry,ref=ghcr.io/${{ github.repository_owner }}/${{ github.repository_id }}/frontend:buildcache,mode=max
+
