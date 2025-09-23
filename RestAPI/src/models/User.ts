@@ -6,7 +6,7 @@ import {
 } from "mongoose";
 
 import type {
-  DocumentBase
+  DocumentBase,
 } from './Model';
 
 import type {
@@ -34,9 +34,7 @@ type UserProtectedFields =
 // =============================================================================
 
 // -- User with id and other basic document info
-export interface IUserDocument extends IUserModel {
-  _id: Types.ObjectId;
-}
+export type IUserDocument = IUserModel & DocumentBase;
 
 // -- User, excluding sensitive fields
 export type IUserPublicView = Omit<IUserDocument, UserProtectedFields>;
@@ -57,7 +55,6 @@ export type IUser =
   & IUserMethods
   & Document
 ;
-
 
 // === REST Request Body Definitions ===========================================
 //
@@ -97,6 +94,7 @@ export type DeleteUserRequest = AuthorizedRequestBody & DeleteUserData;
 
 const toPublicView = (user: IUserDocument): IUserPublicView => {
   const {
+    _id,
     passwordHashed,
     ...out
   } = user;
@@ -128,6 +126,9 @@ const userSchema = new Schema<IUser>(
     minimize: false,
 
     // -- data transformation
+    toObject: {
+      virtuals: true,
+    },
     toJSON: {
       transform: (_doc: IUser, ret: Partial<IUserDocument>): IUserPublicView => {
         delete ret.passwordHashed;
@@ -148,6 +149,10 @@ const userSchema = new Schema<IUser>(
     }
   }
 );// -- end userSchema
+
+userSchema.virtual('id').get(function() {
+  return this._id;
+});
 
 // -- User Model
 export const User = model<IUser>("User", userSchema, "users");
