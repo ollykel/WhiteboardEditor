@@ -69,10 +69,23 @@ export interface VectorModel extends CanvasObjectBase {
 export type VectorRecord = VectorModel & ObjectID;
 export type VectorRecordFull = VectorModel & ObjectUID;
 
+export interface TextModel {
+  type: 'text';
+  fontSize: number;
+  color: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+export type TextRecord = TextModel & ObjectID;
+export type TextRecordFull = TextModel & ObjectUID;
+
 export type ShapeModel = RectModel | EllipseModel;
 export type ShapeRecord = RectRecord | EllipseRecord;
 export type ShapeRecordFull = RectRecordFull | EllipseRecordFull;
 
-export type CanvasObjectModel = ShapeModel | VectorModel;
-export type CanvasObjectRecord = ShapeRecord | VectorRecord;
-export type CanvasObjectRecordFull = ShapeRecordFull | VectorRecordFull;
+export type CanvasObjectModel = ShapeModel | VectorModel | TextModel;
+export type CanvasObjectRecord = ShapeRecord | VectorRecord | TextRecord;
+export type CanvasObjectRecordFull = ShapeRecordFull | VectorRecordFull | TextRecordFull;
