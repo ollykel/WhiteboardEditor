@@ -70,6 +70,14 @@ pub enum ShapeModel {
         stroke_width: f64,
         stroke_color: String
     },
+    Text {
+        font_size: i32,
+        color: String,
+        x: f64,
+        y: f64,
+        width: f64,
+        height: f64,
+    }
 }
 
 #[derive(Debug, Clone)]

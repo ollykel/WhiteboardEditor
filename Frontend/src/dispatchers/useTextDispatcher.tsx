@@ -55,7 +55,7 @@ const useTextDispatcher = ({
         type: 'text',
         ...shapeAttributes,
         fontSize: 20,
-        color: 'red',
+        color: 'black',
         x: xMin,
         y: yMin,
         width,
