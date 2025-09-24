@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 
 import { Text } from 'react-konva';
 
@@ -27,12 +27,20 @@ const EditableText = ({
 }: EditableTextProps) => {
   const [text, setText] = useState("Enter Text Here");
   const [isEditing, setIsEditing] = useState(false);
+  const textRef = useRef(null);
+  const trRef = useRef(null);
+
+  useEffect(() => {
+    if (trRef.current && textRef.current) {
+      trRef.current.nodes([textRef.current]);
+    }
+  }, [isEditing])
 
   const handleTextDblClick = (): void => {
     // Placeholders, remove
     console.log("isEditing: ", isEditing);
     handleTextChange();
-    
+
     setIsEditing(true);
   }
 
