@@ -106,7 +106,6 @@ const useTextDispatcher = ({
 
       return (
         <EditableText
-          text={"Example Text"}
           fontSize={fontSize}
           color={color}
           x={x}

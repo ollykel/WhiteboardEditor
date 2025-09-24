@@ -3,7 +3,6 @@ import { useState } from "react";
 import { Text } from 'react-konva';
 
 interface EditableTextProps {
-  text: string;
   fontSize: number;
   color: string;
   x: number
@@ -18,7 +17,6 @@ interface EditableTextProps {
 }
 
 const EditableText = ({
-  text,
   fontSize,
   color,
   x,
@@ -27,10 +25,19 @@ const EditableText = ({
   height,
   draggable,
 }: EditableTextProps) => {
+  const [text, setText] = useState("Enter Text Here");
   const [isEditing, setIsEditing] = useState(false);
 
   const handleTextDblClick = (): void => {
+    // Placeholders, remove
+    console.log("isEditing: ", isEditing);
+    handleTextChange();
+    
     setIsEditing(true);
+  }
+
+  const handleTextChange = (): void => {
+    setText("Clicked");
   }
 
   return (
