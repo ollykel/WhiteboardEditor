@@ -1,3 +1,5 @@
+import { useState } from "react";
+
 import { Text } from 'react-konva';
 
 interface EditableTextProps {
@@ -25,6 +27,12 @@ const EditableText = ({
   height,
   draggable,
 }: EditableTextProps) => {
+  const [isEditing, setIsEditing] = useState(false);
+
+  const handleTextDblClick = (): void => {
+    setIsEditing(true);
+  }
+
   return (
     <Text
       text={text}
@@ -35,7 +43,7 @@ const EditableText = ({
       width={width}
       height={height}
       draggable={draggable}
-      // onDblClick={handleTextDblClick}
+      onDblClick={handleTextDblClick}
       // onDblTap={handleTextDblClick}
       // onTransform={handleTransform}
       // visible={!isEditing}
