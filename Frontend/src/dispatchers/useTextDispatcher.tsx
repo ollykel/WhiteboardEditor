@@ -3,7 +3,9 @@ import React, {
 } from 'react';
 
 import Konva from 'konva';
-import { Rect, Text } from 'react-konva';
+import { Rect } from 'react-konva';
+
+import EditableText from '@/components/EditableText';
 
 import type {
   OperationDispatcher,
@@ -103,7 +105,7 @@ const useTextDispatcher = ({
       } = model;
 
       return (
-        <Text
+        <EditableText
           text={"Example Text"}
           fontSize={fontSize}
           color={color}
