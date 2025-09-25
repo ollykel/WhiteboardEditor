@@ -1,8 +1,15 @@
 import { useRef } from 'react';
 
+import Konva from 'konva';
 import { Html } from 'react-konva-utils';
 
-const TextEditor = ({ textNode, onClose, onChange }) => {
+interface TextEditorProps {
+  textNode: Konva.Text;
+  onClose: void;
+  onChange: void;
+}
+
+const TextEditor = ({ textNode, onClose, onChange }: TextEditorProps) => {
   const textareaRef = useRef(null);
 
   return (
