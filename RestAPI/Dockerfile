@@ -1,4 +1,6 @@
-FROM node:24-alpine3.21
+ARG CONTAINER_REGISTRY_URI="docker.io"
+
+FROM ${CONTAINER_REGISTRY_URI}/node:24-alpine3.21
 
 # Create new working directory
 WORKDIR /build

@@ -1,4 +1,6 @@
-FROM nginx:stable-alpine
+ARG CONTAINER_REGISTRY_URI="docker.io"
+
+FROM ${CONTAINER_REGISTRY_URI}/nginx:stable-alpine
 
 # Copy nginx.conf
 COPY nginx.conf /etc/nginx/nginx.conf

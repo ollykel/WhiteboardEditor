@@ -1,5 +1,7 @@
+ARG CONTAINER_REGISTRY_URI="docker.io"
+
 # ---- Stage 1: Install dependencies and build ----
-FROM node:24 AS builder
+FROM ${CONTAINER_REGISTRY_URI}/node:24 AS builder
 
 WORKDIR /app
 
@@ -15,7 +17,7 @@ RUN \
   npm run build
 
 # ---- Stage 2: Serve with a static web server ----
-FROM nginx:stable-alpine
+FROM ${CONTAINER_REGISTRY_URI}/nginx:stable-alpine
 
 # Remove default nginx static assets
 RUN rm -rf /usr/share/nginx/html/*

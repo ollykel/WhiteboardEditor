@@ -1,5 +1,7 @@
+ARG CONTAINER_REGISTRY_URI="docker.io"
+
 # ---- Stage 1: Dependency planner (cargo-chef) ----
-FROM rust:1.88 AS planner
+FROM ${CONTAINER_REGISTRY_URI}/rust:1.88 AS planner
 
 WORKDIR /app
 
@@ -16,7 +18,7 @@ RUN mkdir src/ && echo 'fn main() {}' > src/dummy.rs
 RUN cargo chef prepare --recipe-path recipe.json
 
 # ---- Stage 2: Dependency builder ----
-FROM rust:1.88 AS cacher
+FROM ${CONTAINER_REGISTRY_URI}/rust:1.88 AS cacher
 
 WORKDIR /build
 RUN cargo install cargo-chef
@@ -37,7 +39,7 @@ RUN --mount=type=cache,target=/usr/local/cargo/registry \
     cargo chef cook --tests --recipe-path recipe.json
 
 # ---- Stage 3: Application build ----
-FROM rust:1.88 AS builder
+FROM ${CONTAINER_REGISTRY_URI}/rust:1.88 AS builder
 
 WORKDIR /build
 
@@ -58,7 +60,7 @@ RUN --mount=type=cache,target=/usr/local/cargo/registry \
 WORKDIR /app
 
 # ---- Stage 4: Minimal runtime ----
-FROM debian:trixie-slim AS final
+FROM ${CONTAINER_REGISTRY_URI}/debian:trixie-slim AS final
 
 RUN apt-get update && apt-get install -y ca-certificates && rm -rf /var/lib/apt/lists/*
 
