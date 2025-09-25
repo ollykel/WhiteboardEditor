@@ -1,4 +1,6 @@
 # Test rest_api service
+name: Test Rest API
+
 on:
   push:
     paths:
@@ -8,12 +10,16 @@ on:
   pull_request:
     on:
       - opened
+
 jobs:
-  test_build_rest_api:
+  run_supertest_rest_api:
     # make sure image builds
+    name: Run Supertest on Rest API
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v5
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
       - name: Set up Docker
         uses: docker/setup-docker-action@v4
         with:
@@ -24,62 +30,31 @@ jobs:
                 "containerd-snapshotter": true
               }
             }
-      - name: Set up Docker cache
-        id: cache-setup
-        uses: actions/cache@v4
-        with:
-          path: ${{ runner.temp }}/docker
-          key: ${{ runner.os }}-rest-api-test-build-${{ hashFiles('docker-compose.yml', 'RestAPI/Dockerfile', 'RestAPI/package.json', 'RestAPI/yarn.lock', '.github/workflows/test_rest_api.yml') }}
-          restore-keys: |
-            ${{ runner.os }}-rest-api-
-      - name: Build without cache
-        id: build-no-cache
-        if: steps.cache-setup.outputs.cache-hit != 'true'
-        env:
-          DOCKER_CACHE: ${{ runner.temp }}/docker
-        run: |
-          docker compose build --no-cache rest_api
 
-          echo 'service "rest_api" built successfully'
-      - name: Build with cache
+      - name: Log into Github Container Registry
+        id: login-ghcr
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build with Container Registry cache
         id: build-cached
-        if: steps.cache-setup.outputs.cache-hit == 'true'
-        env:
-          DOCKER_CACHE: ${{ runner.temp }}/docker
-        run: |
-          docker compose build rest_api
+        uses: docker/build-push-action@v6
+        with:
+          context: RestAPI
+          push: false
+          tags: ghcr.io/${{ github.repository_owner }}/${{ github.repository_id }}/rest_api:test
 
-          echo 'service "rest_api" built successfully'
-  run_supertest:
-    # Run supertest tests within the rest_api container
-    runs-on: ubuntu-24.04
-    steps:
-        # check out repo
-      - uses: actions/checkout@v5
-      - name: Set up Docker
-        uses: docker/setup-docker-action@v4
-        with:
-          daemon-config: |
-            {
-              "debug": true,
-              "features": {
-                "containerd-snapshotter": true
-              }
-            }
-      - name: Set up Docker cache
-        id: cache-setup
-        uses: actions/cache@v4
-        with:
-          path: ${{ runner.temp }}/docker
-          key: ${{ runner.os }}-rest-api-run-supertest-${{ hashFiles('docker-compose.yml', 'RestAPI/Dockerfile', 'RestAPI/package.json', 'RestAPI/yarn.lock', '.github/workflows/test_rest_api.yml') }}
-          restore-keys: |
-            ${{ runner.os }}-rest-api-
+          # cache settings
+          cache-from: type=registry,ref=ghcr.io/${{ github.repository_owner }}/${{ github.repository_id }}/rest_api:buildcache
+          cache-to: type=registry,ref=ghcr.io/${{ github.repository_owner }}/${{ github.repository_id }}/rest_api:buildcache,mode=max
+
       - name: Set up test env
+        id: test-env-setup
         env:
           TEST_ENV: |
-            # Docker cache location
-            DOCKER_CACHE="${{ runner.temp }}/docker"
-
             # Secret for signing JSON Web Tokens (JWTs)
             # Should be at least 64 characters in length
             WHITEBOARD_EDITOR_JWT_SECRET=2KUU6DNUY6XGBL2NQFXDXGGVOJ63A75RYSZ5SKD3PMYPCXC6L3I3WRDZER5JA4GC2SOQ2K6W66JUQ3XMM3QT6PXC4UKAFXDDDIIRP4A=
@@ -95,27 +70,21 @@ jobs:
             WHITEBOARD_EDITOR_REST_API_PORT=3001
         run: |
           printenv TEST_ENV > .env
+
       - name: Start test database
         shell: bash
         run: |
           docker compose -p ${{ github.job }} up --build -d test_db
-      - name: Build without cache
-        id: build-no-cache
-        if: steps.cache-setup.outputs.cache-hit != 'true'
-        run: |
-          docker compose -p ${{ github.job }} build --no-cache rest_api
 
-          echo 'service "rest_api" built successfully'
-      - name: Build with cache
-        id: build-cached
-        if: steps.cache-setup.outputs.cache-hit == 'true'
-        run: |
-          docker compose -p ${{ github.job }} build rest_api
-
-          echo 'service "rest_api" built successfully'
       - name: Run supertest
         id: run-supertest
-        run: docker compose -p ${{ github.job }} run --entrypoint 'yarn test' rest_api
+        env:
+          # docker compose will identify the built image using these variables
+          WHITEBOARD_EDITOR_CR_URI: ghcr.io/${{ github.repository_owner }}/${{ github.repository_id }}
+          WHITEBOARD_EDITOR_TAG: test
+        run: |
+          docker compose -p ${{ github.job }} run --entrypoint "yarn test" rest_api
+
       - name: Tear down test database
         id: tear-down-test-db
         if: always()

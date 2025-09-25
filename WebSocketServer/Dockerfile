@@ -10,8 +10,7 @@ RUN cargo install cargo-chef
 COPY Cargo.toml Cargo.lock ./
 
 # Dummy build file to make Cargo happy
-RUN mkdir src/
-COPY src/dummy.rs src/dummy.rs
+RUN mkdir src/ && echo 'fn main() {}' > src/dummy.rs
 
 # Generate dependency build plan
 RUN cargo chef prepare --recipe-path recipe.json
@@ -19,44 +18,52 @@ RUN cargo chef prepare --recipe-path recipe.json
 # ---- Stage 2: Dependency builder ----
 FROM rust:1.88 AS cacher
 
-WORKDIR /app
-
-# Install cargo-chef
+WORKDIR /build
 RUN cargo install cargo-chef
 
-# Copy and execute the dependency build plan
 COPY --from=planner /app/recipe.json recipe.json
 COPY Cargo.toml Cargo.lock ./
-RUN cargo chef cook --release --recipe-path recipe.json
 
-# Prepare tests
-RUN cargo chef cook --tests --recipe-path recipe.json
+# Use buildkit cache mounts for cargo registry + target dir
+RUN --mount=type=cache,target=/usr/local/cargo/registry \
+    --mount=type=cache,target=/usr/local/cargo/git \
+    --mount=type=cache,target=/build/target \
+    cargo chef cook --release --recipe-path recipe.json
+
+# Optionally prepare test dependencies too
+RUN --mount=type=cache,target=/usr/local/cargo/registry \
+    --mount=type=cache,target=/usr/local/cargo/git \
+    --mount=type=cache,target=/app/target \
+    cargo chef cook --tests --recipe-path recipe.json
 
 # ---- Stage 3: Application build ----
 FROM rust:1.88 AS builder
 
-WORKDIR /app
+WORKDIR /build
 
-# Copy everything
+# Copy source
 COPY . .
 
-# Copy built dependencies from cacher
-COPY --from=cacher /app/target /app/target
-COPY --from=cacher /usr/local/cargo /usr/local/cargo
+# Build with cached cargo registry + target directory
+# Build both tests and release mode.
+# Copy the final build to the /app/ directory, to take it out of the cache.
+RUN --mount=type=cache,target=/usr/local/cargo/registry \
+    --mount=type=cache,target=/usr/local/cargo/git \
+    --mount=type=cache,target=/build/target \
+    cargo build --tests && \
+    cargo build --release && \
+    cp -rp . /app
 
-# Build the final binary
-RUN cargo build --release
+# Make /app the default working directory, where testers can run.
+WORKDIR /app
 
 # ---- Stage 4: Minimal runtime ----
 FROM debian:trixie-slim AS final
 
-# Install minimal runtime dependencies
 RUN apt-get update && apt-get install -y ca-certificates && rm -rf /var/lib/apt/lists/*
 
-# Set up non-root user
 RUN useradd -m appuser
 
-# Copy compiled binary
 COPY --from=builder /app/target/release/web_socket_server /usr/local/bin/web_socket_server
 
 USER appuser

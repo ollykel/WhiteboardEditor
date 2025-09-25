@@ -3,18 +3,16 @@ FROM node:24 AS builder
 
 WORKDIR /app
 
-# Copy package manager files first (for Docker caching)
-COPY package.json ./
-
-# Install dependencies
-RUN npm install
-RUN npm ci
-
-# Copy the rest of the app source
+# Copy source files
 COPY . .
 
-# Build the Vite app (output goes to /app/dist)
-RUN npm run build
+# Install dependencies and build.
+# Cache node_modules for future builds.
+RUN \
+  --mount=type=cache,target=/app/node_modules \
+  npm install && \
+  npm ci && \
+  npm run build
 
 # ---- Stage 2: Serve with a static web server ----
 FROM nginx:stable-alpine

@@ -1,20 +1,22 @@
 FROM node:24-alpine3.21
 
 # Create new working directory
-WORKDIR /app
+WORKDIR /build
 
-# Copy configuration files
-COPY package.json .
-COPY yarn.lock .
-
-# Install dependencies
-RUN yarn install
-
-# Copy all other source files
+# Copy source files
 COPY . .
 
-# Build source files
-RUN npx tsc
+# Install dependencies and build.
+# Cache node_modules for future builds.
+# Then, copy to /app directory for persistence, to allow in-image testing.
+RUN \
+  --mount=type=cache,target=/build/node_modules \
+  yarn install && \
+  npx tsc && \
+  cp -rp . /app
+
+# Run from /app
+WORKDIR /app
 
 # Run app
 EXPOSE 3000
