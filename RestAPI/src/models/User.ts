@@ -2,11 +2,14 @@ import {
   Schema,
   model,
   Types,
-  Document
+  type Document,
+  type Model,
 } from "mongoose";
 
 import type {
-  DocumentBase
+  ViewDocument,
+  DocumentViewMethods,
+  DocumentVirtualBase,
 } from './Model';
 
 import type {
@@ -34,7 +37,7 @@ type UserProtectedFields =
 // =============================================================================
 
 // -- User with id and other basic document info
-export type IUserDocument = IUserModel & DocumentBase;
+export type IUserDocument = ViewDocument<IUserModel>;
 
 // -- User, excluding sensitive fields
 export type IUserPublicView = Omit<IUserDocument, UserProtectedFields>;
@@ -43,15 +46,16 @@ export type IUserPublicView = Omit<IUserDocument, UserProtectedFields>;
 // -- In this case, there are no vector attributes
 export type IUserAttribView = IUserPublicView;
 
-// -- additional instance methods, to be defined in schema
-interface IUserMethods {
-  toPublicView: () => IUserPublicView;
-  toAttribView: () => IUserAttribView;
-}
+export type IUserVirtual = DocumentVirtualBase;
+
+export type UserModelType = Model<IUserDocument, {}, {}, IUserVirtual>;
 
 // -- User as a Mongo document
-export type IUser = IUserDocument & Document & IUserMethods;
-
+export type IUser = 
+  & IUserDocument
+  & DocumentViewMethods<IUser, IUserPublicView, IUserAttribView>
+  & Document <Types.ObjectId>
+;
 
 // === REST Request Body Definitions ===========================================
 //
@@ -76,8 +80,9 @@ export type PutUserData = IUserDocument;
 export type PutUserRequest = AuthorizedRequestBody & PutUserData;
 
 // -- for DELETE
-export interface DeleteUserData extends DocumentBase {
+export interface DeleteUserData {
   // requires additional password confirmation
+  id: Types.ObjectId;
   password: string;
 }
 
@@ -89,8 +94,9 @@ export type DeleteUserRequest = AuthorizedRequestBody & DeleteUserData;
 //
 // =============================================================================
 
-const toPublicView = (user: IUserDocument): IUserPublicView => {
+const toPublicView = (user: IUser): IUserPublicView => {
   const {
+    _id,
     passwordHashed,
     ...out
   } = user;
@@ -106,7 +112,7 @@ const toAttribView = toPublicView;
 // Defines how user objects are stored/interacted with.
 //
 // =============================================================================
-const userSchema = new Schema<IUser>(
+const userSchema = new Schema<IUser, UserModelType, {}, {}, IUserVirtual>(
   // -- fields
   {
     username: { type: String, required: true, unique: true },
@@ -123,18 +129,10 @@ const userSchema = new Schema<IUser>(
 
     // -- data transformation
     toObject: {
-      getters: true,
       virtuals: true,
-      transform: (_doc: IUser, ret: Partial<IUserDocument>): IUserPublicView => {
-        delete ret.passwordHashed;
-
-        return ret as IUserPublicView;
-      }
     },
     toJSON: {
-      getters: true,
-      virtuals: true,
-      transform: (_doc: IUser, ret: Partial<IUserDocument>): IUserPublicView => {
+      transform: (_, ret: Partial<IUserDocument>): IUserPublicView => {
         delete ret.passwordHashed;
 
         return ret as IUserPublicView;
@@ -144,6 +142,14 @@ const userSchema = new Schema<IUser>(
     // -- instance methods
     methods: {
       // -- Data transfer mappings
+      async populateAttribs(): Promise<IUser> {
+        // nothing to populate
+        return this;
+      },
+      async populateFull(): Promise<IUser> {
+        // nothing to populate
+        return this;
+      },
       toPublicView(): IUserPublicView {
         return toPublicView(this.toObject({ virtuals: true }));
       },// -- end toPublicView
@@ -154,7 +160,6 @@ const userSchema = new Schema<IUser>(
   }
 );// -- end userSchema
 
-// -- virtual fields
 userSchema.virtual('id').get(function() {
   return this._id;
 });

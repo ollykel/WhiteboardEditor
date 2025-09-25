@@ -1,4 +1,4 @@
-import WhiteboardCard from "./WhiteboardCard";
+import WhiteboardCard from "@/components/WhiteboardCard";
 
 function YourWhiteboards() {
   return (
@@ -6,7 +6,17 @@ function YourWhiteboards() {
       <div className="text-2xl font-bold">
         Your Whiteboards
       </div>
-      <WhiteboardCard id="dummyYourID" /> {/* TODO: Map the list of your whiteboards */}
+      <WhiteboardCard
+        id="dummyYourID"
+        name="Dummy Whiteboard"
+        time_created={new Date()}
+        owner={{
+          id: 'abcd',
+          username: 'Dummy User',
+          email: 'dummy@example.com'
+        }}
+        shared_users={[]}
+      /> {/* TODO: Map the list of your whiteboards */}
     </div>
   );
 }

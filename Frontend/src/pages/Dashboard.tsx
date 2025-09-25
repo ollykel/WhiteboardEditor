@@ -1,25 +1,71 @@
 // -- std imports
 import { useNavigate } from 'react-router-dom';
 
+// -- third-party imports
+
+import {
+  useQuery,
+  // useQueryClient,
+} from '@tanstack/react-query';
+
 // -- local imports
 
 // -- api
 import api from '@/api/axios';
 
+import type {
+  Whiteboard
+} from '@/types/APIProtocol';
+
 // -- components
 import HeaderAuthed from "@/components/HeaderAuthed";
-import YourWhiteboards from "@/components/YourWhiteboards";
-import SharedWhiteboards from "@/components/SharedWhiteboards";
 import { useUser } from "@/hooks/useUser";
 import type { User } from "@/types/UserAuth";
 import CreateWhiteboardModal, {
   type CreateWhiteboardFormData
 } from '@/components/CreateWhiteboardModal';
+import WhiteboardList from '@/components/WhiteboardList';
 
 const Dashboard = (): React.JSX.Element => {
   const navigate = useNavigate();
   const title: string = "<Whiteboard App>";
   const user: User | null = useUser().user;
+
+  const {
+    isError: isOwnWhiteboardsError,
+    isLoading: isOwnWhiteboardsLoading,
+    isFetching: isOwnWhiteboardsFetching,
+    data: ownWhiteboards,
+  } = useQuery<Whiteboard[]>({
+    queryKey: [user?.id, 'dashboard', 'whiteboards', 'own'],
+    queryFn: async () => {
+      const res = await api.get('/whiteboards/own');
+
+      if (res.status >= 400) {
+        throw new Error('Bad API call');
+      } else {
+        return res.data;
+      }
+    }
+  });
+
+  const {
+    isError: isSharedWhiteboardsError,
+    isLoading: isSharedWhiteboardsLoading,
+    isFetching: isSharedWhiteboardsFetching,
+    data: sharedWhiteboards,
+  } = useQuery<Whiteboard[]>({
+    queryKey: [user?.id, 'dashboard', 'whiteboards', 'shared'],
+    queryFn: async () => {
+      const res = await api.get('/users/me/shared_whiteboards');
+
+      if (res.status >= 400) {
+        throw new Error('Bad API call');
+      } else {
+        return res.data;
+      }
+    }
+  });
 
   if (! user) {
     throw new Error('No user found on authenticated page');
@@ -54,8 +100,51 @@ const Dashboard = (): React.JSX.Element => {
           onSubmit={handleCreateWhiteboard}
         />
 
-        <YourWhiteboards />
-        <SharedWhiteboards />
+        <h1 className="my-2 text-2xl font-bold font-mono">
+          Your Whiteboards
+        </h1>
+        {(() => {
+          if (isOwnWhiteboardsError) {
+            return (
+              <WhiteboardList
+                status="error"
+                message={`${isOwnWhiteboardsError}`}
+              />
+            );
+          } else if (isOwnWhiteboardsLoading || isOwnWhiteboardsFetching) {
+            return (<WhiteboardList status="loading" />);
+          } else {
+            return (
+              <WhiteboardList
+                status="ready"
+                whiteboardsAttribs={ownWhiteboards || []}
+              />
+            );
+          }
+        })()}
+
+        <h1 className="my-2 text-2xl font-bold font-mono">
+          Shared Whiteboards
+        </h1>
+        {(() => {
+          if (isSharedWhiteboardsError) {
+            return (
+              <WhiteboardList
+                status="error"
+                message={`${isSharedWhiteboardsError}`}
+              />
+            );
+          } else if (isSharedWhiteboardsLoading || isSharedWhiteboardsFetching) {
+            return (<WhiteboardList status="loading" />);
+          } else {
+            return (
+              <WhiteboardList
+                status="ready"
+                whiteboardsAttribs={sharedWhiteboards || []}
+              />
+            );
+          }
+        })()}
       </main>
     </>
   );
