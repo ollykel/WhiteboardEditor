@@ -1,6 +1,6 @@
 import { useRef, useState, useEffect } from "react";
 
-import { Text, Transformer } from 'react-konva';
+import { Text } from 'react-konva';
 
 import Konva from "konva";
 
@@ -40,15 +40,22 @@ const EditableText = ({
   }, [isEditing])
 
   const handleTextDblClick = (): void => {
-    // Placeholders, remove
-    console.log("isEditing: ", isEditing);
-    handleTextChange();
-
     setIsEditing(true);
   }
 
-  const handleTextChange = (): void => {
-    setText("Clicked");
+  const handleTextChange = (newText: string): void => {
+    setText(newText);
+  }
+
+  const handleTransform = () => {
+    const node = textRef.current;
+    const scaleX = node?.scaleX();
+    const newWidth = node?.width() * scaleX;
+    setTextWidth(newWidth);
+    node.setAttrs({
+      width: newWidth,
+      scaleX: 1,
+    });
   }
 
   return (
