@@ -70,6 +70,17 @@ const TextEditor = ({ textNode, onClose, onChange }: TextEditorProps) => {
     }
   }
 
+  const handleKeyDown = (e) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      onChange(textarea.value);
+      onClose();
+    }
+    if (e.key === "Escape") {
+      onClose();
+    }
+  }
+
   return (
     <Html>
       <textarea 
