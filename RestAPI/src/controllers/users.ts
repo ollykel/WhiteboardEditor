@@ -3,7 +3,8 @@ import { Types } from "mongoose";
 import bcrypt from "bcrypt";
 
 import type {
-  Result
+  Result,
+  SetInclusionOptionType,
 } from '../utils';
 
 import {
@@ -11,8 +12,14 @@ import {
   PatchUserData,
   type IUser,
   type IUserPublicView,
-  type CreateUserRequest
+  type CreateUserRequest,
 } from "../models/User";
+
+import {
+  Whiteboard,
+  type IWhiteboard,
+  type IWhiteboardPermissionEnum,
+} from '../models/Whiteboard';
 
 import { loginService } from "../services/loginService";
 
@@ -162,4 +169,65 @@ export const deleteUser = async (userId: Types.ObjectId): Promise<Result<IUserPu
       err: `${err}`
     });
   };
+};
+
+export type GetSharedWhiteboardsByUserRes =
+  | { status: 'server_error'; }
+  | { status: 'user_not_found'; }
+  | { status: 'bad_request'; message: string; }
+  | { status: 'ok'; whiteboards: IWhiteboard<IUser>[]; }
+;
+
+export const getSharedWhiteboardsByUser = async (
+  userId: Types.ObjectId,
+  includePermissionOpts: SetInclusionOptionType<IWhiteboardPermissionEnum>,
+): Promise<GetSharedWhiteboardsByUserRes> => {
+  try {
+    if (! Types.ObjectId.isValid(userId)) {
+      return ({
+        status: 'bad_request',
+        message: 'Invalid user id',
+      });
+    }
+
+    const permissionsFilter : object = (() => {
+      switch (includePermissionOpts.type) {
+        case 'all':
+          return ({ '$nin': [] });
+        case 'include':
+          return ({ '$in': includePermissionOpts.included });
+        case 'exclude':
+          return ({ '$nin': includePermissionOpts.excluded });
+        default:
+          throw new Error(`Unhandled case: ${includePermissionOpts}`);
+      }
+    })();
+
+    const query = ({
+      shared_users: {
+        '$elemMatch': {
+          type: 'user',
+          user: userId,
+          permission: permissionsFilter
+        }
+      }
+    });
+
+    const whiteboards = await Whiteboard.findAttribs(query);
+
+    // success
+    return ({
+      status: 'ok',
+      whiteboards,
+    });
+  } catch (e: any) {
+    console.error(
+      'An unexpected error occurred while attempting to get whiteboards shared with user',
+      userId, ':', e
+    );
+
+    return ({
+      status: 'server_error'
+    });
+  }
 };

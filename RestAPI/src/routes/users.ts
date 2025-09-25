@@ -1,14 +1,21 @@
+// -- std imports
 import { Request, Response, Router } from "express";
 
 import {
   Types,
 } from 'mongoose';
 
+// -- local imports
+import {
+  SetInclusionOptionType
+} from '../utils';
+
 import {
   getUserById,
   createUser,
   patchUser,
-  deleteUser
+  deleteUser,
+  getSharedWhiteboardsByUser,
 } from "../controllers/users";
 
 import {
@@ -129,6 +136,54 @@ router.delete('/me', async (
   } else {
     res.status(200).json(resp.data);
   }
+});
+
+// === GET /users/:userId:/shared_whiteboards ==================================
+//
+// Get summaries (attribute views) of all whiteboards shared with a given user.
+// If passed "me" as the userId, fetches for the authenticated user.
+// By default, spans all permissions.
+//
+// TODO: implement queries to filter by permission type.
+//
+// =============================================================================
+router.get('/:userId/shared_whiteboards', async (
+  req: Request<{ userId: Types.ObjectId | 'me' }, any, AuthorizedRequestBody>,
+  res: Response,
+) => {
+  const {
+    userId,
+  } = req.params;
+  const { authUser } = req.body;
+  const { id: authUserId } = authUser;
+
+  const targetUserId = (userId === 'me') ?
+    authUserId
+    : userId;
+    
+  const includeOpts: SetInclusionOptionType<string> = ({
+    type: 'all',
+  });
+
+  const resp = await getSharedWhiteboardsByUser(targetUserId, includeOpts);
+
+  switch (resp.status) {
+      case 'server_error':
+        return res.status(500).json({ message: 'Unexpected server error' });
+      case 'user_not_found':
+        // This _shouldn't_ happen in our case, since we've already passed the
+        // authentication middleware by this point. Nevertheless, the controller
+        // still accounts for the possibility.
+        return res.status(403).json({ message: 'Invalid user' });
+      case 'bad_request':
+        return res.status(400).json({ message: resp.message });
+      case 'ok':
+        return res.status(200).json(resp.whiteboards);
+      default:
+        // Shouldn't get here. If we get here, there is a case we haven't
+        // accounted for.
+        throw new Error(`Unexpected case: ${resp}`);
+  }// end switch (resp.status)
 });
 
 export default router;

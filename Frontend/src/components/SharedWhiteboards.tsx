@@ -6,7 +6,18 @@ function SharedWhiteboards() {
       <div className="text-2xl font-bold">
         Shared Whiteboards
       </div>
-      <WhiteboardCard id="dummySharedID" /> {/* TODO: Map the list of shared whiteboards */}
+      {/* TODO: Map the list of shared whiteboards */}
+      <WhiteboardCard
+        id="dummySharedID"
+        name="Dummy Shared Whiteboard"
+        time_created={new Date()}
+        owner={{
+          id: 'efgh',
+          username: 'Bob',
+          email: 'bob@example.com',
+        }}
+        shared_users={[]}
+      /> {/* TODO: Map the list of your whiteboards */}
     </div>
   );
 }

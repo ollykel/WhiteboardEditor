@@ -8,12 +8,15 @@ import {
 //
 // =============================================================================
 
-export interface DocumentBase {
+export interface DocumentVirtualBase {
   id: Types.ObjectId;
-  _id?: Types.ObjectId;
 }
 
-export interface DocumentViewMethods<PublicViewType, AttribViewType> {
-  toPublicView: () => PublicViewType;
+export type ViewDocument <ViewType> = DocumentVirtualBase & ViewType;
+
+export interface DocumentViewMethods<PopulatedDocumentType, PublicViewType, AttribViewType> {
+  populateAttribs: () => Promise<PopulatedDocumentType>;
+  populateFull: () => Promise<PopulatedDocumentType>;
   toAttribView: () => AttribViewType;
+  toPublicView: () => PublicViewType;
 }

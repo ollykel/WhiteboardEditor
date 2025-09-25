@@ -229,7 +229,7 @@ pub enum WhiteboardPermissionEnum {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "camelCase", rename_all_fields = "snake_case")]
 pub enum WhiteboardPermissionType {
-    Id { user_id: ObjectId },
+    User { user: ObjectId },
     Email { email: String },
 }
 

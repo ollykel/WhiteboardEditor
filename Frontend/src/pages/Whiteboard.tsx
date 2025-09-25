@@ -489,12 +489,30 @@ const Whiteboard = () => {
                   userPermissions
                 } = data;
 
-                const res = await api.post(`/whiteboards/${whiteboardId}/share`, ({
-                  userPermissions
+                const userPermissionsFinal = userPermissions.map(perm => {
+                  if (perm.type === 'user') {
+                    if ((typeof perm.user) === 'object') {
+                      // extract object id
+                      return ({
+                        ...perm,
+                        user: perm.user.id
+                      });
+                    } else {
+                      // already object id
+                      return perm;
+                    }
+                  } else {
+                    return perm;
+                  }
+                });
+
+                const res = await api.post(`/whiteboards/${whiteboardId}/shared_users`, ({
+                  userPermissions: userPermissionsFinal
                 }));
 
                 if (res.status >= 400) {
-                  console.error('POST /whiteboards/:id/share failed:', res.data);
+                  console.error('POST /whiteboards/:id/shared_users failed:', res.data);
+                  alert(`Share request failed: ${JSON.stringify(res.data)}`);
                 } else {
                   console.log('Share request submitted successfully');
                   alert('Share request submitted successfully');
