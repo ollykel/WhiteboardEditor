@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect } from "react";
+import { useRef, useState, useEffect, useCallback } from "react";
 
 import { Text, Transformer } from 'react-konva';
 
@@ -44,15 +44,15 @@ const EditableText = ({
     }
   }, [isEditing])
 
-  const handleTextDblClick = (): void => {
+  const handleTextDblClick = useCallback((): void => {
     setIsEditing(true);
-  }
+  }, []);
 
-  const handleTextChange = (newText: string): void => {
+  const handleTextChange = useCallback((newText: string): void => {
     setText(newText);
-  }
+  }, []);
 
-  const handleTransform = () => {
+  const handleTransform = useCallback(() => {
     const node = textRef.current;
     if (!node) return;
     const scaleX = node?.scaleX();
@@ -62,7 +62,7 @@ const EditableText = ({
       width: newWidth,
       scaleX: 1,
     });
-  }
+  }, []);
 
   return (
     <div>
