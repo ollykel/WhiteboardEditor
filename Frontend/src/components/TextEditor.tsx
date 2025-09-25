@@ -81,6 +81,15 @@ const TextEditor = ({ textNode, onClose, onChange }: TextEditorProps) => {
     }
   }
 
+  const handleInput = () => {
+    const scale = textNode.getAbsoluteScale().x;
+    textarea.style.width = `${textNode.width() * scale}px`;
+    textarea.style.height = "auto";
+    textarea.style.height = `${
+      textarea.scrollHeight + textNode.fontSize()
+    }px`;
+  }
+
   return (
     <Html>
       <textarea 
