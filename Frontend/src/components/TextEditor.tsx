@@ -18,9 +18,9 @@ const TextEditor = ({ textNode, onClose, onChange }: TextEditorProps) => {
     }
   
     const textarea = textareaRef.current;
-    const stage = textNode.getStage();
+    // const stage = textNode.getStage();
     const textPosition = textNode.position();
-    const stageBox = stage?.container().getBoundingClientRect();
+    // const stageBox = stage?.container().getBoundingClientRect();
     const areaPosition = {
       x: textPosition.x,
       y: textPosition.y,
@@ -64,14 +64,14 @@ const TextEditor = ({ textNode, onClose, onChange }: TextEditorProps) => {
   
     textarea.focus();
   
-    const handleOutsideClick = (e) => {
+    const handleOutsideClick = (e: MouseEvent) => {
       if (e.target !== textarea) {
         onChange(textarea.value);
         onClose();
       }
     }
   
-    const handleKeyDown = (e) => {
+    const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Enter" && !e.shiftKey) {
         e.preventDefault();
         onChange(textarea.value);
