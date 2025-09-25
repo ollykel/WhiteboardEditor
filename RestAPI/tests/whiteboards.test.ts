@@ -5,8 +5,13 @@ import jwt from "jsonwebtoken";
 
 // -- imports from models
 import type {
-  IUser
+  IUser,
 } from '../src/models/User';
+
+import type {
+  IWhiteboardAttribView,
+  IWhiteboardUserPermission,
+} from '../src/models/Whiteboard';
 
 const MONGO_URI = 'mongodb://test_db:27017/testdb';
 
@@ -49,6 +54,64 @@ const validateUser = (user: IUser, fieldValues: {} | any[]) => {
   }
 };
 
+const validateWhiteboardAttribView = (
+  whiteboard: IWhiteboardAttribView,
+  fieldValues: Partial<IWhiteboardAttribView> | any[]
+) => {
+  expect(whiteboard).toHaveProperty('id');
+  expect(whiteboard).not.toHaveProperty('_id');
+  expect(whiteboard).toHaveProperty('name');
+  expect(whiteboard).toHaveProperty('time_created');
+  // NOTE: no canvases
+
+  // -- owner
+  expect(whiteboard).toHaveProperty('owner');
+  validateUser(whiteboard.owner, {});
+
+  // -- shared users
+  expect(whiteboard).toHaveProperty('shared_users');
+  expect(Array.isArray(whiteboard.shared_users)).toBe(true);
+  for (const perm of whiteboard.shared_users) {
+    switch (perm.type) {
+      case 'user':
+        expect(perm).toHaveProperty('user');
+        validateUser(perm.user as unknown as IUser, {});
+        break;
+      case 'email':
+        expect(perm).toHaveProperty('email');
+        expect(typeof perm.email).toEqual('string');
+        break;
+      default:
+        throw new Error(`Unrecognized permission type: ${perm}`);
+    }
+  }
+
+  if (fieldValues) {
+    let expectedValues = fieldValues;
+
+    if ('shared_users' in fieldValues) {
+      const {
+        shared_users,
+        ...expectedFieldValues
+      } = fieldValues;
+      const sharedUsers = shared_users as IWhiteboardUserPermission<any>[];
+
+      expectedValues = expectedFieldValues;
+
+      if (shared_users) {
+        expect(Array.isArray(whiteboard.shared_users)).toBe(true);
+        expect(whiteboard.shared_users.length).toBe(sharedUsers.length);
+
+        for (let idx = 0; idx < sharedUsers.length; ++idx) {
+          expect(whiteboard.shared_users[idx]).toMatchObject(sharedUsers[idx]);
+        }
+      }
+    }
+
+    expect(whiteboard).toMatchObject(expectedValues);
+  }
+};
+
 describe("Whiteboards API", () => {
   it("should allow an authenticated user to get their own whiteboard", async () => {
     const jwtSecret = process.env.JWT_SECRET;
@@ -85,7 +148,8 @@ describe("Whiteboards API", () => {
       .send()
       .expect(200);
 
-    expect(wbRes.body).toHaveProperty('_id');
+    expect(wbRes.body).toHaveProperty('id');
+    expect(wbRes.body).not.toHaveProperty('_id');
     expect(wbRes.body).toHaveProperty('name');
     expect(wbRes.body).toHaveProperty('time_created');
     expect(wbRes.body).toHaveProperty('shared_users');
@@ -104,9 +168,9 @@ describe("Whiteboards API", () => {
     expect(wbRes.body.canvases.length).toBe(1);
 
     const sharedUsersLimited = wbRes.body.shared_users.map((perm: any) => {
-      const { type, user_id, permission } = perm;
+      const { type, user, permission } = perm;
 
-      return ({ type, user_id: user_id.toString(), permission });
+      return ({ type, user: user.toString(), permission });
     });
 
     expect(sharedUsersLimited).toEqual([]);
@@ -152,11 +216,9 @@ describe("Whiteboards API", () => {
       .expect(201);
 
     // Verify response body
-    expect(wbRes.body).toHaveProperty("_id");
-    expect(wbRes.body).toHaveProperty("name", "Alice's Whiteboard");
-    expect(wbRes.body).toHaveProperty("owner");
-    expect(wbRes.body).toHaveProperty("shared_users");
-    expect(Array.isArray(wbRes.body.shared_users)).toBe(true);
+    validateWhiteboardAttribView(wbRes.body, {
+      name: "Alice's Whiteboard",
+    });
   });
 
   it("should allow an authenticated user to share their whiteboard", async () => {
@@ -166,7 +228,8 @@ describe("Whiteboards API", () => {
 
     const whiteboard = await whiteboardCollection.findOne({ name: "Project Alpha"});
     const owner = await userCollection.findOne({ username: 'alice' });
-    const sharee = await userCollection.findOne({ username: 'bob' });
+    const sharee = await userCollection.findOne({ username: 'bob' })
+      .then(user => user?.populateAttribs() || null);
 
     expect(jwtSecret).not.toBeNull();
     expect(owner).not.toBeNull();
@@ -178,7 +241,7 @@ describe("Whiteboards API", () => {
       return;
     }
 
-    const targetUrl = `/api/v1/whiteboards/${whiteboard._id}/share`;
+    const targetUrl = `/api/v1/whiteboards/${whiteboard._id}/shared_users`;
 
     console.log('Target url:', targetUrl);
 
@@ -196,28 +259,22 @@ describe("Whiteboards API", () => {
       .send({
         userPermissions: [
           {
-            type: 'id',
-            user_id: sharee._id.toString(),
+            type: 'user',
+            user: sharee._id.toString(),
             permission: 'view'
           }
         ]
       })
       .expect(200);
 
-      expect(wbRes.body).toHaveProperty('_id');
-      expect(wbRes.body).toHaveProperty('name');
-      expect(wbRes.body).toHaveProperty('time_created');
-      expect(wbRes.body).toHaveProperty('canvases');
-      expect(wbRes.body).toHaveProperty('owner');
-
-      // -- verification that shared_users has one permission
-      expect(wbRes.body).toHaveProperty('shared_users');
-      expect(Array.isArray(wbRes.body.shared_users)).toBe(true);
-      expect(wbRes.body.shared_users.length).toBe(1);
-      expect(wbRes.body.shared_users[0]).toMatchObject({
-        type: 'id',
-        user_id: sharee._id.toString(),
-        permission: 'view'
+      validateWhiteboardAttribView(wbRes.body, {
+        shared_users: [
+          {
+            type: 'user',
+            user: sharee,
+            permission: 'view'
+          }
+        ]
       });
   });
 
@@ -249,12 +306,12 @@ describe("Whiteboards API", () => {
 
     // -- Share whiteboard
     await request(app)
-      .post(`/api/v1/whiteboards/${whiteboard._id}/share`)
+      .post(`/api/v1/whiteboards/${whiteboard._id}/shared_users`)
       .set("Authorization", `Bearer ${authToken}`)
       .send({
         userPermissions: [{
-          type: 'id',
-          user_id: sharee._id.toString(),
+          type: 'user',
+          user: sharee._id.toString(),
           permission: 'view'
         }]
       })
@@ -287,13 +344,13 @@ describe("Whiteboards API", () => {
 
     // -- Share whiteboard
     await request(app)
-      .post(`/api/v1/whiteboards/${whiteboard._id}/share`)
+      .post(`/api/v1/whiteboards/${whiteboard._id}/shared_users`)
       .set("Authorization", `Bearer ${authToken}`)
       .send({
         // Not a real id
         userPermissions: [{
-          type: 'id',
-          user_id: 'zzzzzzz',
+          type: 'user',
+          user: 'zzzzzzz',
           permission: 'view'
         }]
       })
@@ -326,13 +383,13 @@ describe("Whiteboards API", () => {
 
     // -- Share whiteboard
     await request(app)
-      .post(`/api/v1/whiteboards/${whiteboard._id}/share`)
+      .post(`/api/v1/whiteboards/${whiteboard._id}/shared_users`)
       .set("Authorization", `Bearer ${authToken}`)
       .send({
         // With timestamp at beginning of unix epoch
         userPermissions: [{
-          type: 'id',
-          user_id: '000000018ab18fedd089b041',
+          type: 'user',
+          user: '000000018ab18fedd089b041',
           permission: 'view'
         }]
       })
@@ -363,7 +420,7 @@ describe("Whiteboards API", () => {
       { expiresIn: 999999999 }
     );
 
-    const userPermissions = [{
+    const userPermissions: IWhiteboardUserPermission<any>[] = [{
       type: 'email',
       // no corresponding user in Users collection
       email: 'noexist@example.com',
@@ -372,27 +429,16 @@ describe("Whiteboards API", () => {
 
     // -- Share whiteboard
     const wbRes = await request(app)
-      .post(`/api/v1/whiteboards/${whiteboard._id}/share`)
+      .post(`/api/v1/whiteboards/${whiteboard._id}/shared_users`)
       .set("Authorization", `Bearer ${authToken}`)
       .send({
         userPermissions
       })
       .expect(200);
 
-    expect(wbRes.body).toHaveProperty('_id');
-    expect(wbRes.body).toHaveProperty('name');
-    expect(wbRes.body).toHaveProperty('time_created');
-    expect(wbRes.body).toHaveProperty('canvases');
-    expect(wbRes.body).toHaveProperty('owner');
-    expect(wbRes.body).toHaveProperty('shared_users');
-
-    // -- shared users
-    expect(Array.isArray(wbRes.body.shared_users)).toBe(true);
-    expect(wbRes.body.shared_users.length).toBe(userPermissions.length);
-
-    for (const i in userPermissions) {
-      expect(wbRes.body.shared_users[0]).toMatchObject(userPermissions[i]);
-    }// -- end for (const i in userPermissions)
+    validateWhiteboardAttribView(wbRes.body, {
+      shared_users: userPermissions,
+    });
   });
 
   it("should convert a shared user email to a shared user id if an account exists for the given email", async () => {
@@ -436,28 +482,23 @@ describe("Whiteboards API", () => {
     }];
 
     const userPermissionsExpect = [{
-      type: 'id',
-      user_id: targetUser._id.toString(),
+      type: 'user',
+      user: targetUser._id.toString(),
       permission: 'view'
     }];
 
     // -- Share whiteboard
     const wbRes = await request(app)
-      .post(`/api/v1/whiteboards/${whiteboard._id}/share`)
+      .post(`/api/v1/whiteboards/${whiteboard._id}/shared_users`)
       .set("Authorization", `Bearer ${authToken}`)
       .send({
         userPermissions: userPermissionsReq
       })
       .expect(200);
 
-    expect(wbRes.body).toHaveProperty('_id');
-    expect(wbRes.body).toHaveProperty('name');
-    expect(wbRes.body).toHaveProperty('time_created');
-    expect(wbRes.body).toHaveProperty('canvases');
-    expect(wbRes.body).toHaveProperty('owner');
+    validateWhiteboardAttribView(wbRes.body, {});
 
     // -- shared users
-    expect(Array.isArray(wbRes.body.shared_users)).toBe(true);
     expect(wbRes.body.shared_users.length).toBe(userPermissionsExpect.length);
 
     for (const i in userPermissionsExpect) {

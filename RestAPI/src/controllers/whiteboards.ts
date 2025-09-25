@@ -11,12 +11,15 @@ import {
   type IWhiteboardAttribView,
   type WhiteboardIdType,
   type IWhiteboardPermissionEnum,
-  type IWhiteboardUserPermission
+  type IWhiteboardUserPermission,
+  type IWhiteboardUserPermissionById,
+  type IWhiteboardUserPermissionByEmail,
 } from '../models/Whiteboard';
 
 import {
   User,
-  type UserIdType
+  type IUser,
+  type UserIdType,
 } from '../models/User';
 
 import type {
@@ -29,92 +32,94 @@ export interface CreateWhiteboardRequest extends AuthorizedRequestBody {
 }
 
 export type GetWhiteboardRes = 
-  | { status: 'ok'; whiteboard: Omit<IWhiteboard, 'canvases'> }
-  | { status: 'invalid_id' }
-  | { status: 'not_found' }
+  | { status: 'ok'; whiteboard: IWhiteboard<IUser>; }
+  | { status: 'invalid_id'; }
+  | { status: 'not_found'; }
+  | { status: 'server_error'; message: string; }
 ;
 
 export const getWhiteboardById = async (whiteboardId: string): Promise<GetWhiteboardRes> => {
-  if (! Types.ObjectId.isValid(whiteboardId)) {
-    return ({ status: 'invalid_id' });
-  }
-
-  let whiteboard = await Whiteboard.findById(whiteboardId)
-    .select('-canvases')
-    .populate([
-      {
-        path: 'owner',
-      },
-      {
-        path: 'shared_users',
-        populate: {
-          path: 'user',
-        },
-      },
-    ]);
-
-  if (! whiteboard) {
-    return ({ status: 'not_found' });
-  } else {
-    // track whether we change any email-based permissions to user-based
-    // permissions
-    let haveSharedUsersChanged = false;
-    const sharedUsers: IWhiteboardUserPermission[] = await Promise.all(whiteboard.shared_users
-        .map(async (perm: IWhiteboardUserPermission) => {
-      switch (perm.type) {
-        case 'user':
-          return perm;
-        case 'email':
-          // check if this email now belongs to a registered user
-          const user = await User.findOne({ email: perm.email });
-          console.log('!! Found email-identified user:', user);
-
-          if (user) {
-            haveSharedUsersChanged = true;
-            return ({
-              type: 'user',
-              user: user._id,
-              permission: perm.permission,
-            });
-          } else {
-            return perm; // keep as email if still unregistered
-          }
-        default:
-          return perm;
-      }
-    }));
-
-    if (haveSharedUsersChanged) {
-      // reset the whiteboard's shared_users field in-database, then refetch the
-      // whiteboard
-      whiteboard.set('shared_users', sharedUsers);
-      whiteboard = await whiteboard.save();
+  try {
+    if (! Types.ObjectId.isValid(whiteboardId)) {
+      return ({ status: 'invalid_id' });
     }
+
+    let whiteboard = await Whiteboard.findById(whiteboardId)
+      .then(wb => wb?.populateAttribs() || null);
 
     if (! whiteboard) {
-      throw new Error(`Whiteboard ${whiteboardId} not properly (re-)fetched`);
+      return ({ status: 'not_found' });
+    } else {
+      // track whether we change any email-based permissions to user-based
+      // permissions
+      let haveSharedUsersChanged = false;
+      const sharedUsers: IWhiteboardUserPermission<Types.ObjectId>[] = await Promise.all(whiteboard.shared_users
+          .map(async (perm: IWhiteboardUserPermission<IUser>) => {
+        switch (perm.type) {
+          case 'user':
+            return ({
+              ...perm,
+              user: perm.user._id,
+            });
+          case 'email':
+            // check if this email now belongs to a registered user
+            const user = await User.findOne({ email: perm.email });
+            console.log('!! Found email-identified user:', user);
+
+            if (user) {
+              haveSharedUsersChanged = true;
+              return ({
+                type: 'user',
+                user: user._id,
+                permission: perm.permission,
+              });
+            } else {
+              return perm; // keep as email if still unregistered
+            }
+          default:
+            throw new Error(`Unrecognized permission type: ${perm}`);
+        }
+      }));
+
+      if (haveSharedUsersChanged) {
+        // reset the whiteboard's shared_users field in-database, then refetch the
+        // whiteboard
+        whiteboard.set('shared_users', sharedUsers);
+        whiteboard = await whiteboard.save()
+          .then(wb => wb.populateAttribs());
+      }
+
+      if (! whiteboard) {
+        throw new Error(`Whiteboard ${whiteboardId} not properly (re-)fetched`);
+      }
+
+      console.log("Returning whiteboard:", JSON.stringify(whiteboard, null, 2));
+
+      return ({
+        status: 'ok',
+        whiteboard,
+      });
     }
-
-    console.log("Returning whiteboard:", JSON.stringify(whiteboard, null, 2));
-
+  } catch (err: any) {
+    console.log('Error fetching whiteboard', whiteboardId, ':', err);
     return ({
-      status: 'ok',
-      whiteboard,
+      status: 'server_error',
+      message: 'An unexpected error occurred',
     });
   }
 };
 
 export const getWhiteboardsByOwner = async (ownerId: Types.ObjectId): Promise<IWhiteboardAttribView[]> => {
-  return await Whiteboard.findAttribViews({ owner: ownerId });
+  return await Whiteboard.findAttribs({ owner: ownerId }) as IWhiteboardAttribView[];
 };// end getWhiteboardsByOwner
 
 export type GetSharedUsersByWhiteboardRes =
-  | { status: 'ok'; sharedUsers: IWhiteboardUserPermission[]; }
+  | { status: 'ok'; sharedUsers: IWhiteboardUserPermission <IUser>[]; }
   | { status: 'whiteboard_not_found'; }
 ;
 
 export const getSharedUsersByWhiteboard = async (whiteboardId: Types.ObjectId): Promise<GetSharedUsersByWhiteboardRes> => {
-  const sharedUsers: IWhiteboardUserPermission[] | null = await Whiteboard.findSharedUsersByWhiteboardId(whiteboardId);
+  const sharedUsers: IWhiteboardUserPermission <IUser>[] | null = await Whiteboard.findSharedUsersByWhiteboardId(whiteboardId);
 
   if (! Array.isArray(sharedUsers)) {
     return ({ status: 'whiteboard_not_found', });
@@ -136,7 +141,7 @@ export const createWhiteboard = async (
     console.log("createWhiteboard req.body: ", req.body);
     
     // Give owner 'own' permission for shared_users
-    const ownerPermission: IWhiteboardUserPermission = {
+    const ownerPermission: IWhiteboardUserPermission <Types.ObjectId> = {
       type: 'user',
       user: ownerId,
       permission: 'own'
@@ -152,15 +157,15 @@ export const createWhiteboard = async (
     const foundEmails = new Set(foundUsers.map(u => u.email));
 
     // Permissions for users that exist in DB
-    const collarboratorPermissionsFromUsers: IWhiteboardUserPermission[] =
+    const collarboratorPermissionsFromUsers: IWhiteboardUserPermission <Types.ObjectId>[] =
       foundUsers.map(user => ({
         type: 'user',
         user: user._id,
         permission: 'edit',
-      }));
+      }) as IWhiteboardUserPermissionById <Types.ObjectId>);
 
     // For emails that don't match an account, keep them as email permissions
-    const collarboratorPermissionsFromEmail: IWhiteboardUserPermission[] = 
+    const collarboratorPermissionsFromEmail: IWhiteboardUserPermissionByEmail[] = 
       collaboratorEmails
         .filter(email => !foundEmails.has(email))
         .map(email => ({
@@ -196,8 +201,13 @@ export const createWhiteboard = async (
     });
 
     await defaultCanvas.save();
+    await whiteboardOut.populate([
+      'owner',
+      'shared_users',
+      'canvases',
+    ]);
     
-    res.status(201).json(whiteboardOut.toPublicView());
+    res.status(201).json(whiteboardOut);
   } catch (err: any) {
     console.log('Server Error:', err);
     res.status(500).json({ message: "Unexpected server error" });
@@ -210,17 +220,17 @@ export interface WhiteboardPermissionRequest {
 }
 
 export type ShareWhiteboardResType =
-  | { status: "success"; whiteboard: IWhiteboard }
+  | { status: "success"; whiteboard: IWhiteboard<IUser> }
   | { status: "no_whiteboard" }
   | { status: "invalid_users"; invalid_users: UserIdType[] }
-  | { status: "invalid_permissions"; invalid_permissions: IWhiteboardUserPermission[] }
+  | { status: "invalid_permissions"; invalid_permissions: IWhiteboardUserPermission <Types.ObjectId>[] }
   | { status: "forbidden" }
   | { status: "exception"; message: string };
 
 export const addSharedUsers = async (
   whiteboardId: WhiteboardIdType,
   ownerId: UserIdType,
-  userPermissions: IWhiteboardUserPermission[]
+  userPermissions: IWhiteboardUserPermission <Types.ObjectId>[]
 ): Promise<ShareWhiteboardResType> => {
   try {
     // first, ensure given id can actually be cast to an ObjectId
@@ -228,7 +238,7 @@ export const addSharedUsers = async (
       return { status: "no_whiteboard" };
     }
 
-    const whiteboards = await Whiteboard.findFull({ _id: whiteboardId });
+    const whiteboards = await Whiteboard.findAttribs({ _id: whiteboardId });
 
     if ((! whiteboards) || (whiteboards.length < 1)) {
       return { status: "no_whiteboard" };
@@ -237,7 +247,7 @@ export const addSharedUsers = async (
     const whiteboard = whiteboards[0];
 
     // verify ownership
-    if (! whiteboard.owner._id?.equals(ownerId)) {
+    if (! whiteboard.owner._id.equals(ownerId)) {
       return { status: "forbidden" };
     }
 
@@ -276,12 +286,12 @@ export const addSharedUsers = async (
     ]));
     const foundUsersByEmail = await User.find({ email: { $in: permissionEmails } });
     const foundEmailSet: Record<string, boolean> = Object.fromEntries(foundUsersByEmail.map(user => [user.email, true]));
-    const permissionsByIdFromEmail: IWhiteboardUserPermission[] = foundUsersByEmail.map(user => ({
+    const permissionsByIdFromEmail: IWhiteboardUserPermissionById<Types.ObjectId>[] = foundUsersByEmail.map(user => ({
       type: 'user',
       user: user._id,
       permission: emailsToPermissions[user.email].permission,
     }));
-    const finalEmailPermissions : IWhiteboardUserPermission[] = permissionsByEmail.filter(perm => !(perm.email in foundEmailSet));
+    const finalEmailPermissions : IWhiteboardUserPermissionByEmail[] = permissionsByEmail.filter(perm => !(perm.email in foundEmailSet));
     const finalPermissions = [
       ...permissionsById,
       ...permissionsByIdFromEmail,
@@ -290,13 +300,14 @@ export const addSharedUsers = async (
 
     if (finalPermissions.length > 0) {
       // fully replace old permissions
-      whiteboard.shared_users = finalPermissions;
+      whiteboard.set('shared_users', finalPermissions);
 
-      await whiteboard.save();
+      await whiteboard.save()
+        .then(wb => wb.populateAttribs());
 
       return ({
         status: "success",
-        whiteboard: whiteboard
+        whiteboard,
       });
     } else {
       // Trivial success: return true

@@ -17,7 +17,7 @@ import {
 
 import {
   Whiteboard,
-  type IWhiteboardAttribView,
+  type IWhiteboard,
   type IWhiteboardPermissionEnum,
 } from '../models/Whiteboard';
 
@@ -175,7 +175,7 @@ export type GetSharedWhiteboardsByUserRes =
   | { status: 'server_error'; }
   | { status: 'user_not_found'; }
   | { status: 'bad_request'; message: string; }
-  | { status: 'ok'; whiteboards: IWhiteboardAttribView[]; }
+  | { status: 'ok'; whiteboards: IWhiteboard<IUser>[]; }
 ;
 
 export const getSharedWhiteboardsByUser = async (
@@ -213,12 +213,12 @@ export const getSharedWhiteboardsByUser = async (
       }
     });
 
-    const whiteboards = await Whiteboard.findAttribViews(query);
+    const whiteboards = await Whiteboard.findAttribs(query);
 
     // success
     return ({
       status: 'ok',
-      whiteboards
+      whiteboards,
     });
   } catch (e: any) {
     console.error(

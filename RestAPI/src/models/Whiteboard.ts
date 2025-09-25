@@ -7,12 +7,14 @@ import {
 } from "mongoose";
 
 import type {
-  DocumentBase,
-  DocumentViewMethods
+  DocumentVirtualBase,
+  DocumentViewMethods,
+  ViewDocument,
 } from './Model';
 
 import {
   type IUser,
+  type IUserPublicView,
 } from './User';
 
 export type WhiteboardIdType = Types.ObjectId;
@@ -48,11 +50,15 @@ export type IShapeAttribView = IShapeDocument;
 
 export type IShape =
   & IShapeDocument
-  & DocumentViewMethods<IShapePublicView, IShapeAttribView>
-  & Document
+  & DocumentViewMethods<IShape, IShapePublicView, IShapeAttribView>
+  & Document <Types.ObjectId>
 ;
 
-export const shapeSchema = new Schema<IShape>(
+export type IShapeVirtual = DocumentVirtualBase;
+
+export type ShapeModelType = Model<IShapeDocument, {}, {}, IShapeVirtual>;
+
+export const shapeSchema = new Schema<IShape, ShapeModelType, {}, {}, IShapeVirtual>(
   // -- fields
   {
     canvas_id: { type: Schema.Types.ObjectId, ref: 'Canvas', required: true },
@@ -68,8 +74,7 @@ export const shapeSchema = new Schema<IShape>(
     },
     toJSON: {
       virtuals: false,
-      transform: (_, ret) => {
-        ret.id = ret._id;
+      transform: (_, ret: Partial<IShape>) => {
         delete ret._id;
 
         return ret;
@@ -80,11 +85,11 @@ export const shapeSchema = new Schema<IShape>(
     methods: {
       toPublicView() {
         // -- no fields to hide
-        return this;
+        return this.toJSON();
       },
       toAttribView() {
         // -- no vector fields
-        return this;
+        return this.toJSON();
       }
     },
     // -- static methods
@@ -102,7 +107,7 @@ shapeSchema.virtual('id').get(function() {
 
 export const Shape = model<IShape>("Shape", shapeSchema, "shapes");
 
-export interface ICanvasModel {
+export interface ICanvasModel <UserType> {
   name: string;
   width: number;
   height: number;
@@ -110,22 +115,34 @@ export interface ICanvasModel {
   time_last_modified: Date;
 
   // -- vector fields: exclude from attribute view
-  allowed_users: IUser[];  // references to User
-  shapes: IShape[];
+  allowed_users: UserType[];  // references to User
 }
 
-export interface ICanvasDocument extends ICanvasModel {
+export interface ICanvasDocument <UserType> extends ICanvasModel <UserType> {
   // reference to parent whiteboard
   whiteboard_id: Types.ObjectId;
 }
 
+// -- Canvas as Mongo document
+export type ICanvas <UserType> =
+  & ICanvasDocument <UserType>
+  & DocumentViewMethods<ICanvas <IUser>, ICanvasPublicView, ICanvasAttribView>
+  & Document <Types.ObjectId>
+;
+
+export interface ICanvasVirtual <ShapeType> extends DocumentVirtualBase {
+  shapes: ShapeType[];
+}
+
+export type ICanvasFull = ICanvas<IUser> & ICanvasVirtual<IShape>;
+
+export type CanvasModelType = Model<ICanvasDocument <Types.ObjectId>, {}, {}, ICanvasVirtual <Types.ObjectId>>;
+
 type CanvasVectorFields = 
-  | "allowed_users"
   | "shapes"
 ;
 
 const CANVAS_VECTOR_FIELDS = [
-  "allowed_users",
   "shapes"
 ];
 
@@ -133,28 +150,20 @@ const CANVAS_VECTOR_FIELDS = [
 //
 // =============================================================================
 
-export type ICanvasPublicView = ICanvasDocument;
+export type ICanvasPublicView = ViewDocument <ICanvasDocument <IUserPublicView> & ICanvasVirtual<IShapePublicView>>;
 
 export type ICanvasAttribView = Omit<ICanvasPublicView, CanvasVectorFields>;
 
-// -- Canvas as Mongo document
-export type ICanvas =
-  & ICanvasDocument
-  & DocumentViewMethods<ICanvasPublicView, ICanvasAttribView>
-  & Document
-;
+const CANVAS_POP_FIELDS_ATTRIBS = [
+  'allowed_users',
+];
 
-const canvasToAttribView = (canvas: ICanvasDocument): ICanvasAttribView => {
-  const {
-    allowed_users: _allowed_users,
-    shapes: _shapes,
-    ...out
-  } = canvas;
+const CANVAS_POP_FIELDS_FULL = [
+  ...CANVAS_POP_FIELDS_ATTRIBS,
+  'shapes',
+];
 
-  return out;
-};
-
-export const canvasSchema = new Schema<ICanvas>(
+export const canvasSchema = new Schema<ICanvas <Types.ObjectId>, CanvasModelType, {}, {}, ICanvasVirtual <Types.ObjectId>>(
   // -- fields
   {
     whiteboard_id: { type: Schema.Types.ObjectId, ref: 'Whiteboard', required: true },
@@ -173,8 +182,7 @@ export const canvasSchema = new Schema<ICanvas>(
     },
     toJSON: {
       virtuals: false,
-      transform: (_, ret) => {
-        ret.id = ret._id;
+      transform: (_, ret: Partial<ICanvas <Types.ObjectId>>) => {
         delete ret._id;
 
         return ret;
@@ -182,11 +190,45 @@ export const canvasSchema = new Schema<ICanvas>(
     },
     // -- instance methods
     methods: {
+      async populateAttribs(): Promise<ICanvas <IUser>> {
+        await this.populate(CANVAS_POP_FIELDS_ATTRIBS);
+        return this as unknown as ICanvas <IUser>;
+      },
+      async populateFull(): Promise<ICanvas <IUser>> {
+        await this.populate(CANVAS_POP_FIELDS_FULL);
+        return this as unknown as ICanvas <IUser>;
+      },
       toPublicView(): ICanvasPublicView {
-        return this.toObject({ virtuals: true });
+        const obj = this.toObject({ virtuals: true });
+
+        const {
+          allowed_users: _allowed_users,
+          shapes: _shapes,
+          ...fields
+        } = obj;
+
+        return ({
+          ...fields,
+          allowed_users: (this as unknown as ICanvas <IUser>)
+            .allowed_users.map(user => user.toPublicView()),
+          shapes: (this as unknown as ICanvas <IUser> & ICanvasVirtual<IShape>)
+            .shapes.map(shape => shape.toPublicView()),
+        });
       },
       toAttribView(): ICanvasAttribView {
-        return canvasToAttribView(this.toObject({ virtuals: true }));
+        const obj = this.toObject({ virtuals: true });
+
+        const {
+          allowed_users,
+          shapes,
+          ...fields
+        } = obj;
+
+        return ({
+          ...fields,
+          allowed_users: (this as unknown as ICanvas <IUser>)
+            .allowed_users.map(user => user.toAttribView()),
+        });
       }
     },
     // -- static methods
@@ -229,7 +271,7 @@ canvasSchema.virtual('shapes', {
 
 // ALWAYS specify collection name explicitly ("canvases"), otherwise it will
 // incorrectly be named "canvas".
-export const Canvas = model<ICanvas>("Canvas", canvasSchema, "canvases");
+export const Canvas = model<ICanvas<Types.ObjectId>>("Canvas", canvasSchema, "canvases");
 
 export type IWhiteboardPermissionEnum =
   | 'view'
@@ -241,9 +283,9 @@ export interface IWhiteboardUserPermissionBase {
   permission: IWhiteboardPermissionEnum;
 }
 
-export interface IWhiteboardUserPermissionById extends IWhiteboardUserPermissionBase {
+export interface IWhiteboardUserPermissionById <UserType> extends IWhiteboardUserPermissionBase {
   type: 'user';
-  user: Types.ObjectId;
+  user: UserType;
 }
 
 export interface IWhiteboardUserPermissionByEmail extends IWhiteboardUserPermissionBase {
@@ -251,12 +293,12 @@ export interface IWhiteboardUserPermissionByEmail extends IWhiteboardUserPermiss
   email: string;
 }
 
-export type IWhiteboardUserPermission = 
-  | IWhiteboardUserPermissionById
+export type IWhiteboardUserPermission <UserType> = 
+  | IWhiteboardUserPermissionById <UserType>
   | IWhiteboardUserPermissionByEmail
 ;
 
-const whiteboardUserPermissionSchema = new Schema<IWhiteboardUserPermission>(
+const whiteboardUserPermissionSchema = new Schema<IWhiteboardUserPermission <Types.ObjectId>>(
   {
     permission: { type: String, enum: ['view', 'edit', 'own'], required: true },
   },
@@ -265,59 +307,85 @@ const whiteboardUserPermissionSchema = new Schema<IWhiteboardUserPermission>(
   }
 );
 
-export interface IWhiteboardModel {
+const whiteboardUserPermissionToPublicView = (perm: IWhiteboardUserPermission <IUser>) => {
+  switch (perm.type) {
+    case 'user':
+      return ({
+        ...perm,
+        user: perm.user.toPublicView()
+      });
+    case 'email':
+      // -- no sensitive fields
+      return perm;
+    default:
+      throw new Error(`Invalid permission: ${perm}`);
+  }
+};
+
+export interface IWhiteboardModel <UserType> {
   name: string;
   time_created: Date;
   owner: IUser;        // reference to User
 
   // -- vector fields: exclude from attribute view
-  canvases: ICanvas[];
-  shared_users: IWhiteboardUserPermission[];
+  shared_users: IWhiteboardUserPermission<UserType>[];
 }
+
+export type IWhiteboard <UserType> =
+  & IWhiteboardDocument <UserType>
+  & DocumentViewMethods<IWhiteboard <IUser>, IWhiteboardPublicView, IWhiteboardAttribView>
+  & Document <Types.ObjectId>
+;
+
+export interface IWhiteboardVirtual <CanvasType> extends DocumentVirtualBase {
+  canvases: CanvasType[];
+}
+
+export type IWhiteboardFull = IWhiteboard<IUser> & IWhiteboardVirtual<ICanvasFull>;
 
 type WhiteboardVectorFields = 
   | "canvases"
-  | "shared_users"
 ;
 
 const WHITEBOARD_VECTOR_FIELDS = [
   "canvases",
 ];
 
+const WHITEBOARD_POP_FIELDS_ATTRIBS = [
+  'owner',
+  {
+    path: 'shared_users',
+    populate: [
+      'user',
+    ],
+  },
+];
+
+const WHITEBOARD_POP_FIELDS_FULL = [
+  ...WHITEBOARD_POP_FIELDS_ATTRIBS,
+  {
+    path: 'canvases',
+    populate: CANVAS_POP_FIELDS_FULL,
+  },
+];
+
 // === Data Transfer Objects ===================================================
 //
 // =============================================================================
 
-export type IWhiteboardDocument = IWhiteboardModel & DocumentBase;
+export type IWhiteboardDocument <UserType> = IWhiteboardModel <UserType>;
 
-export type IWhiteboardPublicView = IWhiteboardDocument;
+export type IWhiteboardPublicView = ViewDocument<IWhiteboardDocument <IUser>>;
 
 export type IWhiteboardAttribView = Omit<IWhiteboardPublicView, WhiteboardVectorFields>;
 
-export type IWhiteboard =
-  & IWhiteboardDocument
-  & DocumentViewMethods<IWhiteboardPublicView, IWhiteboardAttribView>
-  & Document
-;
-
-export interface IWhiteboardSchema extends Model<IWhiteboard> {
-  findFull: (options: Record<string, any>) => Promise<IWhiteboard[]>;
-  findAttribViews: (options: Record<string, any>) => Promise<IWhiteboardAttribView[]>;
-  findCanvasesByWhiteboardId: (whiteboardId: Types.ObjectId) => Promise<ICanvasAttribView[] | null>;
-  findSharedUsersByWhiteboardId: (whiteboardId: Types.ObjectId) => Promise<IWhiteboardUserPermission[] | null>;
+export interface IWhiteboardSchema <UserType> extends Model<IWhiteboard<UserType>, {}, {}, IWhiteboardVirtual<UserType>> {
+  findFull: (options: Record<string, any>) => Promise<IWhiteboard <IUser>[]>;
+  findAttribs: (options: Record<string, any>) => Promise<IWhiteboard<IUser>[]>;
+  findSharedUsersByWhiteboardId: (whiteboardId: Types.ObjectId) => Promise<IWhiteboardUserPermission<IUser>[] | null>;
 }
 
-const whiteboardToAttribView = (wb: IWhiteboardDocument): IWhiteboardAttribView => {
-  const {
-    canvases,
-    shared_users,
-    ...out
-  } = wb;
-
-  return out;
-};
-
-const whiteboardSchema = new Schema<IWhiteboard, IWhiteboardSchema>(
+const whiteboardSchema = new Schema<IWhiteboard<Types.ObjectId>, IWhiteboardSchema<Types.ObjectId>, {}, {}, IWhiteboardVirtual <Types.ObjectId>>(
   {
     name: { type: String, required: true },
     time_created: { type: Date, default: Date.now },
@@ -330,8 +398,7 @@ const whiteboardSchema = new Schema<IWhiteboard, IWhiteboardSchema>(
     },
     toJSON: {
       virtuals: true,
-      transform: (_, ret: IWhiteboard) => {
-        ret.id = ret._id;
+      transform: (_, ret: Partial<IWhiteboard<Types.ObjectId>>) => {
         delete ret._id;
 
         return ret;
@@ -339,66 +406,67 @@ const whiteboardSchema = new Schema<IWhiteboard, IWhiteboardSchema>(
     },
     // -- instance methods
     methods: {
+      async populateAttribs(): Promise<IWhiteboard <IUser>> {
+        await this.populate(WHITEBOARD_POP_FIELDS_ATTRIBS);
+        return this as unknown as IWhiteboard <IUser>;
+      },
+      async populateFull(): Promise<IWhiteboard <IUser>> {
+        await this.populate(WHITEBOARD_POP_FIELDS_FULL);
+        return this as unknown as IWhiteboard <IUser>;
+      },
       toPublicView() {
-        return this.toObject({ virtuals: true });
+        const obj = this.toObject({ virtuals: true });
+        const {
+          _id,
+          owner: _owner,
+          shared_users: _shared_users,
+          canvases: _canvases,
+          ...fields
+        } = obj;
+
+        return ({
+          ...fields,
+          owner: this.owner.toPublicView(),
+          shared_users: (this as unknown as IWhiteboard <IUser>)
+            .shared_users
+            .map(perm => whiteboardUserPermissionToPublicView(perm)),
+          canvases: (this as unknown as IWhiteboardFull).canvases.map(canvas => canvas.toPublicView()),
+        });
       },
       toAttribView() {
-        return whiteboardToAttribView(this.toObject({ virtuals: true }));
+        const obj = this.toObject({ virtuals: true });
+        const {
+          _id,
+          owner: _owner,
+          shared_users: _shared_users,
+          canvases: _canvases,
+          ...fields
+        } = obj;
+
+        return ({
+          ...fields,
+          owner: this.owner.toAttribView(),
+          shared_users: (this as unknown as IWhiteboard <IUser>)
+            .shared_users
+            .map(perm => whiteboardUserPermissionToPublicView(perm)),
+        });
       }
     },
     // -- static methods
     statics: {
       findFull(options: Record<string, any>) {
         return this.find(options)
-          .populate({
-            path: 'owner',
-          })
-          .populate({
-            path: 'canvases',
-            populate: [
-              {
-                path: 'shapes',
-              },
-              {
-                path: 'allowed_users',
-              },
-            ],
-          });
+          .populate(WHITEBOARD_POP_FIELDS_FULL);
       },
-      findAttribViews(options: Record<string, any>): Promise<IWhiteboardAttribView[]> {
+      findAttribs(options: Record<string, any>) {
         return this.find(options)
-          .select(WHITEBOARD_VECTOR_FIELDS
-            .map(field => `-${field}`)
-            .join(' ')
-          )
-          .populate([
-            {
-              path: 'owner',
-            },
-            {
-              path: 'shared_users',
-              populate: [
-                {
-                  path: 'user',
-                },
-              ]
-            }
-          ]);
+          .select(WHITEBOARD_VECTOR_FIELDS.map(field => `-${field}`).join(' '))
+          .populate(WHITEBOARD_POP_FIELDS_ATTRIBS);
       },
-      async findCanvasesByWhiteboardId(whiteboardId: Types.ObjectId): Promise<ICanvasAttribView[] | null> {
-        const res : Partial<IWhiteboard> | null = await this.findById(whiteboardId)
-          .populate('canvases')
-          .select("canvases");
-
-        if ((! res) || (! Array.isArray(res.canvases))) {
-          return null;
-        } else {
-          return res.canvases;
-        }
-      },
-      async findSharedUsersByWhiteboardId(whiteboardId: Types.ObjectId): Promise<IWhiteboardUserPermission[] | null> {
-        const res : Partial<IWhiteboard> | null = await this.findById(whiteboardId)
-          .select("shared_users");
+      async findSharedUsersByWhiteboardId(whiteboardId: Types.ObjectId): Promise<IWhiteboardUserPermission<IUser>[] | null> {
+        const res : Partial<IWhiteboard <IUser>> | null = await this.findById(whiteboardId)
+          .select("shared_users")
+          .then(wb => wb?.populateAttribs() || null);
 
         if ((! res) || (! Array.isArray(res.shared_users))) {
           return null;
@@ -431,4 +499,4 @@ whiteboardSchema.virtual('canvases', {
   justOne: false,
 });
 
-export const Whiteboard = model<IWhiteboard, IWhiteboardSchema>("Whiteboard", whiteboardSchema, "whiteboards");
+export const Whiteboard = model<IWhiteboard <Types.ObjectId>, IWhiteboardSchema <Types.ObjectId>>("Whiteboard", whiteboardSchema, "whiteboards");
