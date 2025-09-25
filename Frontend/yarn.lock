@@ -2121,6 +2121,13 @@ react-dom@^19.1.0:
   dependencies:
     scheduler "^0.26.0"
 
+react-konva-utils@^2.0.0:
+  version "2.0.0"
+  resolved "https://registry.yarnpkg.com/react-konva-utils/-/react-konva-utils-2.0.0.tgz#a25e9945152c2c30301c6de8e441ebaab4dde4b3"
+  integrity sha512-pOb+TF13gFAjfPmUqsE42J4GJ+xhUS97qS32p0NRTqSeqtamWyKJikGa1XeVvV5yItu9SWDo7onL79GGPG96HQ==
+  dependencies:
+    use-image "^1.1.1"
+
 react-konva@^19.0.7:
   version "19.0.7"
   resolved "https://registry.npmjs.org/react-konva/-/react-konva-19.0.7.tgz"
@@ -2395,6 +2402,11 @@ use-callback-ref@^1.3.3:
   integrity sha512-jQL3lRnocaFtu3V00JToYz/4QkNWswxijDaCVNZRiRTO3HQDLsdu1ZtmIUvV4yPp+rvWm5j0y0TG/S61cuijTg==
   dependencies:
     tslib "^2.0.0"
+
+use-image@^1.1.1:
+  version "1.1.4"
+  resolved "https://registry.yarnpkg.com/use-image/-/use-image-1.1.4.tgz#b67ce2b513214f187e68c1cdab5e44b244ebedd9"
+  integrity sha512-P+swhszzHHgEb2X2yQ+vQNPCq/8Ks3hyfdXAVN133pvnvK7UK++bUaZUa5E+A3S02Mw8xOCBr9O6CLhk2fjrWA==
 
 use-sidecar@^1.1.3:
   version "1.1.3"
