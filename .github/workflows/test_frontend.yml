@@ -10,11 +10,18 @@ on:
   pull_request:
     on:
       - opened
+  workflow_call:
+    secrets:
+      CONTAINER_REGISTRY_URI:
+        description: "The URI from which to pull base images."
+        required: false
 jobs:
   test_lint_frontend:
     # run linter
     name: Test Lint Frontend
     runs-on: ubuntu-22.04
+    env:
+      WHITEBOARD_EDITOR_CONTAINER_REGISTRY_URI: ${{ secrets.CONTAINER_REGISTRY_URI }}
     steps:
       - name: Checkout repository
         id: checkout-repo

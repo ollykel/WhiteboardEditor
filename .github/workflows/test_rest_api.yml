@@ -10,12 +10,19 @@ on:
   pull_request:
     on:
       - opened
+  workflow_call:
+    secrets:
+      CONTAINER_REGISTRY_URI:
+        description: "The URI from which to pull base images."
+        required: false
 
 jobs:
   run_supertest_rest_api:
     # make sure image builds
     name: Run Supertest on Rest API
     runs-on: ubuntu-24.04
+    env:
+      WHITEBOARD_EDITOR_CONTAINER_REGISTRY_URI: ${{ secrets.CONTAINER_REGISTRY_URI }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5

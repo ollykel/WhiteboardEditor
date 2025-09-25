@@ -10,6 +10,12 @@ on:
   pull_request:
     on:
       - opened
+  workflow_call:
+    secrets:
+      CONTAINER_REGISTRY_URI:
+        description: "The URI from which to pull base images."
+        required: false
+
 jobs:
   run_cargo_tests_web_socket_server:
     # Build web_socket_server_builder and run cargo tests within
@@ -19,6 +25,8 @@ jobs:
     permissions:
       contents: read
       packages: write
+    env:
+      WHITEBOARD_EDITOR_CONTAINER_REGISTRY_URI: ${{ secrets.CONTAINER_REGISTRY_URI }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
