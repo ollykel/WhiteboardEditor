@@ -1,8 +1,9 @@
 import { useRef, useState, useEffect } from "react";
 
-import { Text } from 'react-konva';
+import { Text, Transformer } from 'react-konva';
 
 import Konva from "konva";
+import TextEditor from "./TextEditor";
 
 interface EditableTextProps {
   fontSize: number;
@@ -33,6 +34,10 @@ const EditableText = ({
   const textRef = useRef<Konva.Text | null>(null);
   const trRef = useRef<Konva.Transformer | null>(null);
 
+  if (!textRef.current) {
+    return;
+  }
+
   useEffect(() => {
     if (trRef.current && textRef.current) {
       trRef.current.nodes([textRef.current]);
@@ -49,8 +54,9 @@ const EditableText = ({
 
   const handleTransform = () => {
     const node = textRef.current;
+    if (!node) return;
     const scaleX = node?.scaleX();
-    const newWidth = node?.width() * scaleX;
+    const newWidth = node.width() * scaleX;
     setTextWidth(newWidth);
     node.setAttrs({
       width: newWidth,
@@ -59,20 +65,39 @@ const EditableText = ({
   }
 
   return (
-    <Text
-      text={text}
-      fontSize={fontSize}
-      color={color}
-      x={x}
-      y={y}
-      width={textWidth}
-      height={height}
-      draggable={draggable}
-      onDblClick={handleTextDblClick}
-      // onDblTap={handleTextDblClick}
-      // onTransform={handleTransform}
-      // visible={!isEditing}
-    />
+    <div>
+      <Text
+        text={text}
+        fontSize={fontSize}
+        color={color}
+        x={x}
+        y={y}
+        width={textWidth}
+        height={height}
+        draggable={draggable}
+        onDblClick={handleTextDblClick}
+        onDblTap={handleTextDblClick}
+        onTransform={handleTransform}
+        visible={!isEditing}
+      />
+      {isEditing && (
+        <TextEditor
+          textNode={textRef.current}
+          onChange={handleTextChange}
+          onClose={() => setIsEditing(false)}
+        />
+      )} 
+      {!isEditing && (
+        <Transformer
+          ref={trRef}
+          enabledAnchors={["middle-left", "middle-right"]}
+          boundBoxFunc={(_oldBox, newBox) => ({
+            ...newBox,
+            width: Math.max(30, newBox.width),
+          })}
+        />
+      )}
+    </div>
   );
 }
 
