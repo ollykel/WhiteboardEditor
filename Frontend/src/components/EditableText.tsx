@@ -1,6 +1,8 @@
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 
-import { Text } from 'react-konva';
+import { Text, Transformer } from 'react-konva';
+
+import Konva from "konva";
 
 interface EditableTextProps {
   fontSize: number;
@@ -28,8 +30,8 @@ const EditableText = ({
   const [text, setText] = useState("Enter Text Here");
   const [isEditing, setIsEditing] = useState(false);
   const [textWidth, setTextWidth] = useState(width);
-  const textRef = useRef(null);
-  const trRef = useRef(null);
+  const textRef = useRef<Konva.Text | null>(null);
+  const trRef = useRef<Konva.Transformer | null>(null);
 
   useEffect(() => {
     if (trRef.current && textRef.current) {
