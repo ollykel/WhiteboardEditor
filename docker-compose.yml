@@ -1,17 +1,21 @@
 name: whiteboard_editor
 
+x-anchors:
+  common_build_settings: &common_build_settings
+    cache_from:
+      - type=local,src=${DOCKER_CACHE-${HOME}/.cache/docker}
+    cache_to:
+      - type=local,dest=${DOCKER_CACHE-${HOME}/.cache/docker}
+    args:
+      CONTAINER_REGISTRY_URI: ${WHITEBOARD_EDITOR_CONTAINER_REGISTRY_URI-docker.io}
+
 services:
   reverse_proxy:
     # Maps urls to ports to various services.
     # Main entry point for external clients.
     build:
       context: ReverseProxy
-      cache_from:
-        - type=local,src=${DOCKER_CACHE-${HOME}/.cache/docker}
-      cache_to:
-        - type=local,dest=${DOCKER_CACHE-${HOME}/.cache/docker}
-      args:
-        CONTAINER_REGISTRY_URI: ${WHITEBOARD_EDITOR_CONTAINER_REGISTRY_URI-docker.io}
+      <<: *common_build_settings
     image: ${WHITEBOARD_EDITOR_CR_URI-whiteboard_editor}/reverse_proxy:${WHITEBOARD_EDITOR_TAG-latest}
     ports:
       - ${WHITEBOARD_EDITOR_HTTP_PORT-8080}:8080
@@ -36,12 +40,7 @@ services:
     # Built using Vite, served with nginx
     build:
       context: Frontend
-      cache_from:
-        - type=local,src=${DOCKER_CACHE-${HOME}/.cache/docker}
-      cache_to:
-        - type=local,dest=${DOCKER_CACHE-${HOME}/.cache/docker}
-      args:
-        CONTAINER_REGISTRY_URI: ${WHITEBOARD_EDITOR_CONTAINER_REGISTRY_URI-docker.io}
+      <<: *common_build_settings
     image: ${WHITEBOARD_EDITOR_CR_URI-whiteboard_editor}/frontend:${WHITEBOARD_EDITOR_TAG-latest}
     depends_on:
       - web_socket_server
@@ -54,12 +53,7 @@ services:
     build:
       context: WebSocketServer
       target: builder
-      cache_from:
-        - type=local,src=${DOCKER_CACHE-${HOME}/.cache/docker}
-      cache_to:
-        - type=local,dest=${DOCKER_CACHE-${HOME}/.cache/docker}
-      args:
-        CONTAINER_REGISTRY_URI: ${WHITEBOARD_EDITOR_CONTAINER_REGISTRY_URI-docker.io}
+      <<: *common_build_settings
     image: ${WHITEBOARD_EDITOR_CR_URI-whiteboard_editor}/web_socket_server_builder:${WHITEBOARD_EDITOR_TAG-latest}
 
   web_socket_server:
@@ -70,12 +64,7 @@ services:
     build:
       context: WebSocketServer
       target: final
-      cache_from:
-        - type=local,src=${DOCKER_CACHE-${HOME}/.cache/docker}
-      cache_to:
-        - type=local,dest=${DOCKER_CACHE-${HOME}/.cache/docker}
-      args:
-        CONTAINER_REGISTRY_URI: ${WHITEBOARD_EDITOR_CONTAINER_REGISTRY_URI-docker.io}
+      <<: *common_build_settings
     image: ${WHITEBOARD_EDITOR_CR_URI-whiteboard_editor}/web_socket_server:${WHITEBOARD_EDITOR_TAG-latest}
     environment:
       # Make sure to set MONGO_URI in .env
@@ -88,12 +77,7 @@ services:
     # Handles RESTful operations on database
     build:
       context: RestAPI
-      cache_from:
-        - type=local,src=${DOCKER_CACHE-${HOME}/.cache/docker}
-      cache_to:
-        - type=local,dest=${DOCKER_CACHE-${HOME}/.cache/docker}
-      args:
-        CONTAINER_REGISTRY_URI: ${WHITEBOARD_EDITOR_CONTAINER_REGISTRY_URI-docker.io}
+      <<: *common_build_settings
     image: ${WHITEBOARD_EDITOR_CR_URI-whiteboard_editor}/rest_api:${WHITEBOARD_EDITOR_TAG-latest}
     environment:
       # make sure to set values in .env
@@ -114,7 +98,7 @@ services:
     #
     # To access during testing, set the value of WHITEBOARD_EDITOR_MONGO_URI to
     # mongodb://test_db:27017/testdb
-    image: mongo:8.0
+    image: ${WHITEBOARD_EDITOR_CONTAINER_REGISTRY_URI-docker.io}/mongo:8.0
     volumes:
       # initialization script
       - ./TestDatabase/init-db.js:/docker-entrypoint-initdb.d/init-db.js:ro
