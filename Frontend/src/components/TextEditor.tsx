@@ -42,11 +42,14 @@ const TextEditor = ({ textNode, onClose, onChange }: TextEditorProps) => {
   textarea.style.background = "none";
   textarea.style.outline = "none";
   textarea.style.resize = "none";
-  textarea.style.lineHeight = textNode.lineHeight();
+  textarea.style.lineHeight = String(textNode.lineHeight());
   textarea.style.fontFamily = textNode.fontFamily();
   textarea.style.transformOrigin = "left top";
   textarea.style.textAlign = textNode.align();
-  textarea.style.color = textNode.fill();
+  const fill = textNode.fill();
+  if (typeof fill === "string") {
+    textarea.style.color = fill;
+  }
 
   const rotation = textNode.rotation();
   let transform = "";
