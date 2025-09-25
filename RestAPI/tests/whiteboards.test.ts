@@ -11,6 +11,7 @@ import type {
 import type {
   IWhiteboardAttribView,
   IWhiteboardUserPermission,
+  IWhiteboardUserPermissionModel,
 } from '../src/models/Whiteboard';
 
 const MONGO_URI = 'mongodb://test_db:27017/testdb';
@@ -56,7 +57,7 @@ const validateUser = (user: IUser, fieldValues: {} | any[]) => {
 
 const validateWhiteboardAttribView = (
   whiteboard: IWhiteboardAttribView,
-  fieldValues: Partial<IWhiteboardAttribView> | any[]
+  fieldValues: Record<string, any> | any[]
 ) => {
   expect(whiteboard).toHaveProperty('id');
   expect(whiteboard).not.toHaveProperty('_id');
@@ -82,6 +83,7 @@ const validateWhiteboardAttribView = (
         expect(typeof perm.email).toEqual('string');
         break;
       default:
+        console.error('Unrecognized permission type:', perm);
         throw new Error(`Unrecognized permission type: ${perm}`);
     }
   }
@@ -132,8 +134,6 @@ describe("Whiteboards API", () => {
 
     const targetUrl = `/api/v1/whiteboards/${whiteboard._id.toString()}`;
 
-    console.log('Target url:', targetUrl);
-
     // Generate signed JWT
     const authToken = jwt.sign(
       { sub: owner._id.toString() },   // sub = subject claim
@@ -148,32 +148,12 @@ describe("Whiteboards API", () => {
       .send()
       .expect(200);
 
-    expect(wbRes.body).toHaveProperty('id');
-    expect(wbRes.body).not.toHaveProperty('_id');
-    expect(wbRes.body).toHaveProperty('name');
-    expect(wbRes.body).toHaveProperty('time_created');
-    expect(wbRes.body).toHaveProperty('shared_users');
-    expect(Array.isArray(wbRes.body.shared_users)).toBe(true);
-
-    // -- check that owner is present and validly formatted as a user
-    expect(wbRes.body).toHaveProperty('owner');
-    validateUser(wbRes.body.owner, ({
-      username: 'alice',
-      email: 'alice@example.com',
-    }));
-
-    // check that single canvas is present
-    expect(wbRes.body).toHaveProperty('canvases');
-    expect(Array.isArray(wbRes.body.canvases)).toBe(true);
-    expect(wbRes.body.canvases.length).toBe(1);
-
-    const sharedUsersLimited = wbRes.body.shared_users.map((perm: any) => {
-      const { type, user, permission } = perm;
-
-      return ({ type, user: user.toString(), permission });
+    validateWhiteboardAttribView(wbRes.body, {
+      owner: {
+        username: 'alice',
+        email: 'alice@example.com',
+      },
     });
-
-    expect(sharedUsersLimited).toEqual([]);
   });
 
   it("should not create a new whiteboard for an unauthenticated user", async () => {
@@ -228,8 +208,7 @@ describe("Whiteboards API", () => {
 
     const whiteboard = await whiteboardCollection.findOne({ name: "Project Alpha"});
     const owner = await userCollection.findOne({ username: 'alice' });
-    const sharee = await userCollection.findOne({ username: 'bob' })
-      .then(user => user?.populateAttribs() || null);
+    const sharee = await userCollection.findOne({ username: 'bob' });
 
     expect(jwtSecret).not.toBeNull();
     expect(owner).not.toBeNull();
@@ -242,8 +221,6 @@ describe("Whiteboards API", () => {
     }
 
     const targetUrl = `/api/v1/whiteboards/${whiteboard._id}/shared_users`;
-
-    console.log('Target url:', targetUrl);
 
     // Generate signed JWT
     const authToken = jwt.sign(
@@ -271,8 +248,12 @@ describe("Whiteboards API", () => {
         shared_users: [
           {
             type: 'user',
-            user: sharee,
-            permission: 'view'
+            user: ({
+              id: sharee._id.toString(),
+              username: sharee.username,
+              email: sharee.email,
+            }),
+            permission: 'view',
           }
         ]
       });
@@ -420,7 +401,7 @@ describe("Whiteboards API", () => {
       { expiresIn: 999999999 }
     );
 
-    const userPermissions: IWhiteboardUserPermission<any>[] = [{
+    const userPermissions: IWhiteboardUserPermissionModel<any>[] = [{
       type: 'email',
       // no corresponding user in Users collection
       email: 'noexist@example.com',
@@ -483,7 +464,11 @@ describe("Whiteboards API", () => {
 
     const userPermissionsExpect = [{
       type: 'user',
-      user: targetUser._id.toString(),
+      user: ({
+        id: targetUser._id.toString(),
+        username: targetUser.username,
+        email: targetUser.email,
+      }),
       permission: 'view'
     }];
 

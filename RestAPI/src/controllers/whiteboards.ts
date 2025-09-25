@@ -12,6 +12,7 @@ import {
   type WhiteboardIdType,
   type IWhiteboardPermissionEnum,
   type IWhiteboardUserPermission,
+  type IWhiteboardUserPermissionModel,
   type IWhiteboardUserPermissionById,
   type IWhiteboardUserPermissionByEmail,
 } from '../models/Whiteboard';
@@ -53,14 +54,14 @@ export const getWhiteboardById = async (whiteboardId: string): Promise<GetWhiteb
       // track whether we change any email-based permissions to user-based
       // permissions
       let haveSharedUsersChanged = false;
-      const sharedUsers: IWhiteboardUserPermission<Types.ObjectId>[] = await Promise.all(whiteboard.shared_users
-          .map(async (perm: IWhiteboardUserPermission<IUser>) => {
+      const sharedUsers: IWhiteboardUserPermissionModel<Types.ObjectId>[] = await Promise.all(whiteboard.shared_users
+          .map(async perm => {
         switch (perm.type) {
           case 'user':
             return ({
               ...perm,
               user: perm.user._id,
-            });
+            }) ;
           case 'email':
             // check if this email now belongs to a registered user
             const user = await User.findOne({ email: perm.email });
@@ -141,10 +142,10 @@ export const createWhiteboard = async (
     console.log("createWhiteboard req.body: ", req.body);
     
     // Give owner 'own' permission for shared_users
-    const ownerPermission: IWhiteboardUserPermission <Types.ObjectId> = {
+    const ownerPermission: IWhiteboardUserPermissionModel<Types.ObjectId> = {
       type: 'user',
       user: ownerId,
-      permission: 'own'
+      permission: 'own',
     };
 
     // Get collaborator emails if provided
@@ -157,7 +158,7 @@ export const createWhiteboard = async (
     const foundEmails = new Set(foundUsers.map(u => u.email));
 
     // Permissions for users that exist in DB
-    const collarboratorPermissionsFromUsers: IWhiteboardUserPermission <Types.ObjectId>[] =
+    const collarboratorPermissionsFromUsers: IWhiteboardUserPermissionModel <Types.ObjectId>[] =
       foundUsers.map(user => ({
         type: 'user',
         user: user._id,
@@ -188,7 +189,8 @@ export const createWhiteboard = async (
 
     console.log('Attempting to create new whiteboard:', whiteboard);
 
-    const whiteboardOut = await whiteboard.save();
+    const whiteboardOut = await whiteboard.save()
+      .then(wb => wb.populateFull());
 
     // initialize every new whiteboard with a single empty canvas
     const defaultCanvas = new Canvas({
@@ -201,13 +203,9 @@ export const createWhiteboard = async (
     });
 
     await defaultCanvas.save();
-    await whiteboardOut.populate([
-      'owner',
-      'shared_users',
-      'canvases',
-    ]);
+    await whiteboardOut.populateFull();
     
-    res.status(201).json(whiteboardOut);
+    res.status(201).json(whiteboardOut.toPublicView());
   } catch (err: any) {
     console.log('Server Error:', err);
     res.status(500).json({ message: "Unexpected server error" });

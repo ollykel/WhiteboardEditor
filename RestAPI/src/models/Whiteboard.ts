@@ -15,6 +15,7 @@ import type {
 import {
   type IUser,
   type IUserPublicView,
+  type IUserAttribView,
 } from './User';
 
 export type WhiteboardIdType = Types.ObjectId;
@@ -191,12 +192,10 @@ export const canvasSchema = new Schema<ICanvas <Types.ObjectId>, CanvasModelType
     // -- instance methods
     methods: {
       async populateAttribs(): Promise<ICanvas <IUser>> {
-        await this.populate(CANVAS_POP_FIELDS_ATTRIBS);
-        return this as unknown as ICanvas <IUser>;
+        return await this.populate(CANVAS_POP_FIELDS_ATTRIBS);
       },
       async populateFull(): Promise<ICanvas <IUser>> {
-        await this.populate(CANVAS_POP_FIELDS_FULL);
-        return this as unknown as ICanvas <IUser>;
+        return await this.populate(CANVAS_POP_FIELDS_FULL);
       },
       toPublicView(): ICanvasPublicView {
         const obj = this.toObject({ virtuals: true });
@@ -293,12 +292,28 @@ export interface IWhiteboardUserPermissionByEmail extends IWhiteboardUserPermiss
   email: string;
 }
 
-export type IWhiteboardUserPermission <UserType> = 
+export type IWhiteboardUserPermissionModel <UserType> = 
   | IWhiteboardUserPermissionById <UserType>
   | IWhiteboardUserPermissionByEmail
 ;
 
-const whiteboardUserPermissionSchema = new Schema<IWhiteboardUserPermission <Types.ObjectId>>(
+export type IWhiteboardUserPermissionPublicView = IWhiteboardUserPermissionModel<IUserPublicView>;
+
+export type IWhiteboardUserPermissionAttribView = IWhiteboardUserPermissionModel<IUserAttribView>;
+
+export type IWhiteboardUserPermission <UserType> =
+  & IWhiteboardUserPermissionModel<UserType>
+  & DocumentViewMethods<
+    IWhiteboardUserPermission<UserType>,
+    IWhiteboardUserPermissionPublicView,
+    IWhiteboardUserPermissionAttribView
+  >
+  & Document<Types.ObjectId>
+;
+
+export type WhiteboardUserPermissionModelType <UserType> = Model<IWhiteboardUserPermission<UserType>, {}, {}, {}>;
+
+const whiteboardUserPermissionSchema = new Schema<IWhiteboardUserPermission <Types.ObjectId>, WhiteboardUserPermissionModelType<Types.ObjectId>, {}, {}, {}>(
   {
     permission: { type: String, enum: ['view', 'edit', 'own'], required: true },
   },
@@ -306,21 +321,6 @@ const whiteboardUserPermissionSchema = new Schema<IWhiteboardUserPermission <Typ
     discriminatorKey: 'type',
   }
 );
-
-const whiteboardUserPermissionToPublicView = (perm: IWhiteboardUserPermission <IUser>) => {
-  switch (perm.type) {
-    case 'user':
-      return ({
-        ...perm,
-        user: perm.user.toPublicView()
-      });
-    case 'email':
-      // -- no sensitive fields
-      return perm;
-    default:
-      throw new Error(`Invalid permission: ${perm}`);
-  }
-};
 
 export interface IWhiteboardModel <UserType> {
   name: string;
@@ -429,7 +429,7 @@ const whiteboardSchema = new Schema<IWhiteboard<Types.ObjectId>, IWhiteboardSche
           owner: this.owner.toPublicView(),
           shared_users: (this as unknown as IWhiteboard <IUser>)
             .shared_users
-            .map(perm => whiteboardUserPermissionToPublicView(perm)),
+            .map(perm => perm.toPublicView()),
           canvases: (this as unknown as IWhiteboardFull).canvases.map(canvas => canvas.toPublicView()),
         });
       },
@@ -448,7 +448,7 @@ const whiteboardSchema = new Schema<IWhiteboard<Types.ObjectId>, IWhiteboardSche
           owner: this.owner.toAttribView(),
           shared_users: (this as unknown as IWhiteboard <IUser>)
             .shared_users
-            .map(perm => whiteboardUserPermissionToPublicView(perm)),
+            .map(perm => perm.toAttribView()),
         });
       }
     },
@@ -480,13 +480,87 @@ const whiteboardSchema = new Schema<IWhiteboard<Types.ObjectId>, IWhiteboardSche
 
 const sharedUsersArraySchema = whiteboardSchema.path('shared_users').schema;
 
-sharedUsersArraySchema.discriminator('user', new Schema({
-  user: { type: Schema.Types.ObjectId, ref: 'User', required: true },
-}));
+sharedUsersArraySchema.discriminator('user', new Schema<IWhiteboardUserPermissionById<Types.ObjectId>>(
+  {
+    user: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+  },
+  {
+    // -- serialization options
+    toObject: {
+      virtuals: true,
+    },
+    toJSON: {
+      virtuals: true,
+    },
+    // -- instance methods
+    methods: {
+      async populateAttribs(): Promise<IWhiteboardUserPermissionById<IUser>> {
+        return await this.populate([
+          'user',
+        ]);
+      },
+      async populateFull(): Promise<IWhiteboardUserPermissionById<IUser>> {
+        return await this.populate([
+          'user',
+        ]);
+      },
+      toAttribView(): IWhiteboardUserPermissionById<IUserAttribView> {
+        const obj = this.toObject({ virtuals: true });
+        const {
+          user: _user,
+          ...fields
+        } = obj;
 
-sharedUsersArraySchema.discriminator('email', new Schema({
-  email: { type: String, required: true },
-}));
+        return ({
+          ...fields,
+          user: (this as unknown as IWhiteboardUserPermissionById<IUser>).user.toAttribView(),
+        });
+      },
+      toPublicView(): IWhiteboardUserPermissionById<IUserPublicView> {
+        const obj = this.toObject({ virtuals: true });
+        const {
+          user: _user,
+          ...fields
+        } = obj;
+
+        return ({
+          ...fields,
+          user: (this as unknown as IWhiteboardUserPermissionById<IUser>).user.toPublicView(),
+        });
+      },
+    },
+  },
+));
+
+sharedUsersArraySchema.discriminator('email', new Schema<IWhiteboardUserPermissionByEmail>(
+  {
+    email: { type: String, required: true },
+  },
+  {
+    // -- serialization options
+    toObject: {
+      virtuals: true,
+    },
+    toJSON: {
+      virtuals: true,
+    },
+    // -- instance methods
+    methods: {
+      async populateAttribs(): Promise<IWhiteboardUserPermissionByEmail> {
+        return await this.populate([]);
+      },
+      async populateFull(): Promise<IWhiteboardUserPermissionByEmail> {
+        return await this.populate([]);
+      },
+      toAttribView(): IWhiteboardUserPermissionByEmail {
+        return this.toObject({ virtuals: true });
+      },
+      toPublicView(): IWhiteboardUserPermissionByEmail {
+        return this.toObject({ virtuals: true });
+      },
+    },
+  },
+));
 
 whiteboardSchema.virtual('id').get(function() {
   return this._id;

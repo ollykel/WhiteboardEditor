@@ -142,6 +142,14 @@ const userSchema = new Schema<IUser, UserModelType, {}, {}, IUserVirtual>(
     // -- instance methods
     methods: {
       // -- Data transfer mappings
+      async populateAttribs(): Promise<IUser> {
+        // nothing to populate
+        return this;
+      },
+      async populateFull(): Promise<IUser> {
+        // nothing to populate
+        return this;
+      },
       toPublicView(): IUserPublicView {
         return toPublicView(this.toObject({ virtuals: true }));
       },// -- end toPublicView
