@@ -27,6 +27,7 @@ const EditableText = ({
 }: EditableTextProps) => {
   const [text, setText] = useState("Enter Text Here");
   const [isEditing, setIsEditing] = useState(false);
+  const [textWidth, setTextWidth] = useState(width);
   const textRef = useRef(null);
   const trRef = useRef(null);
 
@@ -55,7 +56,7 @@ const EditableText = ({
       color={color}
       x={x}
       y={y}
-      width={width}
+      width={textWidth}
       height={height}
       draggable={draggable}
       onDblClick={handleTextDblClick}
