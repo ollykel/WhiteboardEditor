@@ -48,6 +48,18 @@ const TextEditor = ({ textNode, onClose, onChange }: TextEditorProps) => {
   textarea.style.textAlign = textNode.align();
   textarea.style.color = textNode.fill();
 
+  const rotation = textNode.rotation();
+  let transform = "";
+  if (rotation) {
+    transform += `rotateZ(${rotation}deg)`;
+  }
+  textarea.style.transform = transform;
+
+  textarea.style.height = "auto";
+  textarea.style.height = `${textarea.scrollHeight + 3}px`;
+
+  textarea.focus();
+
   return (
     <Html>
       <textarea 
