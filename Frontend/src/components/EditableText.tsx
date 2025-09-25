@@ -34,10 +34,6 @@ const EditableText = ({
   const textRef = useRef<Konva.Text | null>(null);
   const trRef = useRef<Konva.Transformer | null>(null);
 
-  if (!textRef.current) {
-    return;
-  }
-
   useEffect(() => {
     if (trRef.current && textRef.current) {
       trRef.current.nodes([textRef.current]);
@@ -67,9 +63,10 @@ const EditableText = ({
   return (
     <div>
       <Text
+        ref={textRef}
         text={text}
         fontSize={fontSize}
-        color={color}
+        fill={color}
         x={x}
         y={y}
         width={textWidth}
@@ -80,7 +77,7 @@ const EditableText = ({
         onTransform={handleTransform}
         visible={!isEditing}
       />
-      {isEditing && (
+      {isEditing && textRef.current && (
         <TextEditor
           textNode={textRef.current}
           onChange={handleTextChange}
