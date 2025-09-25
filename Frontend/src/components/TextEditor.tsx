@@ -5,8 +5,8 @@ import { Html } from 'react-konva-utils';
 
 interface TextEditorProps {
   textNode: Konva.Text;
-  onClose: void;
-  onChange: void;
+  onClose: () => void;
+  onChange: (value: string) => void;
 }
 
 const TextEditor = ({ textNode, onClose, onChange }: TextEditorProps) => {
@@ -62,6 +62,13 @@ const TextEditor = ({ textNode, onClose, onChange }: TextEditorProps) => {
   textarea.style.height = `${textarea.scrollHeight + 3}px`;
 
   textarea.focus();
+
+  const handleOutsideClick = (e) => {
+    if (e.target !== textarea) {
+      onChange(textarea.value);
+      onClose();
+    }
+  }
 
   return (
     <Html>
