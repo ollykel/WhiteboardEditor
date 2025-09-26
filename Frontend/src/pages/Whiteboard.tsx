@@ -368,6 +368,9 @@ const Whiteboard = () => {
       });
 
       socketRef.current.send(JSON.stringify(createShapesMsg));
+
+      // Switch to hand tool after shape creation
+      setToolChoice("hand");
     }
   };
 
