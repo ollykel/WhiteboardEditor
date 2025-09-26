@@ -75,23 +75,31 @@ RUN \
   --mount=type=cache,target=/usr/local/cargo/git \
   --mount=type=cache,target=/build/target \
   --mount=type=cache,target=${TEST_CACHE_DIR} \
-  TEST_TARGET_DIR="${TEST_CACHE_DIR}/$(sha512sum < src/unit_tests.rs | cut -d' ' -f-1)" \
-  && mkdir -p "${TEST_TARGET_DIR}" \
-  && cp -rp ${BUILD_DIR}/target/* "${TEST_TARGET_DIR}" \
-  && cargo test --no-run --target-dir "${TEST_TARGET_DIR}" \
-  && cp -rp "${TEST_TARGET_DIR}" "${DEST_DIR}/target"
+  <<-EOF
+#!/usr/bin/bash -e
+
+TEST_TARGET_DIR="${TEST_CACHE_DIR}/$(sha512sum < src/unit_tests.rs | cut -d' ' -f-1)"
+mkdir -p "${TEST_TARGET_DIR}"
+cp -rp ${BUILD_DIR}/target/* "${TEST_TARGET_DIR}"
+cargo test --no-run --target-dir "${TEST_TARGET_DIR}"
+cp -rp "${TEST_TARGET_DIR}" "${DEST_DIR}/target"
+EOF
 
 # Build with cached cargo registry + target directory
 # Build both tests and release mode.
 # Copy the final build to the /app/ directory, to take it out of the cache.
 RUN \
-    --mount=type=cache,target=/usr/local/cargo/registry \
-    --mount=type=cache,target=/usr/local/cargo/git \
-    --mount=type=cache,target=/build/target \
-    cargo build --release && \
-    cp -rp /usr/local/cargo/registry /usr/local/cargo/registry_saved && \
-    cp -rp /usr/local/cargo/git /usr/local/cargo/git_saved && \
-    cp -rp ./* ${DEST_DIR}
+  --mount=type=cache,target=/usr/local/cargo/registry \
+  --mount=type=cache,target=/usr/local/cargo/git \
+  --mount=type=cache,target=/build/target \
+  <<-EOF
+#!/usr/bin/bash -e
+
+cargo build --release
+cp -rp /usr/local/cargo/registry /usr/local/cargo/registry_saved
+cp -rp /usr/local/cargo/git /usr/local/cargo/git_saved
+cp -rp ./* "${DEST_DIR}"
+EOF
 
 # Copy saved cargo directories into intended locations.
 # Allows use by testers
