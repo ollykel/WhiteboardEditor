@@ -1,7 +1,10 @@
 // -- std imports
 import { useContext } from 'react';
 import type { PropsWithChildren } from 'react';
-import { Navigate } from 'react-router-dom';
+import {
+  Navigate,
+  useLocation,
+} from 'react-router-dom';
 
 // -- local imports
 import AuthContext from '@/context/AuthContext';
@@ -13,16 +16,19 @@ export interface ProtectedRouteProps {
 const ProtectedRoute = (props: PropsWithChildren<ProtectedRouteProps>): React.JSX.Element => {
   const { fallback, children } = props;
   const authContext = useContext(AuthContext);
+  const location = useLocation();
 
   if (! authContext) {
     throw new Error('No auth context provided');
   }
 
-  const { user } = authContext;
+  const {
+    user,
+  } = authContext;
 
   if (! user) {
     // not logged in 
-    const locationEncoded = encodeURIComponent(`${window.location.pathname}${window.location.search}`);
+    const locationEncoded = encodeURIComponent(`${location.pathname}${location.search}`);
     const redirectUrl = `${fallback}?redirect=${locationEncoded}`;
 
     return (
