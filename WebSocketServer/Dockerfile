@@ -1,3 +1,6 @@
+# ---- Build args for all stages ----
+ARG CRATE_NAME="web_socket_server"
+
 # ---- Stage 1: Dependency planner (cargo-chef) ----
 FROM rust:1.88 AS planner
 
@@ -39,6 +42,8 @@ RUN --mount=type=cache,target=/usr/local/cargo/registry \
 # ---- Stage 3: Application build ----
 FROM rust:1.88 AS builder
 
+ARG CARGO_HOME_DIR=/
+
 WORKDIR /build
 
 # Copy source
@@ -50,9 +55,17 @@ COPY . .
 RUN --mount=type=cache,target=/usr/local/cargo/registry \
     --mount=type=cache,target=/usr/local/cargo/git \
     --mount=type=cache,target=/build/target \
-    cargo build --tests && \
+    rm -f target/debug/debs/${CRATE_NAME}-* && \
+    cargo test --no-run && \
     cargo build --release && \
+    cp -rp /usr/local/cargo/registry /usr/local/cargo/registry_saved && \
+    cp -rp /usr/local/cargo/git /usr/local/cargo/git_saved && \
     cp -rp . /app
+
+# Copy saved cargo directories into intended locations.
+# Allows use by testers
+RUN cp -rp /usr/local/cargo/registry_saved /usr/local/cargo/registry
+RUN cp -rp /usr/local/cargo/git_saved /usr/local/cargo/git
 
 # Make /app the default working directory, where testers can run.
 WORKDIR /app
