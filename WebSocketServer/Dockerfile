@@ -13,7 +13,9 @@ RUN cargo install cargo-chef
 COPY Cargo.toml Cargo.lock ./
 
 # Dummy build file to make Cargo happy
-RUN mkdir src/ && echo 'fn main() {}' > src/dummy.rs
+COPY <<-EOF src/dummy.rs
+fn main() {}
+EOF
 
 # Generate dependency build plan
 RUN cargo chef prepare --recipe-path recipe.json
@@ -60,7 +62,9 @@ WORKDIR ${BUILD_DIR}
 COPY . .
 
 # Dummy build file to make Cargo happy
-RUN echo 'fn main() {}' > src/dummy.rs
+COPY <<-EOF src/dummy.rs
+fn main() {}
+EOF
 
 # Build the unit tests, with the sub-cache identified by the sha512 sum
 # of the unit_tests.rs file. This will ensure that tests are re-compiled
