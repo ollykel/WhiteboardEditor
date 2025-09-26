@@ -17,6 +17,8 @@ import type {
   Whiteboard
 } from '@/types/APIProtocol';
 
+import Page from '@/components/Page';
+
 // -- components
 import HeaderAuthed from "@/components/HeaderAuthed";
 import { useUser } from "@/hooks/useUser";
@@ -85,8 +87,12 @@ const Dashboard = (): React.JSX.Element => {
     }
   };
 
+  const pageTitle = 'Your Dashboard | Whiteboard Editor';
+
   return (
-    <>
+    <Page
+      title={pageTitle}
+    >
       <HeaderAuthed
         title={title}
       />
@@ -146,7 +152,7 @@ const Dashboard = (): React.JSX.Element => {
           }
         })()}
       </main>
-    </>
+    </Page>
   );
 };// end Dashboard
 

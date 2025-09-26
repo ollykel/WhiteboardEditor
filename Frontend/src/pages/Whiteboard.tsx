@@ -64,6 +64,7 @@ import api from '@/api/axios';
 
 import { useModal } from '@/components/Modal';
 
+import Page from '@/components/Page';
 import CanvasCard from "@/components/CanvasCard";
 import Sidebar from "@/components/Sidebar";
 import Toolbar from "@/components/Toolbar";
@@ -389,145 +390,151 @@ const Whiteboard = () => {
     /> 
   );
 
+  const pageTitle = `${title} | Whiteboard Editor`;
+
   return (
-    <main>
-      {/* Header */}
-      <HeaderAuthed 
-        title={title}
-        toolbarElemsLeft={[
-          <ShareWhiteboardButton />
-        ]}
-      />
-      {
-        /** Display if socket not connected **/
-        (! isActive) && (
-          <p className="text-lg font-bold text-red-600">
-            Connecting ...
-          </p>
-        )
-      }
+    <Page
+      title={pageTitle}
+    >
+      <main>
+        {/* Header */}
+        <HeaderAuthed 
+          title={title}
+          toolbarElemsLeft={[
+            <ShareWhiteboardButton />
+          ]}
+        />
+        {
+          /** Display if socket not connected **/
+          (! isActive) && (
+            <p className="text-lg font-bold text-red-600">
+              Connecting ...
+            </p>
+          )
+        }
 
-      {/* Content */}
-      <div className="mt-20">
-        {/* Left-hand sidebar for toolbar and menus */}
-        <Sidebar side="left">
-          {/* Toolbar */}
-          <Toolbar
-            toolChoice={toolChoice}
-            onToolChange={setToolChoice}
-            onNewCanvas={handleNewCanvas}
-          />
+        {/* Content */}
+        <div className="mt-20">
+          {/* Left-hand sidebar for toolbar and menus */}
+          <Sidebar side="left">
+            {/* Toolbar */}
+            <Toolbar
+              toolChoice={toolChoice}
+              onToolChange={setToolChoice}
+              onNewCanvas={handleNewCanvas}
+            />
 
-          {/** Shape Attributes Menu **/}
-          <ShapeAttributesMenu
-            attributes={shapeAttributesState}
-            dispatch={dispatchShapeAttributes}
-          />
-        </Sidebar>
+            {/** Shape Attributes Menu **/}
+            <ShapeAttributesMenu
+              attributes={shapeAttributesState}
+              dispatch={dispatchShapeAttributes}
+            />
+          </Sidebar>
 
 
-        {/* Canvas Container */}
-        <div className="flex flex-col justify-center flex-wrap ml-50">
-          {/** Misc. info **/}
+          {/* Canvas Container */}
+          <div className="flex flex-col justify-center flex-wrap ml-50">
+            {/** Misc. info **/}
 
-          <div className="flex flex-col justify-center flex-wrap">
-            {/** Own Client ID **/}
-            <div>
-              <span>Your Username: </span> {user?.username}
+            <div className="flex flex-col justify-center flex-wrap">
+              {/** Own Client ID **/}
+              <div>
+                <span>Your Username: </span> {user?.username}
+              </div>
+
+              {/* Display Active Clients */}
+              <div>
+                <span>Active Users: </span>
+                { Object.values(activeUsers).join(', ') }
+              </div>
             </div>
 
-            {/* Display Active Clients */}
-            <div>
-              <span>Active Users: </span>
-              { Object.values(activeUsers).join(', ') }
+            {/* Display Canvases */}
+            <div className="flex flex-1 flex-row justify-center flex-wrap">
+              {canvasesSorted.map(({ id: canvasId, width, height, name, shapes, allowedUsers }: CanvasData) => {
+                const hasAccess = user
+                  ? allowedUsers.length === 0 || allowedUsers.includes(user.id)
+                  : false;
+                return (
+                  <CanvasCard
+                    id={canvasId}
+                    key={canvasId}
+                    title={name}
+                    width={width}
+                    height={height}
+                    shapes={shapes}
+                    onAddShapes={makeHandleAddShapes(canvasId)}
+                    shapeAttributes={shapeAttributesState}
+                    currentTool={toolChoice}
+                    disabled={!hasAccess}
+                    whiteboardId={whiteboardId}
+                  />
+                );
+              })}
             </div>
-          </div>
-
-          {/* Display Canvases */}
-          <div className="flex flex-1 flex-row justify-center flex-wrap">
-            {canvasesSorted.map(({ id: canvasId, width, height, name, shapes, allowedUsers }: CanvasData) => {
-              const hasAccess = user
-                ? allowedUsers.length === 0 || allowedUsers.includes(user.id)
-                : false;
-              return (
-                <CanvasCard
-                  id={canvasId}
-                  key={canvasId}
-                  title={name}
-                  width={width}
-                  height={height}
-                  shapes={shapes}
-                  onAddShapes={makeHandleAddShapes(canvasId)}
-                  shapeAttributes={shapeAttributesState}
-                  currentTool={toolChoice}
-                  disabled={!hasAccess}
-                  whiteboardId={whiteboardId}
-                />
-              );
-            })}
           </div>
         </div>
-      </div>
 
-      {/** Modal that opens to share the whiteboard **/}
-      <ShareModal zIndex={100}>
-        <div className="flex flex-col">
-          <button
-            onClick={closeShareModal}
-            className="flex flex-row justify-end hover:cursor-pointer"
-          >
-            <X />
-          </button>
+        {/** Modal that opens to share the whiteboard **/}
+        <ShareModal className="w-[50em] h-[20em]" zIndex={100}>
+          <div className="flex flex-col">
+            <button
+              onClick={closeShareModal}
+              className="flex flex-row justify-end hover:cursor-pointer"
+            >
+              <X />
+            </button>
 
-          <h2 className="text-md font-bold text-center">Share Whiteboard</h2>
+            <h2 className="text-md font-bold text-center">Share Whiteboard</h2>
 
-          <ShareWhiteboardForm
-            initUserPermissions={sharedUsers || []}
-            onSubmit={async (data: ShareWhiteboardFormData) => {
-              try {
-                const {
-                  userPermissions
-                } = data;
+            <ShareWhiteboardForm
+              initUserPermissions={sharedUsers || []}
+              onSubmit={async (data: ShareWhiteboardFormData) => {
+                try {
+                  const {
+                    userPermissions
+                  } = data;
 
-                const userPermissionsFinal = userPermissions.map(perm => {
-                  if (perm.type === 'user') {
-                    if ((typeof perm.user) === 'object') {
-                      // extract object id
-                      return ({
-                        ...perm,
-                        user: perm.user.id
-                      });
+                  const userPermissionsFinal = userPermissions.map(perm => {
+                    if (perm.type === 'user') {
+                      if ((typeof perm.user) === 'object') {
+                        // extract object id
+                        return ({
+                          ...perm,
+                          user: perm.user.id
+                        });
+                      } else {
+                        // already object id
+                        return perm;
+                      }
                     } else {
-                      // already object id
                       return perm;
                     }
-                  } else {
-                    return perm;
-                  }
-                });
-
-                const res = await api.post(`/whiteboards/${whiteboardId}/shared_users`, ({
-                  userPermissions: userPermissionsFinal
-                }));
-
-                if (res.status >= 400) {
-                  console.error('POST /whiteboards/:id/shared_users failed:', res.data);
-                  alert(`Share request failed: ${JSON.stringify(res.data)}`);
-                } else {
-                  console.log('Share request submitted successfully');
-                  alert('Share request submitted successfully');
-                  queryClient.invalidateQueries({
-                    queryKey: whiteboardKey
                   });
+
+                  const res = await api.post(`/whiteboards/${whiteboardId}/shared_users`, ({
+                    userPermissions: userPermissionsFinal
+                  }));
+
+                  if (res.status >= 400) {
+                    console.error('POST /whiteboards/:id/shared_users failed:', res.data);
+                    alert(`Share request failed: ${JSON.stringify(res.data)}`);
+                  } else {
+                    console.log('Share request submitted successfully');
+                    alert('Share request submitted successfully');
+                    queryClient.invalidateQueries({
+                      queryKey: whiteboardKey
+                    });
+                  }
+                } finally {
+                  closeShareModal();
                 }
-              } finally {
-                closeShareModal();
-              }
-            }}
-          />
-        </div>
-      </ShareModal>
-    </main>
+              }}
+            />
+          </div>
+        </ShareModal>
+      </main>
+    </Page>
   );
 };// end Whiteboard
 
