@@ -1,10 +1,13 @@
-import { useState } from 'react';
+import {
+  useState,
+} from 'react';
 
-import type { PropsWithChildren } from 'react';
+import type {
+  PropsWithChildren,
+} from 'react';
 
 export interface ModalProps {
-  width: string;
-  height: string;
+  className?: string;
   zIndex?: number;
 }
 
@@ -19,49 +22,33 @@ export const useModal = (): UseModalResult => {
 
   const openModal = () => { setIsOpen(true); };
   const closeModal = () => { setIsOpen(false); };
-  const Modal = (props: PropsWithChildren<ModalProps>) => {
+  const Modal = ({
+    className,
+    zIndex,
+    children,
+  }: PropsWithChildren<ModalProps>): React.JSX.Element | null => {
     if (! isOpen) {
       return null;
     } else {
-      const { width, height, zIndex, children } = props;
       const zIndexBg = zIndex || 500;
 
       return (
         <>
-          <div style={{
-            position: 'fixed',
-            top: 0,
-            bottom: 0,
-            left: 0,
-            right: 0,
-            zIndex: zIndexBg,
-            width: `100%`,
-            height: `100%`,
-            backgroundColor: 'rgb(0, 0, 0)',
-            opacity: 0.5
+          {/** Opaque background **/}
+          <div
+            className="fixed inset-0 w-full h-full bg-black opacity-50"
+            style={{ zIndex: zIndexBg }}
+          />
 
-          }}>
-          </div>
-          <div style={{
-            position: 'fixed',
-            top: 0,
-            bottom: 0,
-            left: 0,
-            right: 0,
-            zIndex: zIndexBg + 1,
-            width: `100%`,
-            height: `100%`,
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-
-          }}>
-            <div style={{
-              position: 'fixed',
-              backgroundColor: 'white',
-              width,
-              height
-            }}>
+          {/** Wrapper around Modal to ensure proper position **/}
+          <div
+            className="fixed inset-0 flex justify-center items-center w-full h-full"
+            style={{ zIndex: zIndexBg + 1 }}
+          >
+            {/** Actual Modal **/}
+            <div
+              className={`fixed bg-white ${className}`}
+            >
               {children}
             </div>
           </div>

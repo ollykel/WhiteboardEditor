@@ -249,7 +249,7 @@ export default function AccountSettings() {
               </button>
             </form>
 
-            <Modal width="400px" height="200px">
+            <Modal>
               <div className="p-6 flex flex-col justify-between h-full">
                 <h3 className="text-lg font-semibold">Are you sure?</h3>
                 <p className="text-sm text-gray-600">
