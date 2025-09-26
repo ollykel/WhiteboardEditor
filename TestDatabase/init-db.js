@@ -11,16 +11,41 @@ db = db.getSiblingDB("testdb"); // create/use "testdb"
 
 // --- Create Users ---
 const users = [
-  // password: password123
-  { username: "alice", email: "alice@example.com", passwordHashed: "$2b$10$lE4PvWzGiI.hKlq98/EFW.9QSKDDkq.O/WHvMjeMvheUiDxE2pzgW" },
-  // password: password456
-  { username: "bob", email: "bob@example.com", passwordHashed: "$2b$10$uLkhrYaddxeki7BymA4MdeqLtWgIRKjcQvgJvSbNhx1FQrWTJO8/2" },
-  // password: password789
-  { username: "carol", email: "carol@example.com", passwordHashed: "$2b$10$DQXE2KyaqWw3xS6wf.tdn.BRh0s7MXrhpHhibzFZ0fUqsnowBYcGq" },
-  // password: password101
-  { username: "dave", email: "dave@example.com", passwordHashed: "$2b$10$cGyV5HrtmrLGBr/6tU32/OsfmIFbPu28EzV6td0C9aRHfVCNs5d2e" },
-  // password: weakpassword
-  { username: "eve", email: "eve@example.com", passwordHashed: "$2b$10$ihPYYk6dgK/OwTMkBOnlXe9UDcSHNvYSWQe5N0oM11TPwle7EJrH2" },
+  {
+    _id: new ObjectId('68d5e8cf829da666aece5f47'),
+    username: "alice",
+    email: "alice@example.com",
+    // password: password123
+    passwordHashed: "$2b$10$lE4PvWzGiI.hKlq98/EFW.9QSKDDkq.O/WHvMjeMvheUiDxE2pzgW",
+  },
+  {
+    _id: new ObjectId('68d5e8d4829da666aece5f48'),
+    username: "bob",
+    email: "bob@example.com",
+    // password: password456
+    passwordHashed: "$2b$10$uLkhrYaddxeki7BymA4MdeqLtWgIRKjcQvgJvSbNhx1FQrWTJO8/2",
+  },
+  {
+    _id: new ObjectId('68d5e8d4829da666aece5f49'),
+    username: "carol",
+    email: "carol@example.com",
+    // password: password789
+    passwordHashed: "$2b$10$DQXE2KyaqWw3xS6wf.tdn.BRh0s7MXrhpHhibzFZ0fUqsnowBYcGq",
+    },
+  {
+    _id: new ObjectId('68d5e8d5829da666aece5f4a'),
+    username: "dave",
+    email: "dave@example.com",
+    // password: password101
+    passwordHashed: "$2b$10$cGyV5HrtmrLGBr/6tU32/OsfmIFbPu28EzV6td0C9aRHfVCNs5d2e",
+  },
+  {
+    _id: new ObjectId('68d5e8d6829da666aece5f4b'),
+    username: "eve",
+    email: "eve@example.com",
+    // password: weakpassword
+    passwordHashed: "$2b$10$ihPYYk6dgK/OwTMkBOnlXe9UDcSHNvYSWQe5N0oM11TPwle7EJrH2",
+  },
 ];
 
 db.users.insertMany(users);
@@ -30,12 +55,14 @@ const insertedUsers = db.users.find().toArray();
 // --- Create Whiteboards ---
 const whiteboards = [
   {
+    _id: new ObjectId('68d5e8d4829da666aece5f4c'),
     name: "Project Alpha",
     time_created: new Date("2025-08-01T12:00:00.000Z"),
     owner: insertedUsers[0]._id, // Alice
     shared_users: [],
   },
   {
+    _id: new ObjectId('68d5e8d4829da666aece5f4d'),
     name: "Project Beta",
     time_created: new Date("2025-08-02T12:10:00.000Z"),
     owner: insertedUsers[1]._id, // Bob
@@ -49,22 +76,26 @@ const insertedWhiteboards = db.whiteboards.find().toArray();
 
 const canvases = [
   {
+    _id: new ObjectId('68d5e8d4829da666aece5f4e'),
     whiteboard_id: insertedWhiteboards[0]._id,
     width: 800,
     height: 600,
     name: "Canvas Alpha",
     time_created: new Date("2025-08-01T12:10:00.000Z"),
     time_last_modified: new Date("2025-08-10T12:10:00.000Z"),
-    allowed_users: [],
+    // null allowed_users = all users allowed
+    // allowed_users: [],
   },
   {
+    _id: new ObjectId('68d5e8d4829da666aece5f4f'),
     whiteboard_id: insertedWhiteboards[1]._id,
     width: 1024,
     height: 768,
     name: "Canvas Beta",
     time_created: new Date("2025-08-02T12:20:00.000Z"),
     time_last_modified: new Date("2025-08-03T12:10:00.000Z"),
-    allowed_users: [],
+    // null allowed_users = all users allowed
+    // allowed_users: [],
   }
 ];
 
