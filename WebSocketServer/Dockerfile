@@ -80,7 +80,7 @@ RUN \
 
 TEST_TARGET_DIR="${TEST_CACHE_DIR}/$(sha512sum < src/unit_tests.rs | cut -d' ' -f-1)"
 mkdir -p "${TEST_TARGET_DIR}"
-cp -rp ${BUILD_DIR}/target/* "${TEST_TARGET_DIR}"
+cp -rp ${BUILD_DIR}/target/* "${TEST_TARGET_DIR}" || true
 cargo test --no-run --target-dir "${TEST_TARGET_DIR}"
 cp -rp "${TEST_TARGET_DIR}" "${DEST_DIR}/target"
 EOF
