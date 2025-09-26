@@ -49,6 +49,9 @@ WORKDIR /build
 # Copy source
 COPY . .
 
+# Dummy build file to make Cargo happy
+RUN echo 'fn main() {}' > src/dummy.rs
+
 # Build with cached cargo registry + target directory
 # Build both tests and release mode.
 # Copy the final build to the /app/ directory, to take it out of the cache.
