@@ -28,8 +28,8 @@ const EditableText = ({
   height,
   draggable,
 }: EditableTextProps) => {
-  const [text, setText] = useState("Enter Text Here");
-  const [isEditing, setIsEditing] = useState(false);
+  const [text, setText] = useState("");
+  const [isEditing, setIsEditing] = useState(true);
   const [textWidth, setTextWidth] = useState(width);
   const textRef = useRef<Konva.Text | null>(null);
   const trRef = useRef<Konva.Transformer | null>(null);
@@ -75,7 +75,7 @@ const EditableText = ({
         onDblClick={handleTextDblClick}
         onDblTap={handleTextDblClick}
         onTransform={handleTransform}
-        visible={!isEditing}
+        listening={!isEditing}
       />
       {isEditing && textRef.current && (
         <TextEditor

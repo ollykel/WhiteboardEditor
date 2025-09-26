@@ -107,6 +107,7 @@ const TextEditor = ({ textNode, onClose, onChange }: TextEditorProps) => {
   return (
     <Html>
       <textarea 
+        placeholder="Enter text here"
         ref={textareaRef}
         style={{
           minHeight: "1rem",
