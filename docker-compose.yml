@@ -77,7 +77,8 @@ services:
       cache_to:
         - type=local,dest=${DOCKER_CACHE-${HOME}/.cache/docker}
     depends_on:
-      - test_db
+      test_db:
+        condition: service_healthy
     image: ${WHITEBOARD_EDITOR_CR_URI-whiteboard_editor}/web_socket_server_tester:${WHITEBOARD_EDITOR_TAG-latest}
   
   rest_api:
