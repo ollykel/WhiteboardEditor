@@ -88,7 +88,6 @@ const EditableText = ({
       {!isEditing && (
         <Transformer
           ref={trRef}
-          enabledAnchors={["middle-left", "middle-right"]}
           boundBoxFunc={(_oldBox, newBox) => ({
             ...newBox,
             width: Math.max(30, newBox.width),
