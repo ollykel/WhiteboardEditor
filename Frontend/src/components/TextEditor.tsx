@@ -11,10 +11,8 @@ interface TextEditorProps {
 
 const TextEditor = ({ textNode, onChange, onClose }: TextEditorProps) => {
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
-  console.log("in TextEditor");
 
   const initTextArea = (textarea: HTMLTextAreaElement) => {
-    console.log("textarea: ", textarea);
     const stage = textNode.getStage();
     // const stageBox = stage?.container().getBoundingClientRect();
     const textPosition = stage ? textNode.getAbsolutePosition(stage) : textNode.position();
@@ -62,7 +60,6 @@ const TextEditor = ({ textNode, onChange, onClose }: TextEditorProps) => {
     const handleOutsideClick = (e: MouseEvent) => {
       if (e.target !== textarea) {
         onChange(textarea.value);
-        console.log("outside click");
         onClose();
       }
     }
