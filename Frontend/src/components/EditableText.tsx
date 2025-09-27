@@ -35,8 +35,13 @@ const EditableText = ({
 
   // attach Transformer for editing when selected
   useEffect(() => {
-    if (isSelected && trRef.current && textRef.current) {
-      trRef.current.nodes([textRef.current]);
+    if (trRef.current) {
+      if (isSelected && textRef.current) {
+        trRef.current.nodes([textRef.current]);
+      }
+      else {
+        trRef.current.nodes([]);
+      }
     }
   }, [isSelected])
 
