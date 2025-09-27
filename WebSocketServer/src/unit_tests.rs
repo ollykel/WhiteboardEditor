@@ -213,4 +213,76 @@ mod unit_tests {
             }
         };
     }
+
+    // === fetch_whiteboard_from_mongodb ==========================================================
+    //
+    // Ensures that data is properly fetched and deserialized from MongoDB into the *MongoDBView
+    // structs.
+    //
+    // Requires the test database to be running and freshly initialized before each invocation. See
+    // the "test_db" service in docker-compose.yml and the TestDatabase directory for reference.
+    //
+    // ============================================================================================
+    #[tokio::test]
+    async fn fetch_whiteboard_from_mongodb() {
+        // -- try fetching Project Alpha and its constituent components (see
+        // TestDatabase/init-db.js for document definitions)
+        use crate::bson::{
+            oid::ObjectId,
+        };
+        use crate::chrono::{
+            TimeZone,
+            MappedLocalTime,
+            Utc,
+        };
+
+        // -- initialize database connection
+        let mongo_uri = "mongodb://test_db:27017/testdb";
+        let mongo_client = connect_mongodb(&mongo_uri).await.unwrap();
+        let db = mongo_client.default_database().unwrap();
+
+        // -- call get_whiteboard_by_id; uses ID for "Project Alpha" in TestDatabase/init-db.js
+        let whiteboard_id_s = "68d5e8d4829da666aece5f4c";
+        let whiteboard_id = ObjectId::parse_str(&whiteboard_id_s).unwrap();
+        // -- id for single canvas
+        let canvas_id = ObjectId::parse_str("68d5e8d4829da666aece5f4e").unwrap();
+        let whiteboard = get_whiteboard_by_id(&db, &whiteboard_id).await.unwrap().unwrap();
+
+        // TODO: actually check contents of whiteboard with assert statement
+        println!("Whiteboard Received: {:?}", whiteboard);
+
+        assert!(whiteboard.id == whiteboard_id);
+        assert!(whiteboard.name == "Project Alpha");
+        assert!(whiteboard.owner_id == ObjectId::parse_str("68d5e8cf829da666aece5f47").unwrap());
+        assert!(whiteboard.shared_users.len() == 0);
+        assert!(whiteboard.canvases.len() == 1);
+        assert!(whiteboard.canvases.contains_key(&canvas_id));
+
+        // check contents of single canvas
+        let canvas = whiteboard.canvases.get(&canvas_id).unwrap();
+
+        assert!(canvas.id == canvas_id);
+        assert!(canvas.width == 800);
+        assert!(canvas.height == 600);
+        assert!(canvas.name.as_str() == "Canvas Alpha");
+
+        let exp_time_created = match Utc.timestamp_opt(1754050200, 0) {
+            MappedLocalTime::Single(val) => val,
+            bad_val => {
+                panic!("Got {:?} from expected time created timestamp", bad_val);
+            },
+        };
+
+        let exp_time_last_modified = match Utc.timestamp_opt(1754827800, 0) {
+            MappedLocalTime::Single(val) => val,
+            bad_val => {
+                panic!("Got {:?} from expected time last modified timestamp", bad_val);
+            },
+        };
+
+        assert!(canvas.time_created == exp_time_created);
+        assert!(canvas.time_last_modified == exp_time_last_modified);
+        assert!(canvas.shapes.len() == 0);
+        assert!(canvas.allowed_users.is_none());
+    }
 }

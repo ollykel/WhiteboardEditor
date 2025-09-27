@@ -39,8 +39,8 @@ export interface CanvasAttribs {
   width: number;
   height: number;
   name: string;
-  timeCreated?: string;
-  timeLastModified?: string;
+  timeCreated: string;
+  timeLastModified: string;
 }
 
 // Contains nested data
@@ -103,11 +103,7 @@ export interface ServerMessageUpdateShapes {
 export interface ServerMessageCreateCanvas {
   type: "create_canvas";
   clientId: ClientIdType;
-  canvasId: CanvasIdType;
-  width: number;
-  height: number;
-  name: string;
-  allowedUsers: string[];
+  canvas: CanvasData;
 }
 
 export interface ServerMessageDeleteCanvases {

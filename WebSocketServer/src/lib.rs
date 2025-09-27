@@ -166,7 +166,11 @@ pub enum ServerSocketMessage {
     // TODO: replace HashMaps with Vectors, so object ids don't need to be cast to strings
     CreateShapes { client_id: ClientIdType, canvas_id: String, shapes: HashMap<String, ShapeModel> },
     UpdateShapes { client_id: ClientIdType, canvas_id: String, shapes: HashMap<String, ShapeModel> },
-    CreateCanvas { client_id: ClientIdType, canvas_id: String, width: i32, height: i32, name: String, allowed_users: Vec<String> },
+    // TODO: replace with flattened CanvasClientView
+    CreateCanvas {
+        client_id: ClientIdType,
+        canvas: CanvasClientView,
+    },
     DeleteCanvases { client_id: ClientIdType, canvas_ids: Vec<String> },
     IndividualError { client_id: ClientIdType, message: String },
     BroadcastError { message: String },
@@ -184,7 +188,7 @@ pub enum ClientSocketMessage {
     UpdateCanvasAllowedUsers { canvas_id: CanvasIdType, allowed_users: HashSet<ObjectId>}
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Canvas {
     pub id: CanvasIdType,
     pub next_shape_id_base: u64,
@@ -248,7 +252,7 @@ pub struct WhiteboardPermission {
 
 pub type WhiteboardPermissionMongoDBView = WhiteboardPermission;
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Whiteboard {
     pub id: WhiteboardIdType,
     pub name: String,
@@ -549,8 +553,6 @@ pub async fn handle_client_message(client_state: &ClientState, client_msg_s: &st
                     // TODO: actually fetch user's id from database
                     // allowed_users.insert(ObjectId::new());
 
-                    let allowed_users_vec = allowed_users.iter().copied().collect::<Vec<_>>();
-
                     // valid input: add to diffs
                     {
                         let mut diffs = client_state.diffs.lock().await;
@@ -561,31 +563,28 @@ pub async fn handle_client_message(client_state: &ClientState, client_msg_s: &st
                             height: height,
                         });
                     }
+
+                    // instantiate new canvas
+                    let canvas = Canvas {
+                        id: new_canvas_id,
+                        next_shape_id_base: 0,
+                        width: width,
+                        height: height,
+                        name: name.clone(),
+                        time_created: Utc::now(),
+                        time_last_modified: Utc::now(),
+                        shapes: HashMap::<CanvasObjectIdType, ShapeModel>::new(),
+                        allowed_users: Some(allowed_users),
+                    };
                     
                     whiteboard.canvases.insert(
                         new_canvas_id,
-                        Canvas {
-                            id: new_canvas_id,
-                            next_shape_id_base: 0,
-                            width: width,
-                            height: height,
-                            name: name.clone(),
-                            time_created: Utc::now(),
-                            time_last_modified: Utc::now(),
-                            shapes: HashMap::<CanvasObjectIdType, ShapeModel>::new(),
-                            allowed_users: Some(allowed_users),
-                        }
+                        canvas.clone()
                     );
 
                     Some(ServerSocketMessage::CreateCanvas{
                         client_id: client_state.client_id,
-                        canvas_id: new_canvas_id.to_string(),
-                        width: width,
-                        height: height,
-                        name: name.clone(),
-                        allowed_users: allowed_users_vec.iter()
-                            .map(|oid| oid.to_string())
-                            .collect(),
+                        canvas: canvas.to_client_view(),
                     })
                 },
                 ClientSocketMessage::DeleteCanvases { canvas_ids } => {
@@ -708,3 +707,4 @@ pub async fn get_whiteboard_by_id(db: &Database, wid: &WhiteboardIdType) -> Resu
 
     Ok(Some(whiteboard_view.to_whiteboard(canvases.as_slice())))
 }// -- end fn get_whiteboard_by_id
+
