@@ -1,15 +1,19 @@
 name: whiteboard_editor
 
+x-anchors:
+  cache_settings: &cache_settings 
+    cache_from:
+      - type=local,src=${DOCKER_CACHE-${HOME}/.cache/docker}
+    cache_to:
+      - type=local,dest=${DOCKER_CACHE-${HOME}/.cache/docker}
+
 services:
   reverse_proxy:
     # Maps urls to ports to various services.
     # Main entry point for external clients.
     build:
       context: ReverseProxy
-      cache_from:
-        - type=local,src=${DOCKER_CACHE-${HOME}/.cache/docker}
-      cache_to:
-        - type=local,dest=${DOCKER_CACHE-${HOME}/.cache/docker}
+      <<: *cache_settings
     image: ${WHITEBOARD_EDITOR_CR_URI-whiteboard_editor}/reverse_proxy:${WHITEBOARD_EDITOR_TAG-latest}
     ports:
       - ${WHITEBOARD_EDITOR_HTTP_PORT-8080}:8080
@@ -34,10 +38,7 @@ services:
     # Built using Vite, served with nginx
     build:
       context: Frontend
-      cache_from:
-        - type=local,src=${DOCKER_CACHE-${HOME}/.cache/docker}
-      cache_to:
-        - type=local,dest=${DOCKER_CACHE-${HOME}/.cache/docker}
+      <<: *cache_settings
     image: ${WHITEBOARD_EDITOR_CR_URI-whiteboard_editor}/frontend:${WHITEBOARD_EDITOR_TAG-latest}
     depends_on:
       - web_socket_server
@@ -53,10 +54,7 @@ services:
     build:
       context: WebSocketServer
       target: release_runtime
-      cache_from:
-        - type=local,src=${DOCKER_CACHE-${HOME}/.cache/docker}
-      cache_to:
-        - type=local,dest=${DOCKER_CACHE-${HOME}/.cache/docker}
+      <<: *cache_settings
     image: ${WHITEBOARD_EDITOR_CR_URI-whiteboard_editor}/web_socket_server:${WHITEBOARD_EDITOR_TAG-latest}
     environment:
       # Make sure to set MONGO_URI in .env
@@ -72,10 +70,7 @@ services:
     build:
       context: WebSocketServer
       target: test_runtime
-      cache_from:
-        - type=local,src=${DOCKER_CACHE-${HOME}/.cache/docker}
-      cache_to:
-        - type=local,dest=${DOCKER_CACHE-${HOME}/.cache/docker}
+      <<: *cache_settings
     depends_on:
       test_db:
         condition: service_healthy
@@ -86,10 +81,7 @@ services:
     build:
       context: RestAPI
       target: release
-      cache_from:
-        - type=local,src=${DOCKER_CACHE-${HOME}/.cache/docker}
-      cache_to:
-        - type=local,dest=${DOCKER_CACHE-${HOME}/.cache/docker}
+      <<: *cache_settings
     image: ${WHITEBOARD_EDITOR_CR_URI-whiteboard_editor}/rest_api:${WHITEBOARD_EDITOR_TAG-latest}
     environment:
       # make sure to set values in .env
@@ -107,10 +99,7 @@ services:
     build:
       context: RestAPI
       target: builder
-      cache_from:
-        - type=local,src=${DOCKER_CACHE-${HOME}/.cache/docker}
-      cache_to:
-        - type=local,dest=${DOCKER_CACHE-${HOME}/.cache/docker}
+      <<: *cache_settings
     image: ${WHITEBOARD_EDITOR_CR_URI-whiteboard_editor}/rest_api_tester:${WHITEBOARD_EDITOR_TAG-latest}
     environment:
       # make sure to set values in .env
