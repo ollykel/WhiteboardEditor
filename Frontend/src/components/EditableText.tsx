@@ -32,6 +32,7 @@ const EditableText = ({
   const [isSelected, setIsSelected] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [textWidth, setTextWidth] = useState(width);
+  const [textHeight, setTextHeight] = useState(height);
 
   const textRef = useRef<Konva.Text>(null);
   const trRef = useRef<Konva.Transformer>(null);
@@ -80,11 +81,16 @@ const EditableText = ({
     const node = textRef.current;
     if (!node) return;
     const scaleX = node.scaleX();
+    const scaleY = node.scaleY();
     const newWidth = node.width() * scaleX;
+    const newHeight = node.height() * scaleY;
     setTextWidth(newWidth);
+    setTextHeight(newHeight);
     node.setAttrs({
       width: newWidth,
+      height: newHeight,
       scaleX: 1,
+      scaleY: 1,
     });
   }, []);
 
@@ -98,7 +104,7 @@ const EditableText = ({
         x={x}
         y={y}
         width={textWidth}
-        height={height}
+        height={textHeight}
         draggable={draggable}
         onClick={handleSelect}
         onTap={handleSelect}
@@ -120,6 +126,7 @@ const EditableText = ({
           boundBoxFunc={(_oldBox, newBox) => ({
             ...newBox,
             width: Math.max(30, newBox.width),
+            height: Math.max(30, newBox.height),
           })}
         />
       )}
