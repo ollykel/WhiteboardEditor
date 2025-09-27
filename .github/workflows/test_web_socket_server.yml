@@ -42,8 +42,21 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build with Container Registry cache
-        id: build-cached
+      - name: Build Test Database with Container Registry cache
+        id: build-test-db-cached
+        uses: docker/build-push-action@v6
+        with:
+          context: TestDatabase
+          target: release
+          push: false
+          tags: ghcr.io/${{ github.repository_owner }}/${{ github.repository_id }}/test_db:test
+
+          # cache settings
+          cache-from: type=registry,ref=ghcr.io/${{ github.repository_owner }}/${{ github.repository_id }}/test_db:buildcache
+          cache-to: type=registry,ref=ghcr.io/${{ github.repository_owner }}/${{ github.repository_id }}/test_db:buildcache,mode=max
+
+      - name: Build Tester with Container Registry cache
+        id: build-tester-cached
         uses: docker/build-push-action@v6
         with:
           context: WebSocketServer
@@ -58,7 +71,7 @@ jobs:
       - name: Run Cargo tests
         id: run-cargo-tests
         env:
-          # Needed for docker compose to properly identify the built image (see
+          # Needed for docker compose to properly identify the built images (see
           # image tag for web_socket_server_tester in docker-compose.yml)
           WHITEBOARD_EDITOR_CR_URI: ghcr.io/${{ github.repository_owner }}/${{ github.repository_id }}
           WHITEBOARD_EDITOR_TAG: test
