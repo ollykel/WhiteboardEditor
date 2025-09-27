@@ -1,23 +1,20 @@
-import { useEffect, useRef } from 'react';
+import { useRef } from 'react';
 
 import Konva from 'konva';
 import { Html } from 'react-konva-utils';
 
 interface TextEditorProps {
   textNode: Konva.Text;
-  onClose: () => void;
   onChange: (value: string) => void;
+  onClose: () => void;
 }
 
-const TextEditor = ({ textNode, onClose, onChange }: TextEditorProps) => {
+const TextEditor = ({ textNode, onChange, onClose }: TextEditorProps) => {
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+  console.log("in TextEditor");
 
-  useEffect(() => {
-    if (!textareaRef.current) {
-      return;
-    }
-  
-    const textarea = textareaRef.current;
+  const initTextArea = (textarea: HTMLTextAreaElement) => {
+    console.log("textarea: ", textarea);
     const stage = textNode.getStage();
     // const stageBox = stage?.container().getBoundingClientRect();
     const textPosition = stage ? textNode.getAbsolutePosition(stage) : textNode.position();
@@ -65,6 +62,7 @@ const TextEditor = ({ textNode, onClose, onChange }: TextEditorProps) => {
     const handleOutsideClick = (e: MouseEvent) => {
       if (e.target !== textarea) {
         onChange(textarea.value);
+        console.log("outside click");
         onClose();
       }
     }
@@ -100,13 +98,18 @@ const TextEditor = ({ textNode, onClose, onChange }: TextEditorProps) => {
       textarea.removeEventListener("input", handleInput);
       window.removeEventListener("click", handleOutsideClick);
     };
-  }, [textNode, onChange, onClose]);
+  }
 
   return (
     <Html>
       <textarea 
         placeholder="Enter text here"
-        ref={textareaRef}
+        ref={(elem) => {
+          if (elem) {
+            textareaRef.current = elem;
+            initTextArea(elem);
+          }
+        }}
         style={{
           minHeight: "1rem",
           position: "absolute",

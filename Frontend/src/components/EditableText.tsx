@@ -75,6 +75,8 @@ const EditableText = ({
 
   const handleTextChange = useCallback((newText: string): void => {
     setText(newText);
+    console.log("Old Text?: ", text);
+    console.log("New Text: ", newText);
   }, []);
 
   const handleTransform = useCallback(() => {
