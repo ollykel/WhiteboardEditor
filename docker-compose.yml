@@ -45,17 +45,6 @@ services:
       # exposed for testing purposes
       - ${WHITEBOARD_EDITOR_FRONTEND_PORT-3001}:3000
 
-  web_socket_server_tester:
-    # Testing environment for WebSocketServer
-    build:
-      context: WebSocketServer
-      target: test_runtime
-      cache_from:
-        - type=local,src=${DOCKER_CACHE-${HOME}/.cache/docker}
-      cache_to:
-        - type=local,dest=${DOCKER_CACHE-${HOME}/.cache/docker}
-    image: ${WHITEBOARD_EDITOR_CR_URI-whiteboard_editor}/web_socket_server_tester:${WHITEBOARD_EDITOR_TAG-latest}
-
   web_socket_server:
     # Handles web sockets for providing real-time interaction with clients.
     # Contains lightweight runtime environment with only the compiled,
@@ -75,6 +64,21 @@ services:
     ports:
       # exposed for testing purposes
       - ${WHITEBOARD_EDITOR_WEB_SOCKET_PORT-3002}:3000
+
+  web_socket_server_tester:
+    # Testing environment for WebSocketServer
+    profiles:
+      - test
+    build:
+      context: WebSocketServer
+      target: test_runtime
+      cache_from:
+        - type=local,src=${DOCKER_CACHE-${HOME}/.cache/docker}
+      cache_to:
+        - type=local,dest=${DOCKER_CACHE-${HOME}/.cache/docker}
+    depends_on:
+      - test_db
+    image: ${WHITEBOARD_EDITOR_CR_URI-whiteboard_editor}/web_socket_server_tester:${WHITEBOARD_EDITOR_TAG-latest}
   
   rest_api:
     # Handles RESTful operations on database

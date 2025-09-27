@@ -12,8 +12,8 @@ on:
       - opened
 jobs:
   run_cargo_tests_web_socket_server:
-    # Build web_socket_server_builder and run cargo tests within
-    # web_socket_server_builder
+    # Build web_socket_server_tester and run cargo tests within
+    # web_socket_server_tester
     name: Run Cargo Unit Tests
     runs-on: ubuntu-24.04
     permissions:
@@ -47,13 +47,13 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: WebSocketServer
-          target: builder
+          target: test_runtime
           push: false
-          tags: ghcr.io/${{ github.repository_owner }}/${{ github.repository_id }}/web_socket_server_builder:test
+          tags: ghcr.io/${{ github.repository_owner }}/${{ github.repository_id }}/web_socket_server_tester:test
 
           # cache settings
-          cache-from: type=registry,ref=ghcr.io/${{ github.repository_owner }}/${{ github.repository_id }}/web_socket_server:buildcache
-          cache-to: type=registry,ref=ghcr.io/${{ github.repository_owner }}/${{ github.repository_id }}/web_socket_server:buildcache,mode=max
+          cache-from: type=registry,ref=ghcr.io/${{ github.repository_owner }}/${{ github.repository_id }}/web_socket_server_tester:buildcache
+          cache-to: type=registry,ref=ghcr.io/${{ github.repository_owner }}/${{ github.repository_id }}/web_socket_server_tester:buildcache,mode=max
 
       - name: Start test database
         shell: bash
@@ -63,10 +63,12 @@ jobs:
       - name: Run Cargo tests
         id: run-cargo-tests
         env:
-          NETWORK_NAME: ${{ github.job }}_default
-          WEB_SOCKET_SERVER_IMAGE: ghcr.io/${{ github.repository_owner }}/${{ github.repository_id }}/web_socket_server_builder:test
+          # Needed for docker compose to properly identify the built image (see
+          # image tag for web_socket_server_tester in docker-compose.yml)
+          WHITEBOARD_EDITOR_CR_URI: ghcr.io/${{ github.repository_owner }}/${{ github.repository_id }}
+          WHITEBOARD_EDITOR_TAG: test
         run: |
-          docker run --network "${NETWORK_NAME}" "${WEB_SOCKET_SERVER_IMAGE}" cargo test
+          docker compose up web_socket_server_tester
 
       - name: Tear down test database
         id: tear-down-test-db
@@ -75,4 +77,4 @@ jobs:
         run: |
           # Just run for all services, in case we started more services than
           # just test_db.
-          docker compose -p ${{ github.job }} down -v
+          docker compose down -v
