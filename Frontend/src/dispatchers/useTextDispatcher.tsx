@@ -113,10 +113,6 @@ const useTextDispatcher = ({
           width={width}
           height={height}
           draggable={isDraggable}
-          // onDblClick={handleTextDblClick}
-          // onDblTap={handleTextDblClick}
-          // onTransform={handleTransform}
-          // visible={!isEditing}
         />
       )
     }

@@ -12,11 +12,7 @@ interface EditableTextProps {
   y: number
   width: number
   height: number
-  draggable: boolean 
-  // onDblClick: 
-  // onDblTap={handleTextDblClick}: 
-  // onTransform={handleTransform}
-  // visible
+  draggable: boolean
 }
 
 const EditableText = ({
@@ -41,7 +37,6 @@ const EditableText = ({
   useEffect(() => {
     if (isSelected && trRef.current && textRef.current) {
       trRef.current.nodes([textRef.current]);
-      trRef.current.getLayer()?.batchDraw();
     }
   }, [isSelected])
 
