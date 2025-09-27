@@ -55,11 +55,6 @@ jobs:
           cache-from: type=registry,ref=ghcr.io/${{ github.repository_owner }}/${{ github.repository_id }}/web_socket_server_tester:buildcache
           cache-to: type=registry,ref=ghcr.io/${{ github.repository_owner }}/${{ github.repository_id }}/web_socket_server_tester:buildcache,mode=max
 
-      - name: Start test database
-        shell: bash
-        run: |
-          docker compose -p ${{ github.job }} up --build -d test_db
-
       - name: Run Cargo tests
         id: run-cargo-tests
         env:
