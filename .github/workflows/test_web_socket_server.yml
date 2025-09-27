@@ -68,7 +68,7 @@ jobs:
           WHITEBOARD_EDITOR_CR_URI: ghcr.io/${{ github.repository_owner }}/${{ github.repository_id }}
           WHITEBOARD_EDITOR_TAG: test
         run: |
-          docker compose up web_socket_server_tester
+          docker compose run -p ${{ github.job }} web_socket_server_tester
 
       - name: Tear down test database
         id: tear-down-test-db
@@ -77,4 +77,4 @@ jobs:
         run: |
           # Just run for all services, in case we started more services than
           # just test_db.
-          docker compose down -v
+          docker compose -p ${{ github.job }} down -v
