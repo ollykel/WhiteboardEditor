@@ -115,6 +115,7 @@ const EditableText = ({
       />
       {isEditing && textRef.current && (
         <TextEditor
+          key={Date.now()} // forces remount
           textNode={textRef.current}
           onChange={handleTextChange}
           onClose={() => setIsEditing(false)}

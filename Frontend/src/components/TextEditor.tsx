@@ -18,9 +18,9 @@ const TextEditor = ({ textNode, onClose, onChange }: TextEditorProps) => {
     }
   
     const textarea = textareaRef.current;
-    // const stage = textNode.getStage();
-    const textPosition = textNode.position();
+    const stage = textNode.getStage();
     // const stageBox = stage?.container().getBoundingClientRect();
+    const textPosition = stage ? textNode.getAbsolutePosition(stage) : textNode.position();
     const areaPosition = {
       x: textPosition.x,
       y: textPosition.y,
@@ -31,10 +31,8 @@ const TextEditor = ({ textNode, onClose, onChange }: TextEditorProps) => {
     textarea.style.position = "absolute";
     textarea.style.top = `${areaPosition.y}px`;
     textarea.style.left = `${areaPosition.x}px`;
-    textarea.style.width = `${textNode.width() - textNode.padding() * 2}px`;
-    textarea.style.height = `${
-      textNode.height() - textNode.padding() * 2 + 5
-    }px`;
+    textarea.style.width = `${textNode.width()}px`;
+    textarea.style.height = `${textNode.height()}px`;
     textarea.style.fontSize = `${textNode.fontSize()}px`;
     textarea.style.border = "none";
     textarea.style.padding = "20px";
