@@ -28,9 +28,9 @@ const EditableText = ({
   height,
   draggable,
 }: EditableTextProps) => {
-  const [text, setText] = useState("");
+  const [text, setText] = useState("text");
   const [isSelected, setIsSelected] = useState(false);
-  const [isEditing, setIsEditing] = useState(true);
+  const [isEditing, setIsEditing] = useState(false);
   const [textWidth, setTextWidth] = useState(width);
 
   const textRef = useRef<Konva.Text>(null);
@@ -65,7 +65,8 @@ const EditableText = ({
     if (!isEditing) setIsSelected(true);
   }, [isEditing]);
 
-  const handleTextDblClick = useCallback((): void => {
+  const handleTextDblClick = useCallback((e: Konva.KonvaEventObject<MouseEvent>) => {
+    e.cancelBubble = true;
     setIsEditing(true);
     setIsSelected(false); 
     console.log("Double clicked");
