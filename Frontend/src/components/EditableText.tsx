@@ -1,6 +1,6 @@
 import { useRef, useState, useEffect, useCallback } from "react";
 
-import { Text, Transformer } from 'react-konva';
+import { Group, Text, Transformer } from 'react-konva';
 
 import Konva from "konva";
 import TextEditor from "./TextEditor";
@@ -42,6 +42,7 @@ const EditableText = ({
 
   const handleTextDblClick = useCallback((): void => {
     setIsEditing(true);
+    console.log("Double clicked");
   }, []);
 
   const handleTextChange = useCallback((newText: string): void => {
@@ -61,7 +62,7 @@ const EditableText = ({
   }, []);
 
   return (
-    <div>
+    <Group>
       <Text
         ref={textRef}
         text={text}
@@ -94,7 +95,7 @@ const EditableText = ({
           })}
         />
       )}
-    </div>
+    </ Group>
   );
 }
 

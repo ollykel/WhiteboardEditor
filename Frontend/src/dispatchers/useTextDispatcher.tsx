@@ -24,7 +24,7 @@ import type {
 //
 // =============================================================================
 const useTextDispatcher = ({
-  shapeAttributes,
+  // shapeAttributes,
   addShapes,
 }: OperationDispatcherProps
 ): OperationDispatcher => {
@@ -55,7 +55,7 @@ const useTextDispatcher = ({
 
       addShapes([{
         type: 'text',
-        ...shapeAttributes,
+        // ...shapeAttributes, Not a part of the TextModel
         fontSize: 20,
         color: 'black',
         x: xMin,
