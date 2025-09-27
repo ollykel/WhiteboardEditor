@@ -111,6 +111,7 @@ const EditableText = ({
         onDblTap={handleTextDblClick}
         onTransform={handleTransform}
         listening={!isEditing}
+        visible={!isEditing}
       />
       {isEditing && textRef.current && (
         <TextEditor
