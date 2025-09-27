@@ -30,7 +30,7 @@ const TextEditor = ({ textNode, onChange, onClose }: TextEditorProps) => {
     textarea.style.height = `${textNode.height()}px`;
     textarea.style.fontSize = `${textNode.fontSize()}px`;
     textarea.style.border = "none";
-    textarea.style.padding = "20px";
+    textarea.style.padding = "0px";
     textarea.style.margin = "0px";
     textarea.style.overflow = "hidden";
     textarea.style.background = "none";
