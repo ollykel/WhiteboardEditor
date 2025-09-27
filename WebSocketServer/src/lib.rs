@@ -184,7 +184,7 @@ pub enum ClientSocketMessage {
     UpdateCanvasAllowedUsers { canvas_id: CanvasIdType, allowed_users: HashSet<ObjectId>}
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Canvas {
     pub id: CanvasIdType,
     pub next_shape_id_base: u64,
@@ -248,7 +248,7 @@ pub struct WhiteboardPermission {
 
 pub type WhiteboardPermissionMongoDBView = WhiteboardPermission;
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Whiteboard {
     pub id: WhiteboardIdType,
     pub name: String,
@@ -708,3 +708,4 @@ pub async fn get_whiteboard_by_id(db: &Database, wid: &WhiteboardIdType) -> Resu
 
     Ok(Some(whiteboard_view.to_whiteboard(canvases.as_slice())))
 }// -- end fn get_whiteboard_by_id
+
