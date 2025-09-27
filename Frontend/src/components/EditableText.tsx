@@ -61,8 +61,13 @@ const EditableText = ({
     };
   }, []);
 
+  const handleSelect = useCallback(() => {
+    if (!isEditing) setIsSelected(true);
+  }, [isEditing]);
+
   const handleTextDblClick = useCallback((): void => {
     setIsEditing(true);
+    setIsSelected(false); 
     console.log("Double clicked");
   }, []);
 
@@ -73,7 +78,7 @@ const EditableText = ({
   const handleTransform = useCallback(() => {
     const node = textRef.current;
     if (!node) return;
-    const scaleX = node?.scaleX();
+    const scaleX = node.scaleX();
     const newWidth = node.width() * scaleX;
     setTextWidth(newWidth);
     node.setAttrs({
@@ -94,6 +99,8 @@ const EditableText = ({
         width={textWidth}
         height={height}
         draggable={draggable}
+        onClick={handleSelect}
+        onTap={handleSelect}
         onDblClick={handleTextDblClick}
         onDblTap={handleTextDblClick}
         onTransform={handleTransform}
@@ -106,7 +113,7 @@ const EditableText = ({
           onClose={() => setIsEditing(false)}
         />
       )} 
-      {isSelected && (
+      {isSelected && !isEditing && (
         <Transformer
           ref={trRef}
           boundBoxFunc={(_oldBox, newBox) => ({
