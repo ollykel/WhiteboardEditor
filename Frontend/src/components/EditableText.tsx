@@ -48,7 +48,7 @@ const EditableText = ({
   // deslect when clicking outside
   useEffect(() => {
     const handleStageClick = (e: Konva.KonvaEventObject<MouseEvent>) => {
-      if (e.target === e.target.getStage()) {
+      if (e.target !== textRef.current) {
         setIsEditing(false);
         setIsSelected(false);
       }
