@@ -1,13 +1,20 @@
 # ---- Build args for all stages ----
-ARG CRATE_NAME="web_socket_server"
+ARG BUILD_DIR=/build
+ARG DEST_DIR=/app
 
 # ---- Stage 1: Dependency planner (cargo-chef) ----
 FROM rust:1.88 AS planner
 
-WORKDIR /app
+ARG BUILD_DIR
+ARG DEST_DIR
+
+WORKDIR ${BUILD_DIR}
 
 # Install cargo-chef
-RUN cargo install cargo-chef
+RUN \
+  --mount=type=cache,id=cargo_registry,target=/usr/local/cargo/registry \
+  --mount=type=cache,id=cargo_git,target=/usr/local/cargo/git \
+  cargo install cargo-chef
 
 # Copy manifests
 COPY Cargo.toml Cargo.lock ./
@@ -18,106 +25,163 @@ fn main() {}
 EOF
 
 # Generate dependency build plan
-RUN cargo chef prepare --recipe-path recipe.json
-
-# ---- Stage 2: Dependency builder ----
-FROM rust:1.88 AS cacher
-
-WORKDIR /build
-RUN cargo install cargo-chef
-
-COPY --from=planner /app/recipe.json recipe.json
-COPY Cargo.toml Cargo.lock ./
-
-# Use buildkit cache mounts for cargo registry + target dir
 RUN \
-    --mount=type=cache,target=/usr/local/cargo/registry \
-    --mount=type=cache,target=/usr/local/cargo/git \
-    --mount=type=cache,target=/build/target \
-    cargo chef cook --release --recipe-path recipe.json
+  --mount=type=cache,id=cargo_registry,target=/usr/local/cargo/registry \
+  --mount=type=cache,id=cargo_git,target=/usr/local/cargo/git \
+  cargo chef prepare --recipe-path recipe.json
 
-# Optionally prepare test dependencies too
-RUN \
-    --mount=type=cache,target=/usr/local/cargo/registry \
-    --mount=type=cache,target=/usr/local/cargo/git \
-    --mount=type=cache,target=/build/target \
-    cargo chef cook --tests --recipe-path recipe.json
+# ---- Stage: Test Builder ----
+FROM rust:1.88 AS build_tests
 
-# ---- Stage 3: Application build ----
-FROM rust:1.88 AS builder
-
-ARG CARGO_HOME_DIR=/
-ARG BUILD_DIR=/build
-ARG DEST_DIR=/app
-
-# Used for building the unit tests
-ARG TEST_CACHE_DIR=${BUILD_DIR}/.test_cache
-
-# Initialize the destination dir
-RUN mkdir -p "${DEST_DIR}"
+ARG BUILD_DIR
+ARG DEST_DIR
 
 WORKDIR ${BUILD_DIR}
 
-# Copy source
-COPY . .
+# Install cargo-chef
+RUN \
+  --mount=type=cache,id=cargo_registry,target=/usr/local/cargo/registry \
+  --mount=type=cache,id=cargo_git,target=/usr/local/cargo/git \
+  cargo install cargo-chef
+
+# Copy manifests, recipe
+COPY --from=planner ${BUILD_DIR}/recipe.json recipe.json
+COPY Cargo.toml Cargo.lock ./
+
+# Build test dependencies
+RUN \
+  --mount=type=cache,id=cargo_registry,target=/usr/local/cargo/registry \
+  --mount=type=cache,id=cargo_git,target=/usr/local/cargo/git \
+  --mount=type=cache,id=test_deps,target=${BUILD_DIR}/target \
+  cargo chef cook --tests --recipe-path recipe.json
+
+# Copy relevant source code
+COPY ./src/lib.rs ./src/unit_tests.rs ./src
 
 # Dummy build file to make Cargo happy
 COPY <<-EOF src/dummy.rs
 fn main() {}
 EOF
 
-# Build the unit tests, with the sub-cache identified by the sha512 sum
-# of the unit_tests.rs file. This will ensure that tests are re-compiled
-# whenever unit_tests.rs is modified, without eliminated tests or "ghost" tests
-# from other branches remaining in the target directory.
+# Build tests
 RUN \
-  --mount=type=cache,target=/usr/local/cargo/registry \
-  --mount=type=cache,target=/usr/local/cargo/git \
-  --mount=type=cache,target=/build/target \
-  --mount=type=cache,target=${TEST_CACHE_DIR} \
-  <<-EOF
+  --mount=type=cache,id=cargo_registry,ro,target=/usr/local/cargo/registry \
+  --mount=type=cache,id=cargo_git,ro,target=/usr/local/cargo/git \
+  --mount=type=cache,id=test_deps,target=${BUILD_DIR}/test_deps \
+  <<_EOF_
 #!/usr/bin/bash -e
 
-TEST_TARGET_DIR="${TEST_CACHE_DIR}/$(sha512sum < src/unit_tests.rs | cut -d' ' -f-1)"
-mkdir -p "${TEST_TARGET_DIR}"
-cp -rp ${BUILD_DIR}/target/* "${TEST_TARGET_DIR}" || true
-cargo test --no-run --target-dir "${TEST_TARGET_DIR}"
-cp -rp "${TEST_TARGET_DIR}" "${DEST_DIR}/target"
-EOF
+cp -r --preserve=mode,timestamps ./test_deps ./target
+cargo test --no-run
+_EOF_
 
-# Build with cached cargo registry + target directory
-# Build both tests and release mode.
-# Copy the final build to the /app/ directory, to take it out of the cache.
+# ---- Stage: Prepare Test Runtime Environment ----
+FROM rust:1.88 AS test_runtime
+
+ARG BUILD_DIR
+ARG DEST_DIR
+
+WORKDIR ${BUILD_DIR}
+
+# Copy cached build directories into final locations
+RUN mkdir -p ${DEST_DIR} /usr/local/cargo
+
 RUN \
-  --mount=type=cache,target=/usr/local/cargo/registry \
-  --mount=type=cache,target=/usr/local/cargo/git \
-  --mount=type=cache,target=/build/target \
-  <<-EOF
+  --mount=type=cache,id=cargo_registry,ro,target=${BUILD_DIR}/registry \
+  --mount=type=cache,id=cargo_git,ro,target=${BUILD_DIR}/git \
+  <<_EOF_
 #!/usr/bin/bash -e
 
-cargo build --release
-cp -rp /usr/local/cargo/registry /usr/local/cargo/registry_saved
-cp -rp /usr/local/cargo/git /usr/local/cargo/git_saved
-cp -rp ./* "${DEST_DIR}"
-EOF
+cp -r --preserve=mode,timestamps registry git /usr/local/cargo
+_EOF_
 
-# Copy saved cargo directories into intended locations.
-# Allows use by testers
-RUN cp -rp /usr/local/cargo/registry_saved /usr/local/cargo/registry
-RUN cp -rp /usr/local/cargo/git_saved /usr/local/cargo/git
-
-# Make ${DEST_DIR} the default working directory, where testers can run.
+# Set working directory to destination
 WORKDIR ${DEST_DIR}
 
-# ---- Stage 4: Minimal runtime ----
-FROM debian:trixie-slim AS final
+COPY Cargo.toml Cargo.lock .
+COPY ./src ./src
 
-RUN apt-get update && apt-get install -y ca-certificates && rm -rf /var/lib/apt/lists/*
+# Copy target directory
+COPY --from=build_tests ${BUILD_DIR}/target ./target
 
+# Dummy build file to make Cargo happy
+COPY <<-EOF src/dummy.rs
+fn main() {}
+EOF
+
+ENTRYPOINT ["cargo", "test"]
+
+# ---- Stage: Build Release Binary ----
+FROM rust:1.88 AS build_release
+
+ARG BUILD_DIR
+ARG DEST_DIR
+
+WORKDIR ${BUILD_DIR}
+
+# Install cargo-chef
+RUN \
+  --mount=type=cache,id=cargo_registry,target=/usr/local/cargo/registry \
+  --mount=type=cache,id=cargo_git,target=/usr/local/cargo/git \
+  cargo install cargo-chef
+
+# Copy manifests, recipe
+COPY --from=planner ${BUILD_DIR}/recipe.json recipe.json
+COPY Cargo.toml Cargo.lock ./
+
+# Build release dependencies
+RUN \
+  --mount=type=cache,id=cargo_registry,target=/usr/local/cargo/registry \
+  --mount=type=cache,id=cargo_git,target=/usr/local/cargo/git \
+  --mount=type=cache,id=release_target,target=${BUILD_DIR}/target \
+  cargo chef cook --release --recipe-path recipe.json
+
+# Copy relevant source code
+COPY ./src/lib.rs ./src/main.rs ./src
+
+# Dummy build file to make Cargo happy
+COPY <<-EOF src/dummy.rs
+fn main() {}
+EOF
+
+# Build release binary
+RUN \
+  --mount=type=cache,id=cargo_registry,ro,target=/usr/local/cargo/registry \
+  --mount=type=cache,id=cargo_git,ro,target=/usr/local/cargo/git \
+  --mount=type=cache,id=release_target,target=${BUILD_DIR}/target \
+  cargo build --release
+
+# ---- Stage: Prepare Release Runtime Environment ----
+FROM debian:trixie-slim AS release_runtime
+
+ARG BUILD_DIR
+ARG DEST_DIR
+
+WORKDIR ${DEST_DIR}
+
+RUN <<_EOF_
+#!/bin/bash -e
+
+apt-get update
+apt-get install -y ca-certificates
+rm -rf /var/lib/apt/lists/*
+_EOF_
+
+# Establishes dependency relationship between stages
+COPY --from=build_release ${BUILD_DIR}/recipe.json recipe.json
+
+# Copy cached binary into final location
+RUN \
+  --mount=type=cache,id=release_target,ro,target=${DEST_DIR}/target \
+  <<_EOF_
+#!/usr/bin/bash -e
+
+cp --preserve=mode,timestamps ./target/release/web_socket_server /usr/local/bin/web_socket_server
+_EOF_
+
+# Set working directory to destination
 RUN useradd -m appuser
-
-COPY --from=builder /app/target/release/web_socket_server /usr/local/bin/web_socket_server
-
 USER appuser
+
 EXPOSE 3000
 ENTRYPOINT ["/usr/local/bin/web_socket_server"]
