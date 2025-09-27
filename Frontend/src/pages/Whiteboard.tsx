@@ -204,7 +204,7 @@ const Whiteboard = () => {
 
   const canvasesSorted = [...canvases];
 
-  canvasesSorted.sort((a, b) => a.id < b.id ? -1 : 1);
+  canvasesSorted.sort((a, b) => new Date(a.timeCreated) < new Date(b.timeCreated) ? -1 : 1);
 
   // TODO: remove debug
   console.log('Canvases:', canvases);
@@ -286,16 +286,9 @@ const Whiteboard = () => {
             break;
           case 'create_canvas':
             {
-              const { canvasId, width, height, name, allowedUsers = [] } = msg;
+              const { canvas } = msg;
 
-              addCanvas(dispatch, whiteboardIdRef.current, ({
-                id: canvasId,
-                width,
-                height,
-                name,
-                shapes: {},
-                allowedUsers
-              }));
+              addCanvas(dispatch, whiteboardIdRef.current, canvas);
             }
             break;
           case 'delete_canvases':
