@@ -84,6 +84,7 @@ services:
     # Handles RESTful operations on database
     build:
       context: RestAPI
+      target: release
       cache_from:
         - type=local,src=${DOCKER_CACHE-${HOME}/.cache/docker}
       cache_to:
@@ -94,12 +95,30 @@ services:
       MONGO_URI: ${WHITEBOARD_EDITOR_MONGO_URI}
       JWT_SECRET: ${WHITEBOARD_EDITOR_JWT_SECRET}
       JWT_EXPIRATION_SECS: ${WHITEBOARD_EDITOR_JWT_EXPIRATION_SECS}
-    depends_on:
-      test_db:
-        condition: service_healthy
     ports:
       # exposed for testing purposes
       - ${WHITEBOARD_EDITOR_REST_API_PORT-3003}:3000
+  
+  rest_api_tester:
+    # Tester for RestAPI
+    profiles:
+      - test
+    build:
+      context: RestAPI
+      target: builder
+      cache_from:
+        - type=local,src=${DOCKER_CACHE-${HOME}/.cache/docker}
+      cache_to:
+        - type=local,dest=${DOCKER_CACHE-${HOME}/.cache/docker}
+    image: ${WHITEBOARD_EDITOR_CR_URI-whiteboard_editor}/rest_api_tester:${WHITEBOARD_EDITOR_TAG-latest}
+    environment:
+      # make sure to set values in .env
+      MONGO_URI: ${WHITEBOARD_EDITOR_MONGO_URI}
+      JWT_SECRET: ${WHITEBOARD_EDITOR_JWT_SECRET}
+      JWT_EXPIRATION_SECS: ${WHITEBOARD_EDITOR_JWT_EXPIRATION_SECS}
+    depends_on:
+      test_db:
+        condition: service_healthy
 
   test_db:
     # Should only be used for testing purposes
