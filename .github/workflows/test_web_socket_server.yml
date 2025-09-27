@@ -63,7 +63,10 @@ jobs:
       - name: Run Cargo tests
         id: run-cargo-tests
         run: |
-          docker run ghcr.io/${{ github.repository_owner }}/${{ github.repository_id }}/web_socket_server_builder:test cargo test
+          docker run \
+            --network whiteboard_editor_default \
+            ghcr.io/${{ github.repository_owner }}/${{ github.repository_id }}/web_socket_server_builder:test \
+            cargo test
 
       - name: Tear down test database
         id: tear-down-test-db
