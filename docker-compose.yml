@@ -118,9 +118,13 @@ services:
     #
     # To access during testing, set the value of WHITEBOARD_EDITOR_MONGO_URI to
     # mongodb://test_db:27017/testdb
-    image: mongo:8.0
     profiles:
       - test
+    build:
+      context: TestDatabase
+      target: release
+      <<: *cache_settings
+    image: ${WHITEBOARD_EDITOR_CR_URI-whiteboard_editor}/test_db:${WHITEBOARD_EDITOR_TAG-latest}
     volumes:
       # initialization script
       - ./TestDatabase/init-db.js:/docker-entrypoint-initdb.d/init-db.js:ro
