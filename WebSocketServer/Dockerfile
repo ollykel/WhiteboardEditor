@@ -65,8 +65,8 @@ EOF
 
 # Build tests
 RUN \
-  --mount=type=cache,id=cargo_registry,ro,target=/usr/local/cargo/registry \
-  --mount=type=cache,id=cargo_git,ro,target=/usr/local/cargo/git \
+  --mount=type=cache,id=cargo_registry,target=/usr/local/cargo/registry \
+  --mount=type=cache,id=cargo_git,target=/usr/local/cargo/git \
   --mount=type=cache,id=test_deps,target=${BUILD_DIR}/test_deps \
   <<_EOF_
 #!/usr/bin/bash -e
@@ -87,8 +87,8 @@ WORKDIR ${BUILD_DIR}
 RUN mkdir -p ${DEST_DIR} /usr/local/cargo
 
 RUN \
-  --mount=type=cache,id=cargo_registry,ro,target=${BUILD_DIR}/registry \
-  --mount=type=cache,id=cargo_git,ro,target=${BUILD_DIR}/git \
+  --mount=type=cache,id=cargo_registry,target=${BUILD_DIR}/registry \
+  --mount=type=cache,id=cargo_git,target=${BUILD_DIR}/git \
   <<_EOF_
 #!/usr/bin/bash -e
 
@@ -146,8 +146,8 @@ EOF
 
 # Build release binary
 RUN \
-  --mount=type=cache,id=cargo_registry,ro,target=/usr/local/cargo/registry \
-  --mount=type=cache,id=cargo_git,ro,target=/usr/local/cargo/git \
+  --mount=type=cache,id=cargo_registry,target=/usr/local/cargo/registry \
+  --mount=type=cache,id=cargo_git,target=/usr/local/cargo/git \
   --mount=type=cache,id=release_target,target=${BUILD_DIR}/target \
   cargo build --release
 
@@ -172,7 +172,7 @@ COPY --from=build_release ${BUILD_DIR}/recipe.json recipe.json
 
 # Copy cached binary into final location
 RUN \
-  --mount=type=cache,id=release_target,ro,target=${DEST_DIR}/target \
+  --mount=type=cache,id=release_target,target=${DEST_DIR}/target \
   <<_EOF_
 #!/usr/bin/bash -e
 
