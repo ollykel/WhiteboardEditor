@@ -19,7 +19,7 @@ import type {
 import type {
   EventCoords
 } from '@/types/EventCoords';
-import draggableObjectProps from './editableObjectProps';
+import editableObjectProps from './editableObjectProps';
 
 // === useTextDispatcher ==================================================
 //
@@ -118,7 +118,7 @@ const useTextDispatcher = ({
           width={width}
           height={height}
           draggable={isDraggable}
-          {...draggableObjectProps<TextModel>(model, isDraggable, handleUpdateShapes)}
+          {...editableObjectProps<TextModel>(model, isDraggable, handleUpdateShapes)}
         />
       )
     }
