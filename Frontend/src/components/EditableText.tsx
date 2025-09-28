@@ -72,8 +72,6 @@ const EditableText = ({
 
   const handleTextDblClick = useCallback((e: Konva.KonvaEventObject<MouseEvent>) => {
     e.cancelBubble = true;
-    // e.evt.stopPropagation(); this caused jumping
-    // e.evt.preventDefault();
     setIsEditing(true);
     setIsSelected(false); 
   }, []);
