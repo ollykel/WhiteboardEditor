@@ -45,20 +45,24 @@ const EditableText = ({
     }
   }, [isSelected])
 
-  // deslect when clicking outside
+  // deselect when clicking outside of text node
   useEffect(() => {
+    if (isEditing) return;
+
     const handleStageClick = (e: Konva.KonvaEventObject<MouseEvent>) => {
+      if (e.evt.detail === 2) {
+        return;
+      }
       if (e.target !== textRef.current) {
-        setIsEditing(false);
         setIsSelected(false);
       }
     };
 
     const stage = textRef.current?.getStage();
-    stage?.on("click", handleStageClick);
-
+    if (!stage) return;
+    stage.on("click", handleStageClick);
     return () => {
-      stage?.off("click", handleStageClick);
+      stage.off("click", handleStageClick);
     };
   }, []);
 
@@ -68,6 +72,8 @@ const EditableText = ({
 
   const handleTextDblClick = useCallback((e: Konva.KonvaEventObject<MouseEvent>) => {
     e.cancelBubble = true;
+    // e.evt.stopPropagation(); this caused jumping
+    // e.evt.preventDefault();
     setIsEditing(true);
     setIsSelected(false); 
   }, []);
