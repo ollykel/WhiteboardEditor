@@ -58,7 +58,7 @@ const TextEditor = ({ textNode, onChange, onClose }: TextEditorProps) => {
     textarea.focus();
   
     const handleOutsideClick = (e: MouseEvent) => {
-      if (e.detail === 2) return; // this enabled multiple edits
+      if (e.detail === 2) return; // this enabled multiple subsequent edits
 
       if (e.target !== textarea) {
         onChange(textarea.value);
