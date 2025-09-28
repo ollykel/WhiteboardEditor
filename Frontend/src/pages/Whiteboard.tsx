@@ -472,7 +472,7 @@ const Whiteboard = () => {
         </div>
 
         {/** Modal that opens to share the whiteboard **/}
-        <ShareModal className="w-[50em] h-[20em]" zIndex={100}>
+        <ShareModal zIndex={100}>
           <div className="flex flex-col">
             <button
               onClick={closeShareModal}
