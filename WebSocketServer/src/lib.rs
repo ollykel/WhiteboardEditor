@@ -75,6 +75,7 @@ pub enum ShapeModel {
         stroke_color: String
     },
     Text {
+        text: String,
         font_size: i32,
         color: String,
         x: f64,

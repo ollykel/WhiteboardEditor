@@ -12,11 +12,14 @@ import type {
   OperationDispatcherProps
 } from '@/types/OperationDispatcher';
 import type {
-  CanvasObjectModel
+  CanvasObjectIdType,
+  CanvasObjectModel,
+  TextModel
 } from '@/types/CanvasObjectModel';
 import type {
   EventCoords
 } from '@/types/EventCoords';
+import draggableObjectProps from './draggableObjectProps';
 
 // === useTextDispatcher ==================================================
 //
@@ -90,7 +93,7 @@ const useTextDispatcher = ({
     _key: string | number,
     model: CanvasObjectModel,
     isDraggable: boolean,
-    // handleUpdateShapes: (shapes: Record<CanvasObjectIdType, CanvasObjectModel>) => void
+    handleUpdateShapes: (shapes: Record<CanvasObjectIdType, CanvasObjectModel>) => void
   ): React.JSX.Element | null => {
     if (model.type !== 'text') {
       return null;
@@ -115,6 +118,7 @@ const useTextDispatcher = ({
           width={width}
           height={height}
           draggable={isDraggable}
+          {...draggableObjectProps<TextModel>(model, isDraggable, handleUpdateShapes)}
         />
       )
     }
