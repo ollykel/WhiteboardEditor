@@ -71,6 +71,7 @@ export type VectorRecordFull = VectorModel & ObjectUID;
 
 export interface TextModel {
   type: 'text';
+  text: string;
   fontSize: number;
   color: string;
   x: number;
