@@ -83,9 +83,9 @@ export interface TextModel {
 export type TextRecord = TextModel & ObjectID;
 export type TextRecordFull = TextModel & ObjectUID;
 
-export type ShapeModel = RectModel | EllipseModel;
-export type ShapeRecord = RectRecord | EllipseRecord;
-export type ShapeRecordFull = RectRecordFull | EllipseRecordFull;
+export type ShapeModel = RectModel | EllipseModel | TextModel;
+export type ShapeRecord = RectRecord | EllipseRecord | TextRecord;
+export type ShapeRecordFull = RectRecordFull | EllipseRecordFull | TextRecordFull;
 
 export type CanvasObjectModel = ShapeModel | VectorModel | TextModel;
 export type CanvasObjectRecord = ShapeRecord | VectorRecord | TextRecord;
