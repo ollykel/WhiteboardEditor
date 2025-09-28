@@ -5,7 +5,7 @@ import type {
   ShapeModel
 } from '@/types/CanvasObjectModel';
 
-export interface DraggableObjectProps {
+export interface EditableObjectProps {
   onMouseOver?: (ev: Konva.KonvaEventObject<MouseEvent>) => void;
   onMouseOut?: (ev: Konva.KonvaEventObject<MouseEvent>) => void;
   onMouseDown?: (ev: Konva.KonvaEventObject<MouseEvent>) => void;
@@ -13,11 +13,11 @@ export interface DraggableObjectProps {
   onDragEnd?: (ev: Konva.KonvaEventObject<DragEvent>) => void;
 }
 
-const draggableObjectProps = <ShapeType extends ShapeModel> (
+const editableObjectProps = <ShapeType extends ShapeModel> (
   shapeModel: ShapeType,
   isDraggable: boolean,
   handleUpdateShapes: (shapes: Record<CanvasObjectIdType, ShapeType>) => void
-): DraggableObjectProps => {
+): EditableObjectProps => {
   const handleMouseOver = (ev: Konva.KonvaEventObject<MouseEvent>) => {
     const stage = ev.target.getStage();
 
@@ -69,4 +69,4 @@ const draggableObjectProps = <ShapeType extends ShapeModel> (
   });
 };
 
-export default draggableObjectProps;
+export default editableObjectProps;
