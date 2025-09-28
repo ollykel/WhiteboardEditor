@@ -39,17 +39,31 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build with Container Registry cache
-        id: build-cached
+      - name: Build Test Database with Container Registry cache
+        id: build-test-db-cached
+        uses: docker/build-push-action@v6
+        with:
+          context: TestDatabase
+          target: release
+          push: false
+          tags: ghcr.io/${{ github.repository_owner }}/${{ github.repository_id }}/test_db:test
+
+          # cache settings
+          cache-from: type=registry,ref=ghcr.io/${{ github.repository_owner }}/${{ github.repository_id }}/test_db:buildcache
+          cache-to: type=registry,ref=ghcr.io/${{ github.repository_owner }}/${{ github.repository_id }}/test_db:buildcache,mode=max
+
+      - name: Build Tester with Container Registry cache
+        id: build-tester-cached
         uses: docker/build-push-action@v6
         with:
           context: RestAPI
+          target: builder
           push: false
-          tags: ghcr.io/${{ github.repository_owner }}/${{ github.repository_id }}/rest_api:test
+          tags: ghcr.io/${{ github.repository_owner }}/${{ github.repository_id }}/rest_api_tester:test
 
           # cache settings
-          cache-from: type=registry,ref=ghcr.io/${{ github.repository_owner }}/${{ github.repository_id }}/rest_api:buildcache
-          cache-to: type=registry,ref=ghcr.io/${{ github.repository_owner }}/${{ github.repository_id }}/rest_api:buildcache,mode=max
+          cache-from: type=registry,ref=ghcr.io/${{ github.repository_owner }}/${{ github.repository_id }}/rest_api_tester:buildcache
+          cache-to: type=registry,ref=ghcr.io/${{ github.repository_owner }}/${{ github.repository_id }}/rest_api_tester:buildcache,mode=max
 
       - name: Set up test env
         id: test-env-setup
@@ -71,11 +85,6 @@ jobs:
         run: |
           printenv TEST_ENV > .env
 
-      - name: Start test database
-        shell: bash
-        run: |
-          docker compose -p ${{ github.job }} up --build -d test_db
-
       - name: Run supertest
         id: run-supertest
         env:
@@ -83,12 +92,11 @@ jobs:
           WHITEBOARD_EDITOR_CR_URI: ghcr.io/${{ github.repository_owner }}/${{ github.repository_id }}
           WHITEBOARD_EDITOR_TAG: test
         run: |
-          docker compose -p ${{ github.job }} run --entrypoint "yarn test" rest_api
+          docker compose -p ${{ github.job }} run rest_api_tester
 
       - name: Tear down test database
         id: tear-down-test-db
         if: always()
-        shell: bash
         run: |
           # Just run for all services, in case we started more services than
           # just test_db.
