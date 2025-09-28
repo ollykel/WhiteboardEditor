@@ -84,6 +84,7 @@ import ShareWhiteboardForm, {
 import type {
   SocketServerMessage,
   // ClientMessageCreateShapes,
+  ClientMessageLogin,
   ClientMessageUpdateShapes,
   ClientMessageCreateCanvas,
   CanvasData,
@@ -328,7 +329,7 @@ const Whiteboard = () => {
     ws.onopen = () => {
       // Send login/auth message with user ID, if currently logged in
       if (user) {
-        const loginMessage = {
+        const loginMessage : ClientMessageLogin = {
           type: "login",
           userId: user.id,
           username: user.username,

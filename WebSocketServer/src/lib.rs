@@ -509,8 +509,9 @@ pub struct ProgramState {
 pub struct ClientState {
     pub client_id: ClientIdType,
     pub whiteboard_ref: Arc<Mutex<Whiteboard>>,
-    // TODO: permission that the user has on the given whiteboard (view/edit/own)
-    // pub client_permission: WhiteboardPermissionEnum,
+    pub jwt_secret: String,
+    // The permission (view/edit/own) the user has on the current whiteboard
+    pub user_whiteboard_permission: Mutex<Option<WhiteboardPermissionEnum>>,
     pub active_clients: Arc<Mutex<HashMap<ClientIdType, UserSummary>>>,
     pub diffs: Arc<Mutex<Vec<WhiteboardDiff>>>,
 }
@@ -521,6 +522,7 @@ pub struct ClientState {
 //
 // ================================================================================================
 pub struct ConnectionState {
+    pub jwt_secret: String,
     pub mongo_client: Client,
     pub next_client_id: Mutex<ClientIdType>,
     pub program_state: ProgramState,
@@ -543,38 +545,22 @@ pub fn dt_chrono_utc_to_bson(dt: &chrono::DateTime<Utc>) -> bson::DateTime {
     bson::DateTime::from_millis(dt.timestamp_millis())
 }
 
-// Handle raw messages from clients.
+// Handle raw messages from clients. Assume client has already authenticated.
 // Input parameter is a string to enable testing on all possible inputs.
-// @param program_state         -- Current program state
-// @param current_client_id     -- ID of sending client
+// @param client_state          -- Current client state
 // @param client_msg_s          -- Content of client message
 // @return                      -- (Optional) Message to send to clients, if any
-pub async fn handle_client_message(client_state: &ClientState, client_msg_s: &str) -> Option<ServerSocketMessage> {
+pub async fn handle_authenticated_client_message(client_state: &ClientState, client_msg_s: &str) -> Option<ServerSocketMessage> {
     match serde_json::from_str::<ClientSocketMessage>(client_msg_s) {
         Ok(client_msg) => {
             println!("Received message from client {}", client_state.client_id);
             
             match client_msg {
-                ClientSocketMessage::Login { user_id, username } => {
-                    let mut clients = client_state.active_clients.lock().await;
-                    clients.insert(
-                        client_state.client_id,
-                        UserSummary {
-                            user_id: user_id.clone(),
-                            username: username.clone(),
-                        },
-                    );
-
-                    // Deduplicate by user_id
-                    let mut seen = HashSet::new();
-                    let users: Vec<UserSummary> = clients
-                        .values()
-                        .filter(|u| seen.insert(u.user_id.clone())) // only first occurences
-                        .cloned() // turn &UserSummary into UserSummary
-                        .collect();
-
-                    Some(ServerSocketMessage::ActiveUsers { users })
-                },
+                // -- User already authenticated; return error
+                ClientSocketMessage::Login { .. } => Some(ServerSocketMessage::IndividualError {
+                    client_id: client_state.client_id,
+                    message: String::from("Client already authenticated"),
+                }),
                 ClientSocketMessage::CreateShapes{ canvas_id, ref shapes } => {
                     let mut whiteboard = client_state.whiteboard_ref.lock().await;
                     println!("Creating shape on canvas {} ...", canvas_id);
@@ -778,7 +764,65 @@ pub async fn handle_client_message(client_state: &ClientState, client_msg_s: &st
             })
         }
     }
-}// end handle_client_message
+}// end handle_authenticated_client_message
+
+// Handle raw messages from clients. Assume client has not been authenticated.
+// Input parameter is a string to enable testing on all possible inputs.
+// @param client_state          -- Current client state
+// @param client_msg_s          -- Content of client message
+// @return                      -- (Optional) Message to send to clients, if any
+pub async fn handle_unauthenticated_client_message(client_state: &ClientState, client_msg_s: &str) -> Option<ServerSocketMessage> {
+    match serde_json::from_str::<ClientSocketMessage>(client_msg_s) {
+        Ok(client_msg) => {
+            println!("Received message from client {}", client_state.client_id);
+            
+            match client_msg {
+                // -- This is the only valid message an unathenticated client can send and expect a
+                // non-error response from.
+                ClientSocketMessage::Login { user_id, username } => {
+                    // TODO: authenticate user using jwt, fetching their permission from the
+                    // database if successful
+                    {
+                        let mut clients = client_state.active_clients.lock().await;
+                        clients.insert(
+                            client_state.client_id,
+                            UserSummary {
+                                user_id: user_id.clone(),
+                                username: username.clone(),
+                            },
+                        );
+                    }
+
+                    {
+                        let mut user_perm = client_state.user_whiteboard_permission.lock().await;
+
+                        *user_perm = Some(WhiteboardPermissionEnum::Edit);
+                    }
+
+                    // -- initialize client
+                    Some(ServerSocketMessage::InitClient {
+                        client_id: client_state.client_id,
+                        whiteboard: client_state.whiteboard_ref.lock().await.to_client_view(),
+                    })
+                },
+                // -- All other messages should be responded to with an individual error
+                _ => Some(ServerSocketMessage::IndividualError {
+                    client_id: client_state.client_id,
+                    message: String::from("Client not authenticated"),
+                }),
+            }
+        },
+        Err(e) => {
+            println!("ERROR: invalid client message: {}", client_msg_s);
+            println!("Reason: {}", e);
+
+            Some(ServerSocketMessage::IndividualError{
+                client_id: client_state.client_id,
+                message: String::from("invalid client message")
+            })
+        }
+    }
+}// end handle_unauthenticated_client_message
 
 pub async fn connect_mongodb(uri: &str) -> mongodb::error::Result<Client> {
     // Replace the placeholder with your Atlas connection string
