@@ -117,6 +117,66 @@ impl CanvasObjectMongoDBView {
     }
 }
 
+#[derive(Debug, Clone)]
+pub struct User {
+    pub id: UserIdType,
+    pub username: String,
+    pub email: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct UserClientView {
+    pub id: String,
+    pub username: String,
+    pub email: String,
+}
+
+impl UserClientView {
+    pub fn from_user(user: &User) -> Self {
+        Self {
+            id: user.id.to_string(),
+            username: user.username.clone(),
+            email: user.email.clone(),
+        }
+    }// end from_user
+
+    pub fn to_user(&self) -> Result<User, mongodb::bson::oid::Error> {
+        Ok(User {
+            id: ObjectId::parse_str(&self.id)?,
+            username: self.username.clone(),
+            email: self.email.clone(),
+        })
+    }// end to_user
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub struct UserMongoDBView {
+    #[serde(rename = "_id")]
+    id: ObjectId,
+    username: String,
+    email: String,
+}
+
+impl UserMongoDBView {
+    pub fn from_user(user: &User) -> Self {
+        Self {
+            id: user.id.clone(),
+            username: user.username.clone(),
+            email: user.email.clone(),
+        }
+    }// end from_user
+
+    pub fn to_user(&self) -> User {
+        User {
+            id: self.id.clone(),
+            username: self.username.clone(),
+            email: self.email.clone(),
+        }
+    }// end to_user
+}
+
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct UserSummary {
@@ -169,31 +229,78 @@ pub enum WhiteboardDiff {
 #[derive(Debug, Clone, Serialize)]
 #[serde(tag = "type", rename_all = "snake_case", rename_all_fields = "camelCase")]
 pub enum ServerSocketMessage {
-    InitClient { client_id: ClientIdType, whiteboard: WhiteboardClientView },
-    ActiveUsers { users: Vec<UserSummary>},
+    InitClient {
+        client_id: ClientIdType,
+        whiteboard: WhiteboardClientView,
+    },
+    ActiveUsers {
+        users: Vec<UserSummary>,
+    },
     // TODO: replace HashMaps with Vectors, so object ids don't need to be cast to strings
-    CreateShapes { client_id: ClientIdType, canvas_id: String, shapes: HashMap<String, ShapeModel> },
-    UpdateShapes { client_id: ClientIdType, canvas_id: String, shapes: HashMap<String, ShapeModel> },
+    CreateShapes {
+        client_id: ClientIdType,
+        canvas_id: String,
+        shapes: HashMap<String,
+        ShapeModel>,
+    },
+    UpdateShapes {
+        client_id: ClientIdType,
+        canvas_id: String,
+        shapes: HashMap<String,
+        ShapeModel>,
+    },
     // TODO: replace with flattened CanvasClientView
     CreateCanvas {
         client_id: ClientIdType,
         canvas: CanvasClientView,
     },
-    DeleteCanvases { client_id: ClientIdType, canvas_ids: Vec<String> },
-    IndividualError { client_id: ClientIdType, message: String },
-    BroadcastError { message: String },
-    UpdateCanvasAllowedUsers { client_id: ClientIdType, canvas_id: String, allowed_users: Vec<String>},
+    DeleteCanvases {
+        client_id: ClientIdType,
+        canvas_ids: Vec<String>,
+    },
+    UpdateCanvasAllowedUsers {
+        client_id: ClientIdType,
+        canvas_id: String,
+        allowed_users: Vec<String>,
+    },
+    IndividualError {
+        client_id: ClientIdType,
+        message: String,
+    },
+    BroadcastError {
+        message: String,
+    },
 }
 
 #[derive(Debug, Clone, Deserialize)]
 #[serde(tag = "type", rename_all = "snake_case", rename_all_fields = "camelCase")]
 pub enum ClientSocketMessage {
-    CreateShapes { canvas_id: CanvasIdType, shapes: Vec<ShapeModel> },
-    UpdateShapes { canvas_id: CanvasIdType, shapes: HashMap<String, ShapeModel> },
-    CreateCanvas { width: i32, height: i32, name: String, allowed_users: HashSet::<ObjectId> },
-    DeleteCanvases { canvas_ids: Vec<CanvasIdType> },
-    Login { user_id: String, username: String },
-    UpdateCanvasAllowedUsers { canvas_id: CanvasIdType, allowed_users: HashSet<ObjectId>}
+    CreateShapes {
+        canvas_id: CanvasIdType,
+        shapes: Vec<ShapeModel>,
+    },
+    UpdateShapes {
+        canvas_id: CanvasIdType,
+        shapes: HashMap<String,
+        ShapeModel>,
+    },
+    CreateCanvas {
+        width: i32,
+        height: i32,
+        name: String,
+        allowed_users: HashSet::<ObjectId>,
+    },
+    DeleteCanvases {
+        canvas_ids: Vec<CanvasIdType>,
+    },
+    Login {
+        user_id: String,
+        username: String,
+    },
+    UpdateCanvasAllowedUsers {
+        canvas_id: CanvasIdType,
+        allowed_users: HashSet<ObjectId>,
+    },
 }
 
 #[derive(Clone, Debug)]
@@ -402,6 +509,8 @@ pub struct ProgramState {
 pub struct ClientState {
     pub client_id: ClientIdType,
     pub whiteboard_ref: Arc<Mutex<Whiteboard>>,
+    // TODO: permission that the user has on the given whiteboard (view/edit/own)
+    // pub client_permission: WhiteboardPermissionEnum,
     pub active_clients: Arc<Mutex<HashMap<ClientIdType, UserSummary>>>,
     pub diffs: Arc<Mutex<Vec<WhiteboardDiff>>>,
 }
