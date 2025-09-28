@@ -1,5 +1,5 @@
 
-export type ToolChoice = 'hand' | 'rect' | 'ellipse' | 'vector';
+export type ToolChoice = 'hand' | 'rect' | 'ellipse' | 'vector' | 'text';
 
 const getToolChoiceLabel = (toolChoice: ToolChoice): string => {
   switch (toolChoice) {
@@ -11,6 +11,8 @@ const getToolChoiceLabel = (toolChoice: ToolChoice): string => {
       return 'Vector Tool';
     case 'ellipse':
       return 'Ellipse';
+    case 'text':
+      return 'Text';
     default:
       return 'UNDEFINED';
   }// end switch (toolChoice)

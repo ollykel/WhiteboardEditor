@@ -38,6 +38,7 @@ import useRectangleDispatcher from '@/dispatchers/useRectangleDispatcher';
 import useEllipseDispatcher from '@/dispatchers/useEllipseDispatcher';
 import useVectorDispatcher from '@/dispatchers/useVectorDispatcher';
 import useHandDispatcher from '@/dispatchers/useHandDispatcher';
+import useTextDispatcher from '@/dispatchers/useTextDispatcher';
 
 export interface CanvasProps {
   id: CanvasIdType;
@@ -103,6 +104,10 @@ const Canvas = (props: CanvasProps) => {
       addShapes
     }),
     'vector': useVectorDispatcher({
+      shapeAttributes,
+      addShapes
+    }),
+    'text': useTextDispatcher({
       shapeAttributes,
       addShapes
     })
