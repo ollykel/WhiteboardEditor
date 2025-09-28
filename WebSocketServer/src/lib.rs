@@ -341,7 +341,7 @@ impl Canvas {
     }// end pub fn to_client_view(&self) -> CanvasClientView
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Copy, Clone, Debug, Serialize, Deserialize)]
 #[serde(tag = "permission", rename_all = "camelCase")]
 pub enum WhiteboardPermissionEnum {
     View,
@@ -374,6 +374,9 @@ pub struct Whiteboard {
     pub canvases: HashMap<CanvasIdType, Canvas>,
     pub owner_id: UserIdType,
     pub shared_users: Vec<WhiteboardPermission>,
+    // For permissions attached to an existing account, index by user id, to enable faster
+    // retrieval when users log in.
+    pub permissions_by_user_id: HashMap<String, WhiteboardPermissionEnum>,
 }
 
 impl Whiteboard {
@@ -485,6 +488,14 @@ impl WhiteboardMongoDBView {
                 .collect(),
             owner_id: self.owner_id.clone(),
             shared_users: self.shared_users.clone(),
+            permissions_by_user_id: self.shared_users.iter()
+                .map(|wb_perm| match wb_perm.permission_type {
+                    WhiteboardPermissionType::User { ref user} => Some((user.to_string(), wb_perm.permission)),
+                    _ => None
+                })
+                .filter(|x| x.is_some())
+                .map(|x| x.unwrap())
+                .collect(),
         }
     }
 }
@@ -782,28 +793,43 @@ pub async fn handle_unauthenticated_client_message(client_state: &ClientState, c
                 ClientSocketMessage::Login { user_id, username } => {
                     // TODO: authenticate user using jwt, fetching their permission from the
                     // database if successful
-                    {
-                        let mut clients = client_state.active_clients.lock().await;
-                        clients.insert(
-                            client_state.client_id,
-                            UserSummary {
-                                user_id: user_id.clone(),
-                                username: username.clone(),
-                            },
-                        );
+                    let permission : Option<WhiteboardPermissionEnum> = {
+                        let whiteboard = client_state.whiteboard_ref.lock().await;
+
+                        whiteboard.permissions_by_user_id.get(&user_id).copied()
+                    };
+
+                    if let Some(permission) = permission {
+                        // User has a valid permission
+                        {
+                            let mut clients = client_state.active_clients.lock().await;
+                            clients.insert(
+                                client_state.client_id,
+                                UserSummary {
+                                    user_id: user_id.clone(),
+                                    username: username.clone(),
+                                },
+                            );
+                        }
+
+                        {
+                            let mut user_perm = client_state.user_whiteboard_permission.lock().await;
+
+                            *user_perm = Some(permission);
+                        }
+
+                        // -- initialize client
+                        Some(ServerSocketMessage::InitClient {
+                            client_id: client_state.client_id,
+                            whiteboard: client_state.whiteboard_ref.lock().await.to_client_view(),
+                        })
+                    } else {
+                        // User has no valid permission; send back an error message
+                        Some(ServerSocketMessage::IndividualError {
+                            client_id: client_state.client_id,
+                            message: String::from("Client not authorized to access whiteboard"),
+                        })
                     }
-
-                    {
-                        let mut user_perm = client_state.user_whiteboard_permission.lock().await;
-
-                        *user_perm = Some(WhiteboardPermissionEnum::Edit);
-                    }
-
-                    // -- initialize client
-                    Some(ServerSocketMessage::InitClient {
-                        client_id: client_state.client_id,
-                        whiteboard: client_state.whiteboard_ref.lock().await.to_client_view(),
-                    })
                 },
                 // -- All other messages should be responded to with an individual error
                 _ => Some(ServerSocketMessage::IndividualError {
@@ -869,3 +895,13 @@ pub async fn get_whiteboard_by_id(db: &Database, wid: &WhiteboardIdType) -> Resu
     Ok(Some(whiteboard_view.to_whiteboard(canvases.as_slice())))
 }// -- end fn get_whiteboard_by_id
 
+pub fn get_user_id_from_jwt(jwt: &str, secret: &str) -> Result<ObjectId, Box::<dyn std::error::Error>> {
+    use hmac::{Hmac, Mac};
+    use jwt::VerifyWithKey;
+    use sha2::Sha256;
+    use std::collections::BTreeMap;
+
+    let key: Hmac<Sha256> = Hmac::new_from_slice(b"some-secret")?;
+    let token_str = "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJzb21lb25lIn0.5wwE1sBrs-vftww_BGIuTVDeHtc1Jsjo-fiHhDwR8m0";
+    let claims: BTreeMap<String, String> = token_str.verify_with_key(&key)?;
+}

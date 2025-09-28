@@ -413,7 +413,7 @@ async fn handle_connection(ws: WebSocket, whiteboard_id: WhiteboardIdType, conne
                     // being set in client state)
                     break;
                 }
-            }// end while let Some(Ok(msg)) = user_ws_rx.next().await {
+            }// end while let Some(Ok(msg)) = user_ws_rx.next().await
 
             // Once client authenticates, handle client messages in this loop
             while let Some(Ok(msg)) = user_ws_rx.next().await {
@@ -583,7 +583,7 @@ async fn handle_connection(ws: WebSocket, whiteboard_id: WhiteboardIdType, conne
                         tx.send(resp).ok();
                     }
                 }
-            }// end while let Some(Ok(msg)) = user_ws_rx.next().await {
+            }// end while let Some(Ok(msg)) = user_ws_rx.next().await
         }
     });
 
