@@ -7,6 +7,7 @@ import TextEditor from "./TextEditor";
 
 interface EditableTextProps {
   fontSize: number;
+  text: string;
   color: string;
   x: number
   y: number
@@ -17,6 +18,7 @@ interface EditableTextProps {
 
 const EditableText = ({
   fontSize,
+  text,
   color,
   x,
   y,
@@ -24,7 +26,7 @@ const EditableText = ({
   height,
   draggable,
 }: EditableTextProps) => {
-  const [text, setText] = useState("text");
+  const [textContents, setTextContents] = useState(text);
   const [isSelected, setIsSelected] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [textWidth, setTextWidth] = useState(width);
@@ -77,7 +79,7 @@ const EditableText = ({
   }, []);
 
   const handleTextChange = useCallback((newText: string): void => {
-    setText(newText);
+    setTextContents(newText);
   }, []);
 
   const handleTransform = useCallback(() => {
@@ -101,7 +103,7 @@ const EditableText = ({
     <Group>
       <Text
         ref={textRef}
-        text={text}
+        text={textContents}
         fontSize={fontSize}
         fill={color}
         x={x}
