@@ -19,7 +19,7 @@ import type {
 import type {
   EventCoords
 } from '@/types/EventCoords';
-import draggableObjectProps from './draggableObjectProps';
+import draggableObjectProps from './editableObjectProps';
 
 // === useTextDispatcher ==================================================
 //
