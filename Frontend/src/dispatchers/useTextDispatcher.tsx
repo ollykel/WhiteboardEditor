@@ -55,7 +55,7 @@ const useTextDispatcher = ({
 
       addShapes([{
         type: 'text',
-        // ...shapeAttributes, Not a part of the TextModel
+        text: 'Text',
         fontSize: 20,
         color: 'black',
         x: xMin,
@@ -97,6 +97,7 @@ const useTextDispatcher = ({
     } else {
       const {
         fontSize,
+        text,
         color,
         x,
         y,
@@ -107,6 +108,7 @@ const useTextDispatcher = ({
       return (
         <EditableText
           fontSize={fontSize}
+          text={text}
           color={color}
           x={x}
           y={y}
