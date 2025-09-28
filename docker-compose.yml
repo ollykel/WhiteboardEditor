@@ -1,15 +1,19 @@
 name: whiteboard_editor
 
+x-anchors:
+  cache_settings: &cache_settings 
+    cache_from:
+      - type=local,src=${DOCKER_CACHE-${HOME}/.cache/docker}
+    cache_to:
+      - type=local,dest=${DOCKER_CACHE-${HOME}/.cache/docker}
+
 services:
   reverse_proxy:
     # Maps urls to ports to various services.
     # Main entry point for external clients.
     build:
       context: ReverseProxy
-      cache_from:
-        - type=local,src=${DOCKER_CACHE-${HOME}/.cache/docker}
-      cache_to:
-        - type=local,dest=${DOCKER_CACHE-${HOME}/.cache/docker}
+      <<: *cache_settings
     image: ${WHITEBOARD_EDITOR_CR_URI-whiteboard_editor}/reverse_proxy:${WHITEBOARD_EDITOR_TAG-latest}
     ports:
       - ${WHITEBOARD_EDITOR_HTTP_PORT-8080}:8080
@@ -34,27 +38,14 @@ services:
     # Built using Vite, served with nginx
     build:
       context: Frontend
-      cache_from:
-        - type=local,src=${DOCKER_CACHE-${HOME}/.cache/docker}
-      cache_to:
-        - type=local,dest=${DOCKER_CACHE-${HOME}/.cache/docker}
+      <<: *cache_settings
     image: ${WHITEBOARD_EDITOR_CR_URI-whiteboard_editor}/frontend:${WHITEBOARD_EDITOR_TAG-latest}
     depends_on:
+      - rest_api
       - web_socket_server
     ports:
       # exposed for testing purposes
       - ${WHITEBOARD_EDITOR_FRONTEND_PORT-3001}:3000
-
-  web_socket_server_builder:
-    # Builds WebSocketServer
-    build:
-      context: WebSocketServer
-      target: builder
-      cache_from:
-        - type=local,src=${DOCKER_CACHE-${HOME}/.cache/docker}
-      cache_to:
-        - type=local,dest=${DOCKER_CACHE-${HOME}/.cache/docker}
-    image: ${WHITEBOARD_EDITOR_CR_URI-whiteboard_editor}/web_socket_server_builder:${WHITEBOARD_EDITOR_TAG-latest}
 
   web_socket_server:
     # Handles web sockets for providing real-time interaction with clients.
@@ -63,11 +54,8 @@ services:
     # Built in Rust.
     build:
       context: WebSocketServer
-      target: final
-      cache_from:
-        - type=local,src=${DOCKER_CACHE-${HOME}/.cache/docker}
-      cache_to:
-        - type=local,dest=${DOCKER_CACHE-${HOME}/.cache/docker}
+      target: release_runtime
+      <<: *cache_settings
     image: ${WHITEBOARD_EDITOR_CR_URI-whiteboard_editor}/web_socket_server:${WHITEBOARD_EDITOR_TAG-latest}
     environment:
       # Make sure to set MONGO_URI in .env
@@ -75,16 +63,45 @@ services:
     ports:
       # exposed for testing purposes
       - ${WHITEBOARD_EDITOR_WEB_SOCKET_PORT-3002}:3000
+
+  web_socket_server_tester:
+    # Testing environment for WebSocketServer
+    profiles:
+      - test
+    build:
+      context: WebSocketServer
+      target: test_runtime
+      <<: *cache_settings
+    depends_on:
+      test_db:
+        condition: service_healthy
+    image: ${WHITEBOARD_EDITOR_CR_URI-whiteboard_editor}/web_socket_server_tester:${WHITEBOARD_EDITOR_TAG-latest}
   
   rest_api:
     # Handles RESTful operations on database
     build:
       context: RestAPI
-      cache_from:
-        - type=local,src=${DOCKER_CACHE-${HOME}/.cache/docker}
-      cache_to:
-        - type=local,dest=${DOCKER_CACHE-${HOME}/.cache/docker}
+      target: release
+      <<: *cache_settings
     image: ${WHITEBOARD_EDITOR_CR_URI-whiteboard_editor}/rest_api:${WHITEBOARD_EDITOR_TAG-latest}
+    environment:
+      # make sure to set values in .env
+      MONGO_URI: ${WHITEBOARD_EDITOR_MONGO_URI}
+      JWT_SECRET: ${WHITEBOARD_EDITOR_JWT_SECRET}
+      JWT_EXPIRATION_SECS: ${WHITEBOARD_EDITOR_JWT_EXPIRATION_SECS}
+    ports:
+      # exposed for testing purposes
+      - ${WHITEBOARD_EDITOR_REST_API_PORT-3003}:3000
+  
+  rest_api_tester:
+    # Tester for RestAPI
+    profiles:
+      - test
+    build:
+      context: RestAPI
+      target: builder
+      <<: *cache_settings
+    image: ${WHITEBOARD_EDITOR_CR_URI-whiteboard_editor}/rest_api_tester:${WHITEBOARD_EDITOR_TAG-latest}
     environment:
       # make sure to set values in .env
       MONGO_URI: ${WHITEBOARD_EDITOR_MONGO_URI}
@@ -93,9 +110,6 @@ services:
     depends_on:
       test_db:
         condition: service_healthy
-    ports:
-      # exposed for testing purposes
-      - ${WHITEBOARD_EDITOR_REST_API_PORT-3003}:3000
 
   test_db:
     # Should only be used for testing purposes
@@ -104,7 +118,13 @@ services:
     #
     # To access during testing, set the value of WHITEBOARD_EDITOR_MONGO_URI to
     # mongodb://test_db:27017/testdb
-    image: mongo:8.0
+    profiles:
+      - test
+    build:
+      context: TestDatabase
+      target: release
+      <<: *cache_settings
+    image: ${WHITEBOARD_EDITOR_CR_URI-whiteboard_editor}/test_db:${WHITEBOARD_EDITOR_TAG-latest}
     volumes:
       # initialization script
       - ./TestDatabase/init-db.js:/docker-entrypoint-initdb.d/init-db.js:ro
