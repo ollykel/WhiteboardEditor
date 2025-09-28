@@ -3,6 +3,7 @@ import { useForm } from "@tanstack/react-form";
 import AuthContext from "@/context/AuthContext";
 import { useModal } from "@/components/Modal";
 import HeaderAuthed from "@/components/HeaderAuthed";
+import Page from '@/components/Page';
 import api from '@/api/axios';
 
 export default function AccountSettings() {
@@ -88,9 +89,12 @@ export default function AccountSettings() {
   };
 
   const title = "Account Settings";
+  const pageTitle = `${title} | Whiteboard Editor`;
 
   return (
-    <>
+    <Page
+      title={pageTitle}
+    >
       <HeaderAuthed
         title={title}
       />
@@ -245,7 +249,7 @@ export default function AccountSettings() {
               </button>
             </form>
 
-            <Modal width="400px" height="200px">
+            <Modal>
               <div className="p-6 flex flex-col justify-between h-full">
                 <h3 className="text-lg font-semibold">Are you sure?</h3>
                 <p className="text-sm text-gray-600">
@@ -273,6 +277,6 @@ export default function AccountSettings() {
           </div>
         </div>
       </div>
-    </>
+    </Page>
   );
 }

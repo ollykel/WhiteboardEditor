@@ -12,6 +12,11 @@ import type {
   CanvasObjectRecord,
 } from '@/types/CanvasObjectModel';
 
+import type {
+  User,
+  UserPermission,
+} from '@/types/APIProtocol';
+
 // The unique identifier for clients within a web socket session.
 // -- string represents Mongo ObjectId
 export type ClientIdType = string;
@@ -34,8 +39,8 @@ export interface CanvasAttribs {
   width: number;
   height: number;
   name: string;
-  timeCreated?: string;
-  timeLastModified?: string;
+  timeCreated: string;
+  timeLastModified: string;
 }
 
 // Contains nested data
@@ -54,6 +59,8 @@ export interface CanvasRecord extends CanvasAttribs {
 export interface WhiteboardAttribs {
   id: WhiteboardIdType;
   name: string;
+  owner: User;
+  shared_users: UserPermission[];
 }
 
 // Contains nested data
@@ -96,11 +103,7 @@ export interface ServerMessageUpdateShapes {
 export interface ServerMessageCreateCanvas {
   type: "create_canvas";
   clientId: ClientIdType;
-  canvasId: CanvasIdType;
-  width: number;
-  height: number;
-  name: string;
-  allowedUsers: string[];
+  canvas: CanvasData;
 }
 
 export interface ServerMessageDeleteCanvases {

@@ -1,8 +1,12 @@
 import { Request, Response, Router } from "express";
 
+import {
+  type Types,
+} from 'mongoose';
+
 // --- local imports
 import {
-  addSharedUsers
+  addSharedUsers,
 } from "../controllers/whiteboards";
 
 import type {
@@ -54,6 +58,8 @@ router.get('/:whiteboardId', async (
     const resp = await getWhiteboardById(whiteboardId);
 
     switch (resp.status) {
+      case 'server_error':
+        return res.status(500).json({ message: 'An unexpected error occurred' });
       case 'invalid_id':
         return res.status(400).json({ message: 'Invalid whiteboard id' });
       case 'not_found':
@@ -62,9 +68,9 @@ router.get('/:whiteboardId', async (
       {
           const { whiteboard } = resp;
           const validUserIdSet: Record<string, boolean> = Object.fromEntries([
-            [whiteboard.owner.id, true],
-            ...whiteboard.shared_users.filter(perm => perm.type === 'id').map(perm => [
-              perm.user_id, true
+            [whiteboard.owner._id?.toString(), true],
+            ...whiteboard.shared_users.filter(perm => perm.type === 'user').map(perm => [
+              perm.user._id, true 
             ])
           ]);
 
@@ -73,7 +79,7 @@ router.get('/:whiteboardId', async (
               message: 'You are not authorized to view this resource'
             });
           } else {
-            return res.status(200).json(whiteboard);
+            return res.status(200).json(whiteboard.toAttribView());
           }
       }
       default:
@@ -82,12 +88,12 @@ router.get('/:whiteboardId', async (
 });
 
 export interface ShareWhiteboardRequestBody extends AuthorizedRequestBody {
-  userPermissions: IWhiteboardUserPermission[];
+  userPermissions: IWhiteboardUserPermission<Types.ObjectId>[];
 }
 
 // --- Share whiteboard with other users
 router.post(
-  "/:id/share",
+  "/:id/shared_users",
   async (
     req: Request<{ id: WhiteboardIdType }, any, ShareWhiteboardRequestBody>,
     res: Response
@@ -104,7 +110,7 @@ router.post(
 
       switch (result.status) {
         case "success":
-          return res.status(200).json(result.whiteboard);
+          return res.status(200).json(result.whiteboard.toAttribView());
         case "no_whiteboard":
           return res.status(404).json({ error: "Whiteboard not found" });
         case "invalid_users":

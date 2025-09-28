@@ -55,7 +55,24 @@ jobs:
           cache-from: type=registry,ref=ghcr.io/${{ github.repository_owner }}/${{ github.repository_id }}/web_socket_server:buildcache
           cache-to: type=registry,ref=ghcr.io/${{ github.repository_owner }}/${{ github.repository_id }}/web_socket_server:buildcache,mode=max
 
+      - name: Start test database
+        shell: bash
+        run: |
+          docker compose -p ${{ github.job }} up --build -d test_db
+
       - name: Run Cargo tests
         id: run-cargo-tests
+        env:
+          NETWORK_NAME: ${{ github.job }}_default
+          WEB_SOCKET_SERVER_IMAGE: ghcr.io/${{ github.repository_owner }}/${{ github.repository_id }}/web_socket_server_builder:test
         run: |
-          docker run ghcr.io/${{ github.repository_owner }}/${{ github.repository_id }}/web_socket_server_builder:test cargo test
+          docker run --network "${NETWORK_NAME}" "${WEB_SOCKET_SERVER_IMAGE}" cargo test
+
+      - name: Tear down test database
+        id: tear-down-test-db
+        if: always()
+        shell: bash
+        run: |
+          # Just run for all services, in case we started more services than
+          # just test_db.
+          docker compose -p ${{ github.job }} down -v

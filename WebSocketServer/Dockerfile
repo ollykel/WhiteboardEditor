@@ -1,3 +1,6 @@
+# ---- Build args for all stages ----
+ARG CRATE_NAME="web_socket_server"
+
 # ---- Stage 1: Dependency planner (cargo-chef) ----
 FROM rust:1.88 AS planner
 
@@ -10,7 +13,9 @@ RUN cargo install cargo-chef
 COPY Cargo.toml Cargo.lock ./
 
 # Dummy build file to make Cargo happy
-RUN mkdir src/ && echo 'fn main() {}' > src/dummy.rs
+COPY <<-EOF src/dummy.rs
+fn main() {}
+EOF
 
 # Generate dependency build plan
 RUN cargo chef prepare --recipe-path recipe.json
@@ -25,37 +30,84 @@ COPY --from=planner /app/recipe.json recipe.json
 COPY Cargo.toml Cargo.lock ./
 
 # Use buildkit cache mounts for cargo registry + target dir
-RUN --mount=type=cache,target=/usr/local/cargo/registry \
+RUN \
+    --mount=type=cache,target=/usr/local/cargo/registry \
     --mount=type=cache,target=/usr/local/cargo/git \
     --mount=type=cache,target=/build/target \
     cargo chef cook --release --recipe-path recipe.json
 
 # Optionally prepare test dependencies too
-RUN --mount=type=cache,target=/usr/local/cargo/registry \
+RUN \
+    --mount=type=cache,target=/usr/local/cargo/registry \
     --mount=type=cache,target=/usr/local/cargo/git \
-    --mount=type=cache,target=/app/target \
+    --mount=type=cache,target=/build/target \
     cargo chef cook --tests --recipe-path recipe.json
 
 # ---- Stage 3: Application build ----
 FROM rust:1.88 AS builder
 
-WORKDIR /build
+ARG CARGO_HOME_DIR=/
+ARG BUILD_DIR=/build
+ARG DEST_DIR=/app
+
+# Used for building the unit tests
+ARG TEST_CACHE_DIR=${BUILD_DIR}/.test_cache
+
+# Initialize the destination dir
+RUN mkdir -p "${DEST_DIR}"
+
+WORKDIR ${BUILD_DIR}
 
 # Copy source
 COPY . .
 
+# Dummy build file to make Cargo happy
+COPY <<-EOF src/dummy.rs
+fn main() {}
+EOF
+
+# Build the unit tests, with the sub-cache identified by the sha512 sum
+# of the unit_tests.rs file. This will ensure that tests are re-compiled
+# whenever unit_tests.rs is modified, without eliminated tests or "ghost" tests
+# from other branches remaining in the target directory.
+RUN \
+  --mount=type=cache,target=/usr/local/cargo/registry \
+  --mount=type=cache,target=/usr/local/cargo/git \
+  --mount=type=cache,target=/build/target \
+  --mount=type=cache,target=${TEST_CACHE_DIR} \
+  <<-EOF
+#!/usr/bin/bash -e
+
+TEST_TARGET_DIR="${TEST_CACHE_DIR}/$(sha512sum < src/unit_tests.rs | cut -d' ' -f-1)"
+mkdir -p "${TEST_TARGET_DIR}"
+cp -rp ${BUILD_DIR}/target/* "${TEST_TARGET_DIR}" || true
+cargo test --no-run --target-dir "${TEST_TARGET_DIR}"
+cp -rp "${TEST_TARGET_DIR}" "${DEST_DIR}/target"
+EOF
+
 # Build with cached cargo registry + target directory
 # Build both tests and release mode.
 # Copy the final build to the /app/ directory, to take it out of the cache.
-RUN --mount=type=cache,target=/usr/local/cargo/registry \
-    --mount=type=cache,target=/usr/local/cargo/git \
-    --mount=type=cache,target=/build/target \
-    cargo build --tests && \
-    cargo build --release && \
-    cp -rp . /app
+RUN \
+  --mount=type=cache,target=/usr/local/cargo/registry \
+  --mount=type=cache,target=/usr/local/cargo/git \
+  --mount=type=cache,target=/build/target \
+  <<-EOF
+#!/usr/bin/bash -e
 
-# Make /app the default working directory, where testers can run.
-WORKDIR /app
+cargo build --release
+cp -rp /usr/local/cargo/registry /usr/local/cargo/registry_saved
+cp -rp /usr/local/cargo/git /usr/local/cargo/git_saved
+cp -rp ./* "${DEST_DIR}"
+EOF
+
+# Copy saved cargo directories into intended locations.
+# Allows use by testers
+RUN cp -rp /usr/local/cargo/registry_saved /usr/local/cargo/registry
+RUN cp -rp /usr/local/cargo/git_saved /usr/local/cargo/git
+
+# Make ${DEST_DIR} the default working directory, where testers can run.
+WORKDIR ${DEST_DIR}
 
 # ---- Stage 4: Minimal runtime ----
 FROM debian:trixie-slim AS final

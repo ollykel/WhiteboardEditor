@@ -103,7 +103,7 @@ const ShareWhiteboardForm = ({
   const RemovablePermission = (perm: UserPermission): React.JSX.Element => {
     // as an entry in a table
     const email: string = perm.type === 'email' ? perm.email : perm.user.email;
-    const username: string = perm.type === 'id' ? perm.user.username : '-';
+    const username: string = perm.type === 'user' ? perm.user.username : '-';
     const { permission } = perm;
 
     return (
