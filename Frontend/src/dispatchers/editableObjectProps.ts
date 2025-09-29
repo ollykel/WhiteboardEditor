@@ -13,6 +13,7 @@ export interface EditableObjectProps {
   onMouseDown?: (ev: Konva.KonvaEventObject<MouseEvent>) => void;
   onMouseUp?: (ev: Konva.KonvaEventObject<MouseEvent>) => void;
   onDragEnd?: (ev: Konva.KonvaEventObject<DragEvent>) => void;
+  onTransform?: (ev: Konva.KonvaEventObject<DragEvent>) => void;
   onTransformEnd?: (ev: Konva.KonvaEventObject<DragEvent>) => void;
 }
 
@@ -69,27 +70,37 @@ const editableObjectProps = <ShapeType extends ShapeModel> (
     handleUpdateShapes(update);
   };
 
-  const handleTransformEnd = useCallback((ev: Konva.KonvaEventObject<DragEvent>) => {
+  // transform the targetted box locally in real time without broadcasting
+  const handleTransform = useCallback((ev: Konva.KonvaEventObject<Event>) => {
     const node = ev.target;
-    const id = node.id();
-    if (!node) return;
-
-    // Convert the final scale into width/height
     const scaleX = node.scaleX();
     const scaleY = node.scaleY();
+
     const width = node.width() * scaleX;
     const height = node.height() * scaleY;
-    const rotation = node.rotation();
 
-    // Apply those numbers directly to the node so it keeps the new size
+    // apply new size locally so text stays crisp
     node.width(width);
     node.height(height);
     node.scaleX(1);
     node.scaleY(1);
+  }, []);
 
-    // Now broadcast **once**
+  // once the transform ends, send the update to server to broadcast
+  const handleTransformEnd = useCallback((ev: Konva.KonvaEventObject<Event>) => {
+    const node = ev.target;
+    const id = node.id();
+    const rotation = node.rotation();
+
     handleUpdateShapes({
-      [id]: ({ ...shapeModel, x: node.x(), y: node.y(), width, height, rotation })
+      [id]: {
+        ...shapeModel,
+        x: node.x(),
+        y: node.y(),
+        width: node.width(),
+        height: node.height(),
+        rotation
+      }
     });
   }, []);
 
@@ -99,6 +110,7 @@ const editableObjectProps = <ShapeType extends ShapeModel> (
     onMouseDown: isDraggable && handleMouseDown || undefined,
     onMouseUp: isDraggable && handleMouseUp || undefined,
     onDragEnd: isDraggable && handleDragEnd || undefined,
+    onTransform: handleTransform || undefined,
     onTransformEnd: handleTransformEnd || undefined,
   });
 };

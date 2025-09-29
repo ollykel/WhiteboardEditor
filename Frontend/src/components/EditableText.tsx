@@ -34,6 +34,7 @@ const EditableText = ({
   onMouseDown,
   onMouseUp,
   onDragEnd,
+  onTransform,
   onTransformEnd,
 }: EditableTextProps) => {
   const [textContents, setTextContents] = useState(text);
@@ -133,6 +134,7 @@ const EditableText = ({
         onMouseDown={onMouseDown}
         onMouseOut={onMouseOut}
         onMouseOver={onMouseOver}
+        onTransform={onTransform} 
         onTransformEnd={onTransformEnd}
       />
       {isEditing && textRef.current && (
