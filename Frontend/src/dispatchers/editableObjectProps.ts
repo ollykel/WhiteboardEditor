@@ -11,7 +11,7 @@ export interface EditableObjectProps {
   onMouseDown?: (ev: Konva.KonvaEventObject<MouseEvent>) => void;
   onMouseUp?: (ev: Konva.KonvaEventObject<MouseEvent>) => void;
   onDragEnd?: (ev: Konva.KonvaEventObject<DragEvent>) => void;
-  onTransformEnd?: (ev: Konva.KonvaEventObject<DragEvent>) => void;
+  onTransform?: (ev: Konva.KonvaEventObject<DragEvent>) => void;
 }
 
 const editableObjectProps = <ShapeType extends ShapeModel> (
@@ -92,7 +92,7 @@ const editableObjectProps = <ShapeType extends ShapeModel> (
     onMouseDown: isDraggable && handleMouseDown || undefined,
     onMouseUp: isDraggable && handleMouseUp || undefined,
     onDragEnd: isDraggable && handleDragEnd || undefined,
-    onTransformEnd: handleTransform || undefined,
+    onTransform: handleTransform || undefined,
   });
 };
 
