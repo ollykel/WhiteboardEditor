@@ -8,6 +8,7 @@ import TextEditor from "./TextEditor";
 import { type EditableObjectProps } from "@/dispatchers/editableObjectProps";
 
 interface EditableTextProps extends EditableObjectProps {
+  id: string;
   fontSize: number;
   text: string;
   color: string;
@@ -19,6 +20,7 @@ interface EditableTextProps extends EditableObjectProps {
 }
 
 const EditableText = ({
+  id,
   fontSize,
   text,
   color,
@@ -109,6 +111,7 @@ const EditableText = ({
   return (
     <Group>
       <Text
+        id={id}
         ref={textRef}
         text={textContents}
         fontSize={fontSize}

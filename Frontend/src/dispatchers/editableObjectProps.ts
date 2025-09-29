@@ -51,9 +51,12 @@ const editableObjectProps = <ShapeType extends ShapeModel> (
   };
 
   const handleDragEnd = (ev: Konva.KonvaEventObject<DragEvent>) => {
+    console.log("event: ", ev); // debug
+    console.log("event target: ", ev.target); // debug
     const id = ev.target.id();
     const x = ev.target.x();
     const y = ev.target.y();
+    console.log("id: ", id); // debug
 
     const update = {
       [id]: ({ ...shapeModel, x, y })

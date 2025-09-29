@@ -90,7 +90,7 @@ const useTextDispatcher = ({
   };
 
   const renderShape = (
-    _key: string | number,
+    key: string | number,
     model: CanvasObjectModel,
     isDraggable: boolean,
     handleUpdateShapes: (shapes: Record<CanvasObjectIdType, CanvasObjectModel>) => void
@@ -110,6 +110,8 @@ const useTextDispatcher = ({
 
       return (
         <EditableText
+          key={key}
+          id={`${key}`}
           fontSize={fontSize}
           text={text}
           color={color}

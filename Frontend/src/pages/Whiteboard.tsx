@@ -580,11 +580,14 @@ const WrappedWhiteboard = () => {
         return;
       }
 
+      console.log("shapes in handle: ", shapes); // debug
+
+      console.log("canvasObjects in handle: ", canvasObjects); // debug 
+
       const changedObjects: Record<CanvasObjectIdType, CanvasObjectModel> = {};
 
-      for (const [objIdStr, objUpdate] of Object.entries(shapes)) {
-        const objId = objIdStr;
-
+      for (const [objId, objUpdate] of Object.entries(shapes)) {
+        console.log("object id: ", objId, " : ", objUpdate); // debug
         if (objId in canvasObjects) {
           changedObjects[objId] = ({
             ...canvasObjects[objId],
@@ -593,11 +596,14 @@ const WrappedWhiteboard = () => {
         }
       }// end for (const [objId, objUpdate] of Object.entries(shapes))
 
+      console.log("changedObjects: ", changedObjects); // debug
+
       const updateShapesMsg: ClientMessageUpdateShapes = ({
         type: 'update_shapes',
         canvasId,
         shapes: changedObjects
       });
+      console.log("updateShapesMsg: ", updateShapesMsg); // debug
 
       socketRef.current.send(JSON.stringify(updateShapesMsg));
     }
