@@ -151,6 +151,16 @@ RUN \
   --mount=type=cache,id=release_target,target=${BUILD_DIR}/target \
   cargo build --release
 
+# Copy final build from cache
+WORKDIR ${DEST_DIR}
+
+RUN \
+  --mount=type=cache,id=release_target,target=${BUILD_DIR}/target \
+  cp \
+    --preserve=mode,timestamps \
+    ${BUILD_DIR}/target/release/web_socket_server \
+    ${DEST_DIR}/web_socket_server
+
 # ---- Stage: Prepare Release Runtime Environment ----
 FROM debian:trixie-slim AS release_runtime
 
@@ -171,13 +181,7 @@ _EOF_
 COPY --from=build_release ${BUILD_DIR}/recipe.json recipe.json
 
 # Copy cached binary into final location
-RUN \
-  --mount=type=cache,id=release_target,target=${DEST_DIR}/target \
-  <<_EOF_
-#!/usr/bin/bash -e
-
-cp --preserve=mode,timestamps ./target/release/web_socket_server /usr/local/bin/web_socket_server
-_EOF_
+COPY --from=build_release ${DEST_DIR}/web_socket_server /usr/local/bin/web_socket_server
 
 # Set working directory to destination
 RUN useradd -m appuser
