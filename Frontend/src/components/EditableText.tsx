@@ -6,6 +6,7 @@ import Konva from "konva";
 import TextEditor from "./TextEditor";
 
 import { type EditableObjectProps } from "@/dispatchers/editableObjectProps";
+import type { CanvasObjectIdType, ShapeModel, TextModel } from "@/types/CanvasObjectModel";
 
 interface EditableTextProps extends EditableObjectProps {
   id: string;
@@ -17,7 +18,9 @@ interface EditableTextProps extends EditableObjectProps {
   width: number;    
   height: number;   
   rotation: number;
-  draggable: boolean;   
+  draggable: boolean; 
+  shapeModel: TextModel;
+  handleUpdateShapes: (shapes: Record<CanvasObjectIdType, ShapeModel>) => void
 }
 
 const EditableText = ({
@@ -31,6 +34,8 @@ const EditableText = ({
   height,
   rotation,
   draggable,
+  shapeModel,
+  handleUpdateShapes,
   onMouseOver,
   onMouseOut,
   onMouseDown,
@@ -39,11 +44,8 @@ const EditableText = ({
   onTransform,
   onTransformEnd,
 }: EditableTextProps) => {
-  const [textContents, setTextContents] = useState(text);
   const [isSelected, setIsSelected] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
-  // const [textWidth, setTextWidth] = useState(width);
-  // const [textHeight, setTextHeight] = useState(height);
 
   const textRef = useRef<Konva.Text>(null);
   const trRef = useRef<Konva.Transformer>(null);
@@ -92,32 +94,20 @@ const EditableText = ({
   }, []);
 
   const handleTextChange = useCallback((newText: string): void => {
-    setTextContents(newText);
+    handleUpdateShapes({
+      [id]: {
+        ...shapeModel,
+        text: newText,
+      }
+    });
   }, []);
-
-  // const handleTransform = useCallback(() => {
-  //   const node = textRef.current;
-  //   if (!node) return;
-  //   const scaleX = node.scaleX();
-  //   const scaleY = node.scaleY();
-  //   const newWidth = node.width() * scaleX;
-  //   const newHeight = node.height() * scaleY;
-  //   setTextWidth(newWidth);
-  //   setTextHeight(newHeight);
-  //   node.setAttrs({
-  //     width: newWidth,
-  //     height: newHeight,
-  //     scaleX: 1,
-  //     scaleY: 1,
-  //   });
-  // }, []);
 
   return (
     <Group>
       <Text
         id={id}
         ref={textRef}
-        text={textContents}
+        text={text}
         fontSize={fontSize}
         fill={color}
         x={x}

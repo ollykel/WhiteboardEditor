@@ -97,7 +97,7 @@ const editableObjectProps = <ShapeType extends ShapeModel> (
         y: node.y(),
         width: node.width(),
         height: node.height(),
-        rotation
+        rotation,
       }
     });
   };

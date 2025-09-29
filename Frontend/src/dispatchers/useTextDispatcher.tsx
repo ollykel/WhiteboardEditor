@@ -123,6 +123,8 @@ const useTextDispatcher = ({
           height={height}
           draggable={isDraggable}
           rotation={rotation}
+          shapeModel={model}
+          handleUpdateShapes={handleUpdateShapes}
           {...editableObjectProps<TextModel>(model, isDraggable, handleUpdateShapes)}
         />
       )
