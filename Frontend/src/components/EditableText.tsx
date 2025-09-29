@@ -34,12 +34,13 @@ const EditableText = ({
   onMouseDown,
   onMouseUp,
   onDragEnd,
+  onTransformEnd,
 }: EditableTextProps) => {
   const [textContents, setTextContents] = useState(text);
   const [isSelected, setIsSelected] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
-  const [textWidth, setTextWidth] = useState(width);
-  const [textHeight, setTextHeight] = useState(height);
+  // const [textWidth, setTextWidth] = useState(width);
+  // const [textHeight, setTextHeight] = useState(height);
 
   const textRef = useRef<Konva.Text>(null);
   const trRef = useRef<Konva.Transformer>(null);
@@ -91,22 +92,22 @@ const EditableText = ({
     setTextContents(newText);
   }, []);
 
-  const handleTransform = useCallback(() => {
-    const node = textRef.current;
-    if (!node) return;
-    const scaleX = node.scaleX();
-    const scaleY = node.scaleY();
-    const newWidth = node.width() * scaleX;
-    const newHeight = node.height() * scaleY;
-    setTextWidth(newWidth);
-    setTextHeight(newHeight);
-    node.setAttrs({
-      width: newWidth,
-      height: newHeight,
-      scaleX: 1,
-      scaleY: 1,
-    });
-  }, []);
+  // const handleTransform = useCallback(() => {
+  //   const node = textRef.current;
+  //   if (!node) return;
+  //   const scaleX = node.scaleX();
+  //   const scaleY = node.scaleY();
+  //   const newWidth = node.width() * scaleX;
+  //   const newHeight = node.height() * scaleY;
+  //   setTextWidth(newWidth);
+  //   setTextHeight(newHeight);
+  //   node.setAttrs({
+  //     width: newWidth,
+  //     height: newHeight,
+  //     scaleX: 1,
+  //     scaleY: 1,
+  //   });
+  // }, []);
 
   return (
     <Group>
@@ -118,14 +119,13 @@ const EditableText = ({
         fill={color}
         x={x}
         y={y}
-        width={textWidth}
-        height={textHeight}
+        width={width}
+        height={height}
         draggable={draggable}
         onClick={handleSelect}
         onTap={handleSelect}
         onDblClick={handleTextDblClick}
         onDblTap={handleTextDblClick}
-        onTransform={handleTransform}
         listening={!isEditing}
         visible={!isEditing}
         onDragEnd={onDragEnd}
@@ -133,6 +133,7 @@ const EditableText = ({
         onMouseDown={onMouseDown}
         onMouseOut={onMouseOut}
         onMouseOver={onMouseOver}
+        onTransformEnd={onTransformEnd}
       />
       {isEditing && textRef.current && (
         <TextEditor

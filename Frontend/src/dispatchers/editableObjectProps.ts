@@ -11,6 +11,7 @@ export interface EditableObjectProps {
   onMouseDown?: (ev: Konva.KonvaEventObject<MouseEvent>) => void;
   onMouseUp?: (ev: Konva.KonvaEventObject<MouseEvent>) => void;
   onDragEnd?: (ev: Konva.KonvaEventObject<DragEvent>) => void;
+  onTransformEnd?: (ev: Konva.KonvaEventObject<DragEvent>) => void;
 }
 
 const editableObjectProps = <ShapeType extends ShapeModel> (
@@ -62,7 +63,26 @@ const editableObjectProps = <ShapeType extends ShapeModel> (
       [id]: ({ ...shapeModel, x, y })
     };
 
-    console.log("Update: ", update);
+    console.log("Update: ", update); // debug
+    handleUpdateShapes(update);
+  };
+
+  const handleTransform = (ev: Konva.KonvaEventObject<DragEvent>) => {
+    const node = ev.target;
+    const id = ev.target.id();
+    if (!node) return;
+    const scaleY = node.scaleY();
+    const scaleX = node.scaleX();
+    const width = node.width() * scaleX;
+    const height = node.height() * scaleY;
+    node.scaleX(1);
+    node.scaleY(1);
+
+    const update = {
+      [id]: ({ ...shapeModel, x: node.x(), y: node.y(), width, height })
+    };
+
+    console.log("Update: ", update); // debug
     handleUpdateShapes(update);
   };
 
@@ -71,7 +91,8 @@ const editableObjectProps = <ShapeType extends ShapeModel> (
     onMouseOut: isDraggable && handleMouseOut || undefined,
     onMouseDown: isDraggable && handleMouseDown || undefined,
     onMouseUp: isDraggable && handleMouseUp || undefined,
-    onDragEnd: isDraggable && handleDragEnd || undefined
+    onDragEnd: isDraggable && handleDragEnd || undefined,
+    onTransformEnd: handleTransform || undefined,
   });
 };
 
