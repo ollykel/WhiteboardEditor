@@ -1,10 +1,11 @@
+import { useCallback } from 'react';
+
 import Konva from 'konva';
 
 import type {
   CanvasObjectIdType,
   ShapeModel
-} from '@/types/CanvasObjectModel';
-import { useCallback } from 'react';
+} from '@/types/CanvasObjectModel';  
 
 export interface EditableObjectProps {
   onMouseOver?: (ev: Konva.KonvaEventObject<MouseEvent>) => void;
@@ -12,7 +13,7 @@ export interface EditableObjectProps {
   onMouseDown?: (ev: Konva.KonvaEventObject<MouseEvent>) => void;
   onMouseUp?: (ev: Konva.KonvaEventObject<MouseEvent>) => void;
   onDragEnd?: (ev: Konva.KonvaEventObject<DragEvent>) => void;
-  onTransform?: (ev: Konva.KonvaEventObject<DragEvent>) => void;
+  onTransformEnd?: (ev: Konva.KonvaEventObject<DragEvent>) => void;
 }
 
 const editableObjectProps = <ShapeType extends ShapeModel> (
@@ -68,23 +69,28 @@ const editableObjectProps = <ShapeType extends ShapeModel> (
     handleUpdateShapes(update);
   };
 
-  const handleTransform = useCallback((ev: Konva.KonvaEventObject<DragEvent>) => {
+  const handleTransformEnd = useCallback((ev: Konva.KonvaEventObject<DragEvent>) => {
     const node = ev.target;
-    const id = ev.target.id();
+    const id = node.id();
     if (!node) return;
-    const scaleY = node.scaleY();
+
+    // Convert the final scale into width/height
     const scaleX = node.scaleX();
+    const scaleY = node.scaleY();
     const width = node.width() * scaleX;
     const height = node.height() * scaleY;
     const rotation = node.rotation();
+
+    // Apply those numbers directly to the node so it keeps the new size
+    node.width(width);
+    node.height(height);
     node.scaleX(1);
     node.scaleY(1);
 
-    const update = {
+    // Now broadcast **once**
+    handleUpdateShapes({
       [id]: ({ ...shapeModel, x: node.x(), y: node.y(), width, height, rotation })
-    };
-
-    handleUpdateShapes(update);
+    });
   }, []);
 
   return ({
@@ -93,7 +99,7 @@ const editableObjectProps = <ShapeType extends ShapeModel> (
     onMouseDown: isDraggable && handleMouseDown || undefined,
     onMouseUp: isDraggable && handleMouseUp || undefined,
     onDragEnd: isDraggable && handleDragEnd || undefined,
-    onTransform: handleTransform || undefined,
+    onTransformEnd: handleTransformEnd || undefined,
   });
 };
 
