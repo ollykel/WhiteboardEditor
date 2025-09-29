@@ -4,6 +4,7 @@ import type {
   CanvasObjectIdType,
   ShapeModel
 } from '@/types/CanvasObjectModel';
+import { useCallback } from 'react';
 
 export interface EditableObjectProps {
   onMouseOver?: (ev: Konva.KonvaEventObject<MouseEvent>) => void;
@@ -67,7 +68,7 @@ const editableObjectProps = <ShapeType extends ShapeModel> (
     handleUpdateShapes(update);
   };
 
-  const handleTransform = (ev: Konva.KonvaEventObject<DragEvent>) => {
+  const handleTransform = useCallback((ev: Konva.KonvaEventObject<DragEvent>) => {
     const node = ev.target;
     const id = ev.target.id();
     if (!node) return;
@@ -75,16 +76,16 @@ const editableObjectProps = <ShapeType extends ShapeModel> (
     const scaleX = node.scaleX();
     const width = node.width() * scaleX;
     const height = node.height() * scaleY;
+    const rotation = node.rotation();
     node.scaleX(1);
     node.scaleY(1);
 
     const update = {
-      [id]: ({ ...shapeModel, x: node.x(), y: node.y(), width, height })
+      [id]: ({ ...shapeModel, x: node.x(), y: node.y(), width, height, rotation })
     };
 
-    console.log("Update: ", update); // debug
     handleUpdateShapes(update);
-  };
+  }, []);
 
   return ({
     onMouseOver: isDraggable && handleMouseOver || undefined,

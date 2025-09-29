@@ -12,11 +12,11 @@ interface EditableTextProps extends EditableObjectProps {
   fontSize: number;
   text: string;
   color: string;
-  x: number
-  y: number
-  width: number
-  height: number
-  draggable: boolean,
+  x: number;
+  y: number;
+  width: number;    
+  height: number;   
+  draggable: boolean;   
 }
 
 const EditableText = ({

@@ -105,7 +105,7 @@ const useTextDispatcher = ({
         x,
         y,
         width,
-        height
+        height,
       } = model;
 
       return (
