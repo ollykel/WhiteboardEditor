@@ -280,7 +280,6 @@ const Whiteboard = () => {
           case 'update_shapes':
             {
               const { canvasId, shapes } = msg;
-
               setCanvasObjects(dispatch, whiteboardIdRef.current, canvasId, shapes);
             }
             break;
@@ -584,11 +583,9 @@ const WrappedWhiteboard = () => {
       const changedObjects: Record<CanvasObjectIdType, CanvasObjectModel> = {};
 
       for (const [objIdStr, objUpdate] of Object.entries(shapes)) {
-        console.log("in for loop: ", objIdStr, " : ", objUpdate);
         const objId = objIdStr;
 
         if (objId in canvasObjects) {
-          console.log("in if statement: ", objId);
           changedObjects[objId] = ({
             ...canvasObjects[objId],
             ...objUpdate
@@ -596,7 +593,6 @@ const WrappedWhiteboard = () => {
         }
       }// end for (const [objId, objUpdate] of Object.entries(shapes))
 
-      console.log("changed object", changedObjects);
       const updateShapesMsg: ClientMessageUpdateShapes = ({
         type: 'update_shapes',
         canvasId,

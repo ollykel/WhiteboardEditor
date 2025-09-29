@@ -509,7 +509,6 @@ pub async fn handle_client_message(client_state: &ClientState, client_msg_s: &st
                 ClientSocketMessage::UpdateShapes{ canvas_id, ref shapes } => {
                     let mut whiteboard = client_state.whiteboard_ref.lock().await;
                     println!("Updating shapes on canvas {} ...", canvas_id);
-                    println!("shapes {:?}", shapes);
 
                     match whiteboard.canvases.get_mut(&canvas_id) {
                         None => {
@@ -517,13 +516,14 @@ pub async fn handle_client_message(client_state: &ClientState, client_msg_s: &st
                             todo!()
                         },
                         Some(canvas) => {
-                            let new_shapes = HashMap::<CanvasObjectIdType, ShapeModel>::new();
+                            let mut new_shapes = HashMap::<CanvasObjectIdType, ShapeModel>::new();
 
                             for (obj_id_s, shape) in shapes.iter() {
                                 match obj_id_s.parse::<CanvasObjectIdType>() {
                                     Ok(obj_id) => {
                                         if canvas.shapes.contains_key(&obj_id) {
                                             canvas.shapes.insert(obj_id, shape.clone());
+                                            new_shapes.insert(obj_id, shape.clone());
                                         }
                                     },
                                     Err(e) => {
