@@ -1,5 +1,3 @@
-import { useCallback } from 'react';
-
 import Konva from 'konva';
 
 import type {
@@ -71,7 +69,7 @@ const editableObjectProps = <ShapeType extends ShapeModel> (
   };
 
   // transform the targetted box locally in real time without broadcasting
-  const handleTransform = useCallback((ev: Konva.KonvaEventObject<Event>) => {
+  const handleTransform = (ev: Konva.KonvaEventObject<Event>) => {
     const node = ev.target;
     const scaleX = node.scaleX();
     const scaleY = node.scaleY();
@@ -84,10 +82,10 @@ const editableObjectProps = <ShapeType extends ShapeModel> (
     node.height(height);
     node.scaleX(1);
     node.scaleY(1);
-  }, []);
+  };
 
   // once the transform ends, send the update to server to broadcast
-  const handleTransformEnd = useCallback((ev: Konva.KonvaEventObject<Event>) => {
+  const handleTransformEnd = (ev: Konva.KonvaEventObject<Event>) => {
     const node = ev.target;
     const id = node.id();
     const rotation = node.rotation();
@@ -102,7 +100,7 @@ const editableObjectProps = <ShapeType extends ShapeModel> (
         rotation
       }
     });
-  }, []);
+  };
 
   return ({
     onMouseOver: isDraggable && handleMouseOver || undefined,
