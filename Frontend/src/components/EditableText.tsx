@@ -94,10 +94,18 @@ const EditableText = ({
   }, []);
 
   const handleTextChange = useCallback((newText: string): void => {
+    const node = textRef.current;
+    if (!node) return;
+
     handleUpdateShapes({
       [id]: {
         ...shapeModel,
         text: newText,
+        x: node.x(),
+        y: node.y(),
+        width: node.width(),
+        height: node.height(),
+        rotation: node.rotation(),
       }
     });
   }, []);
