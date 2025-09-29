@@ -16,6 +16,7 @@ interface EditableTextProps extends EditableObjectProps {
   y: number;
   width: number;    
   height: number;   
+  rotation: number;
   draggable: boolean;   
 }
 
@@ -28,6 +29,7 @@ const EditableText = ({
   y,
   width,
   height,
+  rotation,
   draggable,
   onMouseOver,
   onMouseOut,
@@ -122,6 +124,7 @@ const EditableText = ({
         y={y}
         width={width}
         height={height}
+        rotation={rotation}
         draggable={draggable}
         onClick={handleSelect}
         onTap={handleSelect}

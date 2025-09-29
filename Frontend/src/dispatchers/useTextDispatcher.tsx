@@ -65,6 +65,7 @@ const useTextDispatcher = ({
         y: yMin,
         width,
         height,
+        rotation: 0,
       }]);
       setMouseDownCoords(null);
     }
@@ -106,6 +107,7 @@ const useTextDispatcher = ({
         y,
         width,
         height,
+        rotation,
       } = model;
 
       return (
@@ -120,6 +122,7 @@ const useTextDispatcher = ({
           width={width}
           height={height}
           draggable={isDraggable}
+          rotation={rotation}
           {...editableObjectProps<TextModel>(model, isDraggable, handleUpdateShapes)}
         />
       )

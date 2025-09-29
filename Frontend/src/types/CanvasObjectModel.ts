@@ -78,6 +78,7 @@ export interface TextModel {
   y: number;
   width: number;
   height: number;
+  rotation: number;
 }
 
 export type TextRecord = TextModel & ObjectID;

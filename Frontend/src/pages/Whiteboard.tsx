@@ -280,6 +280,7 @@ const Whiteboard = () => {
           case 'update_shapes':
             {
               const { canvasId, shapes } = msg;
+
               setCanvasObjects(dispatch, whiteboardIdRef.current, canvasId, shapes);
             }
             break;
