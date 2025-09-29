@@ -5,7 +5,9 @@ import { Group, Text, Transformer } from 'react-konva';
 import Konva from "konva";
 import TextEditor from "./TextEditor";
 
-interface EditableTextProps {
+import { type EditableObjectProps } from "@/dispatchers/editableObjectProps";
+
+interface EditableTextProps extends EditableObjectProps {
   fontSize: number;
   text: string;
   color: string;
@@ -13,7 +15,7 @@ interface EditableTextProps {
   y: number
   width: number
   height: number
-  draggable: boolean
+  draggable: boolean,
 }
 
 const EditableText = ({
@@ -25,6 +27,11 @@ const EditableText = ({
   width,
   height,
   draggable,
+  onMouseOver,
+  onMouseOut,
+  onMouseDown,
+  onMouseUp,
+  onDragEnd,
 }: EditableTextProps) => {
   const [textContents, setTextContents] = useState(text);
   const [isSelected, setIsSelected] = useState(false);
@@ -118,6 +125,11 @@ const EditableText = ({
         onTransform={handleTransform}
         listening={!isEditing}
         visible={!isEditing}
+        onDragEnd={onDragEnd}
+        onMouseUp={onMouseUp}
+        onMouseDown={onMouseDown}
+        onMouseOut={onMouseOut}
+        onMouseOver={onMouseOver}
       />
       {isEditing && textRef.current && (
         <TextEditor

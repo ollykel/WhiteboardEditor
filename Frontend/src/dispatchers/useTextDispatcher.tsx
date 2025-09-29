@@ -138,7 +138,6 @@ const useTextDispatcher = ({
     handlePointerUp,
     getPreview,
     renderShape,
-    // handleUpdateShapes,
     getTooltipText,
   });
 }
