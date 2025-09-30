@@ -121,7 +121,9 @@ mod unit_tests {
         let client_state = ClientState {
             client_id: test_client_id,
             jwt_secret: String::from("abcd"),
-            user_whiteboard_permission: Mutex::new(None),
+            user_whiteboard_permission: Mutex::new(
+                Some(WhiteboardPermissionEnum::Own)
+            ),
             whiteboard_ref: Arc::new(Mutex::new(Whiteboard {
                 id: ObjectId::new(),
                 name: String::from("Test"),
