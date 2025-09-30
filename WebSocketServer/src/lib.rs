@@ -613,12 +613,53 @@ struct ClientMessageInspector {
     type_tag: String,
 }// -- end ClientMessageInspector
 
+// === UserStore ==================================================================================
+//
+// Trait that defines a way for fetching users by ID. Depending on this trait rather than directly
+// on a database client allows the implementation of unit tests without using a database client.
+//
+// Read-only: does not implement setting, updating, or deleting users.
+//
+// ================================================================================================
+pub trait UserStore {
+    async fn get_user_by_id(&self, user_id: &UserIdType) -> Result<Option<User>, Box<dyn std::error::Error + Send + Sync>>;
+}// -- end trait UserStore
+
+// === MongoDBUserStore ===========================================================================
+//
+// Interface for fetching users from the MongoDB database, by user id.
+//
+// ================================================================================================
+pub struct MongoDBUserStore {
+    user_collection: Collection<UserMongoDBView>,
+}// -- end MongoDBUserStore
+
+impl MongoDBUserStore {
+    pub fn new(coll: &Collection<UserMongoDBView>) -> Self {
+        Self {
+            user_collection: coll.clone(),
+        }
+    }// -- end fn new(coll: &Collection<UserMongoDBView>) -> Self
+}// -- end impl MongoDBUserStore
+
+impl UserStore for MongoDBUserStore {
+    async fn get_user_by_id(&self, user_id: &UserIdType) -> Result<Option<User>, Box<dyn std::error::Error + Send + Sync>> {
+        match self.user_collection.find_one(doc! { "_id": user_id.clone() }).await? {
+            Some(user_view) => Ok(Some(user_view.to_user())),
+            None => Ok(None),
+        }// -- end match self.user_collection.find_one(doc! { "_id": user_id.clone() }).await
+    }
+}
+
 // Handle raw messages from clients. Assume client has already authenticated.
 // Input parameter is a string to enable testing on all possible inputs.
 // @param client_state          -- Current client state
 // @param client_msg_s          -- Content of client message
 // @return                      -- (Optional) Message to send to clients, if any
-pub async fn handle_authenticated_client_message(client_state: &ClientState, client_msg_s: &str) -> Option<ServerSocketMessage> {
+pub async fn handle_authenticated_client_message(
+    client_state: &ClientState,
+    client_msg_s: &str
+) -> Option<ServerSocketMessage> {
     use ClientSocketMessage::*;
 
     match serde_json::from_str::<ClientSocketMessage>(client_msg_s) {
@@ -814,6 +855,31 @@ pub async fn handle_authenticated_client_message(client_state: &ClientState, cli
                 },
                 UpdateCanvasAllowedUsers { canvas_id, allowed_users } => {
                     let mut whiteboard = client_state.whiteboard_ref.lock().await;
+
+                    // -- ensure all allowed users are valid users who have edit or own permission
+                    for user_id in allowed_users.iter() {
+                        match whiteboard.permissions_by_user_id.get(&user_id.to_string()) {
+                            None => {
+                                return Some(ServerSocketMessage::IndividualError {
+                                    client_id: client_state.client_id,
+                                    error: ClientError::Other {
+                                        message: format!("User {} not found", user_id),
+                                    }
+                                });
+                            },
+                            Some(perm) => match perm {
+                                WhiteboardPermissionEnum::View => {
+                                    return Some(ServerSocketMessage::IndividualError {
+                                        client_id: client_state.client_id,
+                                        error: ClientError::Other {
+                                            message: format!("User {} does not have edit permission", user_id),
+                                        }
+                                    });
+                                },
+                                WhiteboardPermissionEnum::Edit | WhiteboardPermissionEnum::Own => {},
+                            },
+                        };
+                    }// -- end for user_id in allowed_users.iter()
 
                     match whiteboard.canvases.get_mut(&canvas_id) {
                         None => {
