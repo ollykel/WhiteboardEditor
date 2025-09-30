@@ -3,7 +3,8 @@ import {
   useRef,
   useEffect,
   useReducer,
-  useContext
+  useContext,
+  useCallback
 } from 'react';
 
 import {
@@ -570,7 +571,7 @@ const WrappedWhiteboard = () => {
 
   console.log("canvasObjects: ", canvasObjectsByCanvas);
 
-  const handleUpdateShapes = (canvasId: CanvasIdType, shapes: Record<CanvasObjectIdType, CanvasObjectModel>) => {
+  const handleUpdateShapes = useCallback((canvasId: CanvasIdType, shapes: Record<CanvasObjectIdType, CanvasObjectModel>) => {
     if (socketRef.current) {
       // find relevant objects and merge the new attributes into the existing
       // attributes
@@ -608,7 +609,7 @@ const WrappedWhiteboard = () => {
 
       socketRef.current.send(JSON.stringify(updateShapesMsg));
     }
-  };
+  }, []);
 
   const [currentTool, setCurrentTool] = useState<ToolChoice>('hand');
 

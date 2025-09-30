@@ -82,6 +82,7 @@ pub enum ShapeModel {
         y: f64,
         width: f64,
         height: f64,
+        rotation: f64,
     }
 }
 
