@@ -227,6 +227,55 @@ pub enum WhiteboardDiff {
     UpdateCanvasAllowedUsers { canvas_id: CanvasIdType, allowed_users: Vec<ObjectId> },
 }
 
+// === ClientError ================================================================================
+//
+// Enumerates types of errors the server can send to the client. Sent within both the
+// IndividualError and BroadcastError messages.
+//
+// ================================================================================================
+#[derive(Debug, Clone, Serialize)]
+#[serde(tag = "type", rename_all = "snake_case", rename_all_fields = "camelCase")]
+pub enum ClientError {
+    // -- previous message from client was invalid in some form (invalid json, non-existent message
+    // type, invalid message format, etc.)
+    InvalidMessage {
+        client_message_raw: String,
+    },
+    // -- client did not send an auth token
+    NotAuthenticated,
+    // -- client not authorized to view this whiteboard at all
+    NotAuthorized,
+    // -- client already authorized (cannot re-authenticate within the same connection)
+    AlreadyAuthorized,
+    // -- client's auth token is somehow malformed
+    InvalidAuth,
+    // -- client's auth token has expired
+    AuthTokenExpired,
+    // -- Client attempted to sign in as or access user that doesn't exist
+    UserNotFound {
+        user_id: String,
+    },
+    // -- Client attempted to access whiteboard that doesn't exist
+    WhiteboardNotFound {
+        whiteboard_id: String,
+    },
+    // -- Client attempted to access canvas that doesn't exist
+    CanvasNotFound {
+        canvas_id: String,
+    },
+    // -- client doesn't have permission to perform a given action
+    ActionForbidden {
+        // -- description of the forbidden action that was attempted
+        action: String,
+    },
+    // -- misc. errors not neatly handled by the above common cases
+    Other {
+        // -- descriptive message to send to client
+        // -- make sure it excludes sensitive information
+        message: String,
+    },
+}// -- end ClientError
+
 #[derive(Debug, Clone, Serialize)]
 #[serde(tag = "type", rename_all = "snake_case", rename_all_fields = "camelCase")]
 pub enum ServerSocketMessage {
@@ -266,10 +315,10 @@ pub enum ServerSocketMessage {
     },
     IndividualError {
         client_id: ClientIdType,
-        message: String,
+        error: ClientError,
     },
     BroadcastError {
-        message: String,
+        error: ClientError,
     },
 }
 
@@ -570,7 +619,7 @@ pub async fn handle_authenticated_client_message(client_state: &ClientState, cli
                 // -- User already authenticated; return error
                 ClientSocketMessage::Login { .. } => Some(ServerSocketMessage::IndividualError {
                     client_id: client_state.client_id,
-                    message: String::from("Client already authenticated"),
+                    error: ClientError::AlreadyAuthorized,
                 }),
                 ClientSocketMessage::CreateShapes{ canvas_id, ref shapes } => {
                     let mut whiteboard = client_state.whiteboard_ref.lock().await;
@@ -733,7 +782,9 @@ pub async fn handle_authenticated_client_message(client_state: &ClientState, cli
                             // canvas doesn't exist
                             return Some(ServerSocketMessage::IndividualError {
                                 client_id: client_state.client_id,
-                                message: format!("Canvas {} not found", canvas_id),
+                                error: ClientError::CanvasNotFound {
+                                    canvas_id: canvas_id.to_string(),
+                                },
                             });
                         },
                         Some(canvas) => {
@@ -771,7 +822,9 @@ pub async fn handle_authenticated_client_message(client_state: &ClientState, cli
 
             Some(ServerSocketMessage::IndividualError{
                 client_id: client_state.client_id,
-                message: String::from("invalid client message")
+                error: ClientError::InvalidMessage {
+                    client_message_raw: String::from(client_msg_s),
+                },
             })
         }
     }
@@ -803,7 +856,9 @@ pub async fn handle_unauthenticated_client_message(
 
                             return Some(ServerSocketMessage::IndividualError {
                                 client_id: client_state.client_id,
-                                message: String::from("Error parsing user ID from auth token"),
+                                error: ClientError::UserNotFound {
+                                    user_id: client_state.client_id.to_string(),
+                                },
                             });
                         },
                         Ok(user_id) => user_id,
@@ -815,13 +870,17 @@ pub async fn handle_unauthenticated_client_message(
 
                             return Some(ServerSocketMessage::IndividualError {
                                 client_id: client_state.client_id,
-                                message: String::from("Could not find authenticated user"),
+                                error: ClientError::Other {
+                                    message: format!("Error fetching user {}", user_id),
+                                },
                             })
                         },
                         Ok(None) => {
                             return Some(ServerSocketMessage::IndividualError {
                                 client_id: client_state.client_id,
-                                message: String::from("Could not find authenticated user"),
+                                error: ClientError::UserNotFound {
+                                    user_id: client_state.client_id.to_string(),
+                                },
                             })
                         },
                         Ok(Some(user)) => user.to_user(),
@@ -861,14 +920,14 @@ pub async fn handle_unauthenticated_client_message(
                         // User has no valid permission; send back an error message
                         Some(ServerSocketMessage::IndividualError {
                             client_id: client_state.client_id,
-                            message: String::from("Client not authorized to access whiteboard"),
+                            error: ClientError::NotAuthorized,
                         })
                     }
                 },
                 // -- All other messages should be responded to with an individual error
                 _ => Some(ServerSocketMessage::IndividualError {
                     client_id: client_state.client_id,
-                    message: String::from("Client not authenticated"),
+                    error: ClientError::NotAuthenticated,
                 }),
             }
         },
@@ -876,9 +935,11 @@ pub async fn handle_unauthenticated_client_message(
             println!("ERROR: invalid client message: {}", client_msg_s);
             println!("Reason: {}", e);
 
-            Some(ServerSocketMessage::IndividualError{
+            Some(ServerSocketMessage::IndividualError {
                 client_id: client_state.client_id,
-                message: String::from("invalid client message")
+                error: ClientError::InvalidMessage {
+                    client_message_raw: String::from(client_msg_s),
+                },
             })
         }
     }
