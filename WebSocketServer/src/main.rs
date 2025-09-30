@@ -128,7 +128,9 @@ async fn handle_connection(ws: WebSocket, whiteboard_id: WhiteboardIdType, conne
 
                         let err_msg = ServerSocketMessage::IndividualError {
                             client_id: current_client_id,
-                            message: format!("Error occurred fetching whiteboard {}", whiteboard_id)
+                            error: ClientError::Other {
+                                message: format!("Error occurred fetching whiteboard {}", whiteboard_id),
+                            },
                         };
 
                         let _ = user_ws_tx.send(Message::text(serde_json::to_string(&err_msg).unwrap())).await;
@@ -141,7 +143,9 @@ async fn handle_connection(ws: WebSocket, whiteboard_id: WhiteboardIdType, conne
 
                         let err_msg = ServerSocketMessage::IndividualError {
                             client_id: current_client_id,
-                            message: format!("Could not fetch whiteboard {}", whiteboard_id)
+                            error: ClientError::WhiteboardNotFound {
+                                whiteboard_id: whiteboard_id.to_string(),
+                            },
                         };
                         
                         let _ = user_ws_tx.send(Message::text(serde_json::to_string(&err_msg).unwrap())).await;
@@ -222,7 +226,9 @@ async fn handle_connection(ws: WebSocket, whiteboard_id: WhiteboardIdType, conne
                 eprintln!("Database connection error; could not fetch whiteboard - no default database defined in mongo uri");
                 let err_msg = ServerSocketMessage::IndividualError {
                     client_id: current_client_id,
-                    message: format!("Error fetching whiteboard {}", whiteboard_id)
+                    error: ClientError::Other {
+                        message: format!("Error fetching whiteboard {}", whiteboard_id),
+                    },
                 };
                 
                 let _ = tx.send(err_msg);

@@ -318,13 +318,50 @@ const Whiteboard = () => {
           case 'individual_error':
           case 'broadcast_error':
             {
-              const { message } = msg;
+              const { error } = msg;
 
-              console.error('Socket error:', message);
+              switch (error.type) {
+                case 'invalid_message':
+                  console.error('Socket error: invalid message:', error.clientMessageRaw);
+                  break;
+                case 'unauthorized':
+                  console.error('Socket error: not authorized to view this whiteboard');
+                  break;
+                case 'not_authenticated':
+                  console.error('Socket error: client not authenticated');
+                  break;
+                case 'already_authorized':
+                  console.error('Socket error: client cannot authenticate again');
+                  break;
+                case 'invalid_auth':
+                  console.error('Socket error: auth token invalid');
+                  break;
+                case 'auth_token_expired':
+                  console.error('Socket error: auth token expired');
+                  break;
+                case 'user_not_found':
+                  console.error(`Socket error: user ${error.userId} not found`);
+                  break;
+                case 'whiteboard_not_found':
+                  console.error(`Socket error: whiteboard ${error.whiteboardId} not found`);
+                  break;
+                case 'canvas_not_found':
+                  console.error(`Socket error: canvas ${error.canvasId} not found`);
+                  break;
+                case 'action_forbidden':
+                  console.error(`Socket error: action ${error.action} not permitted`);
+                  break;
+                case 'other':
+                  console.error('Socket error:', error.message);
+                  break;
+                default:
+                  throw new Error(`Unrecognized error: ${JSON.stringify(error, null, 2)}`);
+              }// -- end switch (error.type)
             }
             break;
           default:
             console.log('Server Message unrecognized:', msg);
+            throw new Error(`Server Message unrecognized: ${JSON.stringify(msg, null, 2)}`);
         }// end switch (msg.type)
       } catch (e) {
         console.log('Failed to parse message:', e);
