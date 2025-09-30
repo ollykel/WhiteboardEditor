@@ -943,9 +943,9 @@ pub async fn handle_authenticated_client_message(
 // @param client_state          -- Current client state
 // @param client_msg_s          -- Content of client message
 // @return                      -- (Optional) Message to send to clients, if any
-pub async fn handle_unauthenticated_client_message(
+pub async fn handle_unauthenticated_client_message<UserStoreType: UserStore>(
     client_state: &ClientState,
-    user_coll: &Collection<UserMongoDBView>,
+    user_store: &UserStoreType,
     client_msg_s: &str
 ) -> Option<ServerSocketMessage> {
     match serde_json::from_str::<ClientSocketMessage>(client_msg_s) {
@@ -972,7 +972,7 @@ pub async fn handle_unauthenticated_client_message(
                         Ok(user_id) => user_id,
                     };
 
-                    let user = match user_coll.find_one(doc! { "_id": user_id }).await {
+                    let user = match user_store.get_user_by_id(&user_id).await {
                         Err(e) => {
                             println!("Error fetching user {}: {}", user_id, e);
 
@@ -987,11 +987,11 @@ pub async fn handle_unauthenticated_client_message(
                             return Some(ServerSocketMessage::IndividualError {
                                 client_id: client_state.client_id,
                                 error: ClientError::UserNotFound {
-                                    user_id: client_state.client_id.to_string(),
+                                    user_id: user_id.to_string(),
                                 },
                             })
                         },
-                        Ok(Some(user)) => user.to_user(),
+                        Ok(Some(user)) => user,
                     };
 
                     let permission : Option<WhiteboardPermissionEnum> = {
