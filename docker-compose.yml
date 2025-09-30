@@ -60,6 +60,7 @@ services:
     environment:
       # Make sure to set MONGO_URI in .env
       MONGO_URI: ${WHITEBOARD_EDITOR_MONGO_URI}
+      JWT_SECRET: ${WHITEBOARD_EDITOR_JWT_SECRET}
     ports:
       # exposed for testing purposes
       - ${WHITEBOARD_EDITOR_WEB_SOCKET_PORT-3002}:3000

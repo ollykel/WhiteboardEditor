@@ -60,6 +60,8 @@ import WhiteboardContext, {
   WhiteboardProvider
 } from "@/context/WhiteboardContext";
 
+import AuthContext from '@/context/AuthContext';
+
 import api from '@/api/axios';
 
 import { useModal } from '@/components/Modal';
@@ -84,6 +86,7 @@ import ShareWhiteboardForm, {
 import type {
   SocketServerMessage,
   // ClientMessageCreateShapes,
+  ClientMessageLogin,
   ClientMessageUpdateShapes,
   ClientMessageCreateCanvas,
   CanvasData,
@@ -118,6 +121,7 @@ const Whiteboard = () => {
 
   // -- references
   const context = useContext(WhiteboardContext);
+  const authContext = useContext(AuthContext);
   const queryClient = useQueryClient();
   const { user } = useUser();
 
@@ -130,7 +134,11 @@ const Whiteboard = () => {
   }
 
   if (! context) {
-    throw new Error('No WhiteboardContext provided in Whiteboard');
+    throw new Error('No WhiteboardContext provided to Whiteboard');
+  }
+
+  if (! authContext) {
+    throw new Error('No AuthContext provided to Whiteboard');
   }
 
   const {
@@ -138,6 +146,10 @@ const Whiteboard = () => {
     setWhiteboardId,
     sharedUsers,
   } = context;
+
+  const {
+    authToken,
+  } = authContext;
 
   // -- prop-derived state
   const whiteboardKey = ['whiteboard', whiteboardId];
@@ -327,11 +339,14 @@ const Whiteboard = () => {
 
     ws.onopen = () => {
       // Send login/auth message with user ID, if currently logged in
-      if (user) {
-        const loginMessage = {
+      if (! user) {
+        console.error('Cannot log into web socket server without authenticated user');
+      } else if (! authToken) {
+        console.error('Cannot log into web socket server without authentication token');
+      } else {
+        const loginMessage : ClientMessageLogin = {
           type: "login",
-          userId: user.id,
-          username: user.username,
+          jwt: authToken,
         };
         console.log('Sending login message:', loginMessage);
         ws.send(JSON.stringify(loginMessage));
@@ -350,7 +365,7 @@ const Whiteboard = () => {
     return () => {
       ws.close();
     }
-  }, [socketRef, whiteboardId, setWhiteboardId, user]);
+  }, [socketRef, whiteboardId, setWhiteboardId, user, authToken]);
 
   const makeHandleAddShapes = (canvasId: CanvasIdType) => (shapes: CanvasObjectModel[]) => {
     if (socketRef.current) {

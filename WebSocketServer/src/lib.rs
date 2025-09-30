@@ -19,6 +19,7 @@ use tokio::sync::broadcast;
 use serde::{Deserialize, Serialize};
 
 use mongodb::{
+    Collection,
     options::{
         ClientOptions,
         ServerApi,
@@ -117,6 +118,66 @@ impl CanvasObjectMongoDBView {
     }
 }
 
+#[derive(Debug, Clone)]
+pub struct User {
+    pub id: UserIdType,
+    pub username: String,
+    pub email: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct UserClientView {
+    pub id: String,
+    pub username: String,
+    pub email: String,
+}
+
+impl UserClientView {
+    pub fn from_user(user: &User) -> Self {
+        Self {
+            id: user.id.to_string(),
+            username: user.username.clone(),
+            email: user.email.clone(),
+        }
+    }// end from_user
+
+    pub fn to_user(&self) -> Result<User, mongodb::bson::oid::Error> {
+        Ok(User {
+            id: ObjectId::parse_str(&self.id)?,
+            username: self.username.clone(),
+            email: self.email.clone(),
+        })
+    }// end to_user
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub struct UserMongoDBView {
+    #[serde(rename = "_id")]
+    id: ObjectId,
+    username: String,
+    email: String,
+}
+
+impl UserMongoDBView {
+    pub fn from_user(user: &User) -> Self {
+        Self {
+            id: user.id.clone(),
+            username: user.username.clone(),
+            email: user.email.clone(),
+        }
+    }// end from_user
+
+    pub fn to_user(&self) -> User {
+        User {
+            id: self.id.clone(),
+            username: self.username.clone(),
+            email: self.email.clone(),
+        }
+    }// end to_user
+}
+
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct UserSummary {
@@ -169,31 +230,77 @@ pub enum WhiteboardDiff {
 #[derive(Debug, Clone, Serialize)]
 #[serde(tag = "type", rename_all = "snake_case", rename_all_fields = "camelCase")]
 pub enum ServerSocketMessage {
-    InitClient { client_id: ClientIdType, whiteboard: WhiteboardClientView },
-    ActiveUsers { users: Vec<UserSummary>},
+    InitClient {
+        client_id: ClientIdType,
+        whiteboard: WhiteboardClientView,
+    },
+    ActiveUsers {
+        users: Vec<UserSummary>,
+    },
     // TODO: replace HashMaps with Vectors, so object ids don't need to be cast to strings
-    CreateShapes { client_id: ClientIdType, canvas_id: String, shapes: HashMap<String, ShapeModel> },
-    UpdateShapes { client_id: ClientIdType, canvas_id: String, shapes: HashMap<String, ShapeModel> },
+    CreateShapes {
+        client_id: ClientIdType,
+        canvas_id: String,
+        shapes: HashMap<String,
+        ShapeModel>,
+    },
+    UpdateShapes {
+        client_id: ClientIdType,
+        canvas_id: String,
+        shapes: HashMap<String,
+        ShapeModel>,
+    },
     // TODO: replace with flattened CanvasClientView
     CreateCanvas {
         client_id: ClientIdType,
         canvas: CanvasClientView,
     },
-    DeleteCanvases { client_id: ClientIdType, canvas_ids: Vec<String> },
-    IndividualError { client_id: ClientIdType, message: String },
-    BroadcastError { message: String },
-    UpdateCanvasAllowedUsers { client_id: ClientIdType, canvas_id: String, allowed_users: Vec<String>},
+    DeleteCanvases {
+        client_id: ClientIdType,
+        canvas_ids: Vec<String>,
+    },
+    UpdateCanvasAllowedUsers {
+        client_id: ClientIdType,
+        canvas_id: String,
+        allowed_users: Vec<String>,
+    },
+    IndividualError {
+        client_id: ClientIdType,
+        message: String,
+    },
+    BroadcastError {
+        message: String,
+    },
 }
 
 #[derive(Debug, Clone, Deserialize)]
 #[serde(tag = "type", rename_all = "snake_case", rename_all_fields = "camelCase")]
 pub enum ClientSocketMessage {
-    CreateShapes { canvas_id: CanvasIdType, shapes: Vec<ShapeModel> },
-    UpdateShapes { canvas_id: CanvasIdType, shapes: HashMap<String, ShapeModel> },
-    CreateCanvas { width: i32, height: i32, name: String, allowed_users: HashSet::<ObjectId> },
-    DeleteCanvases { canvas_ids: Vec<CanvasIdType> },
-    Login { user_id: String, username: String },
-    UpdateCanvasAllowedUsers { canvas_id: CanvasIdType, allowed_users: HashSet<ObjectId>}
+    CreateShapes {
+        canvas_id: CanvasIdType,
+        shapes: Vec<ShapeModel>,
+    },
+    UpdateShapes {
+        canvas_id: CanvasIdType,
+        shapes: HashMap<String,
+        ShapeModel>,
+    },
+    CreateCanvas {
+        width: i32,
+        height: i32,
+        name: String,
+        allowed_users: HashSet::<ObjectId>,
+    },
+    DeleteCanvases {
+        canvas_ids: Vec<CanvasIdType>,
+    },
+    Login {
+        jwt: String,
+    },
+    UpdateCanvasAllowedUsers {
+        canvas_id: CanvasIdType,
+        allowed_users: HashSet<ObjectId>,
+    },
 }
 
 #[derive(Clone, Debug)]
@@ -234,7 +341,7 @@ impl Canvas {
     }// end pub fn to_client_view(&self) -> CanvasClientView
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Copy, Clone, Debug, Serialize, Deserialize)]
 #[serde(tag = "permission", rename_all = "camelCase")]
 pub enum WhiteboardPermissionEnum {
     View,
@@ -267,6 +374,9 @@ pub struct Whiteboard {
     pub canvases: HashMap<CanvasIdType, Canvas>,
     pub owner_id: UserIdType,
     pub shared_users: Vec<WhiteboardPermission>,
+    // For permissions attached to an existing account, index by user id, to enable faster
+    // retrieval when users log in.
+    pub permissions_by_user_id: HashMap<String, WhiteboardPermissionEnum>,
 }
 
 impl Whiteboard {
@@ -378,6 +488,14 @@ impl WhiteboardMongoDBView {
                 .collect(),
             owner_id: self.owner_id.clone(),
             shared_users: self.shared_users.clone(),
+            permissions_by_user_id: self.shared_users.iter()
+                .map(|wb_perm| match wb_perm.permission_type {
+                    WhiteboardPermissionType::User { ref user} => Some((user.to_string(), wb_perm.permission)),
+                    _ => None
+                })
+                .filter(|x| x.is_some())
+                .map(|x| x.unwrap())
+                .collect(),
         }
     }
 }
@@ -402,6 +520,9 @@ pub struct ProgramState {
 pub struct ClientState {
     pub client_id: ClientIdType,
     pub whiteboard_ref: Arc<Mutex<Whiteboard>>,
+    pub jwt_secret: String,
+    // The permission (view/edit/own) the user has on the current whiteboard
+    pub user_whiteboard_permission: Mutex<Option<WhiteboardPermissionEnum>>,
     pub active_clients: Arc<Mutex<HashMap<ClientIdType, UserSummary>>>,
     pub diffs: Arc<Mutex<Vec<WhiteboardDiff>>>,
 }
@@ -412,6 +533,7 @@ pub struct ClientState {
 //
 // ================================================================================================
 pub struct ConnectionState {
+    pub jwt_secret: String,
     pub mongo_client: Client,
     pub next_client_id: Mutex<ClientIdType>,
     pub program_state: ProgramState,
@@ -434,38 +556,22 @@ pub fn dt_chrono_utc_to_bson(dt: &chrono::DateTime<Utc>) -> bson::DateTime {
     bson::DateTime::from_millis(dt.timestamp_millis())
 }
 
-// Handle raw messages from clients.
+// Handle raw messages from clients. Assume client has already authenticated.
 // Input parameter is a string to enable testing on all possible inputs.
-// @param program_state         -- Current program state
-// @param current_client_id     -- ID of sending client
+// @param client_state          -- Current client state
 // @param client_msg_s          -- Content of client message
 // @return                      -- (Optional) Message to send to clients, if any
-pub async fn handle_client_message(client_state: &ClientState, client_msg_s: &str) -> Option<ServerSocketMessage> {
+pub async fn handle_authenticated_client_message(client_state: &ClientState, client_msg_s: &str) -> Option<ServerSocketMessage> {
     match serde_json::from_str::<ClientSocketMessage>(client_msg_s) {
         Ok(client_msg) => {
             println!("Received message from client {}", client_state.client_id);
             
             match client_msg {
-                ClientSocketMessage::Login { user_id, username } => {
-                    let mut clients = client_state.active_clients.lock().await;
-                    clients.insert(
-                        client_state.client_id,
-                        UserSummary {
-                            user_id: user_id.clone(),
-                            username: username.clone(),
-                        },
-                    );
-
-                    // Deduplicate by user_id
-                    let mut seen = HashSet::new();
-                    let users: Vec<UserSummary> = clients
-                        .values()
-                        .filter(|u| seen.insert(u.user_id.clone())) // only first occurences
-                        .cloned() // turn &UserSummary into UserSummary
-                        .collect();
-
-                    Some(ServerSocketMessage::ActiveUsers { users })
-                },
+                // -- User already authenticated; return error
+                ClientSocketMessage::Login { .. } => Some(ServerSocketMessage::IndividualError {
+                    client_id: client_state.client_id,
+                    message: String::from("Client already authenticated"),
+                }),
                 ClientSocketMessage::CreateShapes{ canvas_id, ref shapes } => {
                     let mut whiteboard = client_state.whiteboard_ref.lock().await;
                     println!("Creating shape on canvas {} ...", canvas_id);
@@ -669,7 +775,114 @@ pub async fn handle_client_message(client_state: &ClientState, client_msg_s: &st
             })
         }
     }
-}// end handle_client_message
+}// end handle_authenticated_client_message
+
+// Handle raw messages from clients. Assume client has not been authenticated.
+// Input parameter is a string to enable testing on all possible inputs.
+// @param client_state          -- Current client state
+// @param client_msg_s          -- Content of client message
+// @return                      -- (Optional) Message to send to clients, if any
+pub async fn handle_unauthenticated_client_message(
+    client_state: &ClientState,
+    user_coll: &Collection<UserMongoDBView>,
+    client_msg_s: &str
+) -> Option<ServerSocketMessage> {
+    match serde_json::from_str::<ClientSocketMessage>(client_msg_s) {
+        Ok(client_msg) => {
+            println!("Received message from client {}", client_state.client_id);
+            
+            match client_msg {
+                // -- This is the only valid message an unathenticated client can send and expect a
+                // non-error response from.
+                ClientSocketMessage::Login { jwt } => {
+                    // TODO: authenticate user using jwt, fetching their permission from the
+                    // database if successful
+                    let user_id = match get_user_id_from_jwt(jwt.as_str(), client_state.jwt_secret.as_str()) {
+                        Err(e) => {
+                            println!("Error parsing user_id from jwt: {}", e);
+
+                            return Some(ServerSocketMessage::IndividualError {
+                                client_id: client_state.client_id,
+                                message: String::from("Error parsing user ID from auth token"),
+                            });
+                        },
+                        Ok(user_id) => user_id,
+                    };
+
+                    let user = match user_coll.find_one(doc! { "_id": user_id }).await {
+                        Err(e) => {
+                            println!("Error fetching user {}: {}", user_id, e);
+
+                            return Some(ServerSocketMessage::IndividualError {
+                                client_id: client_state.client_id,
+                                message: String::from("Could not find authenticated user"),
+                            })
+                        },
+                        Ok(None) => {
+                            return Some(ServerSocketMessage::IndividualError {
+                                client_id: client_state.client_id,
+                                message: String::from("Could not find authenticated user"),
+                            })
+                        },
+                        Ok(Some(user)) => user.to_user(),
+                    };
+
+                    let permission : Option<WhiteboardPermissionEnum> = {
+                        let whiteboard = client_state.whiteboard_ref.lock().await;
+
+                        whiteboard.permissions_by_user_id.get(&user_id.to_string()).copied()
+                    };
+
+                    if let Some(permission) = permission {
+                        // User has a valid permission
+                        {
+                            let mut clients = client_state.active_clients.lock().await;
+                            clients.insert(
+                                client_state.client_id,
+                                UserSummary {
+                                    user_id: user_id.to_string(),
+                                    username: user.username.clone(),
+                                },
+                            );
+                        }
+
+                        {
+                            let mut user_perm = client_state.user_whiteboard_permission.lock().await;
+
+                            *user_perm = Some(permission);
+                        }
+
+                        // -- initialize client
+                        Some(ServerSocketMessage::InitClient {
+                            client_id: client_state.client_id,
+                            whiteboard: client_state.whiteboard_ref.lock().await.to_client_view(),
+                        })
+                    } else {
+                        // User has no valid permission; send back an error message
+                        Some(ServerSocketMessage::IndividualError {
+                            client_id: client_state.client_id,
+                            message: String::from("Client not authorized to access whiteboard"),
+                        })
+                    }
+                },
+                // -- All other messages should be responded to with an individual error
+                _ => Some(ServerSocketMessage::IndividualError {
+                    client_id: client_state.client_id,
+                    message: String::from("Client not authenticated"),
+                }),
+            }
+        },
+        Err(e) => {
+            println!("ERROR: invalid client message: {}", client_msg_s);
+            println!("Reason: {}", e);
+
+            Some(ServerSocketMessage::IndividualError{
+                client_id: client_state.client_id,
+                message: String::from("invalid client message")
+            })
+        }
+    }
+}// end handle_unauthenticated_client_message
 
 pub async fn connect_mongodb(uri: &str) -> mongodb::error::Result<Client> {
     // Replace the placeholder with your Atlas connection string
@@ -716,3 +929,67 @@ pub async fn get_whiteboard_by_id(db: &Database, wid: &WhiteboardIdType) -> Resu
     Ok(Some(whiteboard_view.to_whiteboard(canvases.as_slice())))
 }// -- end fn get_whiteboard_by_id
 
+// === JWTClaims ==================================================================================
+//
+// Stores the claims of the JWTs generated by the RestAPI's login service.
+//
+// Ensure that this struct stays in-sync with the claims generated by the RestAPI.
+//
+// ================================================================================================
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct JWTClaims {
+    sub: String,
+
+    // -- the time at which the token was issued, in UNIX epoch seconds
+    #[serde(rename = "iat")]
+    issued_at_epoch_secs: i64,
+
+    // -- the time at which the token should expire, in UNIX epoch seconds
+    #[serde(rename = "exp")]
+    expiration_epoch_secs: i64,
+}
+
+#[derive(Clone, Debug)]
+pub struct JWTExpiredError {
+    expiration_dt_utc: Option<chrono::DateTime<Utc>>,
+}
+
+impl JWTExpiredError {
+    pub fn new(timestamp: i64) -> Self {
+        Self {
+            expiration_dt_utc: chrono::DateTime::<Utc>::from_timestamp(timestamp, 0),
+        }
+    }
+}
+
+impl std::fmt::Display for JWTExpiredError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "jwt expired at {:?}", self.expiration_dt_utc)
+    }
+}
+
+impl std::error::Error for JWTExpiredError {}
+
+pub fn get_user_id_from_jwt(token_s: &str, secret: &str) -> Result<ObjectId, Box::<dyn std::error::Error + Send + Sync>> {
+    use hmac::{Hmac, Mac};
+    use jwt::{
+        VerifyWithKey,
+        Header,
+        Token,
+    };
+    use sha2::Sha256;
+
+    let key: Hmac<Sha256> = Hmac::new_from_slice(secret.as_bytes())?;
+    let token : Token<Header, JWTClaims, _> = token_s.verify_with_key(&key)?;
+    let claims = token.claims();
+
+    let timestamp_now_utc = chrono::Local::now().to_utc().timestamp();
+    let timestamp_exp_utc = claims.expiration_epoch_secs;
+    
+    if timestamp_now_utc >= timestamp_exp_utc {
+        Err(Box::new(JWTExpiredError::new(timestamp_exp_utc)))
+    } else {
+        Ok(ObjectId::parse_str(claims.sub.as_str())?)
+    }
+}
