@@ -292,5 +292,53 @@ mod unit_tests {
         assert!(canvas.time_last_modified == exp_time_last_modified);
         assert!(canvas.shapes.len() == 0);
         assert!(canvas.allowed_users.is_none());
-    }
+    }// -- end fn fetch_whiteboard_from_mongodb()
+
+    // === fetch_user_from_mongodb_user_store =====================================================
+    //
+    // Tests instantiating a MongoDBUserStore and using it to fetch a user account from the test
+    // database.
+    //
+    // See TestDatabase/init-db.js for the sample data.
+    //
+    // ============================================================================================
+    #[tokio::test]
+    async fn fetch_user_from_mongodb_user_store() {
+        use mongodb::{
+            Client,
+            Collection,
+            bson::{
+                oid::{
+                    ObjectId,
+                },
+            },
+        };
+
+        // -- initialize database connection
+        let mongo_uri = "mongodb://test_db:27017/testdb";
+        let mongo_client = connect_mongodb(&mongo_uri).await
+            .expect("Mongo client to establish connection to database");
+        let db = mongo_client.default_database()
+            .expect("The mongo uri to point to a default database");
+        let user_coll: Collection<UserMongoDBView> = db.collection::<UserMongoDBView>(
+            "users"
+        );
+
+        // -- "alice"
+        let uid = ObjectId::parse_str("68d5e8cf829da666aece5f47")
+            .expect("The provided string is a valid ObjectId");
+
+        // -- instantiate MongoDBUserStore
+        let user_store = MongoDBUserStore::new(&user_coll);
+
+        // -- fetch the user from the database
+        let user_opt = user_store.get_user_by_id(&uid).await
+            .expect("The user store to return a user with the given ID");
+        let user = user_opt.expect("User to be non-null");
+
+        // -- ensure fetched user matches expected value
+        assert!(user.id == uid);
+        assert!(user.username.as_str() == "alice");
+        assert!(user.email.as_str() == "alice@example.com");
+    }// -- end fn fetch_user_from_mongodb_user_store()
 }
