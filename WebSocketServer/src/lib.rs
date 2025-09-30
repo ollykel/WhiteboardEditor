@@ -19,6 +19,7 @@ use tokio::sync::broadcast;
 use serde::{Deserialize, Serialize};
 
 use mongodb::{
+    Collection,
     options::{
         ClientOptions,
         ServerApi,
@@ -294,8 +295,7 @@ pub enum ClientSocketMessage {
         canvas_ids: Vec<CanvasIdType>,
     },
     Login {
-        user_id: String,
-        username: String,
+        jwt: String,
     },
     UpdateCanvasAllowedUsers {
         canvas_id: CanvasIdType,
@@ -782,7 +782,11 @@ pub async fn handle_authenticated_client_message(client_state: &ClientState, cli
 // @param client_state          -- Current client state
 // @param client_msg_s          -- Content of client message
 // @return                      -- (Optional) Message to send to clients, if any
-pub async fn handle_unauthenticated_client_message(client_state: &ClientState, client_msg_s: &str) -> Option<ServerSocketMessage> {
+pub async fn handle_unauthenticated_client_message(
+    client_state: &ClientState,
+    user_coll: &Collection<UserMongoDBView>,
+    client_msg_s: &str
+) -> Option<ServerSocketMessage> {
     match serde_json::from_str::<ClientSocketMessage>(client_msg_s) {
         Ok(client_msg) => {
             println!("Received message from client {}", client_state.client_id);
@@ -790,13 +794,49 @@ pub async fn handle_unauthenticated_client_message(client_state: &ClientState, c
             match client_msg {
                 // -- This is the only valid message an unathenticated client can send and expect a
                 // non-error response from.
-                ClientSocketMessage::Login { user_id, username } => {
+                ClientSocketMessage::Login { jwt } => {
                     // TODO: authenticate user using jwt, fetching their permission from the
                     // database if successful
+                    let user_id = match get_user_id_from_jwt(jwt.as_str(), client_state.jwt_secret.as_str()) {
+                        Err(e) => {
+                            println!("Error parsing user_id from jwt: {}", e);
+
+                            return Some(ServerSocketMessage::IndividualError {
+                                client_id: client_state.client_id,
+                                message: String::from("Error parsing user ID from auth token"),
+                            });
+                        },
+                        Ok(None) => {
+                            return Some(ServerSocketMessage::IndividualError {
+                                client_id: client_state.client_id,
+                                message: String::from("Could not parse user ID from auth token"),
+                            });
+                        },
+                        Ok(Some(user_id)) => user_id,
+                    };
+
+                    let user = match user_coll.find_one(doc! { "_id": user_id }).await {
+                        Err(e) => {
+                            println!("Error fetching user {}: {}", user_id, e);
+
+                            return Some(ServerSocketMessage::IndividualError {
+                                client_id: client_state.client_id,
+                                message: String::from("Could not find authenticated user"),
+                            })
+                        },
+                        Ok(None) => {
+                            return Some(ServerSocketMessage::IndividualError {
+                                client_id: client_state.client_id,
+                                message: String::from("Could not find authenticated user"),
+                            })
+                        },
+                        Ok(Some(user)) => user.to_user(),
+                    };
+
                     let permission : Option<WhiteboardPermissionEnum> = {
                         let whiteboard = client_state.whiteboard_ref.lock().await;
 
-                        whiteboard.permissions_by_user_id.get(&user_id).copied()
+                        whiteboard.permissions_by_user_id.get(&user_id.to_string()).copied()
                     };
 
                     if let Some(permission) = permission {
@@ -806,8 +846,8 @@ pub async fn handle_unauthenticated_client_message(client_state: &ClientState, c
                             clients.insert(
                                 client_state.client_id,
                                 UserSummary {
-                                    user_id: user_id.clone(),
-                                    username: username.clone(),
+                                    user_id: user_id.to_string(),
+                                    username: user.username.clone(),
                                 },
                             );
                         }
@@ -895,13 +935,40 @@ pub async fn get_whiteboard_by_id(db: &Database, wid: &WhiteboardIdType) -> Resu
     Ok(Some(whiteboard_view.to_whiteboard(canvases.as_slice())))
 }// -- end fn get_whiteboard_by_id
 
-pub fn get_user_id_from_jwt(jwt: &str, secret: &str) -> Result<ObjectId, Box::<dyn std::error::Error>> {
-    use hmac::{Hmac, Mac};
-    use jwt::VerifyWithKey;
-    use sha2::Sha256;
-    use std::collections::BTreeMap;
+// === JWTClaims ==================================================================================
+//
+// Stores the claims of the JWTs generated by the RestAPI's login service.
+//
+// Ensure that this struct stays in-sync with the claims generated by the RestAPI.
+//
+// ================================================================================================
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct JWTClaims {
+    sub: String,
 
-    let key: Hmac<Sha256> = Hmac::new_from_slice(b"some-secret")?;
-    let token_str = "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJzb21lb25lIn0.5wwE1sBrs-vftww_BGIuTVDeHtc1Jsjo-fiHhDwR8m0";
-    let claims: BTreeMap<String, String> = token_str.verify_with_key(&key)?;
+    // -- the time at which the token was issued, in UNIX epoch seconds
+    #[serde(rename = "iat")]
+    issued_at_epoch_secs: i64,
+
+    // -- the time at which the token should expire, in UNIX epoch seconds
+    #[serde(rename = "exp")]
+    expiration_epoch_secs: i64,
+}
+
+pub fn get_user_id_from_jwt(token_s: &str, secret: &str) -> Result<Option<ObjectId>, Box::<dyn std::error::Error + Send + Sync>> {
+    use hmac::{Hmac, Mac};
+    use jwt::{
+        VerifyWithKey,
+        Header,
+        Token,
+    };
+    use sha2::Sha256;
+
+    let key: Hmac<Sha256> = Hmac::new_from_slice(secret.as_bytes())?;
+    let token : Token<Header, JWTClaims, _> = token_s.verify_with_key(&key)?;
+    let claims = token.claims();
+
+    // TODO: reject expired tokens
+    Ok(Some(ObjectId::parse_str(claims.sub.as_str())?))
 }

@@ -40,7 +40,7 @@ export const loginService = async (
 
   if (!user) throw new Error("Invalid credentials, user not found");
 
-  const userId = user.toPublicView().id;
+  const userId = user._id;
 
   // Check password
   const valid = await bcrypt.compare(password, user.passwordHashed);
@@ -50,7 +50,10 @@ export const loginService = async (
   const token = jwt.sign(
     { sub: userId.toString() },   // sub = subject claim
     JWT_SECRET, 
-    {expiresIn: JWT_EXPIRATION_SECS},
+    {
+      algorithm: 'HS256',
+      expiresIn: JWT_EXPIRATION_SECS,
+    },
   );
 
   return ({

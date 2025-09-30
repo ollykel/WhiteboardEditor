@@ -237,6 +237,9 @@ async fn handle_connection(ws: WebSocket, whiteboard_id: WhiteboardIdType, conne
         let shape_coll: Collection<CanvasObjectMongoDBView> = db.collection::<CanvasObjectMongoDBView>(
             "shapes"
         );
+        let user_coll: Collection<UserMongoDBView> = db.collection::<UserMongoDBView>(
+            "users"
+        );
 
         async move {
             // Handle client messages in this loop until user authenticates
@@ -247,6 +250,7 @@ async fn handle_connection(ws: WebSocket, whiteboard_id: WhiteboardIdType, conne
 
                     let resp = handle_unauthenticated_client_message(
                         &client_state_ref,
+                        &user_coll,
                         msg_s
                     ).await;
 

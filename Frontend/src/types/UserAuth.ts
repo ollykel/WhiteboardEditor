@@ -12,4 +12,6 @@ export interface User {
 export interface AuthContextType {
   user: User | null;
   setUser: Dispatch<User | null>;
+  authToken: string | null;
+  setAuthToken: Dispatch<string | null>;
 }

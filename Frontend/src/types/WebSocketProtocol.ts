@@ -146,8 +146,7 @@ export type SocketServerMessage =
 // Notify server of identity on first connection
 export interface ClientMessageLogin {
   type: "login";
-  userId: string; // MongoDB _id as string
-  username: string;
+  jwt: string;
 }
 
 // Notify the server that the client has created a new shape.
