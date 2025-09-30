@@ -246,7 +246,7 @@ pub enum ClientError {
     // -- client did not send an auth token
     NotAuthenticated,
     // -- client not authorized to view this whiteboard at all
-    NotAuthorized,
+    Unauthorized,
     // -- client already authorized (cannot re-authenticate within the same connection)
     AlreadyAuthorized,
     // -- client's auth token is somehow malformed
@@ -607,23 +607,61 @@ pub fn dt_chrono_utc_to_bson(dt: &chrono::DateTime<Utc>) -> bson::DateTime {
     bson::DateTime::from_millis(dt.timestamp_millis())
 }
 
+// -- utilify struct for handle_authenticated_client_message, for inspectint raw client messages
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct ClientMessageInspector {
+    #[serde(rename = "type")]
+    type_tag: String,
+}// -- end ClientMessageInspector
+
 // Handle raw messages from clients. Assume client has already authenticated.
 // Input parameter is a string to enable testing on all possible inputs.
 // @param client_state          -- Current client state
 // @param client_msg_s          -- Content of client message
 // @return                      -- (Optional) Message to send to clients, if any
 pub async fn handle_authenticated_client_message(client_state: &ClientState, client_msg_s: &str) -> Option<ServerSocketMessage> {
+    use ClientSocketMessage::*;
+
     match serde_json::from_str::<ClientSocketMessage>(client_msg_s) {
         Ok(client_msg) => {
             println!("Received message from client {}", client_state.client_id);
+
+            // All actions below require at least edit permission, since they all involve
+            // mutating state in some way. Hence, we check permissions first, and send back an
+            // error message if the user only has view permission.
+            let user_whiteboard_permission = {
+                let perm = client_state.user_whiteboard_permission.lock().await;
+
+                perm.clone()
+            };
+
+            match user_whiteboard_permission {
+                None | Some(WhiteboardPermissionEnum::View) => {
+                    let inspector = serde_json::from_str::<ClientMessageInspector>(client_msg_s)
+                        .expect("Expected to find \"type\" tag in client message.");
+
+                    return Some(ServerSocketMessage::IndividualError {
+                        client_id: client_state.client_id,
+                        error: ClientError::ActionForbidden {
+                            action: inspector.type_tag,
+                        },
+                    });
+                },
+                // Proceed to next step.
+                // Don't just use _ here to accept all other permissions: if we add a new
+                // permission type, we want to make sure we handle it uniquely, in case it involves
+                // more unique logic.
+                Some(WhiteboardPermissionEnum::Edit) | Some(WhiteboardPermissionEnum::Own) => {},
+            };
             
             match client_msg {
                 // -- User already authenticated; return error
-                ClientSocketMessage::Login { .. } => Some(ServerSocketMessage::IndividualError {
+                Login { .. } => Some(ServerSocketMessage::IndividualError {
                     client_id: client_state.client_id,
                     error: ClientError::AlreadyAuthorized,
                 }),
-                ClientSocketMessage::CreateShapes{ canvas_id, ref shapes } => {
+                CreateShapes{ canvas_id, ref shapes } => {
                     let mut whiteboard = client_state.whiteboard_ref.lock().await;
                     println!("Creating shape on canvas {} ...", canvas_id);
 
@@ -662,7 +700,7 @@ pub async fn handle_authenticated_client_message(client_state: &ClientState, cli
                         }
                     }
                 },
-                ClientSocketMessage::UpdateShapes{ canvas_id, ref shapes } => {
+                UpdateShapes{ canvas_id, ref shapes } => {
                     let mut whiteboard = client_state.whiteboard_ref.lock().await;
                     println!("Updating shapes on canvas {} ...", canvas_id);
                     println!("Shapes: {:?}", shapes);
@@ -709,7 +747,7 @@ pub async fn handle_authenticated_client_message(client_state: &ClientState, cli
                         }
                     }
                 },
-                ClientSocketMessage::CreateCanvas { width, height, name, allowed_users } => {
+                CreateCanvas { width, height, name, allowed_users } => {
                     let mut whiteboard = client_state.whiteboard_ref.lock().await;
                     let new_canvas_id = ObjectId::new();
 
@@ -754,7 +792,7 @@ pub async fn handle_authenticated_client_message(client_state: &ClientState, cli
                         canvas: canvas.to_client_view(),
                     })
                 },
-                ClientSocketMessage::DeleteCanvases { canvas_ids } => {
+                DeleteCanvases { canvas_ids } => {
                     let mut whiteboard = client_state.whiteboard_ref.lock().await;
 
                     // delete canvases identified by the given ids
@@ -778,7 +816,7 @@ pub async fn handle_authenticated_client_message(client_state: &ClientState, cli
                             .collect()
                     })
                 },
-                ClientSocketMessage::UpdateCanvasAllowedUsers { canvas_id, allowed_users } => {
+                UpdateCanvasAllowedUsers { canvas_id, allowed_users } => {
                     let mut whiteboard = client_state.whiteboard_ref.lock().await;
 
                     match whiteboard.canvases.get_mut(&canvas_id) {
@@ -924,7 +962,7 @@ pub async fn handle_unauthenticated_client_message(
                         // User has no valid permission; send back an error message
                         Some(ServerSocketMessage::IndividualError {
                             client_id: client_state.client_id,
-                            error: ClientError::NotAuthorized,
+                            error: ClientError::Unauthorized,
                         })
                     }
                 },
