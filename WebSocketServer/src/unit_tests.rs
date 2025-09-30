@@ -305,7 +305,6 @@ mod unit_tests {
     #[tokio::test]
     async fn fetch_user_from_mongodb_user_store() {
         use mongodb::{
-            Client,
             Collection,
             bson::{
                 oid::{
