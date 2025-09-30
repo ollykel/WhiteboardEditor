@@ -46,7 +46,6 @@ const EditableText = ({
 }: EditableTextProps) => {
   const [isSelected, setIsSelected] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
-  const [localText, setLocalText] = useState(text);
 
   const textRef = useRef<Konva.Text>(null);
   const trRef = useRef<Konva.Transformer>(null);
@@ -120,7 +119,7 @@ const EditableText = ({
       <Text
         id={id}
         ref={textRef}
-        text={localText}
+        text={text}
         fontSize={fontSize}
         fill={color}
         x={x}
@@ -146,9 +145,8 @@ const EditableText = ({
       {isEditing && textRef.current && (
         <TextEditor
           textNode={textRef.current}
-          onChange={setLocalText}
-          onClose={() => {
-            handleTextChange(localText);
+          onClose={(newText) => {
+            handleTextChange(newText);
             setIsEditing(false);
           }}
         />

@@ -1,21 +1,18 @@
-import { useRef, useState } from 'react';
+import { useRef } from 'react';
 
 import Konva from 'konva';
 import { Html } from 'react-konva-utils';
 
 interface TextEditorProps {
   textNode: Konva.Text;
-  onChange: (value: string) => void;
-  onClose: () => void;
+  onClose: (newText: string) => void;
 }
 
-const TextEditor = ({ textNode, onChange, onClose }: TextEditorProps) => {
+const TextEditor = ({ textNode, onClose }: TextEditorProps) => {
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
-  const [text, setText] = useState<string>(textNode.text());
 
   const initTextArea = (textarea: HTMLTextAreaElement) => {
     const stage = textNode.getStage();
-    // const stageBox = stage?.container().getBoundingClientRect();
     const textPosition = stage ? textNode.getAbsolutePosition(stage) : textNode.position();
     const areaPosition = {
       x: textPosition.x,
@@ -23,7 +20,7 @@ const TextEditor = ({ textNode, onChange, onClose }: TextEditorProps) => {
     }
   
     // Match styles with the text node
-    textarea.value = text;
+    textarea.value = textNode.text();
     textarea.style.position = "absolute";
     textarea.style.top = `${areaPosition.y}px`;
     textarea.style.left = `${areaPosition.x}px`;
@@ -62,24 +59,21 @@ const TextEditor = ({ textNode, onChange, onClose }: TextEditorProps) => {
       if (e.detail === 2) return; // this enabled multiple subsequent edits
 
       if (e.target !== textarea) {
-        onChange(text);
-        onClose();
+        onClose(textarea.value);
       }
     }
   
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Enter" && !e.shiftKey) {
         e.preventDefault();
-        onChange(text);
-        onClose();
+        onClose(textarea.value);
       }
       if (e.key === "Escape") {
-        onClose();
+        onClose(textarea.value);
       }
     }
   
     const handleInput = () => {
-      setText(textarea.value);
       console.log("set text to: ", textarea.value); // debug
 
       const scale = textNode.getAbsoluteScale().x;
