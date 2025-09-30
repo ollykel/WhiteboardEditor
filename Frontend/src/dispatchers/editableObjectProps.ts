@@ -53,23 +53,22 @@ const editableObjectProps = <ShapeType extends ShapeModel> (
   };
 
   const handleDragEnd = (ev: Konva.KonvaEventObject<DragEvent>) => {
-    console.log("event: ", ev); // debug
-    console.log("event target: ", ev.target); // debug
+    console.log("drag event: ", ev); // debug
     const id = ev.target.id();
     const x = ev.target.x();
     const y = ev.target.y();
-    console.log("id: ", id); // debug
 
     const update = {
       [id]: ({ ...shapeModel, x, y })
     };
 
-    console.log("Update: ", update); // debug
     handleUpdateShapes(update);
+    console.log("drag updateShapes event: ", update); // debug
   };
 
   // transform the targetted box locally in real time without broadcasting
   const handleTransform = (ev: Konva.KonvaEventObject<Event>) => {
+    console.log("transform event: ", ev); // debug
     const node = ev.target;
     const scaleX = node.scaleX();
     const scaleY = node.scaleY();
@@ -86,11 +85,12 @@ const editableObjectProps = <ShapeType extends ShapeModel> (
 
   // once the transform ends, send the update to server to broadcast
   const handleTransformEnd = (ev: Konva.KonvaEventObject<Event>) => {
+    console.log("transform end event: ", ev); // debug
     const node = ev.target;
     const id = node.id();
     const rotation = node.rotation();
 
-    handleUpdateShapes({
+    const update = {
       [id]: {
         ...shapeModel,
         x: node.x(),
@@ -99,7 +99,10 @@ const editableObjectProps = <ShapeType extends ShapeModel> (
         height: node.height(),
         rotation,
       }
-    });
+    };
+
+    handleUpdateShapes(update);
+    console.log("transform end updateShapes event: ", update); // debug
   };
 
   return ({
