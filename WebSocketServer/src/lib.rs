@@ -806,13 +806,7 @@ pub async fn handle_unauthenticated_client_message(
                                 message: String::from("Error parsing user ID from auth token"),
                             });
                         },
-                        Ok(None) => {
-                            return Some(ServerSocketMessage::IndividualError {
-                                client_id: client_state.client_id,
-                                message: String::from("Could not parse user ID from auth token"),
-                            });
-                        },
-                        Ok(Some(user_id)) => user_id,
+                        Ok(user_id) => user_id,
                     };
 
                     let user = match user_coll.find_one(doc! { "_id": user_id }).await {
@@ -956,7 +950,28 @@ pub struct JWTClaims {
     expiration_epoch_secs: i64,
 }
 
-pub fn get_user_id_from_jwt(token_s: &str, secret: &str) -> Result<Option<ObjectId>, Box::<dyn std::error::Error + Send + Sync>> {
+#[derive(Clone, Debug)]
+pub struct JWTExpiredError {
+    expiration_dt_utc: Option<chrono::DateTime<Utc>>,
+}
+
+impl JWTExpiredError {
+    pub fn new(timestamp: i64) -> Self {
+        Self {
+            expiration_dt_utc: chrono::DateTime::<Utc>::from_timestamp(timestamp, 0),
+        }
+    }
+}
+
+impl std::fmt::Display for JWTExpiredError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "jwt expired at {:?}", self.expiration_dt_utc)
+    }
+}
+
+impl std::error::Error for JWTExpiredError {}
+
+pub fn get_user_id_from_jwt(token_s: &str, secret: &str) -> Result<ObjectId, Box::<dyn std::error::Error + Send + Sync>> {
     use hmac::{Hmac, Mac};
     use jwt::{
         VerifyWithKey,
@@ -969,6 +984,12 @@ pub fn get_user_id_from_jwt(token_s: &str, secret: &str) -> Result<Option<Object
     let token : Token<Header, JWTClaims, _> = token_s.verify_with_key(&key)?;
     let claims = token.claims();
 
-    // TODO: reject expired tokens
-    Ok(Some(ObjectId::parse_str(claims.sub.as_str())?))
+    let timestamp_now_utc = chrono::Local::now().to_utc().timestamp();
+    let timestamp_exp_utc = claims.expiration_epoch_secs;
+    
+    if timestamp_now_utc >= timestamp_exp_utc {
+        Err(Box::new(JWTExpiredError::new(timestamp_exp_utc)))
+    } else {
+        Ok(ObjectId::parse_str(claims.sub.as_str())?)
+    }
 }
