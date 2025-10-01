@@ -461,21 +461,27 @@ const Whiteboard = () => {
 
         {/* Content */}
         <div className="mt-20">
-          {/* Left-hand sidebar for toolbar and menus */}
-          <Sidebar side="left">
-            {/* Toolbar */}
-            <Toolbar
-              toolChoice={toolChoice}
-              onToolChange={setToolChoice}
-              onNewCanvas={handleNewCanvas}
-            />
+          {/**
+            Left-hand sidebar for toolbar and menus
+            Not displayed in view-only mode.
+          **/
+          }
+          {(ownPermission && (ownPermission !== 'view')) && (
+            <Sidebar side="left">
+              {/* Toolbar */}
+              <Toolbar
+                toolChoice={toolChoice}
+                onToolChange={setToolChoice}
+                onNewCanvas={handleNewCanvas}
+              />
 
-            {/** Shape Attributes Menu **/}
-            <ShapeAttributesMenu
-              attributes={shapeAttributesState}
-              dispatch={dispatchShapeAttributes}
-            />
-          </Sidebar>
+              {/** Shape Attributes Menu **/}
+              <ShapeAttributesMenu
+                attributes={shapeAttributesState}
+                dispatch={dispatchShapeAttributes}
+              />
+            </Sidebar>
+          )}
 
 
           {/* Canvas Container */}
