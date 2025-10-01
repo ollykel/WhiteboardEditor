@@ -609,7 +609,7 @@ const WrappedWhiteboard = () => {
 
       socketRef.current.send(JSON.stringify(updateShapesMsg));
     }
-  }, []);
+  }, [canvasObjectsByCanvas]);
 
   const [currentTool, setCurrentTool] = useState<ToolChoice>('hand');
 
