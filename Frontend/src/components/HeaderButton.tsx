@@ -1,5 +1,9 @@
 import { Link } from 'react-router-dom';
 
+import {
+  Button,
+} from '@/components/ui/button';
+
 export interface HeaderButtonProps {
   // If to is present renders a link, if onClick is present renders a button
   to?: string;
@@ -29,13 +33,14 @@ function HeaderButton({
   }
 
   return (
-    <button
+    <Button
       onClick={onClick}
+      variant={disabled ? 'ghost' : 'default'}
       disabled={disabled}
       className={baseClasses}
     >
       {title}
-    </button>
+    </Button>
   );
 }
 
