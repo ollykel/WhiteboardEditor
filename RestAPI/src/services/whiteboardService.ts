@@ -8,6 +8,7 @@ import {
   type IWhiteboard,
   type WhiteboardIdType,
   type IWhiteboardUserPermission,
+  type IWhiteboardUserPermissionModel,
   type IWhiteboardUserPermissionById,
   type IWhiteboardUserPermissionByEmail,
 } from '../models/Whiteboard';
@@ -45,8 +46,18 @@ export const addSharedUsers = async (
 
     const whiteboard = whiteboards[0];
 
-    // verify ownership
-    if (! whiteboard.owner._id.equals(ownerId)) {
+    // Verify that the "owner" (the user indicated by ownerId) is either the
+    // owner or has "own" permission over the whiteboard.
+    const ownerIdSet = Object.fromEntries([
+      [whiteboard.owner._id.toString(), true],
+      ...(whiteboard.shared_users as IWhiteboardUserPermissionModel<IUser>[])
+        .filter((perm: IWhiteboardUserPermissionModel<IUser>): perm is IWhiteboardUserPermissionById<IUser> => (
+          perm.type === 'user' && perm.permission === 'own'
+        ))
+        .map((perm: IWhiteboardUserPermissionById<IUser>) => [perm.user._id.toString(), true])
+    ]);
+
+    if (! (ownerId.toString() in ownerIdSet)) {
       return { status: "forbidden" };
     }
 
