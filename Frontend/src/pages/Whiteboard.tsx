@@ -489,6 +489,19 @@ const Whiteboard = () => {
             {/** Misc. info **/}
 
             <div className="flex flex-col justify-center flex-wrap">
+              {/** Indicate if the user is in view-only mode **/}
+              {(ownPermission && (ownPermission === 'view')) && (
+                <div>
+                  <span>
+                    <strong
+                      className="text-xl font-bold"
+                    >
+                      You are in view-only mode
+                    </strong>
+                  </span>
+                </div>
+              )}
+
               {/** Own Client ID **/}
               <div>
                 <span>Your Username: </span> {user?.username}
