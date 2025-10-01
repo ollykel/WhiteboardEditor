@@ -656,30 +656,61 @@ pub trait UserStore {
     >;
 }// -- end trait UserStore
 
-// === MongoDBUserStore ===========================================================================
+// === WhiteboardMetadataStore ====================================================================
 //
-// Interface for fetching users from the MongoDB database, by user id.
+// Trait that defines a way for fetching whiteboard metadata by ID. Depending on this trait rather
+// than directly on a database client allows the implementation of unit tests without using a
+// database client.
+//
+// Read-only: does not implement setting, updating, or deleting whiteboards.
+//
+// ================================================================================================
+pub trait WhiteboardMetadataStore {
+    fn get_whiteboard_metadata_by_id(&self, whiteboard_id: &WhiteboardIdType) -> impl futures::Future<
+        Output = Result<Option<WhiteboardMetadata>, Box<dyn std::error::Error + Send + Sync>>
+    >;
+}// -- end trait WhiteboardMetadataStore
+
+// === MongoDBStore ===============================================================================
+//
+// Interface for fetching objects from the MongoDB database, by id.
 //
 // ================================================================================================
 #[derive(Debug)]
-pub struct MongoDBUserStore {
+pub struct MongoDBStore {
     user_collection: Collection<UserMongoDBView>,
-}// -- end MongoDBUserStore
+    whiteboard_metadata_collection: Collection<WhiteboardMetadataMongoDBView>,
+}// -- end MongoDBStore
 
-impl MongoDBUserStore {
-    pub fn new(coll: &Collection<UserMongoDBView>) -> Self {
+impl MongoDBStore {
+    pub fn new(
+        user_coll: &Collection<UserMongoDBView>,
+        whiteboard_metadata_coll: &Collection<WhiteboardMetadataMongoDBView>
+    ) -> Self {
         Self {
-            user_collection: coll.clone(),
+            user_collection: user_coll.clone(),
+            whiteboard_metadata_collection: whiteboard_metadata_coll.clone(),
         }
     }// -- end fn new(coll: &Collection<UserMongoDBView>) -> Self
-}// -- end impl MongoDBUserStore
+}// -- end impl MongoDBStore
 
-impl UserStore for MongoDBUserStore {
+impl UserStore for MongoDBStore {
     async fn get_user_by_id(&self, user_id: &UserIdType) -> Result<Option<User>, Box<dyn std::error::Error + Send + Sync>> {
         match self.user_collection.find_one(doc! { "_id": user_id.clone() }).await? {
             Some(user_view) => Ok(Some(user_view.to_user())),
             None => Ok(None),
         }// -- end match self.user_collection.find_one(doc! { "_id": user_id.clone() }).await
+    }
+}
+
+impl WhiteboardMetadataStore for MongoDBStore {
+    async fn get_whiteboard_metadata_by_id(&self, whiteboard_id: &WhiteboardIdType) -> Result<
+        Option<WhiteboardMetadata>, Box<dyn std::error::Error + Send + Sync>
+    > {
+        match self.whiteboard_metadata_collection.find_one(doc! { "_id": whiteboard_id.clone() }).await? {
+            Some(metadata_view) => Ok(Some(metadata_view.to_whiteboard_metadata())),
+            None => Ok(None),
+        }// -- end match self.whiteboard_metadata_collection.find_one(doc! { "_id": whiteboard_metadata_id.clone() }).await
     }
 }
 
@@ -971,9 +1002,9 @@ pub async fn handle_authenticated_client_message(
 // @param client_state          -- Current client state
 // @param client_msg_s          -- Content of client message
 // @return                      -- (Optional) Message to send to clients, if any
-pub async fn handle_unauthenticated_client_message<UserStoreType: UserStore>(
+pub async fn handle_unauthenticated_client_message<StoreType: UserStore + WhiteboardMetadataStore>(
     client_state: &ClientState,
-    user_store: &UserStoreType,
+    store: &StoreType,
     client_msg_s: &str
 ) -> Option<ServerSocketMessage> {
     match serde_json::from_str::<ClientSocketMessage>(client_msg_s) {
@@ -1000,7 +1031,7 @@ pub async fn handle_unauthenticated_client_message<UserStoreType: UserStore>(
                         Ok(user_id) => user_id,
                     };
 
-                    let user = match user_store.get_user_by_id(&user_id).await {
+                    let user = match store.get_user_by_id(&user_id).await {
                         Err(e) => {
                             println!("Error fetching user {}: {}", user_id, e);
 
@@ -1023,7 +1054,21 @@ pub async fn handle_unauthenticated_client_message<UserStoreType: UserStore>(
                     };
 
                     let permission : Option<WhiteboardPermissionEnum> = {
-                        let whiteboard = client_state.whiteboard_ref.lock().await;
+                        let mut whiteboard = client_state.whiteboard_ref.lock().await;
+
+                        // refresh metadata from store, in case it has been changed by another
+                        // service
+                        match store.get_whiteboard_metadata_by_id(&whiteboard.id).await {
+                            Err(e) => {
+                                eprintln!("Error: could not refresh whiteboard metadata: {}", e);
+                            },
+                            Ok(None) => {
+                                eprintln!("Error: could not refresh whiteboard metadata");
+                            },
+                            Ok(Some(metadata)) => {
+                                whiteboard.metadata = metadata.clone();
+                            },
+                        };
 
                         whiteboard.metadata.permissions_by_user_id.get(&user_id.to_string()).copied()
                     };

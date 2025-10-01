@@ -237,6 +237,9 @@ async fn handle_connection(ws: WebSocket, whiteboard_id: WhiteboardIdType, conne
             },
             Some(db) => db
         };
+        let whiteboard_metadata_coll: Collection<WhiteboardMetadataMongoDBView> = db.collection::<WhiteboardMetadataMongoDBView>(
+            "whiteboards"
+        );
         let canvas_coll: Collection<CanvasMongoDBView> = db.collection::<CanvasMongoDBView>(
             "canvases"
         );
@@ -246,7 +249,7 @@ async fn handle_connection(ws: WebSocket, whiteboard_id: WhiteboardIdType, conne
         let user_coll: Collection<UserMongoDBView> = db.collection::<UserMongoDBView>(
             "users"
         );
-        let user_store = MongoDBUserStore::new(&user_coll);
+        let store = MongoDBStore::new(&user_coll, &whiteboard_metadata_coll);
 
         async move {
             // Handle client messages in this loop until user authenticates
@@ -257,7 +260,7 @@ async fn handle_connection(ws: WebSocket, whiteboard_id: WhiteboardIdType, conne
 
                     let resp = handle_unauthenticated_client_message(
                         &client_state_ref,
-                        &user_store,
+                        &store,
                         msg_s
                     ).await;
 
