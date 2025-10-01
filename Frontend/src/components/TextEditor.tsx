@@ -82,10 +82,8 @@ const TextEditor = ({ textNode, onClose }: TextEditorProps) => {
     textarea.addEventListener("keydown", handleKeyDown);
     textarea.addEventListener("input", handleInput);
     window.addEventListener("click", handleOutsideClick);
-    console.log("added click");
 
     close = () => {
-      console.log("in close");
       try {
         textarea.removeEventListener("keydown", handleKeyDown);
         textarea.removeEventListener("input", handleInput);

@@ -148,7 +148,6 @@ const Whiteboard = () => {
     isLoading: isWhiteboardLoading,
     isFetching: isWhiteboardFetching,
     error: whiteboardError,
-    data: whiteboardData
   } = useQuery<APIWhiteboard, string>({
     queryKey: whiteboardKey,
     queryFn: async (): Promise<APIWhiteboard> => {
@@ -164,7 +163,6 @@ const Whiteboard = () => {
   });
   const [toolChoice, setToolChoice] = useState<ToolChoice>('rect');
   const whiteboardIdRef = useRef<WhiteboardIdType>(whiteboardId);
-  console.log("whiteboard data 1: ", whiteboardData); // degbugging
 
   // alert user of any errors fetching whiteboard
   useEffect(
@@ -206,9 +204,6 @@ const Whiteboard = () => {
   const canvasesSorted = [...canvases];
 
   canvasesSorted.sort((a, b) => new Date(a.timeCreated) < new Date(b.timeCreated) ? -1 : 1);
-
-  // TODO: remove debug
-  console.log('Canvases:', canvases);
 
   // --- derived state
   const title = currWhiteboard?.name ?? 'Loading whiteboard ...';
@@ -252,7 +247,6 @@ const Whiteboard = () => {
       try {
         const msg = JSON.parse(event.data) as SocketServerMessage;
         console.log('Parsed message:', msg);
-        console.log('Message type:', msg.type);
 
         switch (msg.type) {
           case 'init_client':
@@ -266,7 +260,6 @@ const Whiteboard = () => {
           case 'active_users': 
             {
               const { users } = msg;
-              console.log('Active users message received:', users);
 
               addActiveUser(dispatch, users);
             } 
@@ -582,14 +575,9 @@ const WrappedWhiteboard = () => {
         return;
       }
 
-      console.log("shapes in handle: ", shapes); // debug
-
-      console.log("canvasObjects in handle: ", canvasObjects); // debug 
-
       const changedObjects: Record<CanvasObjectIdType, CanvasObjectModel> = {};
 
       for (const [objId, objUpdate] of Object.entries(shapes)) {
-        console.log("object id: ", objId, " : ", objUpdate); // debug
         if (objId in canvasObjects) {
           changedObjects[objId] = ({
             ...canvasObjects[objId],
@@ -598,14 +586,11 @@ const WrappedWhiteboard = () => {
         }
       }// end for (const [objId, objUpdate] of Object.entries(shapes))
 
-      console.log("changedObjects: ", changedObjects); // debug
-
       const updateShapesMsg: ClientMessageUpdateShapes = ({
         type: 'update_shapes',
         canvasId,
         shapes: changedObjects
       });
-      console.log("updateShapesMsg: ", updateShapesMsg); // debug
 
       socketRef.current.send(JSON.stringify(updateShapesMsg));
     }

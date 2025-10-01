@@ -94,7 +94,6 @@ const EditableText = ({
   }, []);
 
   const handleTextChange = useCallback((newText: string): void => {
-    console.log("text change event new text: ", newText) // debug
     const node = textRef.current;
     if (!node) return;
 
@@ -111,7 +110,6 @@ const EditableText = ({
     };
 
     handleUpdateShapes(update);
-    console.log("text change updateShapes event: ", update); // debug
   }, []);
 
   return (
