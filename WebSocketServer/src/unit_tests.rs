@@ -22,11 +22,13 @@ mod unit_tests {
             user_whiteboard_permission: Mutex::new(None),
             whiteboard_ref: Arc::new(Mutex::new(Whiteboard {
                 id: ObjectId::new(),
-                name: String::from("Test"),
+                metadata: WhiteboardMetadata {
+                    name: String::from("Test"),
+                    owner_id: ObjectId::new(),
+                    shared_users: vec![],
+                    permissions_by_user_id: HashMap::new(),
+                },
                 canvases: HashMap::new(),
-                owner_id: ObjectId::new(),
-                shared_users: vec![],
-                permissions_by_user_id: HashMap::new(),
             })),
             active_clients: Arc::new(Mutex::new(HashMap::new())),
             diffs: Arc::new(Mutex::new(Vec::new())),
@@ -129,7 +131,12 @@ mod unit_tests {
             ),
             whiteboard_ref: Arc::new(Mutex::new(Whiteboard {
                 id: ObjectId::new(),
-                name: String::from("Test"),
+                metadata: WhiteboardMetadata {
+                    name: String::from("Test"),
+                    owner_id: ObjectId::new(),
+                    shared_users: vec![],
+                    permissions_by_user_id: HashMap::new(),
+                },
                 canvases: HashMap::from([
                     (
                         canvas_a_id.clone(),
@@ -146,9 +153,6 @@ mod unit_tests {
                         }
                     )
                 ]),
-                owner_id: ObjectId::new(),
-                shared_users: vec![],
-                permissions_by_user_id: HashMap::new(),
             })),
             active_clients: Arc::new(Mutex::new(HashMap::new())),
             diffs: Arc::new(Mutex::new(Vec::new())),
@@ -263,9 +267,9 @@ mod unit_tests {
         println!("Whiteboard Received: {:?}", whiteboard);
 
         assert!(whiteboard.id == whiteboard_id);
-        assert!(whiteboard.name == "Project Alpha");
-        assert!(whiteboard.owner_id == ObjectId::parse_str("68d5e8cf829da666aece5f47").unwrap());
-        assert!(whiteboard.shared_users.len() == 0);
+        assert!(whiteboard.metadata.name == "Project Alpha");
+        assert!(whiteboard.metadata.owner_id == ObjectId::parse_str("68d5e8cf829da666aece5f47").unwrap());
+        assert!(whiteboard.metadata.shared_users.len() == 0);
         assert!(whiteboard.canvases.len() == 1);
         assert!(whiteboard.canvases.contains_key(&canvas_id));
 
@@ -364,20 +368,22 @@ mod unit_tests {
 
         let whiteboard = Whiteboard {
             id: ObjectId::new(),
-            name: String::from("Test"),
-            canvases: HashMap::new(),
-            owner_id: ObjectId::new(),
-            shared_users: vec![
-                WhiteboardPermission {
-                    permission_type: WhiteboardPermissionType::User {
-                        user: target_uid,
+            metadata: WhiteboardMetadata {
+                name: String::from("Test"),
+                owner_id: ObjectId::new(),
+                shared_users: vec![
+                    WhiteboardPermission {
+                        permission_type: WhiteboardPermissionType::User {
+                            user: target_uid,
+                        },
+                        permission: WhiteboardPermissionEnum::Edit,
                     },
-                    permission: WhiteboardPermissionEnum::Edit,
-                },
-            ],
-            permissions_by_user_id: HashMap::from([
-                (String::from(target_uid_s), WhiteboardPermissionEnum::Edit),
-            ]),
+                ],
+                permissions_by_user_id: HashMap::from([
+                    (String::from(target_uid_s), WhiteboardPermissionEnum::Edit),
+                ]),
+            },
+            canvases: HashMap::new(),
         };
         let client_state = ClientState {
             client_id: test_client_id,
