@@ -1,6 +1,14 @@
-import { useState } from "react";
-import { useNavigate, useLocation } from 'react-router-dom';
+import {
+  useState,
+  useContext,
+} from "react";
 
+import {
+  useNavigate,
+  useLocation,
+} from 'react-router-dom';
+
+import AuthContext from '@/context/AuthContext';
 import AuthInput from "./AuthInput";
 import { useUser } from "../hooks/useUser";
 import api from '../api/axios';
@@ -23,6 +31,15 @@ function AuthForm({ initialAction }: AuthFormProps) {
   const redirectUrl = searchParams.has('redirect') ?
     decodeURIComponent(searchParams.get('redirect') || '')
     : '/dashboard';
+  const authContext = useContext(AuthContext);
+
+  if (! authContext) {
+    throw new Error('AuthContext not provided');
+  }
+
+  const {
+    setAuthToken,
+  } = authContext;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -41,7 +58,7 @@ function AuthForm({ initialAction }: AuthFormProps) {
       const res = await api.post(endpoint, payload);
       const { user, token } = res.data;
 
-      localStorage.setItem("token", token);
+      setAuthToken(token);
       setUser(user);
       navigate(redirectUrl);
     } catch (err) {

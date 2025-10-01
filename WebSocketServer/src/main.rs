@@ -37,6 +37,13 @@ use web_socket_server::*;
 #[tokio::main]
 async fn main() -> process::ExitCode {
     let port = 3000u16;
+    let jwt_secret = match env::var("JWT_SECRET") {
+        Err(e) => {
+            eprintln!("Could not find $JWT_SECRET: {}", e);
+            return process::ExitCode::FAILURE;
+        },
+        Ok(secret) => secret
+    };
     let mongo_uri = match env::var("MONGO_URI") {
         Err(e) => {
             eprintln!("Could not find $MONGO_URI: {}", e);
@@ -54,6 +61,7 @@ async fn main() -> process::ExitCode {
     // broadcaster for initial whiteboard
 
     let connection_state_ref = Arc::new(ConnectionState{
+        jwt_secret: jwt_secret.clone(),
         next_client_id: Mutex::new(0),
         mongo_client: mongo_client,
         program_state: ProgramState{
@@ -176,20 +184,15 @@ async fn handle_connection(ws: WebSocket, whiteboard_id: WhiteboardIdType, conne
     // -- create client state
     let client_state_ref = Arc::new(ClientState {
         client_id: current_client_id,
+        jwt_secret: connection_state_ref.jwt_secret.clone(),
+        // None = user unauthenticated
+        user_whiteboard_permission: Mutex::new(None),
         whiteboard_ref: Arc::clone(&shared_whiteboard_entry.whiteboard_ref),
+        // TODO: get permission from user struct
+        // client_permission: todo!(),
         active_clients: Arc::clone(&shared_whiteboard_entry.active_clients),
         diffs: Arc::clone(&shared_whiteboard_entry.diffs)
     });
-
-    // Send init message immediately
-    {
-        let whiteboard = shared_whiteboard_entry.whiteboard_ref.lock().await;
-        let init_msg = ServerSocketMessage::InitClient {
-            client_id: current_client_id,
-            whiteboard: whiteboard.to_client_view()
-        };
-        let _ = user_ws_tx.send(Message::text(serde_json::to_string(&init_msg).unwrap())).await;
-    }
 
     let send_task = tokio::spawn(async move {
         while let Ok(msg) = rx.recv().await {
@@ -234,14 +237,195 @@ async fn handle_connection(ws: WebSocket, whiteboard_id: WhiteboardIdType, conne
         let shape_coll: Collection<CanvasObjectMongoDBView> = db.collection::<CanvasObjectMongoDBView>(
             "shapes"
         );
+        let user_coll: Collection<UserMongoDBView> = db.collection::<UserMongoDBView>(
+            "users"
+        );
 
         async move {
+            // Handle client messages in this loop until user authenticates
             while let Some(Ok(msg)) = user_ws_rx.next().await {
                 println!("Client {} sent message ...", current_client_id);
                 if let Ok(msg_s) = msg.to_str() {
                     println!("Raw message: {}", msg_s);
 
-                    let resp = handle_client_message(
+                    let resp = handle_unauthenticated_client_message(
+                        &client_state_ref,
+                        &user_coll,
+                        msg_s
+                    ).await;
+
+                    if let Some(ref resp) = resp {
+                        println!("Client response: {:?}", resp);
+                    }
+
+                    // -- update database, if there are diffs
+                    {
+                        let mut diffs = client_state_ref.diffs.lock().await;
+
+                        if ! diffs.is_empty() {
+                            for diff in diffs.iter() {
+                                match &diff {
+                                    WhiteboardDiff::CreateCanvas { name, width, height } => {
+                                        println!("Creating canvas \"{}\" in database ...", name);
+
+                                        let now = bson::DateTime::now();
+                                        let canvas_doc = CanvasMongoDBView {
+                                            id: ObjectId::new(),
+                                            whiteboard_id: whiteboard_id.clone(),
+                                            name: name.clone(),
+                                            width: *width,
+                                            height: *height,
+                                            time_created: now.clone(),
+                                            time_last_modified: now.clone(),
+                                            allowed_users: None,
+                                        };
+                                        let create_canvas_res = canvas_coll.insert_one(&canvas_doc).await;
+
+                                        match create_canvas_res {
+                                            Err(e) => {
+                                                eprintln!("CreateCanvas insert failed: {}", e);
+                                            },
+                                            Ok(insert) => {
+                                                eprintln!("CreateCanvas new document id: {}", insert.inserted_id);
+                                            }
+                                        };
+                                    },
+                                    WhiteboardDiff::DeleteCanvases { canvas_ids } => {
+                                        println!("Deleting canvases from database: {:?} ...", canvas_ids);
+
+                                        // first delete contained canvas objects
+                                        let delete_objects_res = shape_coll.delete_many(doc! {
+                                            "canvas_id": {
+                                                "$in": canvas_ids.clone()
+                                            }
+                                        }).await;
+
+                                        match delete_objects_res {
+                                            Err(e) => {
+                                                eprintln!("DeleteCanvases object deletion failed: {}", e);
+                                            },
+                                            Ok(delete_result) => {
+                                                eprintln!("DeleteCanvases object deletion count {}", delete_result.deleted_count);
+                                            }
+                                        };
+
+                                        // then, delete canvas itself
+                                        let delete_canvas_res = canvas_coll.delete_many(doc! {
+                                            "_id": {
+                                                "$in": canvas_ids.clone()
+                                            }
+                                        }).await;
+
+                                        match delete_canvas_res {
+                                            Err(e) => {
+                                                eprintln!("DeleteCanvases canvas deletion failed: {}", e);
+                                            },
+                                            Ok(delete_result) => {
+                                                eprintln!("DeleteCanvases canvas deletion count {}", delete_result.deleted_count);
+                                            }
+                                        };
+                                    },
+                                    WhiteboardDiff::CreateShapes { canvas_id, shapes } => {
+                                        println!("Creating shapes in database for canvas {} ...", canvas_id);
+
+                                        let canvas_obj_docs : Vec<CanvasObjectMongoDBView> = shapes.iter()
+                                            .map(|(obj_id, shape)| CanvasObjectMongoDBView {
+                                                id: obj_id.clone(),
+                                                canvas_id: canvas_id.clone(),
+                                                shape: shape.clone()
+                                            })
+                                            .collect();
+
+                                        let create_shapes_res = shape_coll.insert_many(&canvas_obj_docs).await;
+
+                                        match create_shapes_res {
+                                            Err(e) => {
+                                                eprintln!("CreateShapes insert failed: {}", e);
+                                            },
+                                            Ok(insert) => {
+                                                eprintln!("CreateShapes new document ids: {:?}", insert.inserted_ids);
+                                            }
+                                        };
+                                    },
+                                    WhiteboardDiff::UpdateShapes { canvas_id, shapes } => {
+                                        println!("Updating shapes in database for canvas {} ...", canvas_id);
+
+                                        for (obj_id, shape) in shapes.iter() {
+                                            let query_doc = doc! { "_id": obj_id.clone() };
+                                            let canvas_obj_doc = CanvasObjectMongoDBView {
+                                                id: obj_id.clone(),
+                                                canvas_id: canvas_id.clone(),
+                                                shape: shape.clone()
+                                            };
+
+                                            let replace_shape_res = shape_coll.replace_one(query_doc, &canvas_obj_doc).await;
+
+                                            match replace_shape_res {
+                                                Err(e) => {
+                                                    eprintln!("UpdateShapes replace failed: {}", e);
+                                                },
+                                                Ok(update) => {
+                                                    eprintln!("UpdateShapes matched_count: {}", update.matched_count);
+                                                    eprintln!("UpdateShapes modified_count: {}", update.modified_count);
+                                                    eprintln!("UpdateShapes upserted_id: {:?}", update.upserted_id);
+                                                }
+                                            };
+                                        }// end for (obj_id, shape) in shapes.iter()
+                                    },
+                                    WhiteboardDiff::UpdateCanvasAllowedUsers { canvas_id, allowed_users } => {
+                                        println!("Updating allowed users in database for canvas {} ...", canvas_id);
+
+                                        let query = doc! {
+                                            "_id": canvas_id,
+                                        };
+
+                                        let operator = doc! {
+                                            "$set": {
+                                                "allowed_users": allowed_users.clone()
+                                            }
+                                        };
+
+                                        let update_allowed_users_res = canvas_coll.update_one(query, operator).await;
+
+                                        match update_allowed_users_res {
+                                            Err(e) => {
+                                                eprintln!("UpdateCanvasAllowedUsers update failed: {}", e);
+                                            },
+                                            Ok(update) => {
+                                                eprintln!("UpdateCanvasAllowedUsers matched_count: {}", update.matched_count);
+                                                eprintln!("UpdateCanvasAllowedUsers modified_count: {}", update.modified_count);
+                                                eprintln!("UpdateCanvasAllowedUsers upserted_id: {:?}", update.upserted_id);
+                                            }
+                                        };
+                                    },
+                                }
+                            }// -- end for &diff in diffs
+
+                            // -- clear diffs
+                            diffs.clear();
+                        }
+                    }
+
+                    // -- send response to clients, if requested
+                    if let Some(resp) = resp {
+                        tx.send(resp).ok();
+                    }
+                }
+
+                if let Some(_) = *client_state_ref.user_whiteboard_permission.lock().await {
+                    // break if user has been authenticated (indicated by user_permission field
+                    // being set in client state)
+                    break;
+                }
+            }// end while let Some(Ok(msg)) = user_ws_rx.next().await
+
+            // Once client authenticates, handle client messages in this loop
+            while let Some(Ok(msg)) = user_ws_rx.next().await {
+                println!("Client {} sent message ...", current_client_id);
+                if let Ok(msg_s) = msg.to_str() {
+                    println!("Raw message: {}", msg_s);
+
+                    let resp = handle_authenticated_client_message(
                         &client_state_ref,
                         msg_s
                     ).await;
@@ -403,7 +587,7 @@ async fn handle_connection(ws: WebSocket, whiteboard_id: WhiteboardIdType, conne
                         tx.send(resp).ok();
                     }
                 }
-            }
+            }// end while let Some(Ok(msg)) = user_ws_rx.next().await
         }
     });
 

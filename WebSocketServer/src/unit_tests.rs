@@ -15,18 +15,21 @@ mod unit_tests {
         let client_msg_s = "This is not valid json";
         let client_state = ClientState {
             client_id: test_client_id,
+            jwt_secret: String::from("abcd"),
+            user_whiteboard_permission: Mutex::new(None),
             whiteboard_ref: Arc::new(Mutex::new(Whiteboard {
                 id: ObjectId::new(),
                 name: String::from("Test"),
                 canvases: HashMap::new(),
                 owner_id: ObjectId::new(),
                 shared_users: vec![],
+                permissions_by_user_id: HashMap::new(),
             })),
             active_clients: Arc::new(Mutex::new(HashMap::new())),
             diffs: Arc::new(Mutex::new(Vec::new())),
         };
 
-        let resp = handle_client_message(&client_state, client_msg_s).await;
+        let resp = handle_authenticated_client_message(&client_state, client_msg_s).await;
 
         match resp {
             None => panic!("Expected some client message, got None"),
@@ -44,7 +47,7 @@ mod unit_tests {
     }
 
     #[tokio::test]
-    async fn handle_client_message_create_shapes() {
+    async fn handle_authenticated_client_message_create_shapes() {
         let f64_prec: f64 = 1.0e-16;
         let test_client_id = 0;
         let canvas_a_id = ObjectId::new();
@@ -117,6 +120,8 @@ mod unit_tests {
         "##, canvas_a_id);
         let client_state = ClientState {
             client_id: test_client_id,
+            jwt_secret: String::from("abcd"),
+            user_whiteboard_permission: Mutex::new(None),
             whiteboard_ref: Arc::new(Mutex::new(Whiteboard {
                 id: ObjectId::new(),
                 name: String::from("Test"),
@@ -138,12 +143,13 @@ mod unit_tests {
                 ]),
                 owner_id: ObjectId::new(),
                 shared_users: vec![],
+                permissions_by_user_id: HashMap::new(),
             })),
             active_clients: Arc::new(Mutex::new(HashMap::new())),
             diffs: Arc::new(Mutex::new(Vec::new())),
         };
 
-        let resp = handle_client_message(&client_state, &client_msg_s).await;
+        let resp = handle_authenticated_client_message(&client_state, &client_msg_s).await;
 
         match resp {
             None => panic!("Expected some client message, got None"),
