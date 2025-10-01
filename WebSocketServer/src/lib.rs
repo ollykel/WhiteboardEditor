@@ -653,7 +653,9 @@ struct ClientMessageInspector {
 //
 // ================================================================================================
 pub trait UserStore {
-    async fn get_user_by_id(&self, user_id: &UserIdType) -> Result<Option<User>, Box<dyn std::error::Error + Send + Sync>>;
+    fn get_user_by_id(&self, user_id: &UserIdType) -> impl futures::Future<
+        Output = Result<Option<User>, Box<dyn std::error::Error + Send + Sync>>
+    >;
 }// -- end trait UserStore
 
 // === MongoDBUserStore ===========================================================================
