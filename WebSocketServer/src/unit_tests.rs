@@ -7,6 +7,9 @@
 #[cfg(test)]
 mod unit_tests {
     use crate::*;
+    use std::collections::{
+        HashMap,
+    };
 
     #[tokio::test]
     async fn handle_invalid_client_message() {
@@ -293,6 +296,131 @@ mod unit_tests {
         assert!(canvas.shapes.len() == 0);
         assert!(canvas.allowed_users.is_none());
     }// -- end fn fetch_whiteboard_from_mongodb()
+
+    // === MockUserStore ==========================================================================
+    //
+    // Instead of pulling data from database, contains pre-cached user values.
+    //
+    // ============================================================================================
+    struct MockUserStore {
+        users_by_id: HashMap<UserIdType, User>,
+    }// -- end struct MockUserStore
+
+    impl UserStore for MockUserStore {
+        async fn get_user_by_id(&self, user_id: &UserIdType) -> Result<Option<User>, Box<dyn std::error::Error + Send + Sync>> {
+            match self.users_by_id.get(user_id) {
+                Some(user) => Ok(Some(user.clone())),
+                None => Ok(None),
+            }
+        }// -- end get_user_by_id
+    }
+
+    // === handle_valid_login_attempt =============================================================
+    //
+    // Ensure that handle_unauthenticated_client_message correctly handles a valid login attempt.
+    //
+    // ============================================================================================
+    #[tokio::test]
+    async fn handle_valid_login_attempt() {
+        use mongodb::{
+            bson::{
+                oid::ObjectId,
+            },
+        };
+        use hmac::{Hmac, Mac};
+        use jwt::SignWithKey;
+        use sha2::Sha256;
+
+        let jwt_secret = "abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz";
+        let target_uid_s = "68d5e8d4829da666aece5f48";
+        let target_uid = ObjectId::parse_str(target_uid_s).expect("UID to be valid");
+
+        // -- pre-generate jwt with desired uid
+        let key : Hmac<Sha256> = Hmac::new_from_slice(jwt_secret.as_bytes())
+            .expect("Valid key to be generated");
+        let timestamp_iat_utc = chrono::Local::now().to_utc().timestamp() - 20;
+        // expiration always in the future
+        let timestamp_exp_utc = timestamp_iat_utc + 999999;
+        let jwt_claims = JWTClaims {
+            sub: String::from(target_uid_s),
+            issued_at_epoch_secs: timestamp_iat_utc,
+            expiration_epoch_secs: timestamp_exp_utc,
+        };
+        let token_s = jwt_claims.sign_with_key(&key).unwrap();
+
+        // -- initialize user store
+        let user_store = MockUserStore {
+            users_by_id: HashMap::from([
+                (target_uid, User {
+                    id: ObjectId::parse_str(target_uid_s).unwrap(),
+                    username: String::from("bob"),
+                    email: String::from("bob@example.com"),
+                }),
+            ]),
+        };
+
+        // -- initialize mock client state
+        let test_client_id = 0;
+
+        let whiteboard = Whiteboard {
+            id: ObjectId::new(),
+            name: String::from("Test"),
+            canvases: HashMap::new(),
+            owner_id: ObjectId::new(),
+            shared_users: vec![
+                WhiteboardPermission {
+                    permission_type: WhiteboardPermissionType::User {
+                        user: target_uid,
+                    },
+                    permission: WhiteboardPermissionEnum::Edit,
+                },
+            ],
+            permissions_by_user_id: HashMap::from([
+                (String::from(target_uid_s), WhiteboardPermissionEnum::Edit),
+            ]),
+        };
+        let client_state = ClientState {
+            client_id: test_client_id,
+            jwt_secret: String::from(jwt_secret),
+            user_whiteboard_permission: Mutex::new(None),
+            whiteboard_ref: Arc::new(Mutex::new(whiteboard.clone())),
+            active_clients: Arc::new(Mutex::new(HashMap::new())),
+            diffs: Arc::new(Mutex::new(Vec::new())),
+        };
+
+        // -- create authentication message (json)
+        let client_login_msg_s = format!(
+            r#"{{ "type": "login", "jwt": "{}" }}"#, 
+            token_s
+        );
+
+        // -- attempt login
+        let resp = handle_unauthenticated_client_message(
+            &client_state,
+            &user_store,
+            client_login_msg_s.as_str()
+        ).await.expect("Response to client login message");
+
+        match resp {
+            ServerSocketMessage::InitClient { client_id, whiteboard: whiteboard_view } => {
+                let user_perm = client_state.user_whiteboard_permission.lock().await;
+                let active_clients = client_state.active_clients.lock().await;
+
+                assert_eq!(client_id, test_client_id);
+                assert_eq!(whiteboard_view, whiteboard.to_client_view());
+                assert_eq!(*user_perm, Some(WhiteboardPermissionEnum::Edit));
+                assert_eq!(*active_clients, HashMap::from([
+                    (test_client_id, UserSummary {
+                        user_id: String::from(target_uid_s),
+                        username: String::from("bob"),
+                    })
+                ]));
+            },
+            bad_resp => {
+                panic!("Expected InitClient message, got {:?}", bad_resp);
+            },
+        };
+    }// -- end fn fetch_user_from_mongodb_user_store
 
     // === fetch_user_from_mongodb_user_store =====================================================
     //
