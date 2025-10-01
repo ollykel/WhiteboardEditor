@@ -87,13 +87,13 @@ pub enum ShapeModel {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct CanvasObject {
     pub id: CanvasObjectIdType,
     pub shape: ShapeModel,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub struct CanvasObjectMongoDBView {
     #[serde(rename = "_id")]
@@ -127,7 +127,7 @@ pub struct User {
     pub email: String,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct UserClientView {
     pub id: String,
@@ -153,7 +153,7 @@ impl UserClientView {
     }// end to_user
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub struct UserMongoDBView {
     #[serde(rename = "_id")]
@@ -180,14 +180,14 @@ impl UserMongoDBView {
     }// end to_user
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct UserSummary {
     pub user_id: String,
     pub username: String,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CanvasClientView {
     pub id: String,
@@ -200,7 +200,7 @@ pub struct CanvasClientView {
     pub allowed_users: Vec<String>,     // cast ObjectId to string for proper client-side parsing
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct WhiteboardClientView {
     pub id: String,
@@ -392,7 +392,7 @@ impl Canvas {
     }// end pub fn to_client_view(&self) -> CanvasClientView
 }
 
-#[derive(Copy, Clone, Debug, Serialize, Deserialize)]
+#[derive(Copy, Clone, PartialEq, Debug, Serialize, Deserialize)]
 #[serde(tag = "permission", rename_all = "camelCase")]
 pub enum WhiteboardPermissionEnum {
     View,
@@ -400,14 +400,14 @@ pub enum WhiteboardPermissionEnum {
     Own,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "camelCase", rename_all_fields = "snake_case")]
 pub enum WhiteboardPermissionType {
     User { user: ObjectId },
     Email { email: String },
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub struct WhiteboardPermission {
     #[serde(flatten)]
@@ -450,7 +450,7 @@ impl Whiteboard {
 // whiteboard, including the Sender.
 //
 // ================================================================================================
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct SharedWhiteboardEntry {
     pub whiteboard_ref: Arc<Mutex<Whiteboard>>,
     pub whiteboard_id: WhiteboardIdType,
@@ -459,7 +459,7 @@ pub struct SharedWhiteboardEntry {
     pub diffs: Arc<Mutex<Vec<WhiteboardDiff>>>,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct CanvasMongoDBView {
     #[serde(rename = "_id")]
     pub id: ObjectId,
@@ -495,7 +495,7 @@ impl CanvasMongoDBView {
     }
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum UserPermissionEnum {
     Own,
@@ -503,7 +503,7 @@ pub enum UserPermissionEnum {
     View,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "type")]
 pub enum UserPermission {
     #[serde(rename = "id")]
@@ -518,7 +518,7 @@ pub enum UserPermission {
     }
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct WhiteboardMongoDBView {
     #[serde(rename = "_id")]
     pub id: ObjectId,
@@ -559,6 +559,7 @@ impl WhiteboardMongoDBView {
 // passing of state between threads.
 //
 // ================================================================================================
+#[derive(Debug)]
 pub struct ProgramState {
     pub whiteboards: Mutex<HashMap<WhiteboardIdType, SharedWhiteboardEntry>>,
 }
@@ -568,6 +569,7 @@ pub struct ProgramState {
 // Encapsulate all state a thread needs to handle a single client.
 //
 // ================================================================================================
+#[derive(Debug)]
 pub struct ClientState {
     pub client_id: ClientIdType,
     pub whiteboard_ref: Arc<Mutex<Whiteboard>>,
@@ -583,6 +585,7 @@ pub struct ClientState {
 // Holds program state plus data necessary for broadcasting to clients and managing connections.
 //
 // ================================================================================================
+#[derive(Debug)]
 pub struct ConnectionState {
     pub jwt_secret: String,
     pub mongo_client: Client,
@@ -632,6 +635,7 @@ pub trait UserStore {
 // Interface for fetching users from the MongoDB database, by user id.
 //
 // ================================================================================================
+#[derive(Debug)]
 pub struct MongoDBUserStore {
     user_collection: Collection<UserMongoDBView>,
 }// -- end MongoDBUserStore
@@ -1105,7 +1109,7 @@ pub async fn get_whiteboard_by_id(db: &Database, wid: &WhiteboardIdType) -> Resu
 // Ensure that this struct stays in-sync with the claims generated by the RestAPI.
 //
 // ================================================================================================
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct JWTClaims {
     sub: String,
