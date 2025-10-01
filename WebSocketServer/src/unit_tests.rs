@@ -16,25 +16,32 @@ mod unit_tests {
         // not even valid json
         let test_client_id = 0;
         let client_msg_s = "This is not valid json";
+
+        // -- initialize client state
+        let whiteboard = Whiteboard {
+            id: ObjectId::new(),
+            metadata: WhiteboardMetadata {
+                name: String::from("Test"),
+                owner_id: ObjectId::new(),
+                shared_users: vec![],
+                permissions_by_user_id: HashMap::new(),
+            },
+            canvases: HashMap::new(),
+        };
+
         let client_state = ClientState {
             client_id: test_client_id,
             jwt_secret: String::from("abcd"),
             user_whiteboard_permission: Mutex::new(None),
-            whiteboard_ref: Arc::new(Mutex::new(Whiteboard {
-                id: ObjectId::new(),
-                metadata: WhiteboardMetadata {
-                    name: String::from("Test"),
-                    owner_id: ObjectId::new(),
-                    shared_users: vec![],
-                    permissions_by_user_id: HashMap::new(),
-                },
-                canvases: HashMap::new(),
-            })),
+            whiteboard_ref: Arc::new(Mutex::new(whiteboard.clone())),
             active_clients: Arc::new(Mutex::new(HashMap::new())),
             diffs: Arc::new(Mutex::new(Vec::new())),
         };
 
-        let resp = handle_authenticated_client_message(&client_state, client_msg_s).await;
+        let resp = handle_authenticated_client_message(
+            &client_state,
+            client_msg_s
+        ).await;
 
         match resp {
             None => panic!("Expected some client message, got None"),
@@ -123,42 +130,48 @@ mod unit_tests {
             ]
         }}
         "##, canvas_a_id);
+
+        let whiteboard = Whiteboard {
+            id: ObjectId::new(),
+            metadata: WhiteboardMetadata {
+                name: String::from("Test"),
+                owner_id: ObjectId::new(),
+                shared_users: vec![],
+                permissions_by_user_id: HashMap::new(),
+            },
+            canvases: HashMap::from([
+                (
+                    canvas_a_id.clone(),
+                    Canvas {
+                        id: canvas_a_id.clone(),
+                        next_shape_id_base: 0,
+                        width: 512,
+                        height: 512,
+                        name: String::from("Canvas A"),
+                        time_created: Utc::now(),
+                        time_last_modified: Utc::now(),
+                        shapes: HashMap::new(),
+                        allowed_users: None, // None = open to all
+                    }
+                )
+            ]),
+        };
+
         let client_state = ClientState {
             client_id: test_client_id,
             jwt_secret: String::from("abcd"),
             user_whiteboard_permission: Mutex::new(
                 Some(WhiteboardPermissionEnum::Own)
             ),
-            whiteboard_ref: Arc::new(Mutex::new(Whiteboard {
-                id: ObjectId::new(),
-                metadata: WhiteboardMetadata {
-                    name: String::from("Test"),
-                    owner_id: ObjectId::new(),
-                    shared_users: vec![],
-                    permissions_by_user_id: HashMap::new(),
-                },
-                canvases: HashMap::from([
-                    (
-                        canvas_a_id.clone(),
-                        Canvas {
-                            id: canvas_a_id.clone(),
-                            next_shape_id_base: 0,
-                            width: 512,
-                            height: 512,
-                            name: String::from("Canvas A"),
-                            time_created: Utc::now(),
-                            time_last_modified: Utc::now(),
-                            shapes: HashMap::new(),
-                            allowed_users: None, // None = open to all
-                        }
-                    )
-                ]),
-            })),
+            whiteboard_ref: Arc::new(Mutex::new(whiteboard.clone())),
             active_clients: Arc::new(Mutex::new(HashMap::new())),
             diffs: Arc::new(Mutex::new(Vec::new())),
         };
 
-        let resp = handle_authenticated_client_message(&client_state, &client_msg_s).await;
+        let resp = handle_authenticated_client_message(
+            &client_state,
+            &client_msg_s
+        ).await;
 
         match resp {
             None => panic!("Expected some client message, got None"),
@@ -301,22 +314,34 @@ mod unit_tests {
         assert!(canvas.allowed_users.is_none());
     }// -- end fn fetch_whiteboard_from_mongodb()
 
-    // === MockUserStore ==========================================================================
+    // === MockStore ==============================================================================
     //
     // Instead of pulling data from database, contains pre-cached user values.
     //
     // ============================================================================================
-    struct MockUserStore {
+    struct MockStore {
         users_by_id: HashMap<UserIdType, User>,
-    }// -- end struct MockUserStore
+        whiteboards_by_id: HashMap<WhiteboardIdType, Whiteboard>,
+    }// -- end struct MockStore
 
-    impl UserStore for MockUserStore {
+    impl UserStore for MockStore {
         async fn get_user_by_id(&self, user_id: &UserIdType) -> Result<Option<User>, Box<dyn std::error::Error + Send + Sync>> {
             match self.users_by_id.get(user_id) {
                 Some(user) => Ok(Some(user.clone())),
                 None => Ok(None),
             }
         }// -- end get_user_by_id
+    }
+
+    impl WhiteboardMetadataStore for MockStore {
+        async fn get_whiteboard_metadata_by_id(&self, whiteboard_id: &WhiteboardIdType) -> Result<
+            Option<WhiteboardMetadata>, Box<dyn std::error::Error + Send + Sync>
+        > {
+            match self.whiteboards_by_id.get(whiteboard_id) {
+                Some(whiteboard) => Ok(Some(whiteboard.metadata.clone())),
+                None => Ok(None),
+            }
+        }// -- end get_whiteboard_metadata_by_id
     }
 
     // === handle_valid_login_attempt =============================================================
@@ -353,7 +378,7 @@ mod unit_tests {
         let token_s = jwt_claims.sign_with_key(&key).unwrap();
 
         // -- initialize user store
-        let user_store = MockUserStore {
+        let user_store = MockStore {
             users_by_id: HashMap::from([
                 (target_uid, User {
                     id: ObjectId::parse_str(target_uid_s).unwrap(),
@@ -361,6 +386,7 @@ mod unit_tests {
                     email: String::from("bob@example.com"),
                 }),
             ]),
+            whiteboards_by_id: HashMap::new(),  // not needed here
         };
 
         // -- initialize mock client state
@@ -430,7 +456,7 @@ mod unit_tests {
 
     // === fetch_user_from_mongodb_user_store =====================================================
     //
-    // Tests instantiating a MongoDBUserStore and using it to fetch a user account from the test
+    // Tests instantiating a MongoDBStore and using it to fetch a user account from the test
     // database.
     //
     // See TestDatabase/init-db.js for the sample data.
@@ -456,13 +482,16 @@ mod unit_tests {
         let user_coll: Collection<UserMongoDBView> = db.collection::<UserMongoDBView>(
             "users"
         );
+        let whiteboard_metadata_coll: Collection<WhiteboardMetadataMongoDBView> = db.collection::<WhiteboardMetadataMongoDBView>(
+            "whiteboards"
+        );
 
         // -- "alice"
         let uid = ObjectId::parse_str("68d5e8cf829da666aece5f47")
             .expect("The provided string is a valid ObjectId");
 
-        // -- instantiate MongoDBUserStore
-        let user_store = MongoDBUserStore::new(&user_coll);
+        // -- instantiate MongoDBStore
+        let user_store = MongoDBStore::new(&user_coll, &whiteboard_metadata_coll);
 
         // -- fetch the user from the database
         let user_opt = user_store.get_user_by_id(&uid).await
