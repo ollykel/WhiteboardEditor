@@ -1103,6 +1103,15 @@ pub async fn connect_mongodb(uri: &str) -> mongodb::error::Result<Client> {
     Ok(client)
 }// end connect_mongodb
 
+pub async fn get_whiteboard_metadata_by_id(db: &Database, wid: &WhiteboardIdType) -> Result<Option<WhiteboardMetadata>, mongodb::error::Error> {
+    let metadata_coll = db.collection::<WhiteboardMetadataMongoDBView>("whiteboards");
+
+    match metadata_coll.find_one(doc! { "_id": wid.clone() }).await? {
+        None => { return Ok(None); },
+        Some(metadata) => Ok(Some(metadata.to_whiteboard_metadata()))
+    }
+}// -- end get_whiteboard_metadata_by_id
+
 pub async fn get_whiteboard_by_id(db: &Database, wid: &WhiteboardIdType) -> Result<Option<Whiteboard>, mongodb::error::Error> {
     let whiteboard_coll = db.collection::<WhiteboardMongoDBView>("whiteboards");
     let canvas_coll = db.collection::<CanvasMongoDBView>("canvases");
