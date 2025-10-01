@@ -418,16 +418,28 @@ pub struct WhiteboardPermission {
 
 pub type WhiteboardPermissionMongoDBView = WhiteboardPermission;
 
+// === WhiteboardMetadata =========================================================================
+//
+// Encompasses data about a whiteboard that doesn't pertain to graphic elements that are updated
+// during the process of users editing the whtieboard. This includes the whiteboard's name, owner
+// id, user permissions, etc.
+//
+// ================================================================================================
 #[derive(Clone, Debug)]
-pub struct Whiteboard {
-    pub id: WhiteboardIdType,
+pub struct WhiteboardMetadata {
     pub name: String,
-    pub canvases: HashMap<CanvasIdType, Canvas>,
     pub owner_id: UserIdType,
     pub shared_users: Vec<WhiteboardPermission>,
     // For permissions attached to an existing account, index by user id, to enable faster
     // retrieval when users log in.
     pub permissions_by_user_id: HashMap<String, WhiteboardPermissionEnum>,
+}// -- end WhiteboardMetadata
+
+#[derive(Clone, Debug)]
+pub struct Whiteboard {
+    pub id: WhiteboardIdType,
+    pub metadata: WhiteboardMetadata,
+    pub canvases: HashMap<CanvasIdType, Canvas>,
 }
 
 impl Whiteboard {
@@ -436,7 +448,7 @@ impl Whiteboard {
         // always be the case.
         WhiteboardClientView {
             id: self.id.to_string(),
-            name: self.name.clone(),
+            name: self.metadata.name.clone(),
             canvases: self.canvases.iter()
                 .map(|(_, c)| c.to_client_view())
                 .collect()
@@ -519,24 +531,18 @@ pub enum UserPermission {
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-pub struct WhiteboardMongoDBView {
-    #[serde(rename = "_id")]
-    pub id: ObjectId,
+pub struct WhiteboardMetadataMongoDBView {
     pub name: String,
     #[serde(rename = "owner")]
     pub owner_id: ObjectId,
     #[serde(rename = "shared_users")]
     pub shared_users: Vec<WhiteboardPermissionMongoDBView>,
-}
+}// -- end struct WhiteboardMetadataMongoDBView
 
-impl WhiteboardMongoDBView {
-    pub fn to_whiteboard(&self, canvases: &[Canvas]) -> Whiteboard {
-        Whiteboard {
-            id: self.id.clone(),
+impl WhiteboardMetadataMongoDBView {
+    pub fn to_whiteboard_metadata(&self) -> WhiteboardMetadata {
+        WhiteboardMetadata {
             name: self.name.clone(),
-            canvases: canvases.iter()
-                .map(|canvas| (canvas.id.clone(), canvas.clone()))
-                .collect(),
             owner_id: self.owner_id.clone(),
             shared_users: self.shared_users.clone(),
             permissions_by_user_id: self.shared_users.iter()
@@ -546,6 +552,26 @@ impl WhiteboardMongoDBView {
                 })
                 .filter(|x| x.is_some())
                 .map(|x| x.unwrap())
+                .collect(),
+        }
+    }// -- end fn to_whiteboard_metadata
+}
+
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct WhiteboardMongoDBView {
+    #[serde(rename = "_id")]
+    pub id: ObjectId,
+    #[serde(flatten)]
+    metadata: WhiteboardMetadataMongoDBView,
+}// -- end struct WhiteboardMongoDBView
+
+impl WhiteboardMongoDBView {
+    pub fn to_whiteboard(&self, canvases: &[Canvas]) -> Whiteboard {
+        Whiteboard {
+            id: self.id.clone(),
+            metadata: self.metadata.to_whiteboard_metadata(),
+            canvases: canvases.iter()
+                .map(|canvas| (canvas.id.clone(), canvas.clone()))
                 .collect(),
         }
     }
@@ -866,7 +892,7 @@ pub async fn handle_authenticated_client_message(
 
                     // -- ensure all allowed users are valid users who have edit or own permission
                     for user_id in allowed_users.iter() {
-                        match whiteboard.permissions_by_user_id.get(&user_id.to_string()) {
+                        match whiteboard.metadata.permissions_by_user_id.get(&user_id.to_string()) {
                             None => {
                                 return Some(ServerSocketMessage::IndividualError {
                                     client_id: client_state.client_id,
@@ -1001,7 +1027,7 @@ pub async fn handle_unauthenticated_client_message<UserStoreType: UserStore>(
                     let permission : Option<WhiteboardPermissionEnum> = {
                         let whiteboard = client_state.whiteboard_ref.lock().await;
 
-                        whiteboard.permissions_by_user_id.get(&user_id.to_string()).copied()
+                        whiteboard.metadata.permissions_by_user_id.get(&user_id.to_string()).copied()
                     };
 
                     if let Some(permission) = permission {
