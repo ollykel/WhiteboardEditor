@@ -24,6 +24,8 @@ import { X } from 'lucide-react';
 // -- local types
 import type {
   Whiteboard as APIWhiteboard,
+  UserPermissionEnum,
+  UserPermission,
 } from '@/types/APIProtocol';
 
 // -- program state
@@ -145,6 +147,7 @@ const Whiteboard = () => {
     socketRef,
     setWhiteboardId,
     sharedUsers,
+    ownPermission,
   } = context;
 
   const {
@@ -435,6 +438,7 @@ const Whiteboard = () => {
         }
       }}
       title="Share"
+      disabled={ownPermission !== 'own'}
     /> 
   );
 
@@ -587,6 +591,7 @@ const Whiteboard = () => {
 };// end Whiteboard
 
 const WrappedWhiteboard = () => {
+  const authContext = useContext(AuthContext);
   const socketRef = useRef<WebSocket | null>(null);
   const [whiteboardId, setWhiteboardId] = useState<WhiteboardIdType>("");
   const [newCanvasAllowedUsers, setNewCanvasAllowedUsers] = useState<string[]>([]);
@@ -603,6 +608,15 @@ const WrappedWhiteboard = () => {
       return res.data;
     },
   });
+
+  if (! authContext) {
+    throw new Error('AuthContext not provided to Whiteboard');
+  }
+
+  const {
+    user,
+  } = authContext;
+
   console.log("Current whiteboard data:", whiteboardData);
   console.log("Loading status:", isWhiteboardDataLoading);
 
@@ -610,11 +624,20 @@ const WrappedWhiteboard = () => {
   const [sharedUsers, setSharedUsers] = useState<APIWhiteboard['shared_users']>([]);
   console.log("Current shared users:", sharedUsers);
 
+  // -- view/edit/own - determines which actions to enable or disable
+  const [ownPermission, setOwnPermission] = useState<UserPermissionEnum | null>(null);
+
   useEffect(() => {
-    if (whiteboardData?.shared_users) {
+    if (whiteboardData && user) {
+      const newOwnPermission = whiteboardData.shared_users
+        .find(
+          (perm: UserPermission) => perm.type === 'user' && perm.user.id === user.id
+        ) || null;
+
       setSharedUsers(whiteboardData.shared_users);
+      setOwnPermission(newOwnPermission.permission);
     }
-  }, [whiteboardData])
+  }, [whiteboardData, user])
 
   const canvasObjectsByCanvas: Record<CanvasIdType, Record<CanvasObjectIdType, CanvasObjectModel>> = useSelector((state: RootState) => (
     selectCanvasObjectsByWhiteboard(state, whiteboardId)
@@ -670,6 +693,8 @@ const WrappedWhiteboard = () => {
       setSharedUsers={setSharedUsers}
       newCanvasAllowedUsers={newCanvasAllowedUsers}
       setNewCanvasAllowedUsers={setNewCanvasAllowedUsers}
+      ownPermission={ownPermission}
+      setOwnPermission={setOwnPermission}
     >
       <Whiteboard />
     </WhiteboardProvider>
