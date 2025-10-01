@@ -1,31 +1,27 @@
-import { useRef } from 'react';
+import { Html } from "react-konva-utils";
+import Konva from "konva";
 
-import Konva from 'konva';
-import { Html } from 'react-konva-utils';
+type TAWithClose = HTMLTextAreaElement & {
+  __konvaInit?: boolean;
+  __konvaClose?: () => void;
+};
 
 interface TextEditorProps {
   textNode: Konva.Text;
-  onChange: (value: string) => void;
-  onClose: () => void;
+  onClose: (newText: string) => void;
 }
 
-const TextEditor = ({ textNode, onChange, onClose }: TextEditorProps) => {
-  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+const TextEditor = ({ textNode, onClose }: TextEditorProps) => {
+  const textareaRef = { current: null as (HTMLTextAreaElement | null) };
 
-  const initTextArea = (textarea: HTMLTextAreaElement) => {
+  const initTextArea = (textarea: TAWithClose) => {
     const stage = textNode.getStage();
-    // const stageBox = stage?.container().getBoundingClientRect();
     const textPosition = stage ? textNode.getAbsolutePosition(stage) : textNode.position();
-    const areaPosition = {
-      x: textPosition.x,
-      y: textPosition.y,
-    }
-  
-    // Match styles with the text node
+
     textarea.value = textNode.text();
     textarea.style.position = "absolute";
-    textarea.style.top = `${areaPosition.y}px`;
-    textarea.style.left = `${areaPosition.x}px`;
+    textarea.style.top = `${textPosition.y}px`;
+    textarea.style.left = `${textPosition.x}px`;
     textarea.style.width = `${textNode.width()}px`;
     textarea.style.height = `${textNode.height()}px`;
     textarea.style.fontSize = `${textNode.fontSize()}px`;
@@ -41,72 +37,89 @@ const TextEditor = ({ textNode, onChange, onClose }: TextEditorProps) => {
     textarea.style.transformOrigin = "left top";
     textarea.style.textAlign = textNode.align();
     const fill = textNode.fill();
-    if (typeof fill === "string") {
-      textarea.style.color = fill;
-    }
-  
+    if (typeof fill === "string") textarea.style.color = fill;
+
     const rotation = textNode.rotation();
-    let transform = "";
-    if (rotation) {
-      transform += `rotateZ(${rotation}deg)`;
-    }
-    textarea.style.transform = transform;
-  
+    if (rotation) textarea.style.transform = `rotateZ(${rotation}deg)`;
+
     textarea.style.height = "auto";
     textarea.style.height = `${textarea.scrollHeight + 3}px`;
-  
     textarea.focus();
-  
-    const handleOutsideClick = (e: MouseEvent) => {
-      if (e.detail === 2) return; // this enabled multiple subsequent edits
 
-      if (e.target !== textarea) {
-        onChange(textarea.value);
-        onClose();
-      }
-    }
-  
+    let closed = false;
+    // declare `close` first, assign later so we can call it from performClose
+    let close: () => void = () => (closed = true);
+
+    const performClose = (value: string) => {
+      if (closed) return;
+      closed = true;
+      onClose(value);
+      // remove listeners / cleanup
+      close();
+    };
+
+    const handleOutsideClick = (e: MouseEvent) => {
+      if (e.detail === 2) return; // allow double-clicks to edit again
+      if (e.target !== textarea) performClose(textarea.value);
+    };
+
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Enter" && !e.shiftKey) {
         e.preventDefault();
-        onChange(textarea.value);
-        onClose();
+        performClose(textarea.value);
+      } else if (e.key === "Escape") {
+        performClose(textarea.value);
       }
-      if (e.key === "Escape") {
-        onClose();
-      }
-    }
-  
+    };
+
     const handleInput = () => {
       const scale = textNode.getAbsoluteScale().x;
       textarea.style.width = `${textNode.width() * scale}px`;
       textarea.style.height = "auto";
-      textarea.style.height = `${
-        textarea.scrollHeight + textNode.fontSize()
-      }px`;
-    }
-  
+      textarea.style.height = `${textarea.scrollHeight + textNode.fontSize()}px`;
+    };
+
     textarea.addEventListener("keydown", handleKeyDown);
     textarea.addEventListener("input", handleInput);
-    setTimeout(() => {
-      window.addEventListener("click", handleOutsideClick);
-    });
-  
-    return () => {
-      textarea.removeEventListener("keydown", handleKeyDown);
-      textarea.removeEventListener("input", handleInput);
-      window.removeEventListener("click", handleOutsideClick);
+    window.addEventListener("click", handleOutsideClick);
+
+    close = () => {
+      try {
+        textarea.removeEventListener("keydown", handleKeyDown);
+        textarea.removeEventListener("input", handleInput);
+        window.removeEventListener("click", handleOutsideClick);
+      } finally {
+        textarea.__konvaInit = false;
+        textarea.__konvaClose = undefined;
+        closed = true;
+      }
     };
-  }
+
+    textarea.__konvaInit = true;
+    textarea.__konvaClose = close;
+
+    return close;
+  };
 
   return (
     <Html>
-      <textarea 
+      <textarea
         placeholder="Enter text here"
         ref={(elem) => {
           if (elem) {
+            const e = elem as TAWithClose;
             textareaRef.current = elem;
-            initTextArea(elem);
+            // Prevent double-init (React can call ref callback multiple times)
+            if (!e.__konvaInit) {
+              initTextArea(e);
+              // IMPORTANT: do NOT call the returned close() here.
+              // Instead it's stored on the element as __konvaClose.
+            }
+          } else {
+            // ref cleared -> component unmount. cleanup if we have a stored close.
+            const prev = textareaRef.current as TAWithClose | null;
+            if (prev && prev.__konvaClose) prev.__konvaClose();
+            textareaRef.current = null;
           }
         }}
         style={{
@@ -116,6 +129,6 @@ const TextEditor = ({ textNode, onChange, onClose }: TextEditorProps) => {
       />
     </Html>
   );
-}
+};
 
 export default TextEditor;

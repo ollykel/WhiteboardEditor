@@ -76,12 +76,14 @@ pub enum ShapeModel {
         stroke_color: String
     },
     Text {
+        text: String,
         font_size: i32,
         color: String,
         x: f64,
         y: f64,
         width: f64,
         height: f64,
+        rotation: f64,
     }
 }
 
@@ -614,6 +616,7 @@ pub async fn handle_authenticated_client_message(client_state: &ClientState, cli
                 ClientSocketMessage::UpdateShapes{ canvas_id, ref shapes } => {
                     let mut whiteboard = client_state.whiteboard_ref.lock().await;
                     println!("Updating shapes on canvas {} ...", canvas_id);
+                    println!("Shapes: {:?}", shapes);
 
                     match whiteboard.canvases.get_mut(&canvas_id) {
                         None => {
@@ -621,13 +624,14 @@ pub async fn handle_authenticated_client_message(client_state: &ClientState, cli
                             todo!()
                         },
                         Some(canvas) => {
-                            let new_shapes = HashMap::<CanvasObjectIdType, ShapeModel>::new();
+                            let mut new_shapes = HashMap::<CanvasObjectIdType, ShapeModel>::new();
 
                             for (obj_id_s, shape) in shapes.iter() {
                                 match obj_id_s.parse::<CanvasObjectIdType>() {
                                     Ok(obj_id) => {
                                         if canvas.shapes.contains_key(&obj_id) {
                                             canvas.shapes.insert(obj_id, shape.clone());
+                                            new_shapes.insert(obj_id, shape.clone());
                                         }
                                     },
                                     Err(e) => {
@@ -635,7 +639,7 @@ pub async fn handle_authenticated_client_message(client_state: &ClientState, cli
                                     }
                                 };
                             }// end for (&obj_id, &shape) in shapes.iter_mut()
-
+                            println!("New Shapes: {:?}", new_shapes);
                             // valid input: add to diffs
                             {
                                 let mut diffs = client_state.diffs.lock().await;

@@ -18,7 +18,7 @@ import type {
   EventCoords
 } from '@/types/EventCoords';
 
-import draggableObjectProps from './draggableObjectProps';
+import editableObjectProps from './editableObjectProps';
 
 // === useEllipseDispatcher ====================================================
 //
@@ -105,7 +105,7 @@ const useEllipseDispatcher = ({
           stroke={strokeColor}
           strokeWidth={strokeWidth}
           draggable={isDraggable}
-          {...draggableObjectProps(model, isDraggable, handleUpdateShapes)}
+          {...editableObjectProps(model, isDraggable, handleUpdateShapes)}
         />
       );
     }

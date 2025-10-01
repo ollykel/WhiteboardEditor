@@ -12,11 +12,14 @@ import type {
   OperationDispatcherProps
 } from '@/types/OperationDispatcher';
 import type {
-  CanvasObjectModel
+  CanvasObjectIdType,
+  CanvasObjectModel,
+  TextModel
 } from '@/types/CanvasObjectModel';
 import type {
   EventCoords
 } from '@/types/EventCoords';
+import editableObjectProps from './editableObjectProps';
 
 // === useTextDispatcher ==================================================
 //
@@ -55,13 +58,14 @@ const useTextDispatcher = ({
 
       addShapes([{
         type: 'text',
-        // ...shapeAttributes, Not a part of the TextModel
+        text: 'Text',
         fontSize: 20,
         color: 'black',
         x: xMin,
         y: yMin,
         width,
         height,
+        rotation: 0,
       }]);
       setMouseDownCoords(null);
     }
@@ -87,32 +91,41 @@ const useTextDispatcher = ({
   };
 
   const renderShape = (
-    _key: string | number,
+    key: string | number,
     model: CanvasObjectModel,
     isDraggable: boolean,
-    // handleUpdateShapes: (shapes: Record<CanvasObjectIdType, CanvasObjectModel>) => void
+    handleUpdateShapes: (shapes: Record<CanvasObjectIdType, CanvasObjectModel>) => void
   ): React.JSX.Element | null => {
     if (model.type !== 'text') {
       return null;
     } else {
       const {
         fontSize,
+        text,
         color,
         x,
         y,
         width,
-        height
+        height,
+        rotation,
       } = model;
 
       return (
         <EditableText
+          key={key}
+          id={`${key}`}
           fontSize={fontSize}
+          text={text}
           color={color}
           x={x}
           y={y}
           width={width}
           height={height}
           draggable={isDraggable}
+          rotation={rotation}
+          shapeModel={model}
+          handleUpdateShapes={handleUpdateShapes}
+          {...editableObjectProps<TextModel>(model, isDraggable, handleUpdateShapes)}
         />
       )
     }
@@ -132,7 +145,6 @@ const useTextDispatcher = ({
     handlePointerUp,
     getPreview,
     renderShape,
-    // handleUpdateShapes,
     getTooltipText,
   });
 }

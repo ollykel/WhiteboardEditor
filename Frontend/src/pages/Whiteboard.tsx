@@ -3,7 +3,8 @@ import {
   useRef,
   useEffect,
   useReducer,
-  useContext
+  useContext,
+  useCallback
 } from 'react';
 
 import {
@@ -159,7 +160,6 @@ const Whiteboard = () => {
     isLoading: isWhiteboardLoading,
     isFetching: isWhiteboardFetching,
     error: whiteboardError,
-    data: whiteboardData
   } = useQuery<APIWhiteboard, string>({
     queryKey: whiteboardKey,
     queryFn: async (): Promise<APIWhiteboard> => {
@@ -175,7 +175,6 @@ const Whiteboard = () => {
   });
   const [toolChoice, setToolChoice] = useState<ToolChoice>('rect');
   const whiteboardIdRef = useRef<WhiteboardIdType>(whiteboardId);
-  console.log("whiteboard data 1: ", whiteboardData); // degbugging
 
   // alert user of any errors fetching whiteboard
   useEffect(
@@ -217,9 +216,6 @@ const Whiteboard = () => {
   const canvasesSorted = [...canvases];
 
   canvasesSorted.sort((a, b) => new Date(a.timeCreated) < new Date(b.timeCreated) ? -1 : 1);
-
-  // TODO: remove debug
-  console.log('Canvases:', canvases);
 
   // --- derived state
   const title = currWhiteboard?.name ?? 'Loading whiteboard ...';
@@ -263,7 +259,6 @@ const Whiteboard = () => {
       try {
         const msg = JSON.parse(event.data) as SocketServerMessage;
         console.log('Parsed message:', msg);
-        console.log('Message type:', msg.type);
 
         switch (msg.type) {
           case 'init_client':
@@ -277,7 +272,6 @@ const Whiteboard = () => {
           case 'active_users': 
             {
               const { users } = msg;
-              console.log('Active users message received:', users);
 
               addActiveUser(dispatch, users);
             } 
@@ -487,7 +481,7 @@ const Whiteboard = () => {
         </div>
 
         {/** Modal that opens to share the whiteboard **/}
-        <ShareModal className="w-[50em] h-[20em]" zIndex={100}>
+        <ShareModal zIndex={100}>
           <div className="flex flex-col">
             <button
               onClick={closeShareModal}
@@ -585,7 +579,7 @@ const WrappedWhiteboard = () => {
 
   console.log("canvasObjects: ", canvasObjectsByCanvas);
 
-  const handleUpdateShapes = (canvasId: CanvasIdType, shapes: Record<CanvasObjectIdType, CanvasObjectModel>) => {
+  const handleUpdateShapes = useCallback((canvasId: CanvasIdType, shapes: Record<CanvasObjectIdType, CanvasObjectModel>) => {
     if (socketRef.current) {
       // find relevant objects and merge the new attributes into the existing
       // attributes
@@ -598,9 +592,7 @@ const WrappedWhiteboard = () => {
 
       const changedObjects: Record<CanvasObjectIdType, CanvasObjectModel> = {};
 
-      for (const [objIdStr, objUpdate] of Object.entries(shapes)) {
-        const objId = parseInt(objIdStr);
-
+      for (const [objId, objUpdate] of Object.entries(shapes)) {
         if (objId in canvasObjects) {
           changedObjects[objId] = ({
             ...canvasObjects[objId],
@@ -609,15 +601,15 @@ const WrappedWhiteboard = () => {
         }
       }// end for (const [objId, objUpdate] of Object.entries(shapes))
 
-      const createShapesMsg: ClientMessageUpdateShapes = ({
+      const updateShapesMsg: ClientMessageUpdateShapes = ({
         type: 'update_shapes',
         canvasId,
         shapes: changedObjects
       });
 
-      socketRef.current.send(JSON.stringify(createShapesMsg));
+      socketRef.current.send(JSON.stringify(updateShapesMsg));
     }
-  };
+  }, [canvasObjectsByCanvas]);
 
   const [currentTool, setCurrentTool] = useState<ToolChoice>('hand');
 

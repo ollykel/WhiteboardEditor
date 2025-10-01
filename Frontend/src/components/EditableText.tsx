@@ -5,30 +5,47 @@ import { Group, Text, Transformer } from 'react-konva';
 import Konva from "konva";
 import TextEditor from "./TextEditor";
 
-interface EditableTextProps {
+import { type EditableObjectProps } from "@/dispatchers/editableObjectProps";
+import type { CanvasObjectIdType, ShapeModel, TextModel } from "@/types/CanvasObjectModel";
+
+interface EditableTextProps extends EditableObjectProps {
+  id: string;
   fontSize: number;
+  text: string;
   color: string;
-  x: number
-  y: number
-  width: number
-  height: number
-  draggable: boolean
+  x: number;
+  y: number;
+  width: number;    
+  height: number;   
+  rotation: number;
+  draggable: boolean; 
+  shapeModel: TextModel;
+  handleUpdateShapes: (shapes: Record<CanvasObjectIdType, ShapeModel>) => void
 }
 
 const EditableText = ({
+  id,
   fontSize,
+  text,
   color,
   x,
   y,
   width,
   height,
+  rotation,
   draggable,
+  shapeModel,
+  handleUpdateShapes,
+  onMouseOver,
+  onMouseOut,
+  onMouseDown,
+  onMouseUp,
+  onDragEnd,
+  onTransform,
+  onTransformEnd,
 }: EditableTextProps) => {
-  const [text, setText] = useState("text");
   const [isSelected, setIsSelected] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
-  const [textWidth, setTextWidth] = useState(width);
-  const [textHeight, setTextHeight] = useState(height);
 
   const textRef = useRef<Konva.Text>(null);
   const trRef = useRef<Konva.Transformer>(null);
@@ -77,51 +94,59 @@ const EditableText = ({
   }, []);
 
   const handleTextChange = useCallback((newText: string): void => {
-    setText(newText);
-  }, []);
-
-  const handleTransform = useCallback(() => {
     const node = textRef.current;
     if (!node) return;
-    const scaleX = node.scaleX();
-    const scaleY = node.scaleY();
-    const newWidth = node.width() * scaleX;
-    const newHeight = node.height() * scaleY;
-    setTextWidth(newWidth);
-    setTextHeight(newHeight);
-    node.setAttrs({
-      width: newWidth,
-      height: newHeight,
-      scaleX: 1,
-      scaleY: 1,
-    });
+
+    const update = {
+      [id]: {
+        ...shapeModel,
+        text: newText,
+        x: node.x(),
+        y: node.y(),
+        width: node.width(),
+        height: node.height(),
+        rotation: node.rotation(),
+      }
+    };
+
+    handleUpdateShapes(update);
   }, []);
 
   return (
     <Group>
       <Text
+        id={id}
         ref={textRef}
         text={text}
         fontSize={fontSize}
         fill={color}
         x={x}
         y={y}
-        width={textWidth}
-        height={textHeight}
+        width={width}
+        height={height}
+        rotation={rotation}
         draggable={draggable}
         onClick={handleSelect}
         onTap={handleSelect}
         onDblClick={handleTextDblClick}
         onDblTap={handleTextDblClick}
-        onTransform={handleTransform}
         listening={!isEditing}
         visible={!isEditing}
+        onDragEnd={onDragEnd}
+        onMouseUp={onMouseUp}
+        onMouseDown={onMouseDown}
+        onMouseOut={onMouseOut}
+        onMouseOver={onMouseOver}
+        onTransform={onTransform} 
+        onTransformEnd={onTransformEnd}
       />
       {isEditing && textRef.current && (
         <TextEditor
           textNode={textRef.current}
-          onChange={handleTextChange}
-          onClose={() => setIsEditing(false)}
+          onClose={(newText) => {
+            handleTextChange(newText);
+            setIsEditing(false);
+          }}
         />
       )} 
       {isSelected && !isEditing && (

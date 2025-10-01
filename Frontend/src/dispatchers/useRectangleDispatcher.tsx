@@ -19,7 +19,7 @@ import type {
   EventCoords
 } from '@/types/EventCoords';
 
-import draggableObjectProps from './draggableObjectProps';
+import editableObjectProps from './editableObjectProps';
 
 // === useRectangleDispatcher ==================================================
 //
@@ -118,7 +118,7 @@ const useRectangleDispatcher = ({
           stroke={strokeColor}
           strokeWidth={strokeWidth}
           draggable={isDraggable}
-          {...draggableObjectProps<RectModel>(model, isDraggable, handleUpdateShapes)}
+          {...editableObjectProps<RectModel>(model, isDraggable, handleUpdateShapes)}
         />
       );
     }
