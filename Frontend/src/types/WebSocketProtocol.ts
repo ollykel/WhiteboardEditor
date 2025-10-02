@@ -1,7 +1,10 @@
 // === Web Socket Protocol =====================================================
 //
 // Defines formats of JSON messages to be passed between the client and the
-// server.
+// web socket server.
+//
+// ServerMessage enumerates messages the server can send to the client, while
+// ClientMessage enumerates the messages the client can send to the server.
 //
 // =============================================================================
 
@@ -71,6 +74,90 @@ export interface WhiteboardData extends WhiteboardAttribs {
 export type WhiteboardRecord = WhiteboardAttribs;
 
 // ========================== SERVER → CLIENT ==================================
+//
+// =============================================================================
+
+// === Enumerate all error messages the server may send ========================
+
+// -- previous message from client was invalid in some form (invalid json, non-existent message
+// type, invalid message format, etc.)
+export interface ClientErrorInvalidMessage {
+  type: 'invalid_message';
+  clientMessageRaw: string;
+}
+
+// -- client did not send an auth token
+export interface ClientErrorUnauthorized {
+  type: 'unauthorized';
+}
+
+// -- client not authorized to view this whiteboard at all
+export interface ClientErrorNotAuthenticated {
+  type: 'not_authenticated';
+}
+
+// -- client already authorized (cannot re-authenticate within the same connection)
+export interface ClientErrorAlreadyAuthorized {
+  type: 'already_authorized';
+}
+
+// -- client's auth token is somehow malformed
+export interface ClientErrorInvalidAuth {
+  type: 'invalid_auth';
+}
+
+// -- client's auth token has expired
+export interface ClientErrorAuthTokenExpired {
+  type: 'auth_token_expired';
+}
+
+// -- Client attempted to sign in as or access user that doesn't exist
+export interface ClientErrorUserNotFound {
+  type: 'user_not_found';
+  userId: string;
+}
+
+// -- Client attempted to access whiteboard that doesn't exist
+export interface ClientErrorWhiteboardNotFound {
+  type: 'whiteboard_not_found';
+  whiteboardId: string;
+}
+
+// -- Client attempted to access canvas that doesn't exist
+export interface ClientErrorCanvasNotFound {
+  type: 'canvas_not_found';
+  canvasId: string;
+}
+
+// -- client doesn't have permission to perform a given action
+export interface ClientErrorActionForbidden {
+  type: 'action_forbidden';
+  // -- description of the forbidden action that was attempted
+  action: string;
+}
+
+// -- misc. errors not neatly handled by the above common cases
+export interface ClientErrorOther {
+  type: 'other';
+
+  // -- descriptive message to send to client
+  // -- make sure it excludes sensitive information
+  message: string;
+}
+
+export type ClientError =
+  | ClientErrorInvalidMessage
+  | ClientErrorUnauthorized
+  | ClientErrorNotAuthenticated
+  | ClientErrorAlreadyAuthorized
+  | ClientErrorInvalidAuth
+  | ClientErrorAuthTokenExpired
+  | ClientErrorUserNotFound
+  | ClientErrorWhiteboardNotFound
+  | ClientErrorCanvasNotFound
+  | ClientErrorActionForbidden
+  | ClientErrorOther
+;
 
 // Sent to an individual client to initialize the whiteboard on their end
 export interface ServerMessageInitClient {
@@ -112,21 +199,21 @@ export interface ServerMessageDeleteCanvases {
   canvasIds: CanvasIdType[];
 }
 
-export interface ServerMessageIndividualError {
-  type: 'individual_error';
-  clientId: ClientIdType;
-  message: string;
-}
-
-export interface ServerMessageBroadcastError {
-  type: 'broadcast_error';
-  message: string;
-}
-
 export interface ServerMessageUpdateAllowedUsers {
   type: 'update_canvas_allowed_users';
   canvasId: string;
   allowedUsers: string[];
+}
+
+export interface ServerMessageIndividualError {
+  type: 'individual_error';
+  clientId: ClientIdType;
+  error: ClientError;
+}
+
+export interface ServerMessageBroadcastError {
+  type: 'broadcast_error';
+  error: ClientError;
 }
 
 // Tagged union of all possible client-server messages
