@@ -80,7 +80,14 @@ const Dashboard = (): React.JSX.Element => {
       alert(`Create whiteboard failed: ${res.data}`);
       console.error('Create whiteboard failed:', res.data);
     } else {
-      const { _id: id } = res.data;
+      const {
+        id,
+      } = res.data;
+
+      if (! id) {
+        throw new Error('Received no Whiteboard ID from API response');
+      }
+
       const redirectUrl = `/whiteboard/${id}`;
 
       navigate(redirectUrl);
