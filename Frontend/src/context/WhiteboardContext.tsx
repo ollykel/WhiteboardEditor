@@ -20,6 +20,7 @@ import type {
 
 import type {
   UserPermission,
+  UserPermissionEnum,
 } from '@/types/APIProtocol'
 
 export interface WhiteboardContextType {
@@ -33,6 +34,9 @@ export interface WhiteboardContextType {
   setSharedUsers: React.Dispatch<React.SetStateAction<UserPermission[]>>;
   newCanvasAllowedUsers: string[];
   setNewCanvasAllowedUsers: React.Dispatch<React.SetStateAction<string[]>>;
+  // -- view/edit/own permission - determines which actions to enable/disable
+  ownPermission: UserPermissionEnum | null;
+  setOwnPermission: React.Dispatch<React.SetStateAction<UserPermissionEnum | null>>;
 }
 
 export type WhiteboardProvidersProps = WhiteboardContextType;
@@ -52,7 +56,8 @@ const WhiteboardProvider = (props: PropsWithChildren<WhiteboardProvidersProps>):
     setSharedUsers,
     newCanvasAllowedUsers,
     setNewCanvasAllowedUsers,
-
+    ownPermission,
+    setOwnPermission,
   } = props;
 
   return (
@@ -67,6 +72,8 @@ const WhiteboardProvider = (props: PropsWithChildren<WhiteboardProvidersProps>):
       setSharedUsers,
       newCanvasAllowedUsers,
       setNewCanvasAllowedUsers,
+      ownPermission,
+      setOwnPermission,
     }}>
       {children}
     </WhiteboardContext.Provider>

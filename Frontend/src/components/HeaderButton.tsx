@@ -1,18 +1,57 @@
-import { Link } from 'react-router-dom';
+import {
+  Link,
+} from 'react-router-dom';
+
+// -- third-party imports
+import {
+  cva,
+} from "class-variance-authority"
+
+// -- local imports
+import {
+  cn,
+} from "@/lib/utils"
+
+const buttonVariants = cva(
+  "px-4 py-2 rounded-lg",
+  {
+    variants: {
+      variant: {
+        default: "hover:cursor-pointer hover:bg-gray-200",
+        disabled: "bg-gray-200 text-gray-400"
+      },
+    },
+    defaultVariants: {
+      variant: "default",
+    },
+  },
+);
 
 export interface HeaderButtonProps {
   // If to is present renders a link, if onClick is present renders a button
   to?: string;
   onClick?: () => void;
   title: string;
+  disabled?: boolean;
 }
 
-function HeaderButton({ to, onClick, title }: HeaderButtonProps) {
-  const baseClasses = "px-4 py-2 hover:cursor-pointer rounded-lg hover:bg-gray-200";
+function HeaderButton({
+  to,
+  onClick,
+  title,
+  disabled = false,
+}: HeaderButtonProps) {
+  const className = cn(buttonVariants({
+    variant: disabled ? 'disabled' : 'default'
+  }));
 
   if (to) {
     return (
-      <Link to={to} className={baseClasses}>
+      <Link
+        to={to}
+        className={className}
+        inert={disabled}
+      >
         {title}
       </Link>
     ); 
@@ -21,7 +60,8 @@ function HeaderButton({ to, onClick, title }: HeaderButtonProps) {
   return (
     <button
       onClick={onClick}
-      className={baseClasses}
+      disabled={disabled}
+      className={className}
     >
       {title}
     </button>

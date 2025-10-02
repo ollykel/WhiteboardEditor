@@ -87,13 +87,13 @@ pub enum ShapeModel {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct CanvasObject {
     pub id: CanvasObjectIdType,
     pub shape: ShapeModel,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub struct CanvasObjectMongoDBView {
     #[serde(rename = "_id")]
@@ -127,7 +127,7 @@ pub struct User {
     pub email: String,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct UserClientView {
     pub id: String,
@@ -153,7 +153,7 @@ impl UserClientView {
     }// end to_user
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub struct UserMongoDBView {
     #[serde(rename = "_id")]
@@ -180,14 +180,14 @@ impl UserMongoDBView {
     }// end to_user
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct UserSummary {
     pub user_id: String,
     pub username: String,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CanvasClientView {
     pub id: String,
@@ -200,7 +200,7 @@ pub struct CanvasClientView {
     pub allowed_users: Vec<String>,     // cast ObjectId to string for proper client-side parsing
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct WhiteboardClientView {
     pub id: String,
@@ -228,6 +228,55 @@ pub enum WhiteboardDiff {
     UpdateShapes { canvas_id: CanvasIdType, shapes: HashMap<CanvasObjectIdType, ShapeModel> },
     UpdateCanvasAllowedUsers { canvas_id: CanvasIdType, allowed_users: Vec<ObjectId> },
 }
+
+// === ClientError ================================================================================
+//
+// Enumerates types of errors the server can send to the client. Sent within both the
+// IndividualError and BroadcastError messages.
+//
+// ================================================================================================
+#[derive(Debug, Clone, Serialize)]
+#[serde(tag = "type", rename_all = "snake_case", rename_all_fields = "camelCase")]
+pub enum ClientError {
+    // -- previous message from client was invalid in some form (invalid json, non-existent message
+    // type, invalid message format, etc.)
+    InvalidMessage {
+        client_message_raw: String,
+    },
+    // -- client did not send an auth token
+    NotAuthenticated,
+    // -- client not authorized to view this whiteboard at all
+    Unauthorized,
+    // -- client already authorized (cannot re-authenticate within the same connection)
+    AlreadyAuthorized,
+    // -- client's auth token is somehow malformed
+    InvalidAuth,
+    // -- client's auth token has expired
+    AuthTokenExpired,
+    // -- Client attempted to sign in as or access user that doesn't exist
+    UserNotFound {
+        user_id: String,
+    },
+    // -- Client attempted to access whiteboard that doesn't exist
+    WhiteboardNotFound {
+        whiteboard_id: String,
+    },
+    // -- Client attempted to access canvas that doesn't exist
+    CanvasNotFound {
+        canvas_id: String,
+    },
+    // -- client doesn't have permission to perform a given action
+    ActionForbidden {
+        // -- description of the forbidden action that was attempted
+        action: String,
+    },
+    // -- misc. errors not neatly handled by the above common cases
+    Other {
+        // -- descriptive message to send to client
+        // -- make sure it excludes sensitive information
+        message: String,
+    },
+}// -- end ClientError
 
 #[derive(Debug, Clone, Serialize)]
 #[serde(tag = "type", rename_all = "snake_case", rename_all_fields = "camelCase")]
@@ -268,10 +317,10 @@ pub enum ServerSocketMessage {
     },
     IndividualError {
         client_id: ClientIdType,
-        message: String,
+        error: ClientError,
     },
     BroadcastError {
-        message: String,
+        error: ClientError,
     },
 }
 
@@ -343,7 +392,7 @@ impl Canvas {
     }// end pub fn to_client_view(&self) -> CanvasClientView
 }
 
-#[derive(Copy, Clone, Debug, Serialize, Deserialize)]
+#[derive(Copy, Clone, PartialEq, Debug, Serialize, Deserialize)]
 #[serde(tag = "permission", rename_all = "camelCase")]
 pub enum WhiteboardPermissionEnum {
     View,
@@ -351,14 +400,14 @@ pub enum WhiteboardPermissionEnum {
     Own,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "camelCase", rename_all_fields = "snake_case")]
 pub enum WhiteboardPermissionType {
     User { user: ObjectId },
     Email { email: String },
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub struct WhiteboardPermission {
     #[serde(flatten)]
@@ -369,16 +418,28 @@ pub struct WhiteboardPermission {
 
 pub type WhiteboardPermissionMongoDBView = WhiteboardPermission;
 
+// === WhiteboardMetadata =========================================================================
+//
+// Encompasses data about a whiteboard that doesn't pertain to graphic elements that are updated
+// during the process of users editing the whtieboard. This includes the whiteboard's name, owner
+// id, user permissions, etc.
+//
+// ================================================================================================
 #[derive(Clone, Debug)]
-pub struct Whiteboard {
-    pub id: WhiteboardIdType,
+pub struct WhiteboardMetadata {
     pub name: String,
-    pub canvases: HashMap<CanvasIdType, Canvas>,
     pub owner_id: UserIdType,
     pub shared_users: Vec<WhiteboardPermission>,
     // For permissions attached to an existing account, index by user id, to enable faster
     // retrieval when users log in.
     pub permissions_by_user_id: HashMap<String, WhiteboardPermissionEnum>,
+}// -- end WhiteboardMetadata
+
+#[derive(Clone, Debug)]
+pub struct Whiteboard {
+    pub id: WhiteboardIdType,
+    pub metadata: WhiteboardMetadata,
+    pub canvases: HashMap<CanvasIdType, Canvas>,
 }
 
 impl Whiteboard {
@@ -387,7 +448,7 @@ impl Whiteboard {
         // always be the case.
         WhiteboardClientView {
             id: self.id.to_string(),
-            name: self.name.clone(),
+            name: self.metadata.name.clone(),
             canvases: self.canvases.iter()
                 .map(|(_, c)| c.to_client_view())
                 .collect()
@@ -401,7 +462,7 @@ impl Whiteboard {
 // whiteboard, including the Sender.
 //
 // ================================================================================================
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct SharedWhiteboardEntry {
     pub whiteboard_ref: Arc<Mutex<Whiteboard>>,
     pub whiteboard_id: WhiteboardIdType,
@@ -410,7 +471,7 @@ pub struct SharedWhiteboardEntry {
     pub diffs: Arc<Mutex<Vec<WhiteboardDiff>>>,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct CanvasMongoDBView {
     #[serde(rename = "_id")]
     pub id: ObjectId,
@@ -446,7 +507,7 @@ impl CanvasMongoDBView {
     }
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum UserPermissionEnum {
     Own,
@@ -454,7 +515,7 @@ pub enum UserPermissionEnum {
     View,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "type")]
 pub enum UserPermission {
     #[serde(rename = "id")]
@@ -469,25 +530,19 @@ pub enum UserPermission {
     }
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct WhiteboardMongoDBView {
-    #[serde(rename = "_id")]
-    pub id: ObjectId,
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct WhiteboardMetadataMongoDBView {
     pub name: String,
     #[serde(rename = "owner")]
     pub owner_id: ObjectId,
     #[serde(rename = "shared_users")]
     pub shared_users: Vec<WhiteboardPermissionMongoDBView>,
-}
+}// -- end struct WhiteboardMetadataMongoDBView
 
-impl WhiteboardMongoDBView {
-    pub fn to_whiteboard(&self, canvases: &[Canvas]) -> Whiteboard {
-        Whiteboard {
-            id: self.id.clone(),
+impl WhiteboardMetadataMongoDBView {
+    pub fn to_whiteboard_metadata(&self) -> WhiteboardMetadata {
+        WhiteboardMetadata {
             name: self.name.clone(),
-            canvases: canvases.iter()
-                .map(|canvas| (canvas.id.clone(), canvas.clone()))
-                .collect(),
             owner_id: self.owner_id.clone(),
             shared_users: self.shared_users.clone(),
             permissions_by_user_id: self.shared_users.iter()
@@ -497,6 +552,26 @@ impl WhiteboardMongoDBView {
                 })
                 .filter(|x| x.is_some())
                 .map(|x| x.unwrap())
+                .collect(),
+        }
+    }// -- end fn to_whiteboard_metadata
+}
+
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct WhiteboardMongoDBView {
+    #[serde(rename = "_id")]
+    pub id: ObjectId,
+    #[serde(flatten)]
+    metadata: WhiteboardMetadataMongoDBView,
+}// -- end struct WhiteboardMongoDBView
+
+impl WhiteboardMongoDBView {
+    pub fn to_whiteboard(&self, canvases: &[Canvas]) -> Whiteboard {
+        Whiteboard {
+            id: self.id.clone(),
+            metadata: self.metadata.to_whiteboard_metadata(),
+            canvases: canvases.iter()
+                .map(|canvas| (canvas.id.clone(), canvas.clone()))
                 .collect(),
         }
     }
@@ -510,6 +585,7 @@ impl WhiteboardMongoDBView {
 // passing of state between threads.
 //
 // ================================================================================================
+#[derive(Debug)]
 pub struct ProgramState {
     pub whiteboards: Mutex<HashMap<WhiteboardIdType, SharedWhiteboardEntry>>,
 }
@@ -519,6 +595,7 @@ pub struct ProgramState {
 // Encapsulate all state a thread needs to handle a single client.
 //
 // ================================================================================================
+#[derive(Debug)]
 pub struct ClientState {
     pub client_id: ClientIdType,
     pub whiteboard_ref: Arc<Mutex<Whiteboard>>,
@@ -534,6 +611,7 @@ pub struct ClientState {
 // Holds program state plus data necessary for broadcasting to clients and managing connections.
 //
 // ================================================================================================
+#[derive(Debug)]
 pub struct ConnectionState {
     pub jwt_secret: String,
     pub mongo_client: Client,
@@ -558,23 +636,136 @@ pub fn dt_chrono_utc_to_bson(dt: &chrono::DateTime<Utc>) -> bson::DateTime {
     bson::DateTime::from_millis(dt.timestamp_millis())
 }
 
+// -- utilify struct for handle_authenticated_client_message, for inspectint raw client messages
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct ClientMessageInspector {
+    #[serde(rename = "type")]
+    type_tag: String,
+}// -- end ClientMessageInspector
+
+// === UserStore ==================================================================================
+//
+// Trait that defines a way for fetching users by ID. Depending on this trait rather than directly
+// on a database client allows the implementation of unit tests without using a database client.
+//
+// Read-only: does not implement setting, updating, or deleting users.
+//
+// ================================================================================================
+pub trait UserStore {
+    fn get_user_by_id(&self, user_id: &UserIdType) -> impl futures::Future<
+        Output = Result<Option<User>, Box<dyn std::error::Error + Send + Sync>>
+    >;
+}// -- end trait UserStore
+
+// === WhiteboardMetadataStore ====================================================================
+//
+// Trait that defines a way for fetching whiteboard metadata by ID. Depending on this trait rather
+// than directly on a database client allows the implementation of unit tests without using a
+// database client.
+//
+// Read-only: does not implement setting, updating, or deleting whiteboards.
+//
+// ================================================================================================
+pub trait WhiteboardMetadataStore {
+    fn get_whiteboard_metadata_by_id(&self, whiteboard_id: &WhiteboardIdType) -> impl futures::Future<
+        Output = Result<Option<WhiteboardMetadata>, Box<dyn std::error::Error + Send + Sync>>
+    >;
+}// -- end trait WhiteboardMetadataStore
+
+// === MongoDBStore ===============================================================================
+//
+// Interface for fetching objects from the MongoDB database, by id.
+//
+// ================================================================================================
+#[derive(Debug)]
+pub struct MongoDBStore {
+    user_collection: Collection<UserMongoDBView>,
+    whiteboard_metadata_collection: Collection<WhiteboardMetadataMongoDBView>,
+}// -- end MongoDBStore
+
+impl MongoDBStore {
+    pub fn new(
+        user_coll: &Collection<UserMongoDBView>,
+        whiteboard_metadata_coll: &Collection<WhiteboardMetadataMongoDBView>
+    ) -> Self {
+        Self {
+            user_collection: user_coll.clone(),
+            whiteboard_metadata_collection: whiteboard_metadata_coll.clone(),
+        }
+    }// -- end fn new(coll: &Collection<UserMongoDBView>) -> Self
+}// -- end impl MongoDBStore
+
+impl UserStore for MongoDBStore {
+    async fn get_user_by_id(&self, user_id: &UserIdType) -> Result<Option<User>, Box<dyn std::error::Error + Send + Sync>> {
+        match self.user_collection.find_one(doc! { "_id": user_id.clone() }).await? {
+            Some(user_view) => Ok(Some(user_view.to_user())),
+            None => Ok(None),
+        }// -- end match self.user_collection.find_one(doc! { "_id": user_id.clone() }).await
+    }
+}
+
+impl WhiteboardMetadataStore for MongoDBStore {
+    async fn get_whiteboard_metadata_by_id(&self, whiteboard_id: &WhiteboardIdType) -> Result<
+        Option<WhiteboardMetadata>, Box<dyn std::error::Error + Send + Sync>
+    > {
+        match self.whiteboard_metadata_collection.find_one(doc! { "_id": whiteboard_id.clone() }).await? {
+            Some(metadata_view) => Ok(Some(metadata_view.to_whiteboard_metadata())),
+            None => Ok(None),
+        }// -- end match self.whiteboard_metadata_collection.find_one(doc! { "_id": whiteboard_metadata_id.clone() }).await
+    }
+}
+
 // Handle raw messages from clients. Assume client has already authenticated.
 // Input parameter is a string to enable testing on all possible inputs.
 // @param client_state          -- Current client state
 // @param client_msg_s          -- Content of client message
 // @return                      -- (Optional) Message to send to clients, if any
-pub async fn handle_authenticated_client_message(client_state: &ClientState, client_msg_s: &str) -> Option<ServerSocketMessage> {
+pub async fn handle_authenticated_client_message(
+    client_state: &ClientState,
+    client_msg_s: &str
+) -> Option<ServerSocketMessage> {
+    use ClientSocketMessage::*;
+
     match serde_json::from_str::<ClientSocketMessage>(client_msg_s) {
         Ok(client_msg) => {
             println!("Received message from client {}", client_state.client_id);
+
+            // All actions below require at least edit permission, since they all involve
+            // mutating state in some way. Hence, we check permissions first, and send back an
+            // error message if the user only has view permission.
+            let user_whiteboard_permission = {
+                let perm = client_state.user_whiteboard_permission.lock().await;
+
+                perm.clone()
+            };
+
+            match user_whiteboard_permission {
+                None | Some(WhiteboardPermissionEnum::View) => {
+                    let inspector = serde_json::from_str::<ClientMessageInspector>(client_msg_s)
+                        .expect("Expected to find \"type\" tag in client message.");
+
+                    return Some(ServerSocketMessage::IndividualError {
+                        client_id: client_state.client_id,
+                        error: ClientError::ActionForbidden {
+                            action: inspector.type_tag,
+                        },
+                    });
+                },
+                // Proceed to next step.
+                // Don't just use _ here to accept all other permissions: if we add a new
+                // permission type, we want to make sure we handle it uniquely, in case it involves
+                // more unique logic.
+                Some(WhiteboardPermissionEnum::Edit) | Some(WhiteboardPermissionEnum::Own) => {},
+            };
             
             match client_msg {
                 // -- User already authenticated; return error
-                ClientSocketMessage::Login { .. } => Some(ServerSocketMessage::IndividualError {
+                Login { .. } => Some(ServerSocketMessage::IndividualError {
                     client_id: client_state.client_id,
-                    message: String::from("Client already authenticated"),
+                    error: ClientError::AlreadyAuthorized,
                 }),
-                ClientSocketMessage::CreateShapes{ canvas_id, ref shapes } => {
+                CreateShapes{ canvas_id, ref shapes } => {
                     let mut whiteboard = client_state.whiteboard_ref.lock().await;
                     println!("Creating shape on canvas {} ...", canvas_id);
 
@@ -613,7 +804,7 @@ pub async fn handle_authenticated_client_message(client_state: &ClientState, cli
                         }
                     }
                 },
-                ClientSocketMessage::UpdateShapes{ canvas_id, ref shapes } => {
+                UpdateShapes{ canvas_id, ref shapes } => {
                     let mut whiteboard = client_state.whiteboard_ref.lock().await;
                     println!("Updating shapes on canvas {} ...", canvas_id);
                     println!("Shapes: {:?}", shapes);
@@ -660,7 +851,7 @@ pub async fn handle_authenticated_client_message(client_state: &ClientState, cli
                         }
                     }
                 },
-                ClientSocketMessage::CreateCanvas { width, height, name, allowed_users } => {
+                CreateCanvas { width, height, name, allowed_users } => {
                     let mut whiteboard = client_state.whiteboard_ref.lock().await;
                     let new_canvas_id = ObjectId::new();
 
@@ -705,7 +896,7 @@ pub async fn handle_authenticated_client_message(client_state: &ClientState, cli
                         canvas: canvas.to_client_view(),
                     })
                 },
-                ClientSocketMessage::DeleteCanvases { canvas_ids } => {
+                DeleteCanvases { canvas_ids } => {
                     let mut whiteboard = client_state.whiteboard_ref.lock().await;
 
                     // delete canvases identified by the given ids
@@ -729,15 +920,42 @@ pub async fn handle_authenticated_client_message(client_state: &ClientState, cli
                             .collect()
                     })
                 },
-                ClientSocketMessage::UpdateCanvasAllowedUsers { canvas_id, allowed_users } => {
+                UpdateCanvasAllowedUsers { canvas_id, allowed_users } => {
                     let mut whiteboard = client_state.whiteboard_ref.lock().await;
+
+                    // -- ensure all allowed users are valid users who have edit or own permission
+                    for user_id in allowed_users.iter() {
+                        match whiteboard.metadata.permissions_by_user_id.get(&user_id.to_string()) {
+                            None => {
+                                return Some(ServerSocketMessage::IndividualError {
+                                    client_id: client_state.client_id,
+                                    error: ClientError::Other {
+                                        message: format!("User {} not found", user_id),
+                                    }
+                                });
+                            },
+                            Some(perm) => match perm {
+                                WhiteboardPermissionEnum::View => {
+                                    return Some(ServerSocketMessage::IndividualError {
+                                        client_id: client_state.client_id,
+                                        error: ClientError::Other {
+                                            message: format!("User {} does not have edit permission", user_id),
+                                        }
+                                    });
+                                },
+                                WhiteboardPermissionEnum::Edit | WhiteboardPermissionEnum::Own => {},
+                            },
+                        };
+                    }// -- end for user_id in allowed_users.iter()
 
                     match whiteboard.canvases.get_mut(&canvas_id) {
                         None => {
                             // canvas doesn't exist
                             return Some(ServerSocketMessage::IndividualError {
                                 client_id: client_state.client_id,
-                                message: format!("Canvas {} not found", canvas_id),
+                                error: ClientError::CanvasNotFound {
+                                    canvas_id: canvas_id.to_string(),
+                                },
                             });
                         },
                         Some(canvas) => {
@@ -775,7 +993,9 @@ pub async fn handle_authenticated_client_message(client_state: &ClientState, cli
 
             Some(ServerSocketMessage::IndividualError{
                 client_id: client_state.client_id,
-                message: String::from("invalid client message")
+                error: ClientError::InvalidMessage {
+                    client_message_raw: String::from(client_msg_s),
+                },
             })
         }
     }
@@ -786,9 +1006,9 @@ pub async fn handle_authenticated_client_message(client_state: &ClientState, cli
 // @param client_state          -- Current client state
 // @param client_msg_s          -- Content of client message
 // @return                      -- (Optional) Message to send to clients, if any
-pub async fn handle_unauthenticated_client_message(
+pub async fn handle_unauthenticated_client_message<StoreType: UserStore + WhiteboardMetadataStore>(
     client_state: &ClientState,
-    user_coll: &Collection<UserMongoDBView>,
+    store: &StoreType,
     client_msg_s: &str
 ) -> Option<ServerSocketMessage> {
     match serde_json::from_str::<ClientSocketMessage>(client_msg_s) {
@@ -807,34 +1027,54 @@ pub async fn handle_unauthenticated_client_message(
 
                             return Some(ServerSocketMessage::IndividualError {
                                 client_id: client_state.client_id,
-                                message: String::from("Error parsing user ID from auth token"),
+                                error: ClientError::UserNotFound {
+                                    user_id: client_state.client_id.to_string(),
+                                },
                             });
                         },
                         Ok(user_id) => user_id,
                     };
 
-                    let user = match user_coll.find_one(doc! { "_id": user_id }).await {
+                    let user = match store.get_user_by_id(&user_id).await {
                         Err(e) => {
                             println!("Error fetching user {}: {}", user_id, e);
 
                             return Some(ServerSocketMessage::IndividualError {
                                 client_id: client_state.client_id,
-                                message: String::from("Could not find authenticated user"),
+                                error: ClientError::Other {
+                                    message: format!("Error fetching user {}", user_id),
+                                },
                             })
                         },
                         Ok(None) => {
                             return Some(ServerSocketMessage::IndividualError {
                                 client_id: client_state.client_id,
-                                message: String::from("Could not find authenticated user"),
+                                error: ClientError::UserNotFound {
+                                    user_id: user_id.to_string(),
+                                },
                             })
                         },
-                        Ok(Some(user)) => user.to_user(),
+                        Ok(Some(user)) => user,
                     };
 
                     let permission : Option<WhiteboardPermissionEnum> = {
-                        let whiteboard = client_state.whiteboard_ref.lock().await;
+                        let mut whiteboard = client_state.whiteboard_ref.lock().await;
 
-                        whiteboard.permissions_by_user_id.get(&user_id.to_string()).copied()
+                        // refresh metadata from store, in case it has been changed by another
+                        // service
+                        match store.get_whiteboard_metadata_by_id(&whiteboard.id).await {
+                            Err(e) => {
+                                eprintln!("Error: could not refresh whiteboard metadata: {}", e);
+                            },
+                            Ok(None) => {
+                                eprintln!("Error: could not refresh whiteboard metadata");
+                            },
+                            Ok(Some(metadata)) => {
+                                whiteboard.metadata = metadata.clone();
+                            },
+                        };
+
+                        whiteboard.metadata.permissions_by_user_id.get(&user_id.to_string()).copied()
                     };
 
                     if let Some(permission) = permission {
@@ -865,14 +1105,14 @@ pub async fn handle_unauthenticated_client_message(
                         // User has no valid permission; send back an error message
                         Some(ServerSocketMessage::IndividualError {
                             client_id: client_state.client_id,
-                            message: String::from("Client not authorized to access whiteboard"),
+                            error: ClientError::Unauthorized,
                         })
                     }
                 },
                 // -- All other messages should be responded to with an individual error
                 _ => Some(ServerSocketMessage::IndividualError {
                     client_id: client_state.client_id,
-                    message: String::from("Client not authenticated"),
+                    error: ClientError::NotAuthenticated,
                 }),
             }
         },
@@ -880,9 +1120,11 @@ pub async fn handle_unauthenticated_client_message(
             println!("ERROR: invalid client message: {}", client_msg_s);
             println!("Reason: {}", e);
 
-            Some(ServerSocketMessage::IndividualError{
+            Some(ServerSocketMessage::IndividualError {
                 client_id: client_state.client_id,
-                message: String::from("invalid client message")
+                error: ClientError::InvalidMessage {
+                    client_message_raw: String::from(client_msg_s),
+                },
             })
         }
     }
@@ -905,6 +1147,15 @@ pub async fn connect_mongodb(uri: &str) -> mongodb::error::Result<Client> {
 
     Ok(client)
 }// end connect_mongodb
+
+pub async fn get_whiteboard_metadata_by_id(db: &Database, wid: &WhiteboardIdType) -> Result<Option<WhiteboardMetadata>, mongodb::error::Error> {
+    let metadata_coll = db.collection::<WhiteboardMetadataMongoDBView>("whiteboards");
+
+    match metadata_coll.find_one(doc! { "_id": wid.clone() }).await? {
+        None => { return Ok(None); },
+        Some(metadata) => Ok(Some(metadata.to_whiteboard_metadata()))
+    }
+}// -- end get_whiteboard_metadata_by_id
 
 pub async fn get_whiteboard_by_id(db: &Database, wid: &WhiteboardIdType) -> Result<Option<Whiteboard>, mongodb::error::Error> {
     let whiteboard_coll = db.collection::<WhiteboardMongoDBView>("whiteboards");
@@ -940,7 +1191,7 @@ pub async fn get_whiteboard_by_id(db: &Database, wid: &WhiteboardIdType) -> Resu
 // Ensure that this struct stays in-sync with the claims generated by the RestAPI.
 //
 // ================================================================================================
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct JWTClaims {
     sub: String,

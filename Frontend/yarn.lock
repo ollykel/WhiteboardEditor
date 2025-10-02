@@ -1005,6 +1005,13 @@
   dependencies:
     tslib "^2.4.0"
 
+"@types/axios@^0.14.4":
+  version "0.14.4"
+  resolved "https://registry.yarnpkg.com/@types/axios/-/axios-0.14.4.tgz#174e3a05fe7677f13bc719f0d2a427f5defacedf"
+  integrity sha512-9JgOaunvQdsQ/qW2OPmE5+hCeUB52lQSolecrFrthct55QekhmXEwT203s20RL+UHtCQc15y3VXpby9E7Kkh/g==
+  dependencies:
+    axios "*"
+
 "@types/estree@1.0.8", "@types/estree@^1.0.6":
   version "1.0.8"
   resolved "https://registry.npmjs.org/@types/estree/-/estree-1.0.8.tgz"
@@ -1032,10 +1039,10 @@
   resolved "https://registry.npmjs.org/@types/react-reconciler/-/react-reconciler-0.28.9.tgz"
   integrity sha512-HHM3nxyUZ3zAylX8ZEyrDNd2XZOnQ0D5XfunJF5FLQnZbHHYq4UWvW1QfelQNXv1ICNkwYhfxjwfnqivYB6bFg==
 
-"@types/react-reconciler@^0.32.0":
-  version "0.32.0"
-  resolved "https://registry.npmjs.org/@types/react-reconciler/-/react-reconciler-0.32.0.tgz"
-  integrity sha512-+WHarFkJevhH1s655qeeSEf/yxFST0dVRsmSqUgxG8mMOKqycgYBv2wVpyubBY7MX8KiX5FQ03rNIwrxfm7Bmw==
+"@types/react-reconciler@^0.32.1":
+  version "0.32.1"
+  resolved "https://registry.yarnpkg.com/@types/react-reconciler/-/react-reconciler-0.32.1.tgz#6cb1d9bf85449a357517daf975d3d32149c1b2a7"
+  integrity sha512-RsqPttsBQ+6af0nATFXJJpemYQH7kL9+xLNm1z+0MjQFDKBZDM2R6SBrjdvRmHu9i9fM6povACj57Ft+pKRNOA==
 
 "@types/react@^19.1.8":
   version "19.1.9"
@@ -1198,6 +1205,15 @@ asynckit@^0.4.0:
   version "0.4.0"
   resolved "https://registry.npmjs.org/asynckit/-/asynckit-0.4.0.tgz"
   integrity sha512-Oei9OH4tRh0YqU3GxhX79dM/mwVgvbZJaSNaRk+bshkj0S5cfHcgYakreBjrHwatXKbz+IoIdYLxrKim2MjW0Q==
+
+axios@*:
+  version "1.12.2"
+  resolved "https://registry.yarnpkg.com/axios/-/axios-1.12.2.tgz#6c307390136cf7a2278d09cec63b136dfc6e6da7"
+  integrity sha512-vMJzPewAlRyOgxV2dU0Cuz2O8zzzx9VYtbJOaBgXFeLc4IV/Eg50n4LowmehOOR61S8ZMpc2K5Sa7g6A4jfkUw==
+  dependencies:
+    follow-redirects "^1.15.6"
+    form-data "^4.0.4"
+    proxy-from-env "^1.1.0"
 
 axios@^1.11.0:
   version "1.11.0"
@@ -1362,6 +1378,11 @@ devalue@^5.3.2:
   version "5.3.2"
   resolved "https://registry.npmjs.org/devalue/-/devalue-5.3.2.tgz"
   integrity sha512-UDsjUbpQn9kvm68slnrs+mfxwFkIflOhkanmyabZ8zOYk8SMEIbJ3TK+88g70hSIeytu4y18f0z/hYHMTrXIWw==
+
+dotenv@^17.2.3:
+  version "17.2.3"
+  resolved "https://registry.yarnpkg.com/dotenv/-/dotenv-17.2.3.tgz#ad995d6997f639b11065f419a22fabf567cdb9a2"
+  integrity sha512-JVUnt+DUIzu87TABbhPmNfVdBDt18BLOWjMUFJMSi/Qqg7NTYtabbvSNJGOJ7afbRuv9D/lngizHtP7QyLQ+9w==
 
 dunder-proto@^1.0.1:
   version "1.0.1"
@@ -1794,7 +1815,7 @@ isexe@^2.0.0:
 
 its-fine@^2.0.0:
   version "2.0.0"
-  resolved "https://registry.npmjs.org/its-fine/-/its-fine-2.0.0.tgz"
+  resolved "https://registry.yarnpkg.com/its-fine/-/its-fine-2.0.0.tgz#a90b18a3ee4c211a1fb6faac2abcc2b682ce1f21"
   integrity sha512-KLViCmWx94zOvpLwSlsx6yOCeMhZYaxrJV87Po5k/FoZzcPSahvK5qJ7fYhS61sZi5ikmh2S3Hz55A2l3U69ng==
   dependencies:
     "@types/react-reconciler" "^0.28.9"
@@ -2128,19 +2149,19 @@ react-konva-utils@^2.0.0:
   dependencies:
     use-image "^1.1.1"
 
-react-konva@^19.0.7:
-  version "19.0.7"
-  resolved "https://registry.npmjs.org/react-konva/-/react-konva-19.0.7.tgz"
-  integrity sha512-uYWCpSv4ajLymTh8S8fV9396fHDX7eDTWiLGkYlBuawud5MoNiuGjapPhA5Avdy/Jfh9P2KaWuNf4i9PI1F9HQ==
+react-konva@^19.0.10:
+  version "19.0.10"
+  resolved "https://registry.yarnpkg.com/react-konva/-/react-konva-19.0.10.tgz#8665d7f8558db6d7e727a3bed997293e5d817f5c"
+  integrity sha512-tJID7bungYs8ri5McjjlHWCniQMAasiNkTgATd8OJEnLrz3B7S5JN7nFkNfWETIHPx9rEN3gc+kQg32RhdZJcw==
   dependencies:
-    "@types/react-reconciler" "^0.32.0"
+    "@types/react-reconciler" "^0.32.1"
     its-fine "^2.0.0"
     react-reconciler "0.32.0"
     scheduler "0.26.0"
 
 react-reconciler@0.32.0:
   version "0.32.0"
-  resolved "https://registry.npmjs.org/react-reconciler/-/react-reconciler-0.32.0.tgz"
+  resolved "https://registry.yarnpkg.com/react-reconciler/-/react-reconciler-0.32.0.tgz#a08bcd8c454a4cd839164d6e05926e30a7a7fac2"
   integrity sha512-2NPMOzgTlG0ZWdIf3qG+dcbLSoAc/uLfOwckc3ofy5sSK0pLJqnQLpUFxvGcN2rlXSjnVtGeeFLNimCQEj5gOQ==
   dependencies:
     scheduler "^0.26.0"

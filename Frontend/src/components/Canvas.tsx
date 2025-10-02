@@ -62,6 +62,7 @@ const Canvas = (props: CanvasProps) => {
     currentTool,
     disabled
   } = props;
+
   const whiteboardContext = useContext(WhiteboardContext);
 
   if (! whiteboardContext) {
@@ -69,7 +70,8 @@ const Canvas = (props: CanvasProps) => {
   }
 
   const {
-    handleUpdateShapes
+    handleUpdateShapes,
+    ownPermission,
   } = whiteboardContext;
   const stageRef = useRef<Konva.Stage | null>(null);
 
@@ -130,7 +132,11 @@ const Canvas = (props: CanvasProps) => {
   } = dispatcher;
 
   // TODO: delegate draggability to tool definitions
-  const areShapesDraggable = (currentTool === 'hand');
+  const areShapesDraggable = ((ownPermission !== 'view') && (currentTool === 'hand'));
+
+  const tooltipText = ownPermission === 'view' ? 
+    'You are in view-only mode'
+    : getTooltipText();
 
   return (
     <>
@@ -141,10 +147,11 @@ const Canvas = (props: CanvasProps) => {
         onPointerdown={handlePointerDown}
         onPointermove={handlePointerMove}
         onPointerup={handlePointerUp}
+        listening={ownPermission !== 'view'}
       >
         <Layer>
           <Text
-            text={getTooltipText()}
+            text={tooltipText}
             fontSize={15}
           />
           {/** Preview Shape **/}

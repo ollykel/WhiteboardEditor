@@ -5,12 +5,7 @@ import {
 } from 'mongoose';
 
 // --- local imports
-import {
-  addSharedUsers,
-} from "../controllers/whiteboards";
-
 import type {
-  WhiteboardIdType,
   IWhiteboardUserPermission
 } from '../models/Whiteboard';
 
@@ -21,7 +16,8 @@ import {
 import {
   getWhiteboardById,
   getWhiteboardsByOwner,
-  createWhiteboard
+  createWhiteboard,
+  shareWhiteboard,
 } from "../controllers/whiteboards";
 
 import type {
@@ -92,43 +88,7 @@ export interface ShareWhiteboardRequestBody extends AuthorizedRequestBody {
 }
 
 // --- Share whiteboard with other users
-router.post(
-  "/:id/shared_users",
-  async (
-    req: Request<{ id: WhiteboardIdType }, any, ShareWhiteboardRequestBody>,
-    res: Response
-  ) => {
-    try {
-      const { id: whiteboardId } = req.params;
-      const { authUser, userPermissions } = req.body;
-
-      const result = await addSharedUsers(
-        whiteboardId,
-        authUser.id,
-        userPermissions
-      );
-
-      switch (result.status) {
-        case "success":
-          return res.status(200).json(result.whiteboard.toAttribView());
-        case "no_whiteboard":
-          return res.status(404).json({ error: "Whiteboard not found" });
-        case "invalid_users":
-          return res
-            .status(400)
-            .json({ error: "Invalid users", invalid_users: result.invalid_users });
-        case "forbidden":
-          return res.status(403).json({ error: "You do not own this whiteboard" });
-        default:
-          console.error('Unexpected error:', result);
-          return res.status(500).json({ error: "Unexpected error" });
-      }
-    } catch (err: any) {
-      console.error("Error sharing whiteboard:", err);
-      return res.status(500).json({ error: "Server error" });
-    }
-  }
-);
+router.post("/:id/shared_users", shareWhiteboard);
 
 export default router;
 
