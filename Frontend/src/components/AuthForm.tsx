@@ -9,9 +9,17 @@ import {
 } from 'react-router-dom';
 
 import AuthContext from '@/context/AuthContext';
-import AuthInput from "./AuthInput";
-import { useUser } from "../hooks/useUser";
-import api from '../api/axios';
+import AuthInput from "@/components/AuthInput";
+import { useUser } from "@/hooks/useUser";
+import api from '@/api/axios';
+
+import {
+  type AxiosResponse,
+} from 'axios';
+
+import {
+  type AuthLoginSuccessResponse,
+} from '@/types/APIProtocol';
 
 interface AuthFormProps {
   initialAction: "login" | "signup";
@@ -55,8 +63,11 @@ function AuthForm({ initialAction }: AuthFormProps) {
       : { email, username, password };
 
     try {
-      const res = await api.post(endpoint, payload);
-      const { user, token } = res.data;
+      const res : AxiosResponse<AuthLoginSuccessResponse> = await api.post(endpoint, payload);
+      const {
+        user,
+        token,
+      } = res.data;
 
       setAuthToken(token);
       setUser(user);

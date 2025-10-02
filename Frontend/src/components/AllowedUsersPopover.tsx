@@ -43,6 +43,10 @@ import WhiteboardContext from "@/context/WhiteboardContext";
 
 import api from '@/api/axios';
 
+import {
+  type AxiosResponse,
+} from 'axios';
+
 interface AllowedUsersPopoverProps {
   selected: string[]; // current allowed users
   onChange: (next: string[]) => void; // notify parent of changes
@@ -71,7 +75,7 @@ const AllowedUsersPopover = ({ selected, onChange }: AllowedUsersPopoverProps) =
   } = useQuery<APIWhiteboard>({
     queryKey: ["whiteboard", whiteboardId],
     queryFn: async () => {
-      const res = await api.get(`/whiteboards/${whiteboardId}`);
+      const res : AxiosResponse<APIWhiteboard> = await api.get(`/whiteboards/${whiteboardId}`);
 
       if (res.status >= 400) {
         throw new Error(

@@ -23,8 +23,10 @@ import {
 import { X } from 'lucide-react';
 
 // -- local types
-import type {
-  Whiteboard as APIWhiteboard,
+import {
+  axiosResponseIsError,
+  type Whiteboard as APIWhiteboard,
+  type ErrorResponse as APIErrorResponse,
 } from '@/types/APIProtocol';
 
 // -- program state
@@ -64,6 +66,10 @@ import WhiteboardContext, {
 import AuthContext from '@/context/AuthContext';
 
 import api from '@/api/axios';
+
+import {
+  type AxiosResponse as AxiosResp,
+} from 'axios';
 
 import { useModal } from '@/components/Modal';
 
@@ -163,10 +169,12 @@ const Whiteboard = () => {
   } = useQuery<APIWhiteboard, string>({
     queryKey: whiteboardKey,
     queryFn: async (): Promise<APIWhiteboard> => {
-      const res = await api.get(`/whiteboards/${whiteboardId}`);
+      const res : AxiosResp<APIWhiteboard> | AxiosResp<APIErrorResponse> = await api.get(
+        `/whiteboards/${whiteboardId}`
+      );
 
-      if (res.status >= 400) {
-        throw new Error(res.data?.message || 'whiteboard request failed');
+      if (axiosResponseIsError(res)) {
+        throw new Error(res.data.message || 'whiteboard request failed');
       } else {
         // success
         return res.data;
@@ -517,6 +525,8 @@ const Whiteboard = () => {
                     }
                   });
 
+                  // No need for AxiosResp<..> type check, as response body
+                  // isn't used.
                   const res = await api.post(`/whiteboards/${whiteboardId}/shared_users`, ({
                     userPermissions: userPermissionsFinal
                   }));
@@ -548,16 +558,26 @@ const WrappedWhiteboard = () => {
   const [whiteboardId, setWhiteboardId] = useState<WhiteboardIdType>("");
   const [newCanvasAllowedUsers, setNewCanvasAllowedUsers] = useState<string[]>([]);
 
-  const { data: whiteboardData, isLoading: isWhiteboardDataLoading } = useQuery({
+  const { data: whiteboardData, isLoading: isWhiteboardDataLoading } = useQuery<APIWhiteboard, string>({
     queryKey: ['whiteboard', whiteboardId],
     enabled: !!whiteboardId, // Only run query when whiteboardId exists
     queryFn: async () => {
-      if (!whiteboardId) throw new Error('No whiteboard ID provided');
+      if (! whiteboardId) {
+        throw new Error('No whiteboard ID provided');
+      }
+
       console.log('Fetching whiteboard data for ID:', whiteboardId);
-      const res = await api.get(`/whiteboards/${whiteboardId}`);
-      if (res.status >= 400) throw new Error(res.data?.message || 'Failed');
-      console.log('API Response:', res.data);
-      return res.data;
+
+      const res : AxiosResp<APIWhiteboard> | AxiosResp<APIErrorResponse> = await api.get(
+        `/whiteboards/${whiteboardId}`
+      );
+
+      if (axiosResponseIsError(res)) {
+        throw new Error(res.data.message || 'Failed');
+      } else {
+        console.log('API Response:', res.data);
+        return res.data;
+      }
     },
   });
   console.log("Current whiteboard data:", whiteboardData);

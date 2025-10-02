@@ -6,6 +6,14 @@ import HeaderAuthed from "@/components/HeaderAuthed";
 import Page from '@/components/Page';
 import api from '@/api/axios';
 
+import {
+  type AxiosResponse,
+} from 'axios';
+
+import {
+  type User,
+} from '@/types/APIProtocol';
+
 export default function AccountSettings() {
   const { user, setUser } = useContext(AuthContext)!;
   const { Modal, openModal, closeModal } = useModal();
@@ -18,7 +26,7 @@ export default function AccountSettings() {
     },
     onSubmit: async ({ value }) => {
       try {
-        const res = await api.patch("/users/me", {
+        const res : AxiosResponse<User> = await api.patch("/users/me", {
           username: value.username,
           profilePicture,
         });
@@ -43,7 +51,7 @@ export default function AccountSettings() {
     },
     onSubmit: async ({ value }) => {
       try {
-        const res = await api.patch("/users/me", {
+        const res : AxiosResponse<User> = await api.patch("/users/me", {
             email: value.email,
             password: value.newPassword,
             passwordConfirm: value.currentPassword
@@ -64,7 +72,7 @@ export default function AccountSettings() {
     defaultValues: { password: "" },
     onSubmit: async ({ value }) => {
       try {
-        const res = await api.patch("/users/me", {
+        const res : AxiosResponse<User> = await api.patch("/users/me", {
           password: value.password
         });
 
