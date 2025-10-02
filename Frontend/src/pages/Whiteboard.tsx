@@ -146,6 +146,8 @@ const Whiteboard = () => {
     socketRef,
     setWhiteboardId,
     sharedUsers,
+    currentTool,
+    setCurrentTool,
   } = context;
 
   const {
@@ -173,7 +175,6 @@ const Whiteboard = () => {
       }
     }
   });
-  const [toolChoice, setToolChoice] = useState<ToolChoice>('rect');
   const whiteboardIdRef = useRef<WhiteboardIdType>(whiteboardId);
 
   // alert user of any errors fetching whiteboard
@@ -373,7 +374,7 @@ const Whiteboard = () => {
       socketRef.current.send(JSON.stringify(createShapesMsg));
 
       // Switch to hand tool after shape creation
-      setToolChoice("hand");
+      setCurrentTool("hand");
     }
   };
 
@@ -424,8 +425,8 @@ const Whiteboard = () => {
           <Sidebar side="left">
             {/* Toolbar */}
             <Toolbar
-              toolChoice={toolChoice}
-              onToolChange={setToolChoice}
+              toolChoice={currentTool}
+              onToolChange={setCurrentTool}
               onNewCanvas={handleNewCanvas}
             />
 
@@ -470,7 +471,7 @@ const Whiteboard = () => {
                     shapes={shapes}
                     onAddShapes={makeHandleAddShapes(canvasId)}
                     shapeAttributes={shapeAttributesState}
-                    currentTool={toolChoice}
+                    currentTool={currentTool}
                     disabled={!hasAccess}
                     whiteboardId={whiteboardId}
                   />
@@ -611,7 +612,32 @@ const WrappedWhiteboard = () => {
     }
   }, [canvasObjectsByCanvas]);
 
-  const [currentTool, setCurrentTool] = useState<ToolChoice>('hand');
+  // Current tool choice will be saved to localStorage to ensure seamless UX
+  // after page reloads.
+  // TODO: save default tool choice ('hand') in a separate config file.
+  // const [currentTool, setCurrentTool] = useState<ToolChoice>('hand');
+  const LS_CURRENT_TOOL_KEY = 'current_tool';
+  const CURRENT_TOOL_DEFAULT : ToolChoice = 'hand'
+
+  const [currentTool, setCurrentTool] = useState<ToolChoice>((): ToolChoice => {
+    const savedTool : string | null = localStorage.getItem(LS_CURRENT_TOOL_KEY);
+
+    if (! savedTool) {
+      // return default choice
+      return CURRENT_TOOL_DEFAULT;
+    } else {
+      // just trust that the retrieved tool is a valid tool
+      return savedTool as ToolChoice;
+    }
+  });
+
+  // -- make sure to save to localStorage whenever current tool changes
+  useEffect(
+    () => {
+      localStorage.setItem(LS_CURRENT_TOOL_KEY, currentTool);
+    },
+    [currentTool]
+  );
 
   return (
     <WhiteboardProvider
