@@ -26,6 +26,8 @@ import { X } from 'lucide-react';
 import {
   axiosResponseIsError,
   type Whiteboard as APIWhiteboard,
+  type UserPermissionEnum,
+  type UserPermission,
   type ErrorResponse as APIErrorResponse,
 } from '@/types/APIProtocol';
 
@@ -152,6 +154,7 @@ const Whiteboard = () => {
     socketRef,
     setWhiteboardId,
     sharedUsers,
+    ownPermission,
   } = context;
 
   const {
@@ -326,13 +329,50 @@ const Whiteboard = () => {
           case 'individual_error':
           case 'broadcast_error':
             {
-              const { message } = msg;
+              const { error } = msg;
 
-              console.error('Socket error:', message);
+              switch (error.type) {
+                case 'invalid_message':
+                  console.error('Socket error: invalid message:', error.clientMessageRaw);
+                  break;
+                case 'unauthorized':
+                  console.error('Socket error: not authorized to view this whiteboard');
+                  break;
+                case 'not_authenticated':
+                  console.error('Socket error: client not authenticated');
+                  break;
+                case 'already_authorized':
+                  console.error('Socket error: client cannot authenticate again');
+                  break;
+                case 'invalid_auth':
+                  console.error('Socket error: auth token invalid');
+                  break;
+                case 'auth_token_expired':
+                  console.error('Socket error: auth token expired');
+                  break;
+                case 'user_not_found':
+                  console.error(`Socket error: user ${error.userId} not found`);
+                  break;
+                case 'whiteboard_not_found':
+                  console.error(`Socket error: whiteboard ${error.whiteboardId} not found`);
+                  break;
+                case 'canvas_not_found':
+                  console.error(`Socket error: canvas ${error.canvasId} not found`);
+                  break;
+                case 'action_forbidden':
+                  console.error(`Socket error: action ${error.action} not permitted`);
+                  break;
+                case 'other':
+                  console.error('Socket error:', error.message);
+                  break;
+                default:
+                  throw new Error(`Unrecognized error: ${JSON.stringify(error, null, 2)}`);
+              }// -- end switch (error.type)
             }
             break;
           default:
             console.log('Server Message unrecognized:', msg);
+            throw new Error(`Server Message unrecognized: ${JSON.stringify(msg, null, 2)}`);
         }// end switch (msg.type)
       } catch (e) {
         console.log('Failed to parse message:', e);
@@ -400,6 +440,7 @@ const Whiteboard = () => {
         }
       }}
       title="Share"
+      disabled={ownPermission !== 'own'}
     /> 
   );
 
@@ -428,21 +469,27 @@ const Whiteboard = () => {
 
         {/* Content */}
         <div className="mt-20">
-          {/* Left-hand sidebar for toolbar and menus */}
-          <Sidebar side="left">
-            {/* Toolbar */}
-            <Toolbar
-              toolChoice={toolChoice}
-              onToolChange={setToolChoice}
-              onNewCanvas={handleNewCanvas}
-            />
+          {/**
+            Left-hand sidebar for toolbar and menus
+            Not displayed in view-only mode.
+          **/
+          }
+          {(ownPermission && (ownPermission !== 'view')) && (
+            <Sidebar side="left">
+              {/* Toolbar */}
+              <Toolbar
+                toolChoice={toolChoice}
+                onToolChange={setToolChoice}
+                onNewCanvas={handleNewCanvas}
+              />
 
-            {/** Shape Attributes Menu **/}
-            <ShapeAttributesMenu
-              attributes={shapeAttributesState}
-              dispatch={dispatchShapeAttributes}
-            />
-          </Sidebar>
+              {/** Shape Attributes Menu **/}
+              <ShapeAttributesMenu
+                attributes={shapeAttributesState}
+                dispatch={dispatchShapeAttributes}
+              />
+            </Sidebar>
+          )}
 
 
           {/* Canvas Container */}
@@ -450,6 +497,19 @@ const Whiteboard = () => {
             {/** Misc. info **/}
 
             <div className="flex flex-col justify-center flex-wrap">
+              {/** Indicate if the user is in view-only mode **/}
+              {(ownPermission && (ownPermission === 'view')) && (
+                <div>
+                  <span>
+                    <strong
+                      className="text-xl font-bold"
+                    >
+                      You are in view-only mode
+                    </strong>
+                  </span>
+                </div>
+              )}
+
               {/** Own Client ID **/}
               <div>
                 <span>Your Username: </span> {user?.username}
@@ -554,6 +614,7 @@ const Whiteboard = () => {
 };// end Whiteboard
 
 const WrappedWhiteboard = () => {
+  const authContext = useContext(AuthContext);
   const socketRef = useRef<WebSocket | null>(null);
   const [whiteboardId, setWhiteboardId] = useState<WhiteboardIdType>("");
   const [newCanvasAllowedUsers, setNewCanvasAllowedUsers] = useState<string[]>([]);
@@ -580,6 +641,15 @@ const WrappedWhiteboard = () => {
       }
     },
   });
+
+  if (! authContext) {
+    throw new Error('AuthContext not provided to Whiteboard');
+  }
+
+  const {
+    user,
+  } = authContext;
+
   console.log("Current whiteboard data:", whiteboardData);
   console.log("Loading status:", isWhiteboardDataLoading);
 
@@ -587,11 +657,26 @@ const WrappedWhiteboard = () => {
   const [sharedUsers, setSharedUsers] = useState<APIWhiteboard['shared_users']>([]);
   console.log("Current shared users:", sharedUsers);
 
+  // -- view/edit/own - determines which actions to enable or disable
+  const [ownPermission, setOwnPermission] = useState<UserPermissionEnum | null>(null);
+
   useEffect(() => {
-    if (whiteboardData?.shared_users) {
+    if (whiteboardData && user) {
+      const newOwnPermission = whiteboardData.shared_users
+        .find(
+          (perm: UserPermission) => perm.type === 'user' && perm.user.id === user.id
+        ) || null;
+
       setSharedUsers(whiteboardData.shared_users);
+      
+      if (newOwnPermission) {
+        setOwnPermission(newOwnPermission.permission);
+      }
+      else {
+        setOwnPermission(null);
+      }
     }
-  }, [whiteboardData])
+  }, [whiteboardData, user])
 
   const canvasObjectsByCanvas: Record<CanvasIdType, Record<CanvasObjectIdType, CanvasObjectModel>> = useSelector((state: RootState) => (
     selectCanvasObjectsByWhiteboard(state, whiteboardId)
@@ -645,6 +730,8 @@ const WrappedWhiteboard = () => {
       setSharedUsers={setSharedUsers}
       newCanvasAllowedUsers={newCanvasAllowedUsers}
       setNewCanvasAllowedUsers={setNewCanvasAllowedUsers}
+      ownPermission={ownPermission}
+      setOwnPermission={setOwnPermission}
     >
       <Whiteboard />
     </WhiteboardProvider>
