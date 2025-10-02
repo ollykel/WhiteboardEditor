@@ -8,6 +8,11 @@
 //
 // =============================================================================
 
+// -- third-party imports
+import {
+  type AxiosResponse,
+} from 'axios';
+
 // -- local imports
 import type {
   CanvasObjectModel
@@ -25,6 +30,8 @@ export interface User {
   id: string;
   email: string;
   username: string;
+  // -- profilePicture refers to an image url
+  profilePicture?: string;
 }
 
 // === UserPermissionEnum ======================================================
@@ -99,3 +106,29 @@ export interface Whiteboard {
   shared_users: UserPermission[];
   canvases?: Canvas[];
 }
+
+// === AuthLoginSuccessResponse ================================================
+//
+// Defines the body of a response to a successful login request.
+//
+// =============================================================================
+export interface AuthLoginSuccessResponse {
+  user: User;
+  token: string;
+}
+
+// === ErrorResponse ===========================================================
+//
+// Standard error response.
+//
+// =============================================================================
+export interface ErrorResponse {
+  message: string;
+}
+
+// -- used to indicate that an axios response contains an error response
+export const axiosResponseIsError = <OkRespType> (
+  res: AxiosResponse<OkRespType | ErrorResponse>
+): res is AxiosResponse<ErrorResponse> => {
+  return res.status >= 400;
+};

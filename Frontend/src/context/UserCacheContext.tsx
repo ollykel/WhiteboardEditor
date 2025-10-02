@@ -18,6 +18,10 @@ import {
 
 import api from '@/api/axios';
 
+import {
+  type AxiosResponse,
+} from 'axios';
+
 export interface UserCacheContextType {
   // -- get user identified by id, fetching from ID on cache miss
   getUserById: (userId: string) => Promise<User | null>;
@@ -40,7 +44,7 @@ export const UserCacheProvider = ({
     if (userId in usersByIdRef.current) {
       return usersByIdRef.current[userId];
     } else {
-      const res = await api.get(`/users/${userId}`);
+      const res : AxiosResponse<User> = await api.get(`/users/${userId}`);
 
       if (res.status >= 400) {
         console.error('Could not fetch user', userId, `- received ${res.status} (${res.statusText})`);
@@ -57,7 +61,7 @@ export const UserCacheProvider = ({
   };// end getUserById
 
   const fetchUserById = async (userId: string): Promise<User | null> => {
-    const res = await api.get(`/users/${userId}`);
+    const res : AxiosResponse<User> = await api.get(`/users/${userId}`);
 
     if (res.status >= 400) {
       console.error('Could not fetch user', userId, `- received ${res.status} (${res.statusText})`);
