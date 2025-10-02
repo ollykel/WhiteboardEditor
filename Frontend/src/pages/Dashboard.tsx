@@ -13,8 +13,12 @@ import {
 // -- api
 import api from '@/api/axios';
 
+import {
+  type AxiosResponse,
+} from 'axios';
+
 import type {
-  Whiteboard
+  Whiteboard,
 } from '@/types/APIProtocol';
 
 import Page from '@/components/Page';
@@ -41,7 +45,7 @@ const Dashboard = (): React.JSX.Element => {
   } = useQuery<Whiteboard[]>({
     queryKey: [user?.id, 'dashboard', 'whiteboards', 'own'],
     queryFn: async () => {
-      const res = await api.get('/whiteboards/own');
+      const res : AxiosResponse<Whiteboard[]> = await api.get('/whiteboards/own');
 
       if (res.status >= 400) {
         throw new Error('Bad API call');
@@ -59,7 +63,7 @@ const Dashboard = (): React.JSX.Element => {
   } = useQuery<Whiteboard[]>({
     queryKey: [user?.id, 'dashboard', 'whiteboards', 'shared'],
     queryFn: async () => {
-      const res = await api.get('/users/me/shared_whiteboards');
+      const res : AxiosResponse<Whiteboard[]> = await api.get('/users/me/shared_whiteboards');
 
       if (res.status >= 400) {
         throw new Error('Bad API call');
@@ -74,7 +78,7 @@ const Dashboard = (): React.JSX.Element => {
   }
 
   const handleCreateWhiteboard = async (data: CreateWhiteboardFormData) => {
-    const res = await api.post('/whiteboards', data);
+    const res : AxiosResponse<Whiteboard> = await api.post('/whiteboards', data);
 
     if (res.status >= 400) {
       alert(`Create whiteboard failed: ${res.data}`);
