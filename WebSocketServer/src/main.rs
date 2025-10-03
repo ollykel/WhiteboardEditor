@@ -609,7 +609,9 @@ async fn handle_connection(ws: WebSocket, whiteboard_id: WhiteboardIdType, conne
     // Cleanup when client disconnects
     {
         let mut clients = shared_whiteboard_entry.active_clients.lock().await;
+        println!("clients before disconnect: {:?}", clients); // debug
         clients.remove(&current_client_id);
+        println!("clients after disconnect: {:?}", clients); // debug
 
         // Deduplicate by user_id
         let mut seen = HashSet::new();
@@ -618,7 +620,7 @@ async fn handle_connection(ws: WebSocket, whiteboard_id: WhiteboardIdType, conne
             .filter(|u| seen.insert(u.user_id.clone())) // only first occurences
             .cloned() // turn &UserSummary into UserSummary
             .collect();
-
+        println!("users after disconnect: {:?}", users); // debug
         tx.send(ServerSocketMessage::ActiveUsers { users }).ok();
     }
 
