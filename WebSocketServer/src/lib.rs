@@ -284,6 +284,7 @@ pub enum ServerSocketMessage {
     InitClient {
         client_id: ClientIdType,
         whiteboard: WhiteboardClientView,
+        active_clients: HashMap<i32, UserSummary>,
     },
     ActiveUsers {
         users: Vec<UserSummary>,
@@ -731,6 +732,8 @@ pub async fn handle_authenticated_client_message(
         Ok(client_msg) => {
             println!("Received message from client {}", client_state.client_id);
 
+            println!("Received message from client {:?}", client_msg); // debug
+
             // All actions below require at least edit permission, since they all involve
             // mutating state in some way. Hence, we check permissions first, and send back an
             // error message if the user only has view permission.
@@ -1015,6 +1018,8 @@ pub async fn handle_unauthenticated_client_message<StoreType: UserStore + Whiteb
         Ok(client_msg) => {
             println!("Received message from client {}", client_state.client_id);
             
+            println!("Received message from client {:?}", client_msg); // debug
+
             match client_msg {
                 // -- This is the only valid message an unathenticated client can send and expect a
                 // non-error response from.
@@ -1079,16 +1084,15 @@ pub async fn handle_unauthenticated_client_message<StoreType: UserStore + Whiteb
 
                     if let Some(permission) = permission {
                         // User has a valid permission
-                        {
-                            let mut clients = client_state.active_clients.lock().await;
-                            clients.insert(
-                                client_state.client_id,
-                                UserSummary {
-                                    user_id: user_id.to_string(),
-                                    username: user.username.clone(),
-                                },
-                            );
-                        }
+                        let mut clients = client_state.active_clients.lock().await;
+                        clients.insert(
+                            client_state.client_id,
+                            UserSummary {
+                                user_id: user_id.to_string(),
+                                username: user.username.clone(),
+                            },
+                        );
+                        println!("Clients: {:?}", clients); // debug
 
                         {
                             let mut user_perm = client_state.user_whiteboard_permission.lock().await;
@@ -1100,6 +1104,7 @@ pub async fn handle_unauthenticated_client_message<StoreType: UserStore + Whiteb
                         Some(ServerSocketMessage::InitClient {
                             client_id: client_state.client_id,
                             whiteboard: client_state.whiteboard_ref.lock().await.to_client_view(),
+                            active_clients: clients.clone(),
                         })
                     } else {
                         // User has no valid permission; send back an error message
