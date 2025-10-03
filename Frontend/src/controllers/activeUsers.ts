@@ -3,24 +3,27 @@ import type {
 } from '@/store';
 
 import type {
-  ClientIdType,
   UserSummary,
 } from "@/types/WebSocketProtocol";
 
 import { 
-  setActiveUsers 
+  addActiveUsers,
+  setActiveUsers
 } from "@/store/activeUsers/activeUsersSlice";
 
 export const addActiveUser = (
   dispatch: AppDispatch,
   users: UserSummary[]
 ) => {
-  const usersById: Record<ClientIdType, string> = {};
   users.forEach((u) => {
     console.log('Processing user:', u);
-    usersById[u.userId as unknown as ClientIdType] = u.username;
+    dispatch(addActiveUsers(u));
   });
-  console.log("usersById: ", usersById);
-
-  dispatch(setActiveUsers(usersById));
 };
+
+export const setActiveUser = (
+  dispatch: AppDispatch,
+  users: UserSummary[],
+) => {
+  dispatch(setActiveUsers(users));
+}

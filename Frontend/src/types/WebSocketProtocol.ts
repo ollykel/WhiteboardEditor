@@ -164,6 +164,7 @@ export interface ServerMessageInitClient {
   type: "init_client";
   clientId: ClientIdType;
   whiteboard: WhiteboardData;
+  activeClients: Record<number, UserSummary>;
 }
 
 export interface ServerMessageActiveUsers {

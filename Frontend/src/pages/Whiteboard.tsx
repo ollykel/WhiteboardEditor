@@ -103,10 +103,12 @@ import type {
   CanvasKeyType,
   WhiteboardIdType,
   WhiteboardAttribs,
+  UserSummary,
 } from '@/types/WebSocketProtocol';
 
 import { useUser } from '@/hooks/useUser';
 import { setAllowedUsersByCanvas } from '@/store/allowedUsers/allowedUsersByCanvasSlice';
+import { setActiveUser } from '@/controllers/activeUsers';
 
 // -- Allowed Users Redux reducers
 // import { 
@@ -275,17 +277,20 @@ const Whiteboard = () => {
         switch (msg.type) {
           case 'init_client':
             {
-              const { whiteboard } = msg;
+              const { whiteboard, activeClients } = msg;
+
+              const activeUsers: UserSummary[] = Object.values(activeClients);
 
               setWhiteboardId(whiteboard.id);
               addWhiteboard(dispatch, whiteboard);
+              addActiveUser(dispatch, activeUsers);
             }
             break;
           case 'active_users': 
             {
               const { users } = msg;
 
-              addActiveUser(dispatch, users);
+              setActiveUser(dispatch, users);
             } 
             break;
           case 'create_shapes':

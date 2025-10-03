@@ -1,7 +1,8 @@
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
 
 import type {
-  ClientIdType
+  ClientIdType,
+  UserSummary
 } from '@/types/WebSocketProtocol';
 
 interface ActiveUsersState {
@@ -14,11 +15,14 @@ export const activeUsersSlice = createSlice({
   name: 'activeUsers',
   initialState,
   reducers: {
-    setActiveUsers: (state, action: PayloadAction<Record<ClientIdType, string>>) => {
-      state.users = action.payload;
+    setActiveUsers: (state, action: PayloadAction<UserSummary[]>) => {
+      state.users = {};
+      action.payload.forEach(u => {
+        state.users[u.userId] = u.username;
+      })
     },
-    addActiveUser: (state, action: PayloadAction<{ clientId: ClientIdType; username: string }>) => {
-      state.users[action.payload.clientId] = action.payload.username;
+    addActiveUsers: (state, action: PayloadAction<UserSummary>) => {
+      state.users[action.payload.userId] = action.payload.username;
     },
     removeActiveUser: (state, action: PayloadAction<ClientIdType>) => {
       delete state.users[action.payload];
@@ -26,5 +30,5 @@ export const activeUsersSlice = createSlice({
   },
 });
 
-export const { setActiveUsers, addActiveUser, removeActiveUser } = activeUsersSlice.actions;
+export const { setActiveUsers, addActiveUsers, removeActiveUser } = activeUsersSlice.actions;
 export default activeUsersSlice.reducer;

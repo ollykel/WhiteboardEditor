@@ -284,6 +284,7 @@ pub enum ServerSocketMessage {
     InitClient {
         client_id: ClientIdType,
         whiteboard: WhiteboardClientView,
+        active_clients: HashMap<i32, UserSummary>,
     },
     ActiveUsers {
         users: Vec<UserSummary>,
@@ -1014,7 +1015,7 @@ pub async fn handle_unauthenticated_client_message<StoreType: UserStore + Whiteb
     match serde_json::from_str::<ClientSocketMessage>(client_msg_s) {
         Ok(client_msg) => {
             println!("Received message from client {}", client_state.client_id);
-            
+
             match client_msg {
                 // -- This is the only valid message an unathenticated client can send and expect a
                 // non-error response from.
@@ -1079,7 +1080,10 @@ pub async fn handle_unauthenticated_client_message<StoreType: UserStore + Whiteb
 
                     if let Some(permission) = permission {
                         // User has a valid permission
-                        {
+
+                        let active_clients = {
+                            // Return a clone of clients here to avoid acquiring two locks at the
+                            // same time (reduces risk of deadlock).
                             let mut clients = client_state.active_clients.lock().await;
                             clients.insert(
                                 client_state.client_id,
@@ -1088,7 +1092,9 @@ pub async fn handle_unauthenticated_client_message<StoreType: UserStore + Whiteb
                                     username: user.username.clone(),
                                 },
                             );
-                        }
+
+                            clients.clone()
+                        };
 
                         {
                             let mut user_perm = client_state.user_whiteboard_permission.lock().await;
@@ -1100,6 +1106,7 @@ pub async fn handle_unauthenticated_client_message<StoreType: UserStore + Whiteb
                         Some(ServerSocketMessage::InitClient {
                             client_id: client_state.client_id,
                             whiteboard: client_state.whiteboard_ref.lock().await.to_client_view(),
+                            active_clients: active_clients,
                         })
                     } else {
                         // User has no valid permission; send back an error message
