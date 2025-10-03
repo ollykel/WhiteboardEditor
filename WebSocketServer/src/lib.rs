@@ -1080,14 +1080,21 @@ pub async fn handle_unauthenticated_client_message<StoreType: UserStore + Whiteb
 
                     if let Some(permission) = permission {
                         // User has a valid permission
-                        let mut clients = client_state.active_clients.lock().await;
-                        clients.insert(
-                            client_state.client_id,
-                            UserSummary {
-                                user_id: user_id.to_string(),
-                                username: user.username.clone(),
-                            },
-                        );
+
+                        let active_clients = {
+                            // Return a clone of clients here to avoid acquiring two locks at the
+                            // same time (reduces risk of deadlock).
+                            let mut clients = client_state.active_clients.lock().await;
+                            clients.insert(
+                                client_state.client_id,
+                                UserSummary {
+                                    user_id: user_id.to_string(),
+                                    username: user.username.clone(),
+                                },
+                            );
+
+                            clients.clone()
+                        };
 
                         {
                             let mut user_perm = client_state.user_whiteboard_permission.lock().await;
@@ -1099,7 +1106,7 @@ pub async fn handle_unauthenticated_client_message<StoreType: UserStore + Whiteb
                         Some(ServerSocketMessage::InitClient {
                             client_id: client_state.client_id,
                             whiteboard: client_state.whiteboard_ref.lock().await.to_client_view(),
-                            active_clients: clients.clone(),
+                            active_clients: active_clients,
                         })
                     } else {
                         // User has no valid permission; send back an error message
