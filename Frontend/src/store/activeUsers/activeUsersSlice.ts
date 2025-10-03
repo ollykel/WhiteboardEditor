@@ -23,7 +23,6 @@ export const activeUsersSlice = createSlice({
     },
     addActiveUsers: (state, action: PayloadAction<UserSummary>) => {
       state.users[action.payload.userId] = action.payload.username;
-      console.log("active user ", action.payload.username, " added. Current state: ", state); // debug
     },
     removeActiveUser: (state, action: PayloadAction<ClientIdType>) => {
       delete state.users[action.payload];

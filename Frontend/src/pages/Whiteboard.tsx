@@ -289,7 +289,6 @@ const Whiteboard = () => {
           case 'active_users': 
             {
               const { users } = msg;
-              console.log("received active_users message: ", msg); // debug
 
               setActiveUser(dispatch, users);
             } 
