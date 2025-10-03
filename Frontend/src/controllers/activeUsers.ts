@@ -7,7 +7,8 @@ import type {
 } from "@/types/WebSocketProtocol";
 
 import { 
-  addActiveUsers
+  addActiveUsers,
+  setActiveUsers
 } from "@/store/activeUsers/activeUsersSlice";
 
 export const addActiveUser = (
@@ -19,3 +20,10 @@ export const addActiveUser = (
     dispatch(addActiveUsers(u));
   });
 };
+
+export const setActiveUser = (
+  dispatch: AppDispatch,
+  users: UserSummary[],
+) => {
+  dispatch(setActiveUsers(users));
+}
