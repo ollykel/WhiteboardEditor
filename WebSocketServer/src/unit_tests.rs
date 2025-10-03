@@ -436,7 +436,6 @@ mod unit_tests {
         match resp {
             ServerSocketMessage::InitClient { client_id, whiteboard: whiteboard_view, active_clients } => {
                 let user_perm = client_state.user_whiteboard_permission.lock().await;
-                // let active_clients = client_state.active_clients.lock().await;
 
                 assert_eq!(client_id, test_client_id);
                 assert_eq!(whiteboard_view, whiteboard.to_client_view());
