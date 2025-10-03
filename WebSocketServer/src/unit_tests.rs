@@ -434,14 +434,14 @@ mod unit_tests {
         ).await.expect("Response to client login message");
 
         match resp {
-            ServerSocketMessage::InitClient { client_id, whiteboard: whiteboard_view } => {
+            ServerSocketMessage::InitClient { client_id, whiteboard: whiteboard_view, active_clients } => {
                 let user_perm = client_state.user_whiteboard_permission.lock().await;
-                let active_clients = client_state.active_clients.lock().await;
+                // let active_clients = client_state.active_clients.lock().await;
 
                 assert_eq!(client_id, test_client_id);
                 assert_eq!(whiteboard_view, whiteboard.to_client_view());
                 assert_eq!(*user_perm, Some(WhiteboardPermissionEnum::Edit));
-                assert_eq!(*active_clients, HashMap::from([
+                assert_eq!(active_clients, HashMap::from([
                     (test_client_id, UserSummary {
                         user_id: String::from(target_uid_s),
                         username: String::from("bob"),
