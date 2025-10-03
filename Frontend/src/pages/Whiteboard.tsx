@@ -103,6 +103,7 @@ import type {
   CanvasKeyType,
   WhiteboardIdType,
   WhiteboardAttribs,
+  UserSummary,
 } from '@/types/WebSocketProtocol';
 
 import { useUser } from '@/hooks/useUser';
@@ -275,15 +276,19 @@ const Whiteboard = () => {
         switch (msg.type) {
           case 'init_client':
             {
-              const { whiteboard } = msg;
+              const { whiteboard, activeClients } = msg;
+
+              const activeUsers: UserSummary[] = Object.values(activeClients);
 
               setWhiteboardId(whiteboard.id);
               addWhiteboard(dispatch, whiteboard);
+              addActiveUser(dispatch, activeUsers);
             }
             break;
           case 'active_users': 
             {
               const { users } = msg;
+              console.log("received active_users message: ", msg);
 
               addActiveUser(dispatch, users);
             } 
