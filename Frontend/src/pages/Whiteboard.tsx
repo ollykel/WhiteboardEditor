@@ -108,6 +108,7 @@ import type {
 
 import { useUser } from '@/hooks/useUser';
 import { setAllowedUsersByCanvas } from '@/store/allowedUsers/allowedUsersByCanvasSlice';
+import { setActiveUser } from '@/controllers/activeUsers';
 
 // -- Allowed Users Redux reducers
 // import { 
@@ -288,9 +289,9 @@ const Whiteboard = () => {
           case 'active_users': 
             {
               const { users } = msg;
-              console.log("received active_users message: ", msg);
+              console.log("received active_users message: ", msg); // debug
 
-              addActiveUser(dispatch, users);
+              setActiveUser(dispatch, users);
             } 
             break;
           case 'create_shapes':
