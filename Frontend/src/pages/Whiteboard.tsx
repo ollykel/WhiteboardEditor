@@ -110,13 +110,6 @@ import { useUser } from '@/hooks/useUser';
 import { setAllowedUsersByCanvas } from '@/store/allowedUsers/allowedUsersByCanvasSlice';
 import { setActiveUser } from '@/controllers/activeUsers';
 
-// -- Allowed Users Redux reducers
-// import { 
-//   setAllowedUsersByCanvas,
-//   addAllowedUsersByCanvas,
-//   // removeAllowedUsersByCanvas,
-// } from '@/store/allowedUsers/allowedUsersByCanvasSlice';
-
 const getWebSocketUri = (wid: WhiteboardIdType): string => {
     const wsScheme = window.location.protocol === 'https:' ? 'wss' : 'ws';
     const wsUri = `${wsScheme}://${window.location.host}/ws/${wid}`;
@@ -209,6 +202,7 @@ const Whiteboard = () => {
   const [shapeAttributesState, dispatchShapeAttributes] = useReducer(shapeAttributesReducer, {
     x: 0,
     y: 0,
+    rotation: 0,
     fillColor: '#999999',
     strokeColor: '#000000',
     strokeWidth: 1
