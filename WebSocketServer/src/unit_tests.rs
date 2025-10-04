@@ -502,4 +502,88 @@ mod unit_tests {
         assert!(user.username.as_str() == "alice");
         assert!(user.email.as_str() == "alice@example.com");
     }// -- end fn fetch_user_from_mongodb_user_store()
+
+    // === test_create_shapes_nonexistent_canvas_id ===============================================
+    //
+    // Ensure that an IndividualError is returned when provided 
+    //
+    // ============================================================================================
+    #[tokio::test]
+    async fn test_create_shapes_nonexistent_canvas_id() {
+        use ServerSocketMessage::*;
+
+        let test_client_id = 0;
+        let test_user_id = ObjectId::new();
+        let invalid_canvas_id = ObjectId::new();
+        let client_msg_s = format!(r#"{{
+            "type": "create_shapes",
+            "canvasId": "{}",
+            "shapes": [
+                {{
+                    "type": "rect",
+                    "x": 10.0,
+                    "y": 10.0,
+                    "width": 10.0,
+                    "height": 10.0,
+                    "strokeWidth": 1.0,
+                    "strokeColor": "black",
+                    "fillColor": "red"
+                }}
+            ]
+        }}"#, invalid_canvas_id.to_string());
+
+        // -- initialize client state
+        let whiteboard = Whiteboard {
+            id: ObjectId::new(),
+            metadata: WhiteboardMetadata {
+                name: String::from("Test"),
+                owner_id: ObjectId::new(),
+                shared_users: vec![
+                    WhiteboardPermission {
+                        permission_type: WhiteboardPermissionType::User {
+                            user: test_user_id,
+                        },
+                        permission: WhiteboardPermissionEnum::Edit,
+                    },
+                ],
+                permissions_by_user_id: HashMap::from([
+                    (test_user_id.to_string(), WhiteboardPermissionEnum::Edit),
+                ]),
+            },
+            // no canvases
+            canvases: HashMap::new(),
+        };
+
+        let client_state = ClientState {
+            client_id: test_client_id,
+            jwt_secret: String::from("abcd"),
+            user_whiteboard_permission: Mutex::new(Some(WhiteboardPermissionEnum::Edit)),
+            whiteboard_ref: Arc::new(Mutex::new(whiteboard.clone())),
+            active_clients: Arc::new(Mutex::new(HashMap::new())),
+            diffs: Arc::new(Mutex::new(Vec::new())),
+        };
+
+        let resp = handle_authenticated_client_message(
+            &client_state,
+            client_msg_s.as_str()
+        ).await;
+
+        match resp {
+            Some(IndividualError { client_id, error }) => {
+                assert_eq!(client_id, test_client_id);
+
+                match error {
+                    ClientError::CanvasNotFound{ canvas_id } => {
+                        assert_eq!(canvas_id, invalid_canvas_id.to_string());
+                    },
+                    bad_err => {
+                        panic!("expected CanvasNotFound, got {:?}", bad_err);
+                    },
+                };
+            },
+            bad_resp => {
+                panic!("expected IndividualError in response, got {:?}", bad_resp);
+            },
+        };
+    }// -- end test_create_shapes_nonexistent_canvas_id
 }

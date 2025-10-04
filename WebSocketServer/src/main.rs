@@ -192,8 +192,6 @@ async fn handle_connection(ws: WebSocket, whiteboard_id: WhiteboardIdType, conne
         // None = user unauthenticated
         user_whiteboard_permission: Mutex::new(None),
         whiteboard_ref: Arc::clone(&shared_whiteboard_entry.whiteboard_ref),
-        // TODO: get permission from user struct
-        // client_permission: todo!(),
         active_clients: Arc::clone(&shared_whiteboard_entry.active_clients),
         diffs: Arc::clone(&shared_whiteboard_entry.diffs)
     });
