@@ -103,7 +103,8 @@ const useRectangleDispatcher = ({
         strokeColor,
         strokeWidth,
         width,
-        height
+        height,
+        rotation,
       } = model;
 
       return (
@@ -122,6 +123,7 @@ const useRectangleDispatcher = ({
             fill={fillColor}
             stroke={strokeColor}
             strokeWidth={strokeWidth}
+            rotation={rotation}
           />
         </EditableShape>
       );
