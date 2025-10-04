@@ -72,6 +72,7 @@ mod unit_tests {
                 stroke_width: 1.0,
                 stroke_color: String::from("#333333"),
                 fill_color: String::from("#ff0000"),
+                rotation: 0.0,
             },
             ShapeModel::Rect {
                 x: 200.0,
@@ -81,6 +82,7 @@ mod unit_tests {
                 stroke_width: 1.0,
                 stroke_color: String::from("#333333"),
                 fill_color: String::from("#ff0000"),
+                rotation: 0.0,
             },
             ShapeModel::Rect {
                 x: 300.0,
@@ -90,6 +92,7 @@ mod unit_tests {
                 stroke_width: 1.0,
                 stroke_color: String::from("#333333"),
                 fill_color: String::from("#ff0000"),
+                rotation: 0.0,
             },
         ];
         let client_msg_s = format!(r##"
@@ -205,8 +208,8 @@ mod unit_tests {
 
                             match (shape, shape_expected) {
                                 (
-                                    ShapeModel::Rect { x, y, width, height, stroke_width, stroke_color, fill_color },
-                                    ShapeModel::Rect { x: x_exp, y: y_exp, width: width_exp, height: height_exp, stroke_width: stroke_width_exp, stroke_color: stroke_color_exp, fill_color: fill_color_exp }
+                                    ShapeModel::Rect { x, y, width, height, stroke_width, stroke_color, fill_color, rotation },
+                                    ShapeModel::Rect { x: x_exp, y: y_exp, width: width_exp, height: height_exp, stroke_width: stroke_width_exp, stroke_color: stroke_color_exp, fill_color: fill_color_exp, rotation: rotation_exp }
                                 ) => {
                                     if (x - x_exp).abs() > f64_prec {
                                         panic!("Expected shape x = {}; got {}", x, x_exp);
@@ -228,6 +231,9 @@ mod unit_tests {
                                     }
                                     if fill_color != fill_color_exp {
                                         panic!("Expected shape fill_color = {}; got {}", fill_color, fill_color_exp);
+                                    }
+                                    if (rotation - rotation_exp).abs() > f64_prec {
+                                        panic!("Expected shape rotation = {}; got {}", rotation, rotation_exp);
                                     }
                                 },
                                 (_, _) => panic!("Expected Rect; got {:?}", shape)
