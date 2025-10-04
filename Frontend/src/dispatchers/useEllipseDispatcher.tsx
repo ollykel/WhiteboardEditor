@@ -12,13 +12,14 @@ import type {
 } from '@/types/OperationDispatcher';
 import type {
   CanvasObjectIdType,
-  CanvasObjectModel
+  CanvasObjectModel,
+  EllipseModel
 } from '@/types/CanvasObjectModel';
 import type {
   EventCoords
 } from '@/types/EventCoords';
 
-import editableObjectProps from './editableObjectProps';
+import EditableShape from '@/components/EditableShape';
 
 // === useEllipseDispatcher ====================================================
 //
@@ -91,22 +92,36 @@ const useEllipseDispatcher = ({
     if (model.type !== 'ellipse') {
       return null;
     } else {
-      const { x, y, radiusX, radiusY, fillColor, strokeColor, strokeWidth } = model;
+      const { 
+        x, 
+        y, 
+        radiusX, 
+        radiusY, 
+        fillColor, 
+        strokeColor, 
+        strokeWidth,
+        rotation,
+      } = model;
 
       return (
-        <Ellipse
+        <EditableShape<EllipseModel>
           key={key}
           id={`${key}`}
-          x={x}
-          y={y}
-          radiusX={radiusX}
-          radiusY={radiusY}
-          fill={fillColor}
-          stroke={strokeColor}
-          strokeWidth={strokeWidth}
           draggable={isDraggable}
-          {...editableObjectProps(model, isDraggable, handleUpdateShapes)}
-        />
+          shapeModel={model}
+          handleUpdateShapes={handleUpdateShapes}
+        >
+          <Ellipse
+            x={x}
+            y={y}
+            radiusX={radiusX}
+            radiusY={radiusY}
+            fill={fillColor}
+            stroke={strokeColor}
+            strokeWidth={strokeWidth}
+            rotation={rotation}
+          />
+        </EditableShape>
       );
     }
   };
