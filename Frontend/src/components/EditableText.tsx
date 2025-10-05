@@ -81,7 +81,7 @@ const EditableText = ({
     return () => {
       stage.off("click", handleStageClick);
     };
-  }, []);
+  }, [isEditing]);
 
   const handleSelect = useCallback(() => {
     if (!isEditing) setIsSelected(true);
@@ -110,7 +110,7 @@ const EditableText = ({
     };
 
     handleUpdateShapes(update);
-  }, []);
+  }, [handleUpdateShapes, id, shapeModel]);
 
   return (
     <Group>
