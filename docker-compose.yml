@@ -23,10 +23,10 @@ services:
       WHITEBOARD_EDITOR_WS_PORT: ${WHITEBOARD_EDITOR_WS_PORT-4000}
     volumes:
       - type: bind
-        source: ReverseProxy/key.pem
+        source: .secrets/key.pem
         target: /app/key.pem
       - type: bind
-        source: ReverseProxy/cert.pem
+        source: .secrets/cert.pem
         target: /app/cert.pem
     depends_on:
       - frontend
