@@ -52,13 +52,18 @@ const useEllipseDispatcher = ({
       const { offsetX: xRelease, offsetY: yRelease } = ev.evt;
       const { x: xOrigin, y: yOrigin } = mouseDownCoords;
 
+      const xCenter = (xOrigin + xRelease) / 2;
+      const yCenter = (yOrigin + yRelease) / 2;
+      const xRadius = Math.abs((xRelease - xOrigin) / 2);
+      const yRadius = Math.abs((yRelease - yOrigin) / 2); 
+
       addShapes([{
         type: 'ellipse',
         ...shapeAttributes,
-        x: xOrigin,
-        y: yOrigin,
-        radiusX: Math.abs(xRelease - xOrigin),
-        radiusY: Math.abs(yRelease - yOrigin),
+        x: xCenter,
+        y: yCenter,
+        radiusX: xRadius,
+        radiusY: yRadius,
       }]);
       setMouseDownCoords(null);
     }
