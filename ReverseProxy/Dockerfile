@@ -1,4 +1,4 @@
-FROM nginx:stable-alpine
+FROM nginx:stable-alpine AS release
 
 # Copy nginx.conf
 COPY nginx.conf /etc/nginx/nginx.conf
