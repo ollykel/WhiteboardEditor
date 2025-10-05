@@ -287,4 +287,4 @@ jobs:
             -i "${{ runner.temp }}/github-ec2.pem" \
             -o StrictHostKeyChecking=no \
             "${{ secrets.EC2_TEST_USER }}@${{ secrets.EC2_TEST_HOST }}" \
-            bash -e - < "${{ runner.temp }}/script.sh"
+            bash -ve - < "${{ runner.temp }}/script.sh"
