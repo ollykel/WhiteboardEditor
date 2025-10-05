@@ -3,14 +3,14 @@ import editableObjectProps from "@/dispatchers/editableObjectProps";
 import type { CanvasObjectIdType, ShapeModel } from "@/types/CanvasObjectModel";
 import type Konva from "konva";
 import React, { useEffect, useRef, useState } from "react";
-import { Group, Transformer } from "react-konva";
+import { Group, Transformer, type KonvaNodeEvents } from "react-konva";
 
 interface EditableShapeProps<ShapeType extends ShapeModel> extends EditableObjectProps {
   id: string;
   shapeModel: ShapeType;
   draggable: boolean;
   handleUpdateShapes: (shapes: Record<CanvasObjectIdType, ShapeType>) => void;
-  children: React.ReactElement<any>;
+  children: React.ReactElement<Konva.NodeConfig & KonvaNodeEvents>;
 }
 
 const EditableShape = <ShapeType extends ShapeModel> ({
