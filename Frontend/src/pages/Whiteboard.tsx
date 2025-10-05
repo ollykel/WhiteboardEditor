@@ -190,8 +190,7 @@ const Whiteboard = () => {
         console.error('Error fetching whiteboard', whiteboardId, ':', whiteboardError);
         alert(`Error fetching whiteboard: ${whiteboardError}`);
       }
-    },
-    [whiteboardError]
+    }, [whiteboardError, whiteboardId]
   );
 
   // dirty trick to keep whiteboardIdRef in-sync with whiteboardId
