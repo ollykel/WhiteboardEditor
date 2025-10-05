@@ -69,12 +69,17 @@ const useEllipseDispatcher = ({
       const { x: xOrigin, y: yOrigin } = mouseDownCoords;
       const { x: xCurr, y: yCurr } = mouseCoords;
 
+      const xCenter = (xOrigin + xCurr) / 2;
+      const yCenter = (yOrigin + yCurr) / 2;
+      const xRadius = Math.abs((xCurr - xOrigin) / 2);
+      const yRadius = Math.abs((yCurr - yOrigin) / 2);
+
       return (
         <Ellipse
-          x={(xOrigin + xCurr) / 2}
-          y={(yOrigin + yCurr) / 2}
-          radiusX={Math.abs((xCurr - xOrigin) / 2)}
-          radiusY={Math.abs((yCurr - yOrigin) / 2)}
+          x={xCenter}
+          y={yCenter}
+          radiusX={xRadius}
+          radiusY={yRadius}
           fill="#ffaaaa"
         />
       );
