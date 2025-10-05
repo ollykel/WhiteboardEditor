@@ -71,10 +71,10 @@ const useEllipseDispatcher = ({
 
       return (
         <Ellipse
-          x={xOrigin}
-          y={yOrigin}
-          radiusX={Math.abs(xCurr - xOrigin)}
-          radiusY={Math.abs(yCurr - yOrigin)}
+          x={(xOrigin + xCurr) / 2}
+          y={(yOrigin + yCurr) / 2}
+          radiusX={Math.abs((xCurr - xOrigin) / 2)}
+          radiusY={Math.abs((yCurr - yOrigin) / 2)}
           fill="#ffaaaa"
         />
       );
