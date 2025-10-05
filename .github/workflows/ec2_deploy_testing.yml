@@ -7,6 +7,8 @@ on:
   push:
     branches:
       - master
+      # TODO: only for testing; remove before merge to master
+      - feat/deploy_on_push_to_main
   workflow_call:
     secrets:
       EC2_TEST_PRIVATE_KEY:
