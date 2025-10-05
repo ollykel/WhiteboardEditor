@@ -54,7 +54,7 @@ services:
     # Built in Rust.
     build:
       context: WebSocketServer
-      target: release_runtime
+      target: release
       <<: *cache_settings
     image: ${WHITEBOARD_EDITOR_CR_URI-whiteboard_editor}/web_socket_server:${WHITEBOARD_EDITOR_TAG-latest}
     environment:
