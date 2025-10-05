@@ -264,8 +264,12 @@ jobs:
             _EOF_
 
             # === Pull images from container registry ==========================
-            # NOTE: Locating container registry depends on contents of .env
-            # (EC2_TEST_ENV_FILE)
+            export WHITEBOARD_EDITOR_CR_URI="ghcr.io/whiteboard_editor"
+            export WHITEBOARD_EDITOR_TAG="${CURRENT_VERSION_TAG}"
+
+            docker login --username ${{ github.actor }} --password-stdin ghcr.io << _EOF_
+            ${{ secrets.GITHUB_TOKEN }}
+            _EOF_
             docker compose pull
 
             # === Restart containers ===========================================
@@ -280,4 +284,4 @@ jobs:
             -i "${PRIVATE_KEY_FILE}" \
             -o StrictHostKeyChecking=no \
             "${{ secrets.EC2_TEST_USER }}@${{ secrets.EC2_TEST_HOST }}" \
-            bash -e - < "${SSH_SCRIPT_FILE}"
+            CURRENT_VERSION_TAG="${CURRENT_VERSION_TAG}" bash -e - < "${SSH_SCRIPT_FILE}"
