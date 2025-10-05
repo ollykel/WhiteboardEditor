@@ -8,11 +8,6 @@ on:
     branches:
       - master
   workflow_call:
-    # TODO: check env syntax
-    env:
-      CURRENT_VERSION_TAG:
-        description: Version with which to tag images
-        required: true
     secrets:
       EC2_TEST_PRIVATE_KEY:
         description: "The key to use to ssh into the ec2 instance"
@@ -35,6 +30,10 @@ on:
       EC2_TEST_SSL_CERT:
         description: "Certificate to be placed in ReverseProxy/cert.pem"
         required: true
+
+env:
+  CURRENT_VERSION_TAG: 0.1.0
+
 jobs:
   build_and_push_frontend:
     name: Build and Push Frontend
