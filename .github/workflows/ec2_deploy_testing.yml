@@ -75,7 +75,7 @@ jobs:
           context: Frontend
           target: release
           push: true
-          tags: ghcr.io/${{ github.repository_owner }}/${{ github.repository_id }}/frontend:${CURRENT_VERSION_TAG}
+          tags: ghcr.io/${{ github.repository_owner }}/${{ github.repository_id }}/frontend:${{ env.CURRENT_VERSION_TAG }}
 
           # cache settings
           cache-from: type=registry,ref=ghcr.io/${{ github.repository_owner }}/${{ github.repository_id }}/frontend:buildcache
@@ -118,7 +118,7 @@ jobs:
           context: RestAPI
           target: release
           push: true
-          tags: ghcr.io/${{ github.repository_owner }}/${{ github.repository_id }}/rest_api:${CURRENT_VERSION_TAG}
+          tags: ghcr.io/${{ github.repository_owner }}/${{ github.repository_id }}/rest_api:${{ env.CURRENT_VERSION_TAG }}
 
           # cache settings
           cache-from: type=registry,ref=ghcr.io/${{ github.repository_owner }}/${{ github.repository_id }}/rest_api:buildcache
@@ -161,7 +161,7 @@ jobs:
           context: WebSocketServer
           target: release
           push: true
-          tags: ghcr.io/${{ github.repository_owner }}/${{ github.repository_id }}/web_socket_server:${CURRENT_VERSION_TAG}
+          tags: ghcr.io/${{ github.repository_owner }}/${{ github.repository_id }}/web_socket_server:${{ env.CURRENT_VERSION_TAG }}
 
           # cache settings
           cache-from: type=registry,ref=ghcr.io/${{ github.repository_owner }}/${{ github.repository_id }}/web_socket_server:buildcache
@@ -203,7 +203,7 @@ jobs:
           context: ReverseProxy
           target: release
           push: true
-          tags: ghcr.io/${{ github.repository_owner }}/${{ github.repository_id }}/reverse_proxy:${CURRENT_VERSION_TAG}
+          tags: ghcr.io/${{ github.repository_owner }}/${{ github.repository_id }}/reverse_proxy:${{ env.CURRENT_VERSION_TAG }}
 
           # cache settings
           cache-from: type=registry,ref=ghcr.io/${{ github.repository_owner }}/${{ github.repository_id }}/reverse_proxy:buildcache
@@ -241,7 +241,6 @@ jobs:
         id: deploy-ssh
         env:
           # Enclose entire script to run on remote host here
-          SSH_SCRIPT_FILE: ${{ runner.temp }}/script.sh
           SSH_SCRIPT: |
             # === cd to deployment directory ===================================
             cd ${{ secrets.EC2_TEST_DEPLOYMENT_DIR }}
@@ -263,7 +262,7 @@ jobs:
 
             # === Pull images from container registry ==========================
             export WHITEBOARD_EDITOR_CR_URI="ghcr.io/whiteboard_editor"
-            export WHITEBOARD_EDITOR_TAG="${CURRENT_VERSION_TAG}"
+            export WHITEBOARD_EDITOR_TAG="${{ env.CURRENT_VERSION_TAG }}"
 
             docker login --username ${{ github.actor }} --password-stdin ghcr.io << _EOF_
             ${{ secrets.GITHUB_TOKEN }}
@@ -275,11 +274,11 @@ jobs:
             docker compose up --detach
         run: |
           # Write script to a tempfile
-          printenv SSH_SCRIPT > "${SSH_SCRIPT_FILE}"
+          printenv SSH_SCRIPT > "${{ runner.temp }}/script.sh"
           unset SSH_SCRIPT
 
           ssh \
             -i "${{ runner.temp }}/github-ec2.pem" \
             -o StrictHostKeyChecking=no \
             "${{ secrets.EC2_TEST_USER }}@${{ secrets.EC2_TEST_HOST }}" \
-            CURRENT_VERSION_TAG="${CURRENT_VERSION_TAG}" bash -e - < "${SSH_SCRIPT_FILE}"
+            bash -e - < "${{ runner.temp }}/script.sh"
