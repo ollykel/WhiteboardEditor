@@ -82,8 +82,8 @@ jobs:
           cache-to: type=registry,ref=ghcr.io/${{ github.repository_owner }}/${{ github.repository_id }}/frontend:buildcache,mode=max
 
   # rest_api
-  build_and_push_frontend:
-    name: Build and Push Frontend
+  build_and_push_rest_api:
+    name: Build and Push RestAPI
     runs-on: ubuntu-24.04
     permissions:
       contents: read
