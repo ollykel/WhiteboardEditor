@@ -86,18 +86,42 @@ const editableObjectProps = <ShapeType extends ShapeModel> (
     const id = node.id();
     const rotation = node.rotation();
 
-    const update = {
-      [id]: {
-        ...shapeModel,
-        x: node.x(),
-        y: node.y(),
-        width: node.width(),
-        height: node.height(),
-        rotation,
-      }
+    let update: ShapeType;
+
+    switch(shapeModel.type) {
+      case "rect": 
+        update = {
+          ...shapeModel,
+          x: node.x(),
+          y: node.y(),
+          width: node.width(),
+          height: node.height(),
+          rotation,
+        };
+        break;
+      case "text":
+        update = {
+          ...shapeModel,
+          x: node.x(),
+          y: node.y(),
+          width: node.width(),
+          height: node.height(),
+          rotation,
+        };
+        break;
+      case "ellipse":
+        update = {
+          ...shapeModel,
+          x: node.x(),
+          y: node.y(),
+          radiusX: node.width() / 2,
+          radiusY: node.height() / 2,
+          rotation,
+        };
+        break;
     };
 
-    handleUpdateShapes(update);
+    handleUpdateShapes({ [id]: update });
   };
 
   return ({

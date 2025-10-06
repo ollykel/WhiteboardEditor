@@ -59,7 +59,8 @@ pub enum ShapeModel {
         height: f64,
         stroke_width: f64,
         stroke_color: String,
-        fill_color: String
+        fill_color: String,
+        rotation: f64
     },
     Ellipse {
         x: f64,
@@ -68,7 +69,8 @@ pub enum ShapeModel {
         radius_y: f64,
         stroke_width: f64,
         stroke_color: String,
-        fill_color: String
+        fill_color: String,
+        rotation: f64
     },
     Vector {
         points: Vec<f64>,

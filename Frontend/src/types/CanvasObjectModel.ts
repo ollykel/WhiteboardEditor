@@ -38,6 +38,7 @@ export interface ObjectUID extends ObjectID {
 export interface ShapeModelAttributes {
   x: number;
   y: number;
+  rotation: number;
   fillColor: ShapeColor;
 }
 
@@ -69,6 +70,7 @@ export interface VectorModel extends CanvasObjectBase {
 export type VectorRecord = VectorModel & ObjectID;
 export type VectorRecordFull = VectorModel & ObjectUID;
 
+// TODO: Pull out common fields and extend is possible
 export interface TextModel {
   type: 'text';
   text: string;
@@ -88,6 +90,6 @@ export type ShapeModel = RectModel | EllipseModel | TextModel;
 export type ShapeRecord = RectRecord | EllipseRecord | TextRecord;
 export type ShapeRecordFull = RectRecordFull | EllipseRecordFull | TextRecordFull;
 
-export type CanvasObjectModel = ShapeModel | VectorModel | TextModel;
-export type CanvasObjectRecord = ShapeRecord | VectorRecord | TextRecord;
-export type CanvasObjectRecordFull = ShapeRecordFull | VectorRecordFull | TextRecordFull;
+export type CanvasObjectModel = ShapeModel | VectorModel;
+export type CanvasObjectRecord = ShapeRecord | VectorRecord;
+export type CanvasObjectRecordFull = ShapeRecordFull | VectorRecordFull;

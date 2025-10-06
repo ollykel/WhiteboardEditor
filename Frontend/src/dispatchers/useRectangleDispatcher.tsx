@@ -19,7 +19,7 @@ import type {
   EventCoords
 } from '@/types/EventCoords';
 
-import editableObjectProps from './editableObjectProps';
+import EditableShape from '@/components/EditableShape';
 
 // === useRectangleDispatcher ==================================================
 //
@@ -103,23 +103,29 @@ const useRectangleDispatcher = ({
         strokeColor,
         strokeWidth,
         width,
-        height
+        height,
+        rotation,
       } = model;
 
       return (
-        <Rect
+        <EditableShape<RectModel>
           key={key}
           id={`${key}`}
-          x={x}
-          y={y}
-          width={width}
-          height={height}
-          fill={fillColor}
-          stroke={strokeColor}
-          strokeWidth={strokeWidth}
           draggable={isDraggable}
-          {...editableObjectProps<RectModel>(model, isDraggable, handleUpdateShapes)}
-        />
+          shapeModel={model}
+          handleUpdateShapes={handleUpdateShapes}
+        >
+          <Rect
+            x={x}
+            y={y}
+            width={width}
+            height={height}
+            fill={fillColor}
+            stroke={strokeColor}
+            strokeWidth={strokeWidth}
+            rotation={rotation}
+          />
+        </EditableShape>
       );
     }
   };

@@ -110,13 +110,6 @@ import { useUser } from '@/hooks/useUser';
 import { setAllowedUsersByCanvas } from '@/store/allowedUsers/allowedUsersByCanvasSlice';
 import { setActiveUser } from '@/controllers/activeUsers';
 
-// -- Allowed Users Redux reducers
-// import { 
-//   setAllowedUsersByCanvas,
-//   addAllowedUsersByCanvas,
-//   // removeAllowedUsersByCanvas,
-// } from '@/store/allowedUsers/allowedUsersByCanvasSlice';
-
 const getWebSocketUri = (wid: WhiteboardIdType): string => {
     const wsScheme = window.location.protocol === 'https:' ? 'wss' : 'ws';
     const wsUri = `${wsScheme}://${window.location.host}/ws/${wid}`;
@@ -197,8 +190,7 @@ const Whiteboard = () => {
         console.error('Error fetching whiteboard', whiteboardId, ':', whiteboardError);
         alert(`Error fetching whiteboard: ${whiteboardError}`);
       }
-    },
-    [whiteboardError]
+    }, [whiteboardError, whiteboardId]
   );
 
   // dirty trick to keep whiteboardIdRef in-sync with whiteboardId
@@ -209,6 +201,7 @@ const Whiteboard = () => {
   const [shapeAttributesState, dispatchShapeAttributes] = useReducer(shapeAttributesReducer, {
     x: 0,
     y: 0,
+    rotation: 0,
     fillColor: '#999999',
     strokeColor: '#000000',
     strokeWidth: 1
@@ -704,7 +697,9 @@ const WrappedWhiteboard = () => {
       const changedObjects: Record<CanvasObjectIdType, CanvasObjectModel> = {};
 
       for (const [objId, objUpdate] of Object.entries(shapes)) {
+        console.log("updated shape: ", objId, " : ", objUpdate);
         if (objId in canvasObjects) {
+          console.log("updated shape is in canvas objects");
           changedObjects[objId] = ({
             ...canvasObjects[objId],
             ...objUpdate

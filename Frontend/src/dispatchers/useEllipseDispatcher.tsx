@@ -12,13 +12,14 @@ import type {
 } from '@/types/OperationDispatcher';
 import type {
   CanvasObjectIdType,
-  CanvasObjectModel
+  CanvasObjectModel,
+  EllipseModel
 } from '@/types/CanvasObjectModel';
 import type {
   EventCoords
 } from '@/types/EventCoords';
 
-import editableObjectProps from './editableObjectProps';
+import EditableShape from '@/components/EditableShape';
 
 // === useEllipseDispatcher ====================================================
 //
@@ -51,13 +52,18 @@ const useEllipseDispatcher = ({
       const { offsetX: xRelease, offsetY: yRelease } = ev.evt;
       const { x: xOrigin, y: yOrigin } = mouseDownCoords;
 
+      const xCenter = (xOrigin + xRelease) / 2;
+      const yCenter = (yOrigin + yRelease) / 2;
+      const xRadius = Math.abs((xRelease - xOrigin) / 2);
+      const yRadius = Math.abs((yRelease - yOrigin) / 2); 
+
       addShapes([{
         type: 'ellipse',
         ...shapeAttributes,
-        x: xOrigin,
-        y: yOrigin,
-        radiusX: Math.abs(xRelease - xOrigin),
-        radiusY: Math.abs(yRelease - yOrigin),
+        x: xCenter,
+        y: yCenter,
+        radiusX: xRadius,
+        radiusY: yRadius,
       }]);
       setMouseDownCoords(null);
     }
@@ -68,12 +74,17 @@ const useEllipseDispatcher = ({
       const { x: xOrigin, y: yOrigin } = mouseDownCoords;
       const { x: xCurr, y: yCurr } = mouseCoords;
 
+      const xCenter = (xOrigin + xCurr) / 2;
+      const yCenter = (yOrigin + yCurr) / 2;
+      const xRadius = Math.abs((xCurr - xOrigin) / 2);
+      const yRadius = Math.abs((yCurr - yOrigin) / 2);
+
       return (
         <Ellipse
-          x={xOrigin}
-          y={yOrigin}
-          radiusX={Math.abs(xCurr - xOrigin)}
-          radiusY={Math.abs(yCurr - yOrigin)}
+          x={xCenter}
+          y={yCenter}
+          radiusX={xRadius}
+          radiusY={yRadius}
           fill="#ffaaaa"
         />
       );
@@ -91,22 +102,36 @@ const useEllipseDispatcher = ({
     if (model.type !== 'ellipse') {
       return null;
     } else {
-      const { x, y, radiusX, radiusY, fillColor, strokeColor, strokeWidth } = model;
+      const { 
+        x, 
+        y, 
+        radiusX, 
+        radiusY, 
+        fillColor, 
+        strokeColor, 
+        strokeWidth,
+        rotation,
+      } = model;
 
       return (
-        <Ellipse
+        <EditableShape<EllipseModel>
           key={key}
           id={`${key}`}
-          x={x}
-          y={y}
-          radiusX={radiusX}
-          radiusY={radiusY}
-          fill={fillColor}
-          stroke={strokeColor}
-          strokeWidth={strokeWidth}
           draggable={isDraggable}
-          {...editableObjectProps(model, isDraggable, handleUpdateShapes)}
-        />
+          shapeModel={model}
+          handleUpdateShapes={handleUpdateShapes}
+        >
+          <Ellipse
+            x={x}
+            y={y}
+            radiusX={radiusX}
+            radiusY={radiusY}
+            fill={fillColor}
+            stroke={strokeColor}
+            strokeWidth={strokeWidth}
+            rotation={rotation}
+          />
+        </EditableShape>
       );
     }
   };
