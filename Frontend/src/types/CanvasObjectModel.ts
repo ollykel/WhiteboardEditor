@@ -90,6 +90,6 @@ export type ShapeModel = RectModel | EllipseModel | TextModel;
 export type ShapeRecord = RectRecord | EllipseRecord | TextRecord;
 export type ShapeRecordFull = RectRecordFull | EllipseRecordFull | TextRecordFull;
 
-export type CanvasObjectModel = ShapeModel | VectorModel | TextModel;
-export type CanvasObjectRecord = ShapeRecord | VectorRecord | TextRecord;
-export type CanvasObjectRecordFull = ShapeRecordFull | VectorRecordFull | TextRecordFull;
+export type CanvasObjectModel = ShapeModel | VectorModel;
+export type CanvasObjectRecord = ShapeRecord | VectorRecord;
+export type CanvasObjectRecordFull = ShapeRecordFull | VectorRecordFull;
