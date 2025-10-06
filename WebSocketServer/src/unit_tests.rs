@@ -106,6 +106,7 @@ mod unit_tests {
                     "y": 100,
                     "width": 64,
                     "height": 64,
+                    "rotation": 0,
                     "strokeWidth": 1,
                     "strokeColor": "#333333",
                     "fillColor": "#ff0000"
@@ -116,6 +117,7 @@ mod unit_tests {
                     "y": 200,
                     "width": 64,
                     "height": 64,
+                    "rotation": 0,
                     "strokeWidth": 1,
                     "strokeColor": "#333333",
                     "fillColor": "#ff0000"
@@ -126,6 +128,7 @@ mod unit_tests {
                     "y": 300,
                     "width": 64,
                     "height": 64,
+                    "rotation": 0,
                     "strokeWidth": 1,
                     "strokeColor": "#333333",
                     "fillColor": "#ff0000"
@@ -531,6 +534,7 @@ mod unit_tests {
                     "y": 10.0,
                     "width": 10.0,
                     "height": 10.0,
+                    "rotation": 0,
                     "strokeWidth": 1.0,
                     "strokeColor": "black",
                     "fillColor": "red"
