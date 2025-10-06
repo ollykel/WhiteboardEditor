@@ -163,7 +163,7 @@ RUN \
     ${DEST_DIR}/web_socket_server
 
 # ---- Stage: Prepare Release Runtime Environment ----
-FROM debian:trixie-slim AS release_runtime
+FROM debian:trixie-slim AS release
 
 ARG BUILD_DIR
 ARG DEST_DIR

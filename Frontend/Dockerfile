@@ -15,7 +15,7 @@ RUN \
   npm run build
 
 # ---- Stage 2: Serve with a static web server ----
-FROM nginx:stable-alpine
+FROM nginx:stable-alpine AS release
 
 # Remove default nginx static assets
 RUN rm -rf /usr/share/nginx/html/*

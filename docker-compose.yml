@@ -23,10 +23,10 @@ services:
       WHITEBOARD_EDITOR_WS_PORT: ${WHITEBOARD_EDITOR_WS_PORT-4000}
     volumes:
       - type: bind
-        source: ReverseProxy/key.pem
+        source: .secrets/key.pem
         target: /app/key.pem
       - type: bind
-        source: ReverseProxy/cert.pem
+        source: .secrets/cert.pem
         target: /app/cert.pem
     depends_on:
       - frontend
@@ -54,7 +54,7 @@ services:
     # Built in Rust.
     build:
       context: WebSocketServer
-      target: release_runtime
+      target: release
       <<: *cache_settings
     image: ${WHITEBOARD_EDITOR_CR_URI-whiteboard_editor}/web_socket_server:${WHITEBOARD_EDITOR_TAG-latest}
     environment:
