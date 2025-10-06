@@ -53,7 +53,16 @@ RUN \
   --mount=type=cache,id=cargo_registry,target=/usr/local/cargo/registry \
   --mount=type=cache,id=cargo_git,target=/usr/local/cargo/git \
   --mount=type=cache,id=test_deps,target=${BUILD_DIR}/target \
-  cargo chef cook --tests --recipe-path recipe.json
+  <<_EOF_
+#!/usr/bin/bash -e
+
+cargo chef cook --tests --recipe-path recipe.json
+
+# Copy registry and build artifacts
+cp -rp /usr/local/cargo/registry /tmp/cargo_registry
+cp -rp /usr/local/cargo/git /tmp/cargo_git
+cp -rp ./target /tmp/test_deps
+_EOF_
 
 # Copy relevant source code
 COPY ./src/lib.rs ./src/unit_tests.rs ./src
@@ -64,14 +73,16 @@ fn main() {}
 EOF
 
 # Build tests
-RUN \
-  --mount=type=cache,id=cargo_registry,target=/usr/local/cargo/registry \
-  --mount=type=cache,id=cargo_git,target=/usr/local/cargo/git \
-  --mount=type=cache,id=test_deps,target=${BUILD_DIR}/test_deps \
-  <<_EOF_
+RUN <<_EOF_
 #!/usr/bin/bash -e
 
-cp -r --preserve=mode,timestamps ./test_deps ./target
+# Copy artifacts from dependency build step into proper locations
+rm -rf /usr/local/cargo/registry /usr/local/cargo/git
+cp -rp /tmp/cargo_registry /usr/local/cargo/registry
+cp -rp /tmp/cargo_git /usr/local/cargo/git
+cp -r --preserve=mode,timestamps /tmp/test_deps ./target
+
+# Build tests
 cargo test --no-run
 _EOF_
 
@@ -81,25 +92,15 @@ FROM rust:1.88 AS test_runtime
 ARG BUILD_DIR
 ARG DEST_DIR
 
-WORKDIR ${BUILD_DIR}
-
-# Copy cached build directories into final locations
-RUN mkdir -p ${DEST_DIR} /usr/local/cargo
-
-RUN \
-  --mount=type=cache,id=cargo_registry,target=${BUILD_DIR}/registry \
-  --mount=type=cache,id=cargo_git,target=${BUILD_DIR}/git \
-  <<_EOF_
-#!/usr/bin/bash -e
-
-cp -r --preserve=mode,timestamps registry git /usr/local/cargo
-_EOF_
-
 # Set working directory to destination
 WORKDIR ${DEST_DIR}
 
 COPY Cargo.toml Cargo.lock .
 COPY ./src ./src
+
+# Copy registries from previous stage
+COPY --from=build_tests /usr/local/cargo/registry /usr/local/cargo/registry
+COPY --from=build_tests /usr/local/cargo/git /usr/local/cargo/git
 
 # Copy target directory
 COPY --from=build_tests ${BUILD_DIR}/target ./target

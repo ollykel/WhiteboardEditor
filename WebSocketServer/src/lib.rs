@@ -302,7 +302,6 @@ pub enum ServerSocketMessage {
         shapes: HashMap<String,
         ShapeModel>,
     },
-    // TODO: replace with flattened CanvasClientView
     CreateCanvas {
         client_id: ClientIdType,
         canvas: CanvasClientView,
@@ -772,8 +771,12 @@ pub async fn handle_authenticated_client_message(
 
                     match whiteboard.canvases.get_mut(&canvas_id) {
                         None => {
-                            // TODO: send an error handling message
-                            todo!()
+                            Some(ServerSocketMessage::IndividualError {
+                                client_id: client_state.client_id,
+                                error: ClientError::CanvasNotFound {
+                                    canvas_id: canvas_id.to_string(),
+                                },
+                            })
                         },
                         Some(canvas) => {
                             let mut new_shapes = HashMap::<CanvasObjectIdType, ShapeModel>::new();
@@ -812,8 +815,12 @@ pub async fn handle_authenticated_client_message(
 
                     match whiteboard.canvases.get_mut(&canvas_id) {
                         None => {
-                            // TODO: send an error handling message
-                            todo!()
+                            Some(ServerSocketMessage::IndividualError {
+                                client_id: client_state.client_id,
+                                error: ClientError::CanvasNotFound {
+                                    canvas_id: canvas_id.to_string(),
+                                },
+                            })
                         },
                         Some(canvas) => {
                             let mut new_shapes = HashMap::<CanvasObjectIdType, ShapeModel>::new();
@@ -1020,8 +1027,6 @@ pub async fn handle_unauthenticated_client_message<StoreType: UserStore + Whiteb
                 // -- This is the only valid message an unathenticated client can send and expect a
                 // non-error response from.
                 ClientSocketMessage::Login { jwt } => {
-                    // TODO: authenticate user using jwt, fetching their permission from the
-                    // database if successful
                     let user_id = match get_user_id_from_jwt(jwt.as_str(), client_state.jwt_secret.as_str()) {
                         Err(e) => {
                             println!("Error parsing user_id from jwt: {}", e);
