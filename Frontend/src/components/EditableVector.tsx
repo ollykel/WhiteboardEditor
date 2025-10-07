@@ -3,8 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { Group } from "react-konva";
 
 interface EditableVectorProps {
-  x: number,
-  y: number,
+  points: number[];
 }
 
 // Function to build anchor point
@@ -33,7 +32,7 @@ function buildAnchor(layer: Konva.Layer, x: number, y: number) {
 
   // Update curves when anchor is moved
   anchor.on("dragmove", function () {
-    updateDottedLines();
+    // updateDottedLines();
   });
 
   return anchor;
@@ -41,8 +40,7 @@ function buildAnchor(layer: Konva.Layer, x: number, y: number) {
 
 const EditableVector = (props: EditableVectorProps) => {
   const {
-    x,
-    y,
+    points,
   } = props;
 
   const [isSelected, setIsSelected] = useState(false);
@@ -51,11 +49,18 @@ const EditableVector = (props: EditableVectorProps) => {
   if (!vectorRef.current) return;
   const layer = vectorRef.current.getLayer();
 
+  const x1 = points[0];
+  const y1 = points[1];
+  const x2 = points[2];
+  const y2 = points[3];
 
   // Anchor points attach/detach
   useEffect(() => {
     if (!layer) return;
-    layer.add(anchorPoint);
+    if (isSelected) {
+      buildAnchor(layer, x1, y1);
+      buildAnchor(layer, x2, y2); 
+    }
   }, [isSelected]);
 
   return (
