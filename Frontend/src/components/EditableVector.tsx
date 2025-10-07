@@ -63,6 +63,21 @@ const EditableVector = (props: EditableVectorProps) => {
     }
   }, [isSelected]);
 
+   // Click outside to deselct
+  useEffect(() => {
+    const stage = vectorRef.current?.getStage();
+    if (!stage) return;
+
+    const listener = (ev: Konva.KonvaEventObject<MouseEvent>) => {
+      if (ev.target !== vectorRef.current) setIsSelected(false);
+    };
+
+    stage.on("click", listener);
+    return () => {
+      stage.off("click", listener)
+    };
+  }, []);
+
   return (
     <Group>
       {}
