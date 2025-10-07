@@ -108,6 +108,33 @@ shapeSchema.virtual('id').get(function() {
 
 export const Shape = model<IShape>("Shape", shapeSchema, "shapes");
 
+// === ICanvasParent ===========================================================
+//
+// Optional parent reference embedded within a Canvas. Needed to enable nested
+// canvases.
+//
+// =============================================================================
+export interface ICanvasParent {
+  // reference to parent
+  canvas: Types.ObjectId;
+  // x-coordinate of this canvas' top-left corner within its parent
+  origin_x: number;
+  // y-coordinate of this canvas' top-left corner within its parent
+  origin_y: number;
+}// -- end interface ICanvasParent
+
+export const canvasParentSchema = new Schema<ICanvasParent>(
+  // -- fields
+  {
+    canvas: { type: Schema.Types.ObjectId, ref: 'Canvas', required: true },
+    origin_x: { type: Number, required: true },
+    origin_y: { type: Number, required: true },
+  },
+  // -- settings
+  {
+  },
+);
+
 export interface ICanvasModel <UserType> {
   name: string;
   width: number;
@@ -122,6 +149,8 @@ export interface ICanvasModel <UserType> {
 export interface ICanvasDocument <UserType> extends ICanvasModel <UserType> {
   // reference to parent whiteboard
   whiteboard_id: Types.ObjectId;
+  // optional reference to parent canvas
+  parent_canvas?: ICanvasParent;
 }
 
 // -- Canvas as Mongo document
@@ -131,27 +160,30 @@ export type ICanvas <UserType> =
   & Document <Types.ObjectId>
 ;
 
-export interface ICanvasVirtual <ShapeType> extends DocumentVirtualBase {
+export interface ICanvasVirtual <ChildCanvasType, ShapeType> extends DocumentVirtualBase {
+  child_canvases: ChildCanvasType[];
   shapes: ShapeType[];
 }
 
-export type ICanvasFull = ICanvas<IUser> & ICanvasVirtual<IShape>;
+export type ICanvasFull = ICanvas<IUser> & ICanvasVirtual<ICanvas <IShape>, IShape>;
 
-export type CanvasModelType = Model<ICanvasDocument <Types.ObjectId>, {}, {}, ICanvasVirtual <Types.ObjectId>>;
+export type CanvasModelType = Model<ICanvasDocument <Types.ObjectId>, {}, {}, ICanvasVirtual <Types.ObjectId, Types.ObjectId>>;
 
 type CanvasVectorFields = 
+  | "child_canvases"
   | "shapes"
 ;
 
 const CANVAS_VECTOR_FIELDS = [
-  "shapes"
+  "child_canvases",
+  "shapes",
 ];
 
 // === Data Transfer Objects ===================================================
 //
 // =============================================================================
 
-export type ICanvasPublicView = ViewDocument <ICanvasDocument <IUserPublicView> & ICanvasVirtual<IShapePublicView>>;
+export type ICanvasPublicView = ViewDocument <ICanvasDocument <IUserPublicView> & ICanvasVirtual<ICanvasPublicView, IShapePublicView>>;
 
 export type ICanvasAttribView = Omit<ICanvasPublicView, CanvasVectorFields>;
 
@@ -164,7 +196,7 @@ const CANVAS_POP_FIELDS_FULL = [
   'shapes',
 ];
 
-export const canvasSchema = new Schema<ICanvas <Types.ObjectId>, CanvasModelType, {}, {}, ICanvasVirtual <Types.ObjectId>>(
+export const canvasSchema = new Schema<ICanvas <Types.ObjectId>, CanvasModelType, {}, {}, ICanvasVirtual <Types.ObjectId, Types.ObjectId>>(
   // -- fields
   {
     whiteboard_id: { type: Schema.Types.ObjectId, ref: 'Whiteboard', required: true },
@@ -176,6 +208,9 @@ export const canvasSchema = new Schema<ICanvas <Types.ObjectId>, CanvasModelType
 
     // -- embedded vector fields
     allowed_users: [{ type: Schema.Types.ObjectId, ref: "User" }]
+
+    // -- virtual vector fields
+    // child_canvases: { type: Schema.Types.ObjectId, ref: 'Canvas', required: false },
   },
   {
     toObject: {
@@ -210,7 +245,9 @@ export const canvasSchema = new Schema<ICanvas <Types.ObjectId>, CanvasModelType
           ...fields,
           allowed_users: (this as unknown as ICanvas <IUser>)
             .allowed_users.map(user => user.toPublicView()),
-          shapes: (this as unknown as ICanvas <IUser> & ICanvasVirtual<IShape>)
+          child_canvases: (this as unknown as ICanvas <IUser> & ICanvasVirtual<ICanvas <IShape>, IShape>)
+            .child_canvases.map(canvas => canvas.toPublicView()),
+          shapes: (this as unknown as ICanvas <IUser> & ICanvasVirtual<ICanvas <IShape>, IShape>)
             .shapes.map(shape => shape.toPublicView()),
         });
       },
@@ -266,6 +303,13 @@ canvasSchema.virtual('shapes', {
   localField: '_id',
   foreignField: 'canvas_id',
   justOne: false,
+});
+
+// Only fetches immediate children, not all descendants
+canvasSchema.virtual('child_canvases', {
+  ref: 'Canvas',
+  localField: '_id',
+  foreignField: 'parent_canvas.canvas',
 });
 
 // ALWAYS specify collection name explicitly ("canvases"), otherwise it will
