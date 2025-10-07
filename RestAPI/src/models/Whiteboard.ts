@@ -193,6 +193,7 @@ const CANVAS_POP_FIELDS_ATTRIBS = [
 
 const CANVAS_POP_FIELDS_FULL = [
   ...CANVAS_POP_FIELDS_ATTRIBS,
+  'child_canvases',
   'shapes',
 ];
 
