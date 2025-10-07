@@ -7,7 +7,7 @@ import {
 import {
   Whiteboard,
   Canvas,
-  type IWhiteboard,
+  type IWhiteboardFull,
   type IWhiteboardAttribView,
   type WhiteboardIdType,
   type IWhiteboardPermissionEnum,
@@ -36,7 +36,7 @@ export interface CreateWhiteboardRequest extends AuthorizedRequestBody {
 }
 
 export type GetWhiteboardRes = 
-  | { status: 'ok'; whiteboard: IWhiteboard<IUser>; }
+  | { status: 'ok'; whiteboard: IWhiteboardFull; }
   | { status: 'invalid_id'; }
   | { status: 'not_found'; }
   | { status: 'server_error'; message: string; }
@@ -183,21 +183,8 @@ export const createWhiteboard = async (
       ...collarboratorPermissionsFromEmail
     ];
 
-    const whiteboard = new Whiteboard({
-      name,
-      // canvases: [defaultCanvas], // TODO: remove
-      owner: ownerId,
-      shared_users: [ownerPermission, ...collaboratorPermissions]
-    });
-
-    console.log('Attempting to create new whiteboard:', whiteboard);
-
-    const whiteboardOut = await whiteboard.save()
-      .then(wb => wb.populateFull());
-
     // initialize every new whiteboard with a single empty canvas
-    const defaultCanvas = new Canvas({
-      whiteboard_id: whiteboardOut._id,
+    const rootCanvasModel = new Canvas({
       name: "Main Canvas",
       id: 0,
       width: 512,
@@ -205,8 +192,20 @@ export const createWhiteboard = async (
       allowed_users: [],
     });
 
-    await defaultCanvas.save();
-    await whiteboardOut.populateFull();
+    const rootCanvas = await rootCanvasModel.save();
+
+    const whiteboard = new Whiteboard({
+      name,
+      // canvases: [defaultCanvas], // TODO: remove
+      owner: ownerId,
+      root_canvas: rootCanvas._id,
+      shared_users: [ownerPermission, ...collaboratorPermissions]
+    });
+
+    console.log('Attempting to create new whiteboard:', whiteboard);
+
+    const whiteboardOut = await whiteboard.save()
+      .then(wb => wb.populateFull());
     
     res.status(201).json(whiteboardOut.toPublicView());
   } catch (err: any) {

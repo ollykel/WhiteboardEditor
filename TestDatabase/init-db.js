@@ -52,32 +52,10 @@ db.users.insertMany(users);
 
 const insertedUsers = db.users.find().toArray();
 
-// --- Create Whiteboards ---
-const whiteboards = [
-  {
-    _id: new ObjectId('68d5e8d4829da666aece5f4c'),
-    name: "Project Alpha",
-    time_created: new Date("2025-08-01T12:00:00.000Z"),
-    owner: insertedUsers[0]._id, // Alice
-    shared_users: [],
-  },
-  {
-    _id: new ObjectId('68d5e8d4829da666aece5f4d'),
-    name: "Project Beta",
-    time_created: new Date("2025-08-02T12:10:00.000Z"),
-    owner: insertedUsers[1]._id, // Bob
-    shared_users: [],
-  },
-];
-
-db.whiteboards.insertMany(whiteboards);
-
-const insertedWhiteboards = db.whiteboards.find().toArray();
-
+// --- Create Canvases ---
 const canvases = [
   {
     _id: new ObjectId('68d5e8d4829da666aece5f4e'),
-    whiteboard_id: insertedWhiteboards[0]._id,
     width: 800,
     height: 600,
     name: "Canvas Alpha",
@@ -88,7 +66,6 @@ const canvases = [
   },
   {
     _id: new ObjectId('68d5e8d4829da666aece5f4f'),
-    whiteboard_id: insertedWhiteboards[1]._id,
     width: 1024,
     height: 768,
     name: "Canvas Beta",
@@ -100,5 +77,31 @@ const canvases = [
 ];
 
 db.canvases.insertMany(canvases);
+
+const insertedCanvases = db.canvases.find().toArray();
+
+// --- Create Whiteboards ---
+const whiteboards = [
+  {
+    _id: new ObjectId('68d5e8d4829da666aece5f4c'),
+    name: "Project Alpha",
+    time_created: new Date("2025-08-01T12:00:00.000Z"),
+    owner: insertedUsers[0]._id, // Alice
+    root_canvas: insertedCanvases[0]._id,
+    shared_users: [],
+  },
+  {
+    _id: new ObjectId('68d5e8d4829da666aece5f4d'),
+    name: "Project Beta",
+    time_created: new Date("2025-08-02T12:10:00.000Z"),
+    owner: insertedUsers[1]._id, // Bob
+    root_canvas: insertedCanvases[1]._id,
+    shared_users: [],
+  },
+];
+
+db.whiteboards.insertMany(whiteboards);
+
+const insertedWhiteboards = db.whiteboards.find().toArray();
 
 print("Database initialized with test users and whiteboards.");
