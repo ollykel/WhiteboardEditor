@@ -17,7 +17,7 @@ import {
 
 import {
   Whiteboard,
-  type IWhiteboard,
+  type IWhiteboardFull,
   type IWhiteboardPermissionEnum,
 } from '../models/Whiteboard';
 
@@ -175,7 +175,7 @@ export type GetSharedWhiteboardsByUserRes =
   | { status: 'server_error'; }
   | { status: 'user_not_found'; }
   | { status: 'bad_request'; message: string; }
-  | { status: 'ok'; whiteboards: IWhiteboard<IUser>[]; }
+  | { status: 'ok'; whiteboards: IWhiteboardFull[]; }
 ;
 
 export const getSharedWhiteboardsByUser = async (
