@@ -1,69 +1,36 @@
+import React, { useEffect, useRef, useState } from "react";
 import Konva from "konva";
-import { useEffect, useRef, useState } from "react";
-import { Group } from "react-konva";
+import { Circle, Group, type KonvaNodeEvents } from "react-konva";
+import type { CanvasObjectIdType, VectorModel } from "@/types/CanvasObjectModel";
+import type { EditableObjectProps } from "@/dispatchers/editableObjectProps";
+import editableObjectProps from "@/dispatchers/editableObjectProps";
 
-interface EditableVectorProps {
-  points: number[];
+interface EditableVectorProps<VectorType extends VectorModel> extends EditableObjectProps {
+  id: string;
+  shapeModel: VectorType;
+  draggable: boolean;
+  handleUpdateShapes: (shapes: Record<CanvasObjectIdType, VectorType>) => void;
+  children: React.ReactElement<Konva.NodeConfig & KonvaNodeEvents>;
 }
 
-// Function to build anchor point
-function buildAnchor(layer: Konva.Layer, x: number, y: number) {
-  const anchor = new Konva.Circle({
-    x: x,
-    y: y,
-    radius: 5,
-    stroke: "#666",
-    fill: "#ddd",
-    strokeWidth: 2,
-    draggable: true,
-  });
-  layer.add(anchor);
-
-  // Add hover styling
-  anchor.on("mouseover", function () {
-    document.body.style.cursor = "pointer";
-    this.strokeWidth(4);
-  });
-
-  anchor.on("mouseout", function () {
-    document.body.style.cursor = "default";
-    this.strokeWidth(2);
-  });
-
-  // Update curves when anchor is moved
-  anchor.on("dragmove", function () {
-    // updateDottedLines();
-  });
-
-  return anchor;
-}
-
-const EditableVector = (props: EditableVectorProps) => {
-  const {
-    points,
-  } = props;
-
+const EditableVector = <VectorType extends VectorModel>({
+  id,
+  shapeModel,
+  draggable,
+  handleUpdateShapes,
+  children,
+  ...props
+}: EditableVectorProps<VectorType>) => {
   const [isSelected, setIsSelected] = useState(false);
+  const [localPoints, setLocalPoints] = useState(shapeModel.points);
   const vectorRef = useRef<Konva.Shape>(null);
-  
-  if (!vectorRef.current) return;
-  const layer = vectorRef.current.getLayer();
 
-  const x1 = points[0];
-  const y1 = points[1];
-  const x2 = points[2];
-  const y2 = points[3];
+  const handleSelect = (e: Konva.KonvaEventObject<MouseEvent>) => {
+    e.cancelBubble = true;
+    setIsSelected(true);
+  };
 
-  // Anchor points attach/detach
-  useEffect(() => {
-    if (!layer) return;
-    if (isSelected) {
-      buildAnchor(layer, x1, y1);
-      buildAnchor(layer, x2, y2); 
-    }
-  }, [isSelected]);
-
-   // Click outside to deselct
+  // Click outside to deselect
   useEffect(() => {
     const stage = vectorRef.current?.getStage();
     if (!stage) return;
@@ -74,15 +41,69 @@ const EditableVector = (props: EditableVectorProps) => {
 
     stage.on("click", listener);
     return () => {
-      stage.off("click", listener)
+      stage.off("click", listener);
     };
   }, []);
 
+  const updatePoints = (newPoints: number[]) => {
+    setLocalPoints(newPoints);
+    handleUpdateShapes({
+      [id]: {
+        type: "vector",
+        points: newPoints,
+        strokeColor: shapeModel.strokeColor,
+        strokeWidth: shapeModel.strokeWidth,
+      } as VectorType,
+    });
+  };
+
+  const handleAnchorDrag = (index: number, e: Konva.KonvaEventObject<DragEvent>) => {
+    const newPoints = [...localPoints];
+    newPoints[index * 2] = e.target.x();
+    newPoints[index * 2 + 1] = e.target.y();
+    updatePoints(newPoints);
+  };
+
   return (
-    <Group>
-      {}
-    </Group>
-  );
-}
+  <Group>
+    {React.cloneElement(children, {
+      id,
+      ref: vectorRef,
+      draggable,
+      onClick: handleSelect,
+      onTap: handleSelect,
+      hitStrokeWidth: 20,
+      ...editableObjectProps(shapeModel, draggable, handleUpdateShapes),
+      ...props
+    })}
+
+    {isSelected && (
+      <>
+        <Circle
+          x={localPoints[0]}
+          y={localPoints[1]}
+          radius={6}
+          fill="#ddd"
+          stroke="#5b6263ff"
+          strokeWidth={2}
+          draggable
+          onDragMove={(e) => handleAnchorDrag(0, e)}
+        />
+        <Circle
+          x={localPoints[2]}
+          y={localPoints[3]}
+          radius={6}
+          fill="#ddd"
+          stroke="#5b6263ff"
+          strokeWidth={2}
+          draggable
+          onDragMove={(e) => handleAnchorDrag(1, e)}
+        />
+      </>
+    )}
+  </Group>
+);
+
+};
 
 export default EditableVector;
