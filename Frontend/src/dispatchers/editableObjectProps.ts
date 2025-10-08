@@ -2,7 +2,7 @@ import Konva from 'konva';
 
 import type {
   CanvasObjectIdType,
-  ShapeModel
+  CanvasObjectModel,
 } from '@/types/CanvasObjectModel';  
 
 export interface EditableObjectProps {
@@ -15,7 +15,7 @@ export interface EditableObjectProps {
   onTransformEnd?: (ev: Konva.KonvaEventObject<DragEvent>) => void;
 }
 
-const editableObjectProps = <ShapeType extends ShapeModel> (
+const editableObjectProps = <ShapeType extends CanvasObjectModel> (
   shapeModel: ShapeType,
   isDraggable: boolean,
   handleUpdateShapes: (shapes: Record<CanvasObjectIdType, ShapeType>) => void
@@ -23,6 +23,7 @@ const editableObjectProps = <ShapeType extends ShapeModel> (
   const handleMouseOver = (ev: Konva.KonvaEventObject<MouseEvent>) => {
     const stage = ev.target.getStage();
 
+    console.log("Mouse over");
     if (stage) {
       stage.container().style.cursor = 'grab';
     }
@@ -87,6 +88,7 @@ const editableObjectProps = <ShapeType extends ShapeModel> (
     const rotation = node.rotation();
 
     let update: ShapeType;
+    console.log("in transform end");
 
     switch(shapeModel.type) {
       case "rect": 
@@ -118,6 +120,13 @@ const editableObjectProps = <ShapeType extends ShapeModel> (
           radiusY: node.height() / 2,
           rotation,
         };
+        break;
+      case "vector":
+        update = {
+          ...shapeModel,
+          points: (node as any).points?.() ?? shapeModel.points, // keep vector geometry
+        };
+        console.log("in vector case: ", shapeModel); // debug
         break;
     };
 
