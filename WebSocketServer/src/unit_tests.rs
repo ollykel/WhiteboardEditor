@@ -16,6 +16,7 @@ mod unit_tests {
         // not even valid json
         let test_client_id = 0;
         let client_msg_s = "This is not valid json";
+        let test_canvas_id = ObjectId::new();
 
         // -- initialize client state
         let whiteboard = Whiteboard {
@@ -26,6 +27,7 @@ mod unit_tests {
                 shared_users: vec![],
                 permissions_by_user_id: HashMap::new(),
             },
+            root_canvas: test_canvas_id,
             canvases: HashMap::new(),
         };
 
@@ -145,17 +147,19 @@ mod unit_tests {
                 shared_users: vec![],
                 permissions_by_user_id: HashMap::new(),
             },
+            root_canvas: canvas_a_id,
             canvases: HashMap::from([
                 (
                     canvas_a_id.clone(),
                     Canvas {
                         id: canvas_a_id.clone(),
-                        next_shape_id_base: 0,
                         width: 512,
                         height: 512,
                         name: String::from("Canvas A"),
                         time_created: Utc::now(),
                         time_last_modified: Utc::now(),
+                        parent_canvas: None,
+                        child_canvases: vec![],
                         shapes: HashMap::new(),
                         allowed_users: None, // None = open to all
                     }
@@ -418,6 +422,7 @@ mod unit_tests {
                     (String::from(target_uid_s), WhiteboardPermissionEnum::Edit),
                 ]),
             },
+            root_canvas: ObjectId::new(),
             canvases: HashMap::new(),
         };
         let client_state = ClientState {
@@ -561,6 +566,7 @@ mod unit_tests {
                 ]),
             },
             // no canvases
+            root_canvas: ObjectId::new(),
             canvases: HashMap::new(),
         };
 

@@ -273,18 +273,24 @@ async fn handle_connection(ws: WebSocket, whiteboard_id: WhiteboardIdType, conne
                         if ! diffs.is_empty() {
                             for diff in diffs.iter() {
                                 match &diff {
-                                    WhiteboardDiff::CreateCanvas { name, width, height } => {
-                                        println!("Creating canvas \"{}\" in database ...", name);
+                                    WhiteboardDiff::CreateCanvas { canvas } => {
+                                        println!("Creating canvas \"{}\" in database ...", canvas.name);
 
                                         let now = bson::DateTime::now();
                                         let canvas_doc = CanvasMongoDBView {
-                                            id: ObjectId::new(),
+                                            id: canvas.id,
                                             whiteboard_id: whiteboard_id.clone(),
-                                            name: name.clone(),
-                                            width: *width,
-                                            height: *height,
+                                            name: canvas.name.clone(),
+                                            width: canvas.width,
+                                            height: canvas.height,
                                             time_created: now.clone(),
                                             time_last_modified: now.clone(),
+                                            parent_canvas: match &canvas.parent_canvas {
+                                                None => None,
+                                                Some(parent) => Some(
+                                                    CanvasParentRefMongoDBView::from_canvas_parent_ref(parent)
+                                                ),
+                                            },
                                             allowed_users: None,
                                         };
                                         let create_canvas_res = canvas_coll.insert_one(&canvas_doc).await;
@@ -449,18 +455,24 @@ async fn handle_connection(ws: WebSocket, whiteboard_id: WhiteboardIdType, conne
                         if ! diffs.is_empty() {
                             for diff in diffs.iter() {
                                 match &diff {
-                                    WhiteboardDiff::CreateCanvas { name, width, height } => {
-                                        println!("Creating canvas \"{}\" in database ...", name);
+                                    WhiteboardDiff::CreateCanvas { canvas } => {
+                                        println!("Creating canvas \"{}\" in database ...", canvas.name);
 
                                         let now = bson::DateTime::now();
                                         let canvas_doc = CanvasMongoDBView {
                                             id: ObjectId::new(),
                                             whiteboard_id: whiteboard_id.clone(),
-                                            name: name.clone(),
-                                            width: *width,
-                                            height: *height,
+                                            name: canvas.name.clone(),
+                                            width: canvas.width,
+                                            height: canvas.height,
                                             time_created: now.clone(),
                                             time_last_modified: now.clone(),
+                                            parent_canvas: match &canvas.parent_canvas {
+                                                None => None,
+                                                Some(parent) => Some(
+                                                    CanvasParentRefMongoDBView::from_canvas_parent_ref(parent)
+                                                ),
+                                            },
                                             allowed_users: None,
                                         };
                                         let create_canvas_res = canvas_coll.insert_one(&canvas_doc).await;
