@@ -16,7 +16,16 @@ use futures::{
 };
 
 use tokio::sync::broadcast;
-use serde::{Deserialize, Serialize};
+use serde::{
+    self,
+    Deserialize,
+    Serialize,
+};
+use serde_json;
+use serde_with::{
+    serde_as,
+    DisplayFromStr,
+};
 
 use mongodb::{
     Collection,
@@ -189,26 +198,39 @@ pub struct UserSummary {
     pub username: String,
 }
 
+#[serde_as]
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CanvasClientView {
-    pub id: String,
+    // Option because it won't have an ID assigned when coming from the client
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde_as(as = "Option<DisplayFromStr>")]
+    pub id: Option<ObjectId>,
     pub width: i32,
     pub height: i32,
     pub name: String,
-    pub time_created: String,           // rfc3339-encoded datetime
-    pub time_last_modified: String,     // rfc3339-encoded datetime
-    pub shapes: HashMap<String, ShapeModel>,
-    pub allowed_users: Vec<String>,     // cast ObjectId to string for proper client-side parsing
-}
+    pub time_created: String,               // rfc3339-encoded datetime
+    pub time_last_modified: String,         // rfc3339-encoded datetime
+    #[serde_as(as = "Vec<DisplayFromStr>")]
+    pub child_canvases: Vec<CanvasIdType>,  // Whiteboard holds complete list of canvases
+    #[serde_as(as = "HashMap<DisplayFromStr, _>")]
+    pub shapes: HashMap<CanvasObjectIdType, ShapeModel>,
+    pub allowed_users: Vec<ObjectId>,         // cast ObjectId to string for proper client-side parsing
+}// -- end struct CanvasClientView
 
+#[serde_as]
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct WhiteboardClientView {
-    pub id: String,
+    // Option because it won't have an ID assigned when coming from the client
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde_as(as = "Option<DisplayFromStr>")]
+    pub id: Option<ObjectId>,
     pub name: String,
     pub canvases: Vec<CanvasClientView>,
-}
+    #[serde_as(as = "DisplayFromStr")]
+    pub root_canvas: CanvasIdType,
+}// -- end struct WhiteboardClientView
 
 // === WhiteboardDiff =============================================================================
 //
@@ -221,15 +243,27 @@ pub struct WhiteboardClientView {
 // instead of duplicating the given fields.
 //
 // ================================================================================================
-#[derive(Debug, Clone, Serialize)]
-#[serde(tag = "type", rename_all = "snake_case", rename_all_fields="camelCase")]
+#[derive(Debug, Clone)]
 pub enum WhiteboardDiff {
-    CreateCanvas { name: String, width: i32, height: i32 },
-    DeleteCanvases { canvas_ids: Vec<CanvasIdType> },
-    CreateShapes { canvas_id: CanvasIdType, shapes: HashMap<CanvasObjectIdType, ShapeModel> },
-    UpdateShapes { canvas_id: CanvasIdType, shapes: HashMap<CanvasObjectIdType, ShapeModel> },
-    UpdateCanvasAllowedUsers { canvas_id: CanvasIdType, allowed_users: Vec<ObjectId> },
-}
+    CreateCanvas {
+       canvas: Canvas,
+    },
+    DeleteCanvases {
+        canvas_ids: Vec<CanvasIdType>,
+    },
+    CreateShapes {
+        canvas_id: CanvasIdType,
+        shapes: HashMap<CanvasObjectIdType, ShapeModel>,
+    },
+    UpdateShapes {
+        canvas_id: CanvasIdType,
+        shapes: HashMap<CanvasObjectIdType, ShapeModel>,
+    },
+    UpdateCanvasAllowedUsers {
+        canvas_id: CanvasIdType,
+        allowed_users: Vec<ObjectId>,
+    },
+}// -- end enum WhiteboardDiff
 
 // === ClientError ================================================================================
 //
@@ -339,9 +373,10 @@ pub enum ClientSocketMessage {
         ShapeModel>,
     },
     CreateCanvas {
+        name: String,
         width: i32,
         height: i32,
-        name: String,
+        parent_canvas: CanvasParentRefClientView,
         allowed_users: HashSet::<ObjectId>,
     },
     DeleteCanvases {
@@ -356,15 +391,84 @@ pub enum ClientSocketMessage {
     },
 }
 
+// === CanvasParentRef ============================================================================
+//
+// Reference to a Canvas' parent, together with the xy coordinates of the top-left corner of the
+// current Canvas within its parent.
+//
+// ================================================================================================
+#[derive(Clone, Debug, PartialEq)]
+pub struct CanvasParentRef {
+    canvas_id: ObjectId,
+    x_origin: i32,
+    y_origin: i32,
+}// -- end struct CanvasParentRef
+
+#[serde_as]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CanvasParentRefClientView {
+    #[serde_as(as = "DisplayFromStr")]
+    canvas_id: ObjectId,
+    x_origin: i32,
+    y_origin: i32,
+}// -- end struct CanvasParentRefClientView
+
+impl CanvasParentRefClientView {
+    pub fn from_canvas_parent_ref(parent_ref: &CanvasParentRef) -> Self {
+        Self {
+            canvas_id: parent_ref.canvas_id,
+            x_origin: parent_ref.x_origin,
+            y_origin: parent_ref.y_origin,
+        }
+    }// -- end from_canvas_parent_ref
+
+    pub fn to_canvas_parent_ref(&self) -> CanvasParentRef {
+        CanvasParentRef {
+            canvas_id: self.canvas_id,
+            x_origin: self.x_origin,
+            y_origin: self.y_origin,
+        }
+    }// -- end to_canvas_parent_ref
+}// -- end impl CanvasParentRefClientView
+
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub struct CanvasParentRefMongoDBView {
+    #[serde(rename = "canvas")]
+    canvas_id: ObjectId,
+    x_origin: i32,
+    y_origin: i32,
+}// -- end struct CanvasParentRefClientView
+
+impl CanvasParentRefMongoDBView {
+    pub fn from_canvas_parent_ref(parent_ref: &CanvasParentRef) -> Self {
+        Self {
+            canvas_id: parent_ref.canvas_id,
+            x_origin: parent_ref.x_origin,
+            y_origin: parent_ref.y_origin,
+        }
+    }// -- end from_canvas_parent_ref
+
+    pub fn to_canvas_parent_ref(&self) -> CanvasParentRef {
+        CanvasParentRef {
+            canvas_id: self.canvas_id,
+            x_origin: self.x_origin,
+            y_origin: self.y_origin,
+        }
+    }// -- end to_canvas_parent_ref
+}// -- end impl CanvasParentRefMongoDBView
+
 #[derive(Clone, Debug)]
 pub struct Canvas {
     pub id: CanvasIdType,
-    pub next_shape_id_base: u64,
     pub width: i32,
     pub height: i32,
     pub name: String,
     pub time_created: chrono::DateTime<Utc>,
     pub time_last_modified: chrono::DateTime<Utc>,
+    pub parent_canvas: Option<CanvasParentRef>,
+    pub child_canvases: Vec<CanvasIdType>,
     pub shapes: HashMap<CanvasObjectIdType, ShapeModel>,
     pub allowed_users: Option<HashSet<ObjectId>>, // None = open to all
 }
@@ -374,19 +478,17 @@ impl Canvas {
         // At the moment, the client view is identical to the Canvas type itself, but this may not
         // always be the case.
         CanvasClientView {
-            id: self.id.to_string(),
+            id: Some(self.id),
             width: self.width,
             height: self.height,
             name: self.name.clone(),
-            // shapes: self.shapes.clone(),
-            shapes: self.shapes.iter()
-                .map(|(obj_id, shape)| (obj_id.to_string(), shape.clone()))
-                .collect(),
+            child_canvases: self.child_canvases.clone(),
+            shapes: self.shapes.clone(),
             time_created: self.time_created.to_rfc3339(),
             time_last_modified: self.time_last_modified.to_rfc3339(),
             allowed_users: match &self.allowed_users {
                 Some(set) => set.iter()
-                    .map(|oid| oid.to_string())
+                    .map(|oid| *oid)
                     .collect(),
                 None => vec![], // empty array means open to all
             },
@@ -423,7 +525,7 @@ pub type WhiteboardPermissionMongoDBView = WhiteboardPermission;
 // === WhiteboardMetadata =========================================================================
 //
 // Encompasses data about a whiteboard that doesn't pertain to graphic elements that are updated
-// during the process of users editing the whtieboard. This includes the whiteboard's name, owner
+// during the process of users editing the whiteboard. This includes the whiteboard's name, owner
 // id, user permissions, etc.
 //
 // ================================================================================================
@@ -442,18 +544,20 @@ pub struct Whiteboard {
     pub id: WhiteboardIdType,
     pub metadata: WhiteboardMetadata,
     pub canvases: HashMap<CanvasIdType, Canvas>,
-}
+    pub root_canvas: CanvasIdType,
+}// -- end struct Whiteboard
 
 impl Whiteboard {
     pub fn to_client_view(&self) -> WhiteboardClientView {
         // At the moment, the client view is identical to the Canvas type itself, but this may not
         // always be the case.
         WhiteboardClientView {
-            id: self.id.to_string(),
+            id: Some(self.id),
             name: self.metadata.name.clone(),
             canvases: self.canvases.iter()
-                .map(|(_, c)| c.to_client_view())
-                .collect()
+                .map(|(_, canvas)| canvas.to_client_view())
+                .collect(),
+            root_canvas: self.root_canvas.clone(),
         }
     }// end pub fn to_client_view(&self) -> CanvasClientView
 }
@@ -483,6 +587,7 @@ pub struct CanvasMongoDBView {
     pub name: String,
     pub time_created: bson::DateTime,
     pub time_last_modified: bson::DateTime,
+    pub parent_canvas: Option<CanvasParentRefMongoDBView>,
     pub allowed_users: Option<Vec<ObjectId>>
 }
 
@@ -494,13 +599,17 @@ impl CanvasMongoDBView {
 
         Canvas {
             id: self.id.clone(),
-            next_shape_id_base: 0,
             width: self.width,
             height: self.height,
             name: self.name.clone(),
             time_created: dt_bson_to_chrono_utc(&self.time_created),
             time_last_modified: dt_bson_to_chrono_utc(&self.time_last_modified),
             shapes: shapes,
+            parent_canvas: match self.parent_canvas {
+                None => None,
+                Some(ref parent_ref) => Some(parent_ref.to_canvas_parent_ref()),
+            },
+            child_canvases: vec![],
             allowed_users: match &self.allowed_users {
                 None => None,
                 Some(users) => Some(users.iter().map(|uid| uid.clone()).collect())
@@ -565,16 +674,19 @@ pub struct WhiteboardMongoDBView {
     pub id: ObjectId,
     #[serde(flatten)]
     metadata: WhiteboardMetadataMongoDBView,
+    canvases: Vec<CanvasMongoDBView>,
+    root_canvas: ObjectId,
 }// -- end struct WhiteboardMongoDBView
 
 impl WhiteboardMongoDBView {
-    pub fn to_whiteboard(&self, canvases: &[Canvas]) -> Whiteboard {
+    pub fn to_whiteboard(&self) -> Whiteboard {
         Whiteboard {
-            id: self.id.clone(),
+            id: self.id,
             metadata: self.metadata.to_whiteboard_metadata(),
-            canvases: canvases.iter()
-                .map(|canvas| (canvas.id.clone(), canvas.clone()))
+            canvases: self.canvases.iter()
+                .map(|canvas_view| (canvas_view.id, canvas_view.to_canvas(&[])))
                 .collect(),
+            root_canvas: self.root_canvas,
         }
     }
 }
@@ -861,7 +973,7 @@ pub async fn handle_authenticated_client_message(
                         }
                     }
                 },
-                CreateCanvas { width, height, name, allowed_users } => {
+                CreateCanvas { name, width, height, parent_canvas, allowed_users } => {
                     let mut whiteboard = client_state.whiteboard_ref.lock().await;
                     let new_canvas_id = ObjectId::new();
 
@@ -872,26 +984,16 @@ pub async fn handle_authenticated_client_message(
                     // TODO: actually fetch user's id from database
                     // allowed_users.insert(ObjectId::new());
 
-                    // valid input: add to diffs
-                    {
-                        let mut diffs = client_state.diffs.lock().await;
-                    
-                        diffs.push(WhiteboardDiff::CreateCanvas{
-                            name: name.clone(),
-                            width: width,
-                            height: height,
-                        });
-                    }
-
                     // instantiate new canvas
                     let canvas = Canvas {
                         id: new_canvas_id,
-                        next_shape_id_base: 0,
+                        name: name.clone(),
                         width: width,
                         height: height,
-                        name: name.clone(),
+                        parent_canvas: Some(parent_canvas.to_canvas_parent_ref()),
                         time_created: Utc::now(),
                         time_last_modified: Utc::now(),
+                        child_canvases: Vec::new(),
                         shapes: HashMap::<CanvasObjectIdType, ShapeModel>::new(),
                         allowed_users: Some(allowed_users),
                     };
@@ -900,6 +1002,15 @@ pub async fn handle_authenticated_client_message(
                         new_canvas_id,
                         canvas.clone()
                     );
+
+                    // valid input: add to diffs
+                    {
+                        let mut diffs = client_state.diffs.lock().await;
+                    
+                        diffs.push(WhiteboardDiff::CreateCanvas{
+                            canvas: canvas.clone(),
+                        });
+                    }
 
                     Some(ServerSocketMessage::CreateCanvas{
                         client_id: client_state.client_id,
@@ -1195,7 +1306,7 @@ pub async fn get_whiteboard_by_id(db: &Database, wid: &WhiteboardIdType) -> Resu
         canvases.push(canvas_view.to_canvas(canvas_objects.as_slice()));
     }// end for canvas_view in canvas_views.iter()
 
-    Ok(Some(whiteboard_view.to_whiteboard(canvases.as_slice())))
+    Ok(Some(whiteboard_view.to_whiteboard()))
 }// -- end fn get_whiteboard_by_id
 
 // === JWTClaims ==================================================================================
