@@ -33,7 +33,7 @@ const EditableShape = <ShapeType extends ShapeModel> ({
 
   const handleSelect = () => setIsSelected(true);
 
-  // Click outside to deselct
+  // Click outside to deselect
   useEffect(() => {
     const stage = shapeRef.current?.getStage();
     if (!stage) return;
