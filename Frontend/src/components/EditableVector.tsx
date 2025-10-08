@@ -45,24 +45,34 @@ const EditableVector = <VectorType extends VectorModel>({
     };
   }, []);
 
-  const updatePoints = (newPoints: number[]) => {
+  const handleAnchorDragMove = (index: number, e: Konva.KonvaEventObject<DragEvent>) => {
+    const node = e.target;
+    const newPoints = [...localPoints];
+
+    newPoints[index * 2] = node.x();
+    newPoints[index * 2 + 1] = node.y();
+
+    // Update local state and redraw the vector visually only
     setLocalPoints(newPoints);
+    vectorRef.current?.setAttrs({ points: newPoints });
+  };
+
+  const handleAnchorDragEnd = (index: number, e: Konva.KonvaEventObject<DragEvent>) => {
+    const node = e.target;
+    const newPoints = [...localPoints];
+
+    newPoints[index * 2] = node.x();
+    newPoints[index * 2 + 1] = node.y();
+
+    // Fire the global update ONCE at the end
     handleUpdateShapes({
       [id]: {
-        type: "vector",
+        ...shapeModel,
         points: newPoints,
-        strokeColor: shapeModel.strokeColor,
-        strokeWidth: shapeModel.strokeWidth,
       } as VectorType,
     });
   };
 
-  const handleAnchorDrag = (index: number, e: Konva.KonvaEventObject<DragEvent>) => {
-    const newPoints = [...localPoints];
-    newPoints[index * 2] = e.target.x();
-    newPoints[index * 2 + 1] = e.target.y();
-    updatePoints(newPoints);
-  };
 
   return (
   <Group>
@@ -87,7 +97,8 @@ const EditableVector = <VectorType extends VectorModel>({
           stroke="#5b6263ff"
           strokeWidth={2}
           draggable
-          onDragMove={(e) => handleAnchorDrag(0, e)}
+          onDragMove={(e) => handleAnchorDragMove(0, e)}
+          onDragEnd={(e) => handleAnchorDragEnd(0, e)}
         />
         <Circle
           x={localPoints[2]}
@@ -97,7 +108,8 @@ const EditableVector = <VectorType extends VectorModel>({
           stroke="#5b6263ff"
           strokeWidth={2}
           draggable
-          onDragMove={(e) => handleAnchorDrag(1, e)}
+          onDragMove={(e) => handleAnchorDragMove(1, e)}
+          onDragEnd={(e) => handleAnchorDragEnd(1, e)}
         />
       </>
     )}
