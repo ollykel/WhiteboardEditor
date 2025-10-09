@@ -37,43 +37,41 @@ const useEllipseDispatcher = ({
   const handlePointerDown = (ev: Konva.KonvaEventObject<MouseEvent>) => {
     ev.cancelBubble = true;
 
-    const { x: targetX, y: targetY } = ev.currentTarget.getPosition();
-    const { offsetX, offsetY } = ev.evt;
+    const pos = ev.currentTarget.getRelativePointerPosition();
 
-    setMouseDownCoords({
-      x: offsetX - targetX,
-      y: offsetY - targetY
-    });
-    setMouseCoords({
-      x: offsetX - targetX,
-      y: offsetY - targetY
-    });
+    if (pos) {
+      const { x, y } = pos;
+
+      setMouseDownCoords({ x, y });
+      setMouseCoords({ x, y });
+    }
   };
 
   const handlePointerMove = (ev: Konva.KonvaEventObject<MouseEvent>) => {
     ev.cancelBubble = true;
 
-    const { x: targetX, y: targetY } = ev.currentTarget.getPosition();
-    const { offsetX, offsetY } = ev.evt;
+    const pos = ev.currentTarget.getRelativePointerPosition();
 
-    setMouseCoords({
-      x: offsetX - targetX,
-      y: offsetY - targetY
-    });
+    if (pos) {
+      const { x, y } = pos;
+
+      setMouseCoords({ x, y });
+    }
   };
 
   const handlePointerUp = (ev: Konva.KonvaEventObject<MouseEvent>) => {
     ev.cancelBubble = true;
 
-    if (mouseDownCoords !== null) {
-      const { x: targetX, y: targetY } = ev.currentTarget.getPosition();
-      const { offsetX: xRelease, offsetY: yRelease } = ev.evt;
+    const pos = ev.currentTarget.getRelativePointerPosition();
+
+    if (pos && mouseDownCoords) {
+      const { x: xRelease, y: yRelease } = pos;
       const { x: xOrigin, y: yOrigin } = mouseDownCoords;
 
-      const xCenter = (xOrigin + xRelease - targetX) / 2;
-      const yCenter = (yOrigin + yRelease - targetY) / 2;
-      const xRadius = Math.abs((xRelease - xOrigin - targetX) / 2);
-      const yRadius = Math.abs((yRelease - yOrigin - targetY) / 2); 
+      const xCenter = (xOrigin + xRelease) / 2;
+      const yCenter = (yOrigin + yRelease) / 2;
+      const xRadius = Math.abs((xRelease - xOrigin) / 2);
+      const yRadius = Math.abs((yRelease - yOrigin) / 2); 
 
       addShapes([{
         type: 'ellipse',
