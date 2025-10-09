@@ -213,6 +213,7 @@ pub struct CanvasClientView {
     pub time_last_modified: String,         // rfc3339-encoded datetime
     #[serde_as(as = "HashMap<DisplayFromStr, _>")]
     pub shapes: HashMap<CanvasObjectIdType, ShapeModel>,
+    #[serde_as(as = "Vec<DisplayFromStr>")]
     pub allowed_users: Vec<ObjectId>,         // cast ObjectId to string for proper client-side parsing
 }// -- end struct CanvasClientView
 

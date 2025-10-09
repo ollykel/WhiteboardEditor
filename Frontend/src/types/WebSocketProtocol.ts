@@ -63,7 +63,8 @@ export interface WhiteboardAttribs {
   id: WhiteboardIdType;
   name: string;
   owner: User;
-  shared_users: UserPermission[];
+  rootCanvas: WhiteboardIdType;
+  sharedUsers: UserPermission[];
 }
 
 // Contains nested data
