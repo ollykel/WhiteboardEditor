@@ -104,8 +104,8 @@ const EditableVector = <VectorType extends VectorModel>({
   // Override the onDragEnd handler for vectors to change points rather than x, y
   const vectorEditableProps = {
     ...editableObjectProps(shapeModel, draggable, handleUpdateShapes),
-    onDragEnd: handleVectorDragEnd,
     onDragStart: () => setIsSelected(false),
+    onDragEnd: handleVectorDragEnd,
   }
 
   return (
@@ -135,7 +135,7 @@ const EditableVector = <VectorType extends VectorModel>({
           onDragEnd={(e) => handleAnchorDragEnd(0, e)}
           onMouseOver={(e) => {
             const stage = e.target.getStage();
-            if (stage) stage.container().style.cursor = 'nesw-resize'; // coordinate arrow
+            if (stage) stage.container().style.cursor = 'move'; // coordinate arrow
           }}
           onMouseOut={(e) => {
             const stage = e.target.getStage();
@@ -154,7 +154,7 @@ const EditableVector = <VectorType extends VectorModel>({
           onDragEnd={(e) => handleAnchorDragEnd(1, e)}
           onMouseOver={(e) => {
             const stage = e.target.getStage();
-            if (stage) stage.container().style.cursor = 'nesw-resize'; // coordinate arrow
+            if (stage) stage.container().style.cursor = 'move'; // coordinate arrow
           }}
           onMouseOut={(e) => {
             const stage = e.target.getStage();
