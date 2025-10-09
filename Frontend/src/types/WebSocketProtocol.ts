@@ -42,6 +42,11 @@ export interface CanvasAttribs {
   width: number;
   height: number;
   name: string;
+  parentCanvas?: {
+    canvasId: string;
+    originX: number;
+    originY: number;
+  };
   timeCreated: string;
   timeLastModified: string;
 }
