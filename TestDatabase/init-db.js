@@ -186,7 +186,13 @@ const whiteboards = [
     time_created: new Date("2025-08-01T12:00:00.000Z"),
     owner: insertedUsers[0]._id, // Alice
     root_canvas: insertedCanvases[0]._id,
-    shared_users: [],
+    shared_users: [
+      {
+        type: 'user',
+        user: new ObjectId('68d5e8cf829da666aece5f47'), // Alice
+        permission: 'own',
+      }
+    ],
   },
   {
     _id: new ObjectId('68d5e8d4829da666aece5f57'),
@@ -194,7 +200,13 @@ const whiteboards = [
     time_created: new Date("2025-08-02T12:10:00.000Z"),
     owner: insertedUsers[1]._id, // Bob
     root_canvas: insertedCanvases[1]._id,
-    shared_users: [],
+    shared_users: [
+      {
+        type: 'user',
+        user: new ObjectId('68d5e8d4829da666aece5f48'), // Bob
+        permission: 'own',
+      }
+    ],
   },
 ];
 

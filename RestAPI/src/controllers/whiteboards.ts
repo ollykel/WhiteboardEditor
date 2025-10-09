@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import {
-  Types
+  Types,
 } from "mongoose";
 
 // --- local imports
@@ -186,7 +186,6 @@ export const createWhiteboard = async (
     // initialize every new whiteboard with a single empty canvas
     const rootCanvasModel = new Canvas({
       name: "Main Canvas",
-      id: 0,
       width: 512,
       height: 512,
       allowed_users: [],
