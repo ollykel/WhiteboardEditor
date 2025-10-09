@@ -62,6 +62,8 @@ const editableObjectProps = <ShapeType extends CanvasObjectModel> (
       [id]: ({ ...shapeModel, x, y })
     };
 
+    console.log("in handleDragEnd"); // debug
+
     handleUpdateShapes(update);
   };
 
@@ -88,7 +90,7 @@ const editableObjectProps = <ShapeType extends CanvasObjectModel> (
     const rotation = node.rotation();
 
     let update: ShapeType;
-    console.log("in transform end");
+    console.log("in transform end"); // debug
 
     switch(shapeModel.type) {
       case "rect": 
@@ -121,13 +123,8 @@ const editableObjectProps = <ShapeType extends CanvasObjectModel> (
           rotation,
         };
         break;
-      case "vector":
-        update = {
-          ...shapeModel,
-          points: (node as any).points?.() ?? shapeModel.points, // keep vector geometry
-        };
-        console.log("in vector case: ", shapeModel); // debug
-        break;
+      default:
+        update = {...shapeModel};
     };
 
     handleUpdateShapes({ [id]: update });
