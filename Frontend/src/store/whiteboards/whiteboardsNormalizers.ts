@@ -13,6 +13,7 @@ import {
 
 export interface WhiteboardNormal extends CanvasNormal {
   whiteboards: Record<WhiteboardIdType, WhiteboardAttribs>;
+  childCanvasesByCanvas: Record<string, CanvasKeyType[]>;
   canvasesByWhiteboard: Record<WhiteboardIdType, CanvasKeyType[]>;
 }
 
@@ -28,6 +29,23 @@ export const normalizeWhiteboard = (
   const {
     id,
   } = whiteboard;
+
+  // -- first, generate mapping of canvases to children
+  const childCanvasesByCanvas : Record<string, CanvasKeyType[]> = {};
+
+  for (const canvas of whiteboard.canvases) {
+    if (canvas.parentCanvas) {
+      const childCanvasKey : CanvasKeyType = [id, canvas.id];
+      const { canvasId: parentCanvasId } = canvas.parentCanvas;
+      const parentCanvasKey : CanvasKeyType = [id, parentCanvasId];
+
+      if (parentCanvasKey.toString() in childCanvasesByCanvas) {
+        childCanvasesByCanvas[parentCanvasKey.toString()].push(childCanvasKey);
+      } else {
+        childCanvasesByCanvas[parentCanvasKey.toString()] = [childCanvasKey];
+      }
+    }
+  }// -- end for (const canvas of whiteboard.canvases)
 
   const {
     canvases,
@@ -62,6 +80,7 @@ export const normalizeWhiteboard = (
       [id]: whiteboard
     },
     canvases,
+    childCanvasesByCanvas,
     canvasesByWhiteboard: {
       [id]: whiteboard.canvases.map(({ id: canvasId }) => {
         const canvasKey: CanvasKeyType = [id, canvasId];
