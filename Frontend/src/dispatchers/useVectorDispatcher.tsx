@@ -13,11 +13,12 @@ import type {
 import type {
   CanvasObjectIdType,
   CanvasObjectModel,
-  VectorModel
+  VectorModel,
 } from '@/types/CanvasObjectModel';
 import type {
   EventCoords
 } from '@/types/EventCoords';
+import EditableVector from '@/components/EditableVector';
 
 // === useVectorDispatcher =====================================================
 //
@@ -53,7 +54,7 @@ const useVectorDispatcher = ({
       addShapes([{
         type: 'vector',
         ...shapeAttributes,
-        points: [xA, yA, xB, yB]
+        points: [xB, yB, xA, yA]
       }]);
       setMouseDownCoords(null);
     }
@@ -79,7 +80,7 @@ const useVectorDispatcher = ({
     key: string | number,
     model: CanvasObjectModel,
     isDraggable: boolean,
-    _handleUpdateShapes: (shapes: Record<CanvasObjectIdType, VectorModel>) => void
+    handleUpdateShapes: (shapes: Record<CanvasObjectIdType, CanvasObjectModel>) => void
   ): React.JSX.Element | null => {
     if (model.type !== 'vector') {
       return null;
@@ -87,19 +88,19 @@ const useVectorDispatcher = ({
       const { strokeColor, strokeWidth, points } = model;
 
       return (
-        <Line
+        <EditableVector<VectorModel>
           key={key}
           id={`${key}`}
-          points={points}
-          stroke={strokeColor}
-          strokeWidth={strokeWidth}
           draggable={isDraggable}
-          onMouseOver={undefined}
-          onMouseOut={undefined}
-          onMouseDown={undefined}
-          onMouseUp={undefined}
-          onDragEnd={undefined}
-        />
+          shapeModel={model}
+          handleUpdateShapes={handleUpdateShapes}
+        >
+          <Line
+            points={points}
+            stroke={strokeColor}
+            strokeWidth={strokeWidth}
+          />
+        </EditableVector>
       );
     }
   };

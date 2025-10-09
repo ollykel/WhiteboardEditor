@@ -2,7 +2,7 @@ import Konva from 'konva';
 
 import type {
   CanvasObjectIdType,
-  ShapeModel
+  CanvasObjectModel,
 } from '@/types/CanvasObjectModel';  
 
 export interface EditableObjectProps {
@@ -15,7 +15,7 @@ export interface EditableObjectProps {
   onTransformEnd?: (ev: Konva.KonvaEventObject<DragEvent>) => void;
 }
 
-const editableObjectProps = <ShapeType extends ShapeModel> (
+const editableObjectProps = <ShapeType extends CanvasObjectModel> (
   shapeModel: ShapeType,
   isDraggable: boolean,
   handleUpdateShapes: (shapes: Record<CanvasObjectIdType, ShapeType>) => void
@@ -23,6 +23,7 @@ const editableObjectProps = <ShapeType extends ShapeModel> (
   const handleMouseOver = (ev: Konva.KonvaEventObject<MouseEvent>) => {
     const stage = ev.target.getStage();
 
+    console.log("Mouse over");
     if (stage) {
       stage.container().style.cursor = 'grab';
     }
@@ -61,6 +62,8 @@ const editableObjectProps = <ShapeType extends ShapeModel> (
       [id]: ({ ...shapeModel, x, y })
     };
 
+    console.log("in handleDragEnd"); // debug
+
     handleUpdateShapes(update);
   };
 
@@ -87,6 +90,7 @@ const editableObjectProps = <ShapeType extends ShapeModel> (
     const rotation = node.rotation();
 
     let update: ShapeType;
+    console.log("in transform end"); // debug
 
     switch(shapeModel.type) {
       case "rect": 
@@ -119,6 +123,8 @@ const editableObjectProps = <ShapeType extends ShapeModel> (
           rotation,
         };
         break;
+      default:
+        update = {...shapeModel};
     };
 
     handleUpdateShapes({ [id]: update });

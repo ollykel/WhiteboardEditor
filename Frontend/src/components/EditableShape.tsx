@@ -33,7 +33,7 @@ const EditableShape = <ShapeType extends ShapeModel> ({
 
   const handleSelect = () => setIsSelected(true);
 
-  // Click outside to deselct
+  // Click outside to deselect
   useEffect(() => {
     const stage = shapeRef.current?.getStage();
     if (!stage) return;
@@ -48,6 +48,20 @@ const EditableShape = <ShapeType extends ShapeModel> ({
     };
   }, []);
 
+  // Override onDragEnd to reselect at end
+  const { onDragEnd } = editableObjectProps(shapeModel, draggable, handleUpdateShapes);
+  const shapeOnDragEnd = (ev: Konva.KonvaEventObject<DragEvent>) => {
+    if (onDragEnd) {
+      onDragEnd(ev);
+    }
+    setIsSelected(true);
+  }
+
+  const shapeEditableProps = {
+    ...editableObjectProps(shapeModel, draggable, handleUpdateShapes),
+    onDragEnd: shapeOnDragEnd,
+  }
+
   return (
     <Group>
       {React.cloneElement(children, {
@@ -56,10 +70,11 @@ const EditableShape = <ShapeType extends ShapeModel> ({
         draggable,
         onClick: handleSelect,
         onTap: handleSelect,
-        ...editableObjectProps(shapeModel, draggable, handleUpdateShapes),
+        onDragStart: () => setIsSelected(false),
+        ...shapeEditableProps,
         ...props
       })}
-      {isSelected && <Transformer ref={trRef} />}
+      {<Transformer ref={trRef} />}
     </Group>
   );
 }

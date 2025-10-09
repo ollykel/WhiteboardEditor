@@ -699,7 +699,7 @@ const WrappedWhiteboard = () => {
       for (const [objId, objUpdate] of Object.entries(shapes)) {
         console.log("updated shape: ", objId, " : ", objUpdate);
         if (objId in canvasObjects) {
-          console.log("updated shape is in canvas objects");
+          console.log("updated shape is in canvas objects"); // debug
           changedObjects[objId] = ({
             ...canvasObjects[objId],
             ...objUpdate
