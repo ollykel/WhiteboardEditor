@@ -73,6 +73,37 @@ const EditableVector = <VectorType extends VectorModel>({
     });
   };
 
+  const handleVectorDragEnd = (ev: Konva.KonvaEventObject<DragEvent>) => {
+    const id = ev.target.id();
+    const node = ev.target;
+    const dx = node.x();
+    const dy = node.y();
+
+    const updatedPoints = shapeModel.points.map((p, i) =>
+      i % 2 === 0 ? p + dx : p + dy
+    );
+
+    // Prevent flicker by updating localPoints before broadcasting
+    setLocalPoints(updatedPoints);
+    vectorRef.current?.setAttrs({ points: updatedPoints });
+    node.position({ x: 0, y: 0 });
+
+    handleUpdateShapes({
+      [id]: { ...shapeModel, points: updatedPoints } as VectorType,
+    });
+  };
+
+
+  useEffect(() => {
+    setLocalPoints(shapeModel.points);
+  }, [shapeModel.points]);
+
+
+  // Override the onDragEnd handler for vectors to change points rather than x, y
+  const vectorEditableProps = {
+    ...editableObjectProps(shapeModel, draggable, handleUpdateShapes),
+    onDragEnd: handleVectorDragEnd,
+  }
 
   return (
   <Group>
@@ -83,8 +114,8 @@ const EditableVector = <VectorType extends VectorModel>({
       onClick: handleSelect,
       onTap: handleSelect,
       hitStrokeWidth: 20,
-      ...editableObjectProps(shapeModel, draggable, handleUpdateShapes),
-      ...props
+      ...vectorEditableProps,
+      ...props,
     })}
 
     {isSelected && (
