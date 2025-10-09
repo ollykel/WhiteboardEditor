@@ -35,21 +35,41 @@ const useTextDispatcher = ({
   const [mouseCoords, setMouseCoords] = useState<EventCoords | null>(null);
 
   const handlePointerDown = (ev: Konva.KonvaEventObject<MouseEvent>) => {
+    ev.cancelBubble = true;
+
+    const { x: targetX, y: targetY } = ev.currentTarget.getPosition();
     const { offsetX, offsetY } = ev.evt;
 
-    setMouseDownCoords({ x: offsetX, y: offsetY }); 
-    setMouseCoords({ x: offsetX, y: offsetY });
+    setMouseDownCoords({
+      x: offsetX - targetX,
+      y: offsetY - targetY
+    });
+    setMouseCoords({
+      x: offsetX - targetX,
+      y: offsetY - targetY
+    });
   };
 
   const handlePointerMove = (ev: Konva.KonvaEventObject<MouseEvent>) => {
+    ev.cancelBubble = true;
+
+    const { x: targetX, y: targetY } = ev.currentTarget.getPosition();
     const { offsetX, offsetY } = ev.evt;
 
-    setMouseCoords({ x: offsetX, y: offsetY });
+    setMouseCoords({
+      x: offsetX - targetX,
+      y: offsetY - targetY
+    });
   };
 
   const handlePointerUp = (ev: Konva.KonvaEventObject<MouseEvent>) => {
+    ev.cancelBubble = true;
+
     if (mouseDownCoords !== null) {
-      const { offsetX: xA, offsetY: yA } = ev.evt;
+    const { x: targetX, y: targetY } = ev.currentTarget.getPosition();
+      const { offsetX, offsetY } = ev.evt;
+      const xA = offsetX - targetX;
+      const yA = offsetY - targetY;
       const { x: xB, y: yB } = mouseDownCoords;
       const xMin = Math.min(xA, xB);
       const yMin = Math.min(yA, yB);

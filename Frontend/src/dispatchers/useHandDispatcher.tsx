@@ -23,13 +23,16 @@ const useHandDispatcher = (_props: OperationDispatcherProps): OperationDispatche
   const [isMouseDown, setIsMouseDown] = useState<boolean>(false);
 
   return ({
-    handlePointerDown: (_ev: Konva.KonvaEventObject<MouseEvent>) => {
+    handlePointerDown: (ev: Konva.KonvaEventObject<MouseEvent>) => {
+      ev.cancelBubble = true;
       setIsMouseDown(true);
     },
-    handlePointerMove: (_ev: Konva.KonvaEventObject<MouseEvent>) => {
+    handlePointerMove: (ev: Konva.KonvaEventObject<MouseEvent>) => {
+      ev.cancelBubble = true;
       // Nothing to do
     },
-    handlePointerUp: (_ev: Konva.KonvaEventObject<MouseEvent>) => {
+    handlePointerUp: (ev: Konva.KonvaEventObject<MouseEvent>) => {
+      ev.cancelBubble = true;
       setIsMouseDown(false);
     },
     getPreview: () => null,
