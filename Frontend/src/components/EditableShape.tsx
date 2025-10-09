@@ -57,9 +57,10 @@ const EditableShape = <ShapeType extends ShapeModel> ({
         onClick: handleSelect,
         onTap: handleSelect,
         ...editableObjectProps(shapeModel, draggable, handleUpdateShapes),
+        onDragStart: () => setIsSelected(false),
         ...props
       })}
-      {isSelected && <Transformer ref={trRef} />}
+      {<Transformer ref={trRef} />}
     </Group>
   );
 }
