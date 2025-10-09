@@ -15,8 +15,7 @@ const TextEditor = ({ textNode, onClose }: TextEditorProps) => {
   const textareaRef = { current: null as (HTMLTextAreaElement | null) };
 
   const initTextArea = (textarea: TAWithClose) => {
-    const stage = textNode.getStage();
-    const textPosition = stage ? textNode.getAbsolutePosition(stage) : textNode.position();
+    const textPosition = textNode.position();
 
     textarea.value = textNode.text();
     textarea.style.position = "absolute";
