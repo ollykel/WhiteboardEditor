@@ -110,6 +110,12 @@ import { useUser } from '@/hooks/useUser';
 import { setAllowedUsersByCanvas } from '@/store/allowedUsers/allowedUsersByCanvasSlice';
 import { setActiveUser } from '@/controllers/activeUsers';
 
+type ComponentStatus = 
+  | { status: 'ready'; }
+  | { status: 'pending'; }
+  | { status: 'error'; error: string; }
+;
+
 const getWebSocketUri = (wid: WhiteboardIdType): string => {
     const wsScheme = window.location.protocol === 'https:' ? 'wss' : 'ws';
     const wsUri = `${wsScheme}://${window.location.host}/ws/${wid}`;
@@ -220,38 +226,11 @@ const Whiteboard = () => {
     return selectCanvasesWithObjectsByWhiteboardId(state, whiteboardId)
   });
 
-  const canvasesSorted = [...canvases];
+  const childCanvasesByCanvas : Record<string, CanvasKeyType[]> = useSelector(
+    (state: RootState) => state['childCanvasesByCanvas']
+  );
 
-  canvasesSorted.sort((a, b) => new Date(a.timeCreated) < new Date(b.timeCreated) ? -1 : 1);
-
-  // --- derived state
-  const title = currWhiteboard?.name ?? 'Loading whiteboard ...';
-  const isActive = !!socketRef.current;
-  const isReady = isActive && (! (isWhiteboardLoading || isWhiteboardFetching));
-  // const {
-  //   shared_users: sharedUsers
-  // } = whiteboardData || {};
-
-  // --- misc functions
-  const handleNewCanvas = (canvas: NewCanvas) => {
-    // Send message to server.
-    // Server will echo response back, and actually inserting the new canvas
-    // will be handled by handleServerMessage.
-    // TODO: allow setting custom canvas sizes
-    if (socketRef.current) {
-      const createCanvasMsg : ClientMessageCreateCanvas = ({
-        type: 'create_canvas',
-        width: 512,
-        height: 512,
-        name: canvas.canvasName,
-        allowedUsers: canvas.allowedUsers,
-      });
-
-      socketRef.current.send(JSON.stringify(createCanvasMsg));
-    }
-  };
-
-  // Set up web socket connection
+  // -- set up web socket connection
   useEffect(() => {
     console.log('Initializing web socket connection ...');
     const dispatch = store.dispatch;
@@ -408,208 +387,275 @@ const Whiteboard = () => {
     }
   }, [socketRef, whiteboardId, setWhiteboardId, user, authToken]);
 
-  const makeHandleAddShapes = (canvasId: CanvasIdType) => (shapes: CanvasObjectModel[]) => {
-    if (socketRef.current) {
-      // TODO: modify backend to take multiple shapes (i.e. create_shapes)
-      const createShapesMsg = ({
-        type: 'create_shapes',
-        canvasId,
-        shapes
-      });
-
-      socketRef.current.send(JSON.stringify(createShapesMsg));
-
-      // Switch to hand tool after shape creation
-      setCurrentTool("hand");
-    }
-  };
-
-  // -- Header elements
   const {
     Modal: ShareModal,
     openModal: openShareModal,
     closeModal: closeShareModal
   } = useModal();
 
-  const ShareWhiteboardButton = () => (
-    <HeaderButton 
-      onClick={() => {
-        if (isReady) {
-          openShareModal();
-        }
-      }}
-      title="Share"
-      disabled={ownPermission !== 'own'}
-    /> 
-  );
+  // -- derived state
+  let status : ComponentStatus;
 
-  const pageTitle = `${title} | Whiteboard Editor`;
+  if (isWhiteboardLoading || isWhiteboardFetching || (! currWhiteboard) || (! socketRef.current)) {
+    status = { status: 'pending' };
+  } else if (whiteboardError) {
+    status = { status: 'error', error: whiteboardError };
+  } else {
+    status = { status: 'ready' };
+  }
 
-  return (
-    <Page
-      title={pageTitle}
-    >
-      <main>
-        {/* Header */}
-        <HeaderAuthed 
-          title={title}
-          toolbarElemsLeft={[
-            <ShareWhiteboardButton />
-          ]}
-        />
-        {
-          /** Display if socket not connected **/
-          (! isActive) && (
-            <p className="text-lg font-bold text-red-600">
-              Connecting ...
-            </p>
-          )
-        }
+  switch (status.status) {
+    case 'pending':
+    {
+        const isActive = !!socketRef.current;
 
-        {/* Content */}
-        <div className="mt-20">
-          {/**
-            Left-hand sidebar for toolbar and menus
-            Not displayed in view-only mode.
-          **/
-          }
-          {(ownPermission && (ownPermission !== 'view')) && (
-            <Sidebar side="left">
-              {/* Toolbar */}
-              <Toolbar
-                toolChoice={currentTool}
-                onToolChange={setCurrentTool}
-                onNewCanvas={handleNewCanvas}
+        return (
+          <Page
+            title="Loading ..."
+          >
+            <main>
+              {/* Header */}
+              <HeaderAuthed 
+                title="Loading ..."
+              />
+              {
+                /** Display if socket not connected **/
+                (! isActive) && (
+                  <p className="text-lg font-bold text-red-600">
+                    Connecting ...
+                  </p>
+                )
+              }
+            </main>
+          </Page>
+        );
+    }
+    case 'error':
+    {
+        const {
+          error,
+        } = status;
+
+        return (
+          <Page
+            title="Error Loading Whiteboard"
+          >
+            <main>
+              {/* Header */}
+              <HeaderAuthed 
+                title="Error Loading Whiteboard"
               />
 
-              {/** Shape Attributes Menu **/}
-              <ShapeAttributesMenu
-                attributes={shapeAttributesState}
-                dispatch={dispatchShapeAttributes}
-              />
-            </Sidebar>
-          )}
+              <p className="text-xl font-semibold font-red">
+                Error: {error}
+              </p>
+            </main>
+          </Page>
+        );
+    }
+    case 'ready':
+    {
+      const canvasesByKey : Record<string, CanvasData> = Object.fromEntries(canvases.map(
+        canvasData => [
+          [whiteboardId, canvasData.id].toString(),
+          canvasData
+        ]
+      ));
 
+      const rootCanvasId = currWhiteboard.rootCanvas;
 
-          {/* Canvas Container */}
-          <div className="flex flex-col justify-center flex-wrap ml-50">
-            {/** Misc. info **/}
+      // -- get root canvas, from which to render all other canvases
+      const rootCanvasKey : CanvasKeyType = [whiteboardId, rootCanvasId];
+      const rootCanvas : CanvasData = canvasesByKey[rootCanvasKey.toString()];
 
-            <div className="flex flex-col justify-center flex-wrap">
-              {/** Indicate if the user is in view-only mode **/}
-              {(ownPermission && (ownPermission === 'view')) && (
-                <div>
-                  <span>
-                    <strong
-                      className="text-xl font-bold"
-                    >
-                      You are in view-only mode
-                    </strong>
-                  </span>
-                </div>
+      const canvasesSorted = [...canvases];
+
+      canvasesSorted.sort((a, b) => new Date(a.timeCreated) < new Date(b.timeCreated) ? -1 : 1);
+
+      const title = currWhiteboard.name;
+
+      // --- misc functions
+      const handleNewCanvas = (canvas: NewCanvas) => {
+        // Send message to server.
+        // Server will echo response back, and actually inserting the new canvas
+        // will be handled by handleServerMessage.
+        // TODO: allow setting custom canvas sizes
+        if (socketRef.current) {
+          const createCanvasMsg : ClientMessageCreateCanvas = ({
+            type: 'create_canvas',
+            width: 512,
+            height: 512,
+            name: canvas.canvasName,
+            allowedUsers: canvas.allowedUsers,
+          });
+
+          socketRef.current.send(JSON.stringify(createCanvasMsg));
+        }
+      };
+
+      // -- Header elements
+      const ShareWhiteboardButton = () => (
+        <HeaderButton 
+          onClick={() => {
+            openShareModal();
+          }}
+          title="Share"
+          disabled={ownPermission !== 'own'}
+        /> 
+      );
+
+      const pageTitle = `${title} | Whiteboard Editor`;
+
+      return (
+        <Page
+          title={pageTitle}
+        >
+          <main>
+            {/* Header */}
+            <HeaderAuthed 
+              title={title}
+              toolbarElemsLeft={[
+                <ShareWhiteboardButton />
+              ]}
+            />
+
+            {/* Content */}
+            <div className="mt-20">
+              {/**
+                Left-hand sidebar for toolbar and menus
+                Not displayed in view-only mode.
+              **/
+              }
+              {(ownPermission && (ownPermission !== 'view')) && (
+                <Sidebar side="left">
+                  {/* Toolbar */}
+                  <Toolbar
+                    toolChoice={currentTool}
+                    onToolChange={setCurrentTool}
+                    onNewCanvas={handleNewCanvas}
+                  />
+
+                  {/** Shape Attributes Menu **/}
+                  <ShapeAttributesMenu
+                    attributes={shapeAttributesState}
+                    dispatch={dispatchShapeAttributes}
+                  />
+                </Sidebar>
               )}
 
-              {/** Own Client ID **/}
-              <div>
-                <span>Your Username: </span> {user?.username}
-              </div>
+              {/* Canvas Container */}
+              <div className="flex flex-col justify-center flex-wrap ml-50">
+                {/** Misc. info **/}
 
-              {/* Display Active Clients */}
-              <div>
-                <span>Active Users: </span>
-                { Object.values(activeUsers).join(', ') }
-              </div>
-            </div>
+                <div className="flex flex-col justify-center flex-wrap">
+                  {/** Indicate if the user is in view-only mode **/}
+                  {(ownPermission && (ownPermission === 'view')) && (
+                    <div>
+                      <span>
+                        <strong
+                          className="text-xl font-bold"
+                        >
+                          You are in view-only mode
+                        </strong>
+                      </span>
+                    </div>
+                  )}
 
-            {/* Display Canvases */}
-            <div className="flex flex-1 flex-row justify-center flex-wrap">
-              {canvasesSorted.map(({ id: canvasId, width, height, name, shapes, allowedUsers }: CanvasData) => {
-                const hasAccess = user
-                  ? allowedUsers.length === 0 || allowedUsers.includes(user.id)
-                  : false;
-                return (
+                  {/** Own Client ID **/}
+                  <div>
+                    <span>Your Username: </span> {user?.username}
+                  </div>
+
+                  {/* Display Active Clients */}
+                  <div>
+                    <span>Active Users: </span>
+                    { Object.values(activeUsers).join(', ') }
+                  </div>
+                </div>
+
+                {/* Display Canvases */}
+                <div className="flex flex-1 flex-row justify-center flex-wrap">
                   <CanvasCard
-                    id={canvasId}
-                    key={canvasId}
-                    title={name}
-                    width={width}
-                    height={height}
-                    shapes={shapes}
-                    onAddShapes={makeHandleAddShapes(canvasId)}
+                    {...rootCanvas}
+                    title={rootCanvas.name}
                     shapeAttributes={shapeAttributesState}
                     currentTool={currentTool}
-                    disabled={!hasAccess}
+                    disabled={false}
                     whiteboardId={whiteboardId}
+                    canvasesByKey={canvasesByKey}
+                    childCanvasesByCanvas={childCanvasesByCanvas}
                   />
-                );
-              })}
+                </div>
+              </div>
             </div>
-          </div>
-        </div>
 
-        {/** Modal that opens to share the whiteboard **/}
-        <ShareModal zIndex={100}>
-          <div className="flex flex-col">
-            <button
-              onClick={closeShareModal}
-              className="flex flex-row justify-end hover:cursor-pointer"
-            >
-              <X />
-            </button>
+            {/** Modal that opens to share the whiteboard **/}
+            <ShareModal zIndex={100}>
+              <div className="flex flex-col">
+                <button
+                  onClick={closeShareModal}
+                  className="flex flex-row justify-end hover:cursor-pointer"
+                >
+                  <X />
+                </button>
 
-            <h2 className="text-md font-bold text-center">Share Whiteboard</h2>
+                <h2 className="text-md font-bold text-center">Share Whiteboard</h2>
 
-            <ShareWhiteboardForm
-              initUserPermissions={sharedUsers || []}
-              onSubmit={async (data: ShareWhiteboardFormData) => {
-                try {
-                  const {
-                    userPermissions
-                  } = data;
+                <ShareWhiteboardForm
+                  initUserPermissions={sharedUsers || []}
+                  onSubmit={async (data: ShareWhiteboardFormData) => {
+                    try {
+                      const {
+                        userPermissions
+                      } = data;
 
-                  const userPermissionsFinal = userPermissions.map(perm => {
-                    if (perm.type === 'user') {
-                      if ((typeof perm.user) === 'object') {
-                        // extract object id
-                        return ({
-                          ...perm,
-                          user: perm.user.id
-                        });
+                      const userPermissionsFinal = userPermissions.map(perm => {
+                        if (perm.type === 'user') {
+                          if ((typeof perm.user) === 'object') {
+                            // extract object id
+                            return ({
+                              ...perm,
+                              user: perm.user.id
+                            });
+                          } else {
+                            // already object id
+                            return perm;
+                          }
+                        } else {
+                          return perm;
+                        }
+                      });
+
+                      // No need for AxiosResp<..> type check, as response body
+                      // isn't used.
+                      const res = await api.post(`/whiteboards/${whiteboardId}/shared_users`, ({
+                        userPermissions: userPermissionsFinal
+                      }));
+
+                      if (res.status >= 400) {
+                        console.error('POST /whiteboards/:id/shared_users failed:', res.data);
+                        alert(`Share request failed: ${JSON.stringify(res.data)}`);
                       } else {
-                        // already object id
-                        return perm;
+                        console.log('Share request submitted successfully');
+                        alert('Share request submitted successfully');
+                        queryClient.invalidateQueries({
+                          queryKey: whiteboardKey
+                        });
                       }
-                    } else {
-                      return perm;
+                    } finally {
+                      closeShareModal();
                     }
-                  });
-
-                  // No need for AxiosResp<..> type check, as response body
-                  // isn't used.
-                  const res = await api.post(`/whiteboards/${whiteboardId}/shared_users`, ({
-                    userPermissions: userPermissionsFinal
-                  }));
-
-                  if (res.status >= 400) {
-                    console.error('POST /whiteboards/:id/shared_users failed:', res.data);
-                    alert(`Share request failed: ${JSON.stringify(res.data)}`);
-                  } else {
-                    console.log('Share request submitted successfully');
-                    alert('Share request submitted successfully');
-                    queryClient.invalidateQueries({
-                      queryKey: whiteboardKey
-                    });
-                  }
-                } finally {
-                  closeShareModal();
-                }
-              }}
-            />
-          </div>
-        </ShareModal>
-      </main>
-    </Page>
-  );
+                  }}
+                />
+              </div>
+            </ShareModal>
+          </main>
+        </Page>
+      );
+    }
+    default:
+      throw new Error(`Unrecognized component status: ${status}`);
+  };
 };// end Whiteboard
 
 const WrappedWhiteboard = () => {

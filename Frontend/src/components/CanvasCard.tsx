@@ -8,6 +8,11 @@ import {
   useSelector,
 } from "react-redux";
 
+import {
+  Stage,
+  Layer,
+} from 'react-konva';
+
 import { type RootState } from "@/store";
 import { selectAllowedUsersByCanvas } from "@/store/allowedUsers/allowedUsersByCanvasSlice";
 
@@ -40,7 +45,15 @@ function CanvasCard(props: CanvasCardProps) {
   const {
     getUserById,
   } = userCacheContext;
-  const { id, title, whiteboardId } = props;
+
+  const {
+    id,
+    title,
+    whiteboardId,
+    width,
+    height,
+  } = props;
+
   const allowedUserIds = useSelector((state: RootState) =>
     selectAllowedUsersByCanvas(state, [whiteboardId, id])
   ) ?? EMPTY_ALLOWED_USER_IDS;
@@ -70,10 +83,18 @@ function CanvasCard(props: CanvasCardProps) {
       <div className="text-center p-4">{title}</div>
       {/* Konva Canvas */}
       <div className="border border-black">
-        <Canvas {...props} />
+        <Stage
+          width={width}
+          height={height}
+        >
+          <Layer>
+            {/** Sub-canvases will be rendered recursively by Canvas component **/}
+            <Canvas
+              {...props}
+            />
+          </Layer>
+        </Stage>
       </div>
-      {/* Currently Drawing */}
-      <div className="currently-drawing">Joe is drawing...</div>
       {/* Canvas Menu */}
       <CanvasMenu 
         canvasId={id}

@@ -92,8 +92,8 @@ const canvases = [
   },
   {
     _id: new ObjectId('68d5e8d4829da666aece5f51'),
-    width: 800,
-    height: 600,
+    width: 600,
+    height: 200,
     name: "Canvas Alpha - Two",
     parent_canvas: {
       canvas_id: new ObjectId('68d5e8d4829da666aece5f4e'),

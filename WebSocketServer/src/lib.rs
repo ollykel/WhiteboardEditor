@@ -209,6 +209,7 @@ pub struct CanvasClientView {
     pub width: i32,
     pub height: i32,
     pub name: String,
+    pub parent_canvas: Option<CanvasParentRefClientView>,
     pub time_created: String,               // rfc3339-encoded datetime
     pub time_last_modified: String,         // rfc3339-encoded datetime
     #[serde_as(as = "HashMap<DisplayFromStr, _>")]
@@ -479,6 +480,12 @@ impl Canvas {
             width: self.width,
             height: self.height,
             name: self.name.clone(),
+            parent_canvas: match self.parent_canvas {
+                None => None,
+                Some(ref parent) => Some(
+                    CanvasParentRefClientView::from_canvas_parent_ref(parent)
+                ),
+            },
             shapes: self.shapes.clone(),
             time_created: self.time_created.to_rfc3339(),
             time_last_modified: self.time_last_modified.to_rfc3339(),
