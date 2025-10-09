@@ -279,7 +279,6 @@ async fn handle_connection(ws: WebSocket, whiteboard_id: WhiteboardIdType, conne
                                         let now = bson::DateTime::now();
                                         let canvas_doc = CanvasMongoDBView {
                                             id: canvas.id,
-                                            whiteboard_id: whiteboard_id.clone(),
                                             name: canvas.name.clone(),
                                             width: canvas.width,
                                             height: canvas.height,
@@ -291,6 +290,8 @@ async fn handle_connection(ws: WebSocket, whiteboard_id: WhiteboardIdType, conne
                                                     CanvasParentRefMongoDBView::from_canvas_parent_ref(parent)
                                                 ),
                                             },
+                                            canvas_hierarchy: None,
+                                            shapes: vec![],
                                             allowed_users: None,
                                         };
                                         let create_canvas_res = canvas_coll.insert_one(&canvas_doc).await;
@@ -461,7 +462,6 @@ async fn handle_connection(ws: WebSocket, whiteboard_id: WhiteboardIdType, conne
                                         let now = bson::DateTime::now();
                                         let canvas_doc = CanvasMongoDBView {
                                             id: ObjectId::new(),
-                                            whiteboard_id: whiteboard_id.clone(),
                                             name: canvas.name.clone(),
                                             width: canvas.width,
                                             height: canvas.height,
@@ -473,6 +473,8 @@ async fn handle_connection(ws: WebSocket, whiteboard_id: WhiteboardIdType, conne
                                                     CanvasParentRefMongoDBView::from_canvas_parent_ref(parent)
                                                 ),
                                             },
+                                            canvas_hierarchy: None,
+                                            shapes: vec![],
                                             allowed_users: None,
                                         };
                                         let create_canvas_res = canvas_coll.insert_one(&canvas_doc).await;
