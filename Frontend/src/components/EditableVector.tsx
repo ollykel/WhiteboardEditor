@@ -103,6 +103,7 @@ const EditableVector = <VectorType extends VectorModel>({
   const vectorEditableProps = {
     ...editableObjectProps(shapeModel, draggable, handleUpdateShapes),
     onDragEnd: handleVectorDragEnd,
+    onDragStart: () => setIsSelected(false),
   }
 
   return (
