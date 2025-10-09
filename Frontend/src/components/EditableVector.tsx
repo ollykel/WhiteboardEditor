@@ -91,6 +91,8 @@ const EditableVector = <VectorType extends VectorModel>({
     handleUpdateShapes({
       [id]: { ...shapeModel, points: updatedPoints } as VectorType,
     });
+
+    setIsSelected(true);
   };
 
 
@@ -131,6 +133,14 @@ const EditableVector = <VectorType extends VectorModel>({
           draggable
           onDragMove={(e) => handleAnchorDragMove(0, e)}
           onDragEnd={(e) => handleAnchorDragEnd(0, e)}
+          onMouseOver={(e) => {
+            const stage = e.target.getStage();
+            if (stage) stage.container().style.cursor = 'nesw-resize'; // coordinate arrow
+          }}
+          onMouseOut={(e) => {
+            const stage = e.target.getStage();
+            if (stage) stage.container().style.cursor = 'default';
+          }}
         />
         <Circle
           x={localPoints[2]}
@@ -142,6 +152,14 @@ const EditableVector = <VectorType extends VectorModel>({
           draggable
           onDragMove={(e) => handleAnchorDragMove(1, e)}
           onDragEnd={(e) => handleAnchorDragEnd(1, e)}
+          onMouseOver={(e) => {
+            const stage = e.target.getStage();
+            if (stage) stage.container().style.cursor = 'nesw-resize'; // coordinate arrow
+          }}
+          onMouseOut={(e) => {
+            const stage = e.target.getStage();
+            if (stage) stage.container().style.cursor = 'default';
+          }}
         />
       </>
     )}
