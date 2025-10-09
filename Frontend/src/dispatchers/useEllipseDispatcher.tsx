@@ -35,7 +35,7 @@ const useEllipseDispatcher = ({
   const [mouseCoords, setMouseCoords] = useState<EventCoords | null>(null);
 
   const handlePointerDown = (ev: Konva.KonvaEventObject<MouseEvent>) => {
-    ev.evt.stopImmediatePropagation();
+    ev.cancelBubble = true;
 
     const { x: targetX, y: targetY } = ev.currentTarget.getPosition();
     const { offsetX, offsetY } = ev.evt;
@@ -51,7 +51,7 @@ const useEllipseDispatcher = ({
   };
 
   const handlePointerMove = (ev: Konva.KonvaEventObject<MouseEvent>) => {
-    ev.evt.stopImmediatePropagation();
+    ev.cancelBubble = true;
 
     const { x: targetX, y: targetY } = ev.currentTarget.getPosition();
     const { offsetX, offsetY } = ev.evt;
@@ -63,7 +63,7 @@ const useEllipseDispatcher = ({
   };
 
   const handlePointerUp = (ev: Konva.KonvaEventObject<MouseEvent>) => {
-    ev.evt.stopImmediatePropagation();
+    ev.cancelBubble = true;
 
     if (mouseDownCoords !== null) {
       const { x: targetX, y: targetY } = ev.currentTarget.getPosition();

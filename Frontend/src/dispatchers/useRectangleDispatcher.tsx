@@ -35,7 +35,8 @@ const useRectangleDispatcher = ({
   const [mouseCoords, setMouseCoords] = useState<EventCoords | null>(null);
 
   const handlePointerDown = (ev: Konva.KonvaEventObject<MouseEvent>) => {
-    ev.evt.stopImmediatePropagation();
+    console.log('!! PointerDown event:', ev);// TODO: remove debug
+    ev.cancelBubble = true;
 
     const { x: targetX, y: targetY } = ev.currentTarget.getPosition();
     const { offsetX, offsetY } = ev.evt;
@@ -51,7 +52,7 @@ const useRectangleDispatcher = ({
   };
 
   const handlePointerMove = (ev: Konva.KonvaEventObject<MouseEvent>) => {
-    ev.evt.stopImmediatePropagation();
+    ev.cancelBubble = true;
 
     const { x: targetX, y: targetY } = ev.currentTarget.getPosition();
     const { offsetX, offsetY } = ev.evt;
@@ -63,7 +64,8 @@ const useRectangleDispatcher = ({
   };
 
   const handlePointerUp = (ev: Konva.KonvaEventObject<MouseEvent>) => {
-    ev.evt.stopImmediatePropagation();
+    console.log('!! PointerUp event:', ev);// TODO: remove debug
+    ev.cancelBubble = true;
 
     if (mouseDownCoords) {
       const { x: targetX, y: targetY } = ev.currentTarget.getPosition();
