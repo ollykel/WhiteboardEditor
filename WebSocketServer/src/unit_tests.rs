@@ -159,7 +159,6 @@ mod unit_tests {
                         time_created: Utc::now(),
                         time_last_modified: Utc::now(),
                         parent_canvas: None,
-                        child_canvases: vec![],
                         shapes: HashMap::new(),
                         allowed_users: None, // None = open to all
                     }
@@ -283,26 +282,40 @@ mod unit_tests {
         let db = mongo_client.default_database().unwrap();
 
         // -- call get_whiteboard_by_id; uses ID for "Project Alpha" in TestDatabase/init-db.js
-        let whiteboard_id_s = "68d5e8d4829da666aece5f4c";
+        let whiteboard_id_s = "68d5e8d4829da666aece5f56";
         let whiteboard_id = ObjectId::parse_str(&whiteboard_id_s).unwrap();
-        // -- id for single canvas
-        let canvas_id = ObjectId::parse_str("68d5e8d4829da666aece5f4e").unwrap();
+        // -- id for root canvas
+        let root_canvas_id = ObjectId::parse_str("68d5e8d4829da666aece5f4e").unwrap();
+
+        // -- ids for all canvases
+        let canvas_ids = vec![
+            ObjectId::parse_str("68d5e8d4829da666aece5f4e").unwrap(),
+            ObjectId::parse_str("68d5e8d4829da666aece5f50").unwrap(),
+            ObjectId::parse_str("68d5e8d4829da666aece5f51").unwrap(),
+            ObjectId::parse_str("68d5e8d4829da666aece5f52").unwrap(),
+        ];
+
         let whiteboard = get_whiteboard_by_id(&db, &whiteboard_id).await.unwrap().unwrap();
 
-        // TODO: actually check contents of whiteboard with assert statement
         println!("Whiteboard Received: {:?}", whiteboard);
 
         assert!(whiteboard.id == whiteboard_id);
         assert!(whiteboard.metadata.name == "Project Alpha");
         assert!(whiteboard.metadata.owner_id == ObjectId::parse_str("68d5e8cf829da666aece5f47").unwrap());
         assert!(whiteboard.metadata.shared_users.len() == 0);
-        assert!(whiteboard.canvases.len() == 1);
-        assert!(whiteboard.canvases.contains_key(&canvas_id));
+        assert!(whiteboard.root_canvas == root_canvas_id);
+        assert!(whiteboard.canvases.len() == 4);
+        assert!(whiteboard.canvases.contains_key(&root_canvas_id));
 
-        // check contents of single canvas
-        let canvas = whiteboard.canvases.get(&canvas_id).unwrap();
+        // -- ensure all expected canvases are present
+        for canvas_id in &canvas_ids {
+            assert!(whiteboard.canvases.contains_key(canvas_id));
+        }// -- end for canvas_id in &canvas_ids
 
-        assert!(canvas.id == canvas_id);
+        // -- check contents of root canvas
+        let canvas = whiteboard.canvases.get(&root_canvas_id).unwrap();
+
+        assert!(canvas.id == root_canvas_id);
         assert!(canvas.width == 800);
         assert!(canvas.height == 600);
         assert!(canvas.name.as_str() == "Canvas Alpha");
