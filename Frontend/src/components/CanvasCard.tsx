@@ -1,6 +1,13 @@
 import {
+  useState,
+  useContext,
+  useEffect,
   type Dispatch,
 } from 'react';
+
+import {
+  useSelector,
+} from 'react-redux';
 
 import {
   Stage,
@@ -22,8 +29,22 @@ import {
 } from "@/types/WebSocketProtocol";
 
 import {
+  type User,
+} from '@/types/APIProtocol';
+
+import UserCacheContext from '@/context/UserCacheContext';
+
+import {
   type ShapeAttributesState,
 } from '@/reducers/shapeAttributesReducer';
+
+import {
+  type RootState,
+} from '@/store';
+
+import {
+  selectAllowedUsersByCanvas,
+} from '@/store/allowedUsers/allowedUsersByCanvasSlice';
 
 export interface CanvasCardProps {
   whiteboardId: WhiteboardIdType;
@@ -48,6 +69,18 @@ function CanvasCard(props: CanvasCardProps) {
     setSelectedCanvasId,
   } = props;
 
+  const userCacheContext = useContext(UserCacheContext);
+
+  if (! userCacheContext) {
+    throw new Error('No UserCacheContext provided to CanvasCard');
+  }
+
+  const {
+    getUserById,
+  } = userCacheContext;
+
+  const [selectedCanvasAllowedUsers, setSelectedCanvasAllowedUsers] = useState<User[] | null>(null);
+
   const rootCanvasKey : CanvasKeyType = [whiteboardId, rootCanvasId];
   const rootCanvas : CanvasData | undefined = canvasesByKey[rootCanvasKey.toString()];
 
@@ -64,13 +97,46 @@ function CanvasCard(props: CanvasCardProps) {
   const selectedCanvasKeyStr : string = selectedCanvasKey?.toString() ?? '';
   const selectedCanvas : CanvasData | null = canvasesByKey[selectedCanvasKeyStr] || null;
 
+  const allowedUserIds = useSelector(
+    // ['', ''] is effectively a null canvas key
+    (state: RootState) => selectAllowedUsersByCanvas(state, selectedCanvasKey || ['', ''])
+  );
+
+  useEffect(
+    () => {
+      if (! selectedCanvas) {
+        setSelectedCanvasAllowedUsers(null);
+      } else {
+        const mapUsers = async () => {
+          const newAllowedUsers = (await Promise.all(allowedUserIds
+            .map(uid => getUserById(uid))))
+            .filter(user => !!user);
+
+          setSelectedCanvasAllowedUsers(newAllowedUsers);
+        };// -- end mapUsers
+
+        mapUsers();
+      }
+    },
+    [selectedCanvas, allowedUserIds, getUserById]
+  );
+
   return (
     <div className="flex flex-col p-6">
       {/* Name selected canvas, if a canvas is selected */}
       {selectedCanvas && (
-        <h2>
-          <strong>Selected Canvas:</strong> {selectedCanvas.name}
-        </h2>
+        <>
+          <h2>
+            <strong>Selected Canvas:</strong> {selectedCanvas.name}
+          </h2>
+          <h3>
+            <strong>Allowed Users:</strong> {selectedCanvasAllowedUsers
+              ?.map(user => user.username)
+              .join(', ')
+              ?? 'all'
+            }
+          </h3>
+        </>
       )}
       {/* Konva Canvas */}
       <div className="border border-black">
