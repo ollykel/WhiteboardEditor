@@ -493,6 +493,22 @@ const Whiteboard = () => {
         }
       };
 
+      const makeHandleAddShapes = (canvasId: CanvasIdType) => (shapes: CanvasObjectModel[]) => {
+        if (socketRef.current) {
+          // TODO: modify backend to take multiple shapes (i.e. create_shapes)
+          const createShapesMsg = ({
+            type: 'create_shapes',
+            canvasId,
+            shapes
+          });
+
+          socketRef.current.send(JSON.stringify(createShapesMsg));
+
+          // Switch to hand tool after shape creation
+          setCurrentTool("hand");
+        }
+      };
+
       // -- Header elements
       const ShareWhiteboardButton = () => (
         <HeaderButton 
@@ -578,6 +594,7 @@ const Whiteboard = () => {
                   <CanvasCard
                     {...rootCanvas}
                     title={rootCanvas.name}
+                    onAddShapes={makeHandleAddShapes(rootCanvasId)}
                     shapeAttributes={shapeAttributesState}
                     currentTool={currentTool}
                     disabled={false}
