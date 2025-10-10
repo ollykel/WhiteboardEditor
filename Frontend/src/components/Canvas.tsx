@@ -47,6 +47,7 @@ import useTextDispatcher from '@/dispatchers/useTextDispatcher';
 
 export interface CanvasProps extends CanvasData {
   shapeAttributes: ShapeAttributesState;
+  dispatcher: OperationDispatcher;
   currentTool: ToolChoice;
   // -- should be fetched from selector in root calling component
   childCanvasesByCanvas: Record<string, CanvasKeyType[]>;
