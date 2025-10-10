@@ -39,8 +39,8 @@ interface CanvasMenuProps {
 function CanvasMenu({ canvasId, whiteboardId }: CanvasMenuProps) {
   const [dialogOpen, setDialogOpen] = useState(false);
   const allowedUsers = useSelector((state: RootState) =>
-    selectAllowedUsersByCanvas(state, [whiteboardId, canvasId]) ?? []
-  );
+    selectAllowedUsersByCanvas(state, [whiteboardId, canvasId])
+  ) ?? [];
   const [selectedUsers, setSelectedUsers] = useState<string[]>(allowedUsers);
 
   const context = useContext(WhiteboardContext);
@@ -57,7 +57,7 @@ function CanvasMenu({ canvasId, whiteboardId }: CanvasMenuProps) {
       socketRef.current.send(JSON.stringify({
         type: 'update_canvas_allowed_users',
         canvasId,
-        allowedUsers: allowedUsers,
+        allowedUsers,
       }));
     }
   };

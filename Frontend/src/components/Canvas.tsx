@@ -82,8 +82,6 @@ const Canvas = (props: CanvasProps) => {
     disabled,
   } = props;
 
-  console.log('!! Rendering Canvas', id)// TODO: remove debug
-
   const whiteboardContext = useContext(WhiteboardContext);
 
   if (! whiteboardContext) {
