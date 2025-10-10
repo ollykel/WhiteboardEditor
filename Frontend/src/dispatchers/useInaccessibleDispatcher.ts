@@ -17,16 +17,13 @@ import type {
 // =============================================================================
 const useInaccessibleDispatcher = (_props: OperationDispatcherProps): OperationDispatcher => {
   return ({
-    handlePointerDown: (ev: Konva.KonvaEventObject<MouseEvent>) => {
-      ev.cancelBubble = true;
+    handlePointerDown: (_ev: Konva.KonvaEventObject<MouseEvent>) => {
       console.log("You don't have access to this canvas");
     },
-    handlePointerMove: (ev: Konva.KonvaEventObject<MouseEvent>) => {
-      ev.cancelBubble = true;
+    handlePointerMove: (_ev: Konva.KonvaEventObject<MouseEvent>) => {
       console.log("You don't have access to this canvas");
     },
-    handlePointerUp: (ev: Konva.KonvaEventObject<MouseEvent>) => {
-      ev.cancelBubble = true;
+    handlePointerUp: (_ev: Konva.KonvaEventObject<MouseEvent>) => {
       console.log("You don't have access to this canvas");
     },
     getPreview: () => null,

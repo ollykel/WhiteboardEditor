@@ -1,4 +1,8 @@
 import {
+  type Dispatch,
+} from 'react';
+
+import {
   Stage,
   Layer,
 } from 'react-konva';
@@ -6,30 +10,68 @@ import {
 import Canvas from "./Canvas";
 import CanvasMenu from "./CanvasMenu";
 
-import type { CanvasProps } from '@/components/Canvas';
-import type { WhiteboardIdType } from "@/types/WebSocketProtocol";
+import type {
+  ToolChoice,
+} from '@/components/Tool';
 
-interface CanvasCardProps extends CanvasProps {
-  title: string;
+import {
+  type WhiteboardIdType,
+  type CanvasIdType,
+  type CanvasKeyType,
+  type CanvasData,
+} from "@/types/WebSocketProtocol";
+
+import {
+  type ShapeAttributesState,
+} from '@/reducers/shapeAttributesReducer';
+
+export interface CanvasCardProps {
   whiteboardId: WhiteboardIdType;
+  rootCanvasId: CanvasIdType,
+  shapeAttributes: ShapeAttributesState;
+  childCanvasesByCanvas: Record<string, CanvasKeyType[]>;
+  canvasesByKey: Record<string, CanvasData>;
+  currentTool: ToolChoice;
+  selectedCanvasId: CanvasIdType | null;
+  setSelectedCanvasId: Dispatch<CanvasIdType | null>;
 }
 
 function CanvasCard(props: CanvasCardProps) {
   const {
-    id,
-    title,
     whiteboardId,
+    rootCanvasId,
+    shapeAttributes,
+    childCanvasesByCanvas,
+    canvasesByKey,
+    currentTool,
+    selectedCanvasId,
+    setSelectedCanvasId,
+  } = props;
+
+  const rootCanvasKey : CanvasKeyType = [whiteboardId, rootCanvasId];
+  const rootCanvas : CanvasData | undefined = canvasesByKey[rootCanvasKey.toString()];
+
+  if (! rootCanvas) {
+    throw new Error(`Could not find canvas ${rootCanvasId}`);
+  }
+
+  const {
     width,
     height,
-  } = props;
+  } = rootCanvas;
+
+  const selectedCanvasKey : CanvasKeyType | null = selectedCanvasId ? [whiteboardId, selectedCanvasId] : null;
+  const selectedCanvasKeyStr : string = selectedCanvasKey?.toString() ?? '';
+  const selectedCanvas : CanvasData | null = canvasesByKey[selectedCanvasKeyStr] || null;
 
   return (
     <div className="flex flex-col p-6">
-      {/* Title */}
-      <div className="text-center p-4">
-        {title}
-      </div>
-
+      {/* Name selected canvas, if a canvas is selected */}
+      {selectedCanvas && (
+        <h2>
+          <strong>Selected Canvas:</strong> {selectedCanvas.name}
+        </h2>
+      )}
       {/* Konva Canvas */}
       <div className="border border-black">
         <Stage
@@ -39,16 +81,27 @@ function CanvasCard(props: CanvasCardProps) {
           <Layer>
             {/** Sub-canvases will be rendered recursively by Canvas component **/}
             <Canvas
-              {...props}
+              {...{
+                ...rootCanvas,
+                shapeAttributes,
+                currentTool,
+                childCanvasesByCanvas,
+                canvasesByKey,
+                selectedCanvasId,
+                setSelectedCanvasId,
+                disabled: false
+              }}
             />
           </Layer>
         </Stage>
       </div>
       {/* Canvas Menu */}
-      <CanvasMenu 
-        canvasId={id}
-        whiteboardId={whiteboardId}
-      />
+      {selectedCanvasId && (
+        <CanvasMenu 
+          canvasId={selectedCanvasId}
+          whiteboardId={whiteboardId}
+        />
+      )}
     </div>
   );
 }

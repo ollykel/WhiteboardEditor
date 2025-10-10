@@ -15,16 +15,13 @@ import type {
 // =============================================================================
 const useMockDispatcher = (_props: OperationDispatcherProps): OperationDispatcher => {
   return ({
-    handlePointerDown: (ev: Konva.KonvaEventObject<MouseEvent>) => {
-      ev.cancelBubble = true;
+    handlePointerDown: (_ev: Konva.KonvaEventObject<MouseEvent>) => {
       console.log('TODO: implement');
     },
-    handlePointerMove: (ev: Konva.KonvaEventObject<MouseEvent>) => {
-      ev.cancelBubble = true;
+    handlePointerMove: (_ev: Konva.KonvaEventObject<MouseEvent>) => {
       console.log('TODO: implement');
     },
-    handlePointerUp: (ev: Konva.KonvaEventObject<MouseEvent>) => {
-      ev.cancelBubble = true;
+    handlePointerUp: (_ev: Konva.KonvaEventObject<MouseEvent>) => {
       console.log('TODO: implement');
     },
     getPreview: () => null,

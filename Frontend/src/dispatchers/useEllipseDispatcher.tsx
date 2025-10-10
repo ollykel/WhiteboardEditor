@@ -35,8 +35,6 @@ const useEllipseDispatcher = ({
   const [mouseCoords, setMouseCoords] = useState<EventCoords | null>(null);
 
   const handlePointerDown = (ev: Konva.KonvaEventObject<MouseEvent>) => {
-    ev.cancelBubble = true;
-
     const pos = ev.currentTarget.getRelativePointerPosition();
 
     if (pos) {
