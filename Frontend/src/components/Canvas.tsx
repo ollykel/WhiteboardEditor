@@ -207,6 +207,34 @@ const Canvas = (props: CanvasProps) => {
 
   const isCanvasSelected = (id === selectedCanvasId);
 
+  const handleMouseOver = (ev: Konva.KonvaEventObject<MouseEvent>) => {
+    ev.cancelBubble = true;
+
+    const stage = ev.target.getStage();
+
+    if (stage) {
+      if (! isCanvasSelected) {
+        // indicate that canvas is selectable
+        stage.container().style.cursor = 'pointer';
+      } else {
+        stage.container().style.cursor = 'default';
+      }
+    }
+  };// -- end handleMouseOver
+
+  const handleMouseOut = (ev: Konva.KonvaEventObject<MouseEvent>) => {
+    ev.cancelBubble = true;
+
+    const stage = ev.target.getStage();
+
+    if (stage) {
+      if (! isCanvasSelected) {
+        // indicate that canvas is selectable
+        stage.container().style.cursor = 'default';
+      }
+    }
+  };// -- end handleMouseOut
+
   return (
     <Group
       ref={groupRef}
@@ -219,6 +247,8 @@ const Canvas = (props: CanvasProps) => {
       onPointerdown={handlePointerDown}
       onPointermove={handlePointerMove}
       onPointerup={handlePointerUp}
+      onMouseOver={handleMouseOver}
+      onMouseOut={handleMouseOut}
       listening={ownPermission !== 'view'}
     >
       {/** Border **/}

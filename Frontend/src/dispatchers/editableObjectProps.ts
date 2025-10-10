@@ -21,6 +21,8 @@ const editableObjectProps = <ShapeType extends CanvasObjectModel> (
   handleUpdateShapes: (shapes: Record<CanvasObjectIdType, ShapeType>) => void
 ): EditableObjectProps => {
   const handleMouseOver = (ev: Konva.KonvaEventObject<MouseEvent>) => {
+    ev.cancelBubble = true;
+
     const stage = ev.target.getStage();
 
     console.log("Mouse over");
@@ -30,6 +32,8 @@ const editableObjectProps = <ShapeType extends CanvasObjectModel> (
   };
 
   const handleMouseOut = (ev: Konva.KonvaEventObject<MouseEvent>) => {
+    ev.cancelBubble = true;
+
     const stage = ev.target.getStage();
 
     if (stage) {
@@ -38,6 +42,8 @@ const editableObjectProps = <ShapeType extends CanvasObjectModel> (
   };
 
   const handleMouseDown = (ev: Konva.KonvaEventObject<MouseEvent>) => {
+    ev.cancelBubble = true;
+
     const stage = ev.target.getStage();
 
     if (stage) {
@@ -46,6 +52,8 @@ const editableObjectProps = <ShapeType extends CanvasObjectModel> (
   };
 
   const handleMouseUp = (ev: Konva.KonvaEventObject<MouseEvent>) => {
+    ev.cancelBubble = true;
+
     const stage = ev.target.getStage();
 
     if (stage) {
@@ -54,6 +62,8 @@ const editableObjectProps = <ShapeType extends CanvasObjectModel> (
   };
 
   const handleDragEnd = (ev: Konva.KonvaEventObject<DragEvent>) => {
+    ev.cancelBubble = true;
+
     const id = ev.target.id();
     const x = ev.target.x();
     const y = ev.target.y();
@@ -69,6 +79,8 @@ const editableObjectProps = <ShapeType extends CanvasObjectModel> (
 
   // transform the targetted box locally in real time without broadcasting
   const handleTransform = (ev: Konva.KonvaEventObject<Event>) => {
+    ev.cancelBubble = true;
+
     const node = ev.target;
     const scaleX = node.scaleX();
     const scaleY = node.scaleY();
@@ -85,6 +97,8 @@ const editableObjectProps = <ShapeType extends CanvasObjectModel> (
 
   // once the transform ends, send the update to server to broadcast
   const handleTransformEnd = (ev: Konva.KonvaEventObject<Event>) => {
+    ev.cancelBubble = true;
+
     const node = ev.target;
     const id = node.id();
     const rotation = node.rotation();
