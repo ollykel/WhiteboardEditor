@@ -138,6 +138,7 @@ function CanvasCard(props: CanvasCardProps) {
           </h3>
         </>
       )}
+
       {/* Konva Canvas */}
       <div className="border border-black">
         <Stage
@@ -161,6 +162,7 @@ function CanvasCard(props: CanvasCardProps) {
           </Layer>
         </Stage>
       </div>
+
       {/* Canvas Menu */}
       {selectedCanvasId && (
         <CanvasMenu 
