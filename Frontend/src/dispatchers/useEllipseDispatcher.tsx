@@ -29,7 +29,7 @@ import EditableShape from '@/components/EditableShape';
 const useEllipseDispatcher = ({
   shapeAttributes,
   addShapes
-}: OperationDispatcherProps
+}: OperationDispatcherProps<null>
 ): OperationDispatcher => {
   const [mouseDownCoords, setMouseDownCoords] = useState<EventCoords | null>(null);
   const [mouseCoords, setMouseCoords] = useState<EventCoords | null>(null);

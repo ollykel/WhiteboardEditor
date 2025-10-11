@@ -15,7 +15,7 @@ import type {
 // Used for keeping users from accessing inaccessible canvases.
 //
 // =============================================================================
-const useInaccessibleDispatcher = (_props: OperationDispatcherProps): OperationDispatcher => {
+const useInaccessibleDispatcher = (_props: OperationDispatcherProps<null>): OperationDispatcher => {
   return ({
     handlePointerDown: (_ev: Konva.KonvaEventObject<MouseEvent>) => {
       console.log("You don't have access to this canvas");

@@ -46,6 +46,10 @@ import {
   selectAllowedUsersByCanvas,
 } from '@/store/allowedUsers/allowedUsersByCanvasSlice';
 
+import {
+  type NewCanvasDimensions,
+} from '@/types/CreateCanvas';
+
 export interface CanvasCardProps {
   whiteboardId: WhiteboardIdType;
   rootCanvasId: CanvasIdType,
@@ -54,6 +58,7 @@ export interface CanvasCardProps {
   canvasesByKey: Record<string, CanvasData>;
   currentTool: ToolChoice;
   selectedCanvasId: CanvasIdType | null;
+  onSelectCanvasDimensions: (canvasId: CanvasIdType, dimensions: NewCanvasDimensions) => void;
   setSelectedCanvasId: Dispatch<CanvasIdType | null>;
 }
 
@@ -67,6 +72,7 @@ function CanvasCard(props: CanvasCardProps) {
     currentTool,
     selectedCanvasId,
     setSelectedCanvasId,
+    onSelectCanvasDimensions,
   } = props;
 
   const userCacheContext = useContext(UserCacheContext);
@@ -156,6 +162,7 @@ function CanvasCard(props: CanvasCardProps) {
                 canvasesByKey,
                 selectedCanvasId,
                 setSelectedCanvasId,
+                onSelectCanvasDimensions,
                 disabled: false
               }}
             />

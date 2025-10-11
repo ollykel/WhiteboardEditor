@@ -84,14 +84,24 @@ import HeaderButton from '@/components/HeaderButton';
 import HeaderAuthed from '@/components/HeaderAuthed';
 import shapeAttributesReducer from '@/reducers/shapeAttributesReducer';
 import type { ToolChoice } from '@/components/Tool';
-import { type NewCanvas } from '@/components/CreateCanvasMenu';
+
 import type {
   CanvasObjectIdType,
   CanvasObjectModel,
 } from '@/types/CanvasObjectModel';
+
 import ShareWhiteboardForm, {
   type ShareWhiteboardFormData
 } from '@/components/ShareWhiteboardForm';
+
+import CreateCanvasMenu, {
+  type NewCanvas,
+} from '@/components/CreateCanvasMenu'
+
+import {
+  type NewCanvasDimensions,
+} from '@/types/CreateCanvas';
+
 import type {
   SocketServerMessage,
   // ClientMessageCreateShapes,
@@ -393,7 +403,15 @@ const Whiteboard = () => {
     closeModal: closeShareModal
   } = useModal();
 
+  const {
+    Modal: CreateCanvasModal,
+    openModal: openCreateCanvasModal,
+    closeModal: closeCreateCanvasModal,
+  } = useModal();
+
   const [selectedCanvasId, setSelectedCanvasId] = useState<CanvasIdType | null>(null);
+  const [newCanvasDimensions, setNewCanvasDimensions] = useState<NewCanvasDimensions | null>(null);
+  const [newCanvasParentId, setNewCanvasParentId] = useState<CanvasIdType | null>(null);
 
   // -- derived state
   let status : ComponentStatus;
@@ -463,34 +481,47 @@ const Whiteboard = () => {
           canvasData
         ]
       ));
-
+      
       const rootCanvasId = currWhiteboard.rootCanvas;
-
+      
       const canvasesSorted = [...canvases];
-
+      
       canvasesSorted.sort((a, b) => new Date(a.timeCreated) < new Date(b.timeCreated) ? -1 : 1);
-
+      
       const title = currWhiteboard.name;
-
+      
       // --- misc functions
+      const handleCreateCanvasDimensions = (parentCanvasId: CanvasIdType, dimensions: NewCanvasDimensions) => {
+          setNewCanvasDimensions(dimensions);
+          setNewCanvasParentId(parentCanvasId);
+          openCreateCanvasModal();
+      };
+
       const handleNewCanvas = (canvas: NewCanvas) => {
         // Send message to server.
         // Server will echo response back, and actually inserting the new canvas
         // will be handled by handleServerMessage.
         // TODO: allow setting custom canvas sizes
-        if (socketRef.current) {
+        if (socketRef.current && newCanvasParentId && newCanvasDimensions) {
           const createCanvasMsg : ClientMessageCreateCanvas = ({
             type: 'create_canvas',
-            width: 512,
-            height: 512,
+            width: newCanvasDimensions.width,
+            height: newCanvasDimensions.height,
             name: canvas.canvasName,
+            parentCanvas: {
+              canvasId: newCanvasParentId,
+              originX: newCanvasDimensions.originX,
+              originY: newCanvasDimensions.originY,
+            },
             allowedUsers: canvas.allowedUsers,
           });
-
+      
           socketRef.current.send(JSON.stringify(createCanvasMsg));
+          setNewCanvasParentId(null);
+          setNewCanvasDimensions(null);
         }
       };
-
+      
       // -- Header elements
       const ShareWhiteboardButton = () => (
         <HeaderButton 
@@ -501,9 +532,9 @@ const Whiteboard = () => {
           disabled={ownPermission !== 'own'}
         /> 
       );
-
+      
       const pageTitle = `${title} | Whiteboard Editor`;
-
+      
       return (
         <Page
           title={pageTitle}
@@ -516,7 +547,7 @@ const Whiteboard = () => {
                 <ShareWhiteboardButton />
               ]}
             />
-
+      
             {/* Content */}
             <div className="mt-20">
               {/**
@@ -530,9 +561,8 @@ const Whiteboard = () => {
                   <Toolbar
                     toolChoice={currentTool}
                     onToolChange={setCurrentTool}
-                    onNewCanvas={handleNewCanvas}
                   />
-
+      
                   {/** Shape Attributes Menu **/}
                   <ShapeAttributesMenu
                     attributes={shapeAttributesState}
@@ -540,11 +570,11 @@ const Whiteboard = () => {
                   />
                 </Sidebar>
               )}
-
+      
               {/* Canvas Container */}
               <div className="flex flex-col justify-center flex-wrap ml-50">
                 {/** Misc. info **/}
-
+      
                 <div className="flex flex-col justify-center flex-wrap">
                   {/** Indicate if the user is in view-only mode **/}
                   {(ownPermission && (ownPermission === 'view')) && (
@@ -558,19 +588,19 @@ const Whiteboard = () => {
                       </span>
                     </div>
                   )}
-
+      
                   {/** Own Client ID **/}
                   <div>
                     <span>Your Username: </span> {user?.username}
                   </div>
-
+      
                   {/* Display Active Clients */}
                   <div>
                     <span>Active Users: </span>
                     { Object.values(activeUsers).join(', ') }
                   </div>
                 </div>
-
+      
                 {/* Display Canvases */}
                 <div className="flex flex-1 flex-row justify-center flex-wrap">
                   <CanvasCard
@@ -582,11 +612,12 @@ const Whiteboard = () => {
                     currentTool={currentTool}
                     canvasesByKey={canvasesByKey}
                     childCanvasesByCanvas={childCanvasesByCanvas}
+                    onSelectCanvasDimensions={handleCreateCanvasDimensions}
                   />
                 </div>
               </div>
             </div>
-
+      
             {/** Modal that opens to share the whiteboard **/}
             <ShareModal zIndex={100}>
               <div className="flex flex-col">
@@ -596,9 +627,9 @@ const Whiteboard = () => {
                 >
                   <X />
                 </button>
-
+      
                 <h2 className="text-md font-bold text-center">Share Whiteboard</h2>
-
+      
                 <ShareWhiteboardForm
                   initUserPermissions={sharedUsers || []}
                   onSubmit={async (data: ShareWhiteboardFormData) => {
@@ -606,7 +637,7 @@ const Whiteboard = () => {
                       const {
                         userPermissions
                       } = data;
-
+      
                       const userPermissionsFinal = userPermissions.map(perm => {
                         if (perm.type === 'user') {
                           if ((typeof perm.user) === 'object') {
@@ -623,13 +654,13 @@ const Whiteboard = () => {
                           return perm;
                         }
                       });
-
+      
                       // No need for AxiosResp<..> type check, as response body
                       // isn't used.
                       const res = await api.post(`/whiteboards/${whiteboardId}/shared_users`, ({
                         userPermissions: userPermissionsFinal
                       }));
-
+      
                       if (res.status >= 400) {
                         console.error('POST /whiteboards/:id/shared_users failed:', res.data);
                         alert(`Share request failed: ${JSON.stringify(res.data)}`);
@@ -647,6 +678,19 @@ const Whiteboard = () => {
                 />
               </div>
             </ShareModal>
+      
+            {/** Create Canvas Modal **/}
+            <CreateCanvasModal
+              zIndex={100}
+              className="p-4 rounded-sm"
+            >
+              <CreateCanvasMenu 
+                onCreate={(canvas) => {
+                  handleNewCanvas(canvas);
+                  closeCreateCanvasModal();
+                }}
+              />
+            </CreateCanvasModal>
           </main>
         </Page>
       );

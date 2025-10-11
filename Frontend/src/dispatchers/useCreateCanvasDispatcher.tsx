@@ -10,26 +10,30 @@ import type {
   OperationDispatcher,
   OperationDispatcherProps
 } from '@/types/OperationDispatcher';
+
 import type {
   CanvasObjectIdType,
   CanvasObjectModel,
-  RectModel
 } from '@/types/CanvasObjectModel';
+
+import {
+  type NewCanvasDimensions,
+} from '@/types/CreateCanvas';
+
 import type {
   EventCoords
 } from '@/types/EventCoords';
 
-import EditableShape from '@/components/EditableShape';
-
-// === useRectangleDispatcher ==================================================
+// === useCreateCanvasDispatcher ===============================================
 //
 // Tool for drawing rectangles.
 //
 // =============================================================================
-const useRectangleDispatcher = ({
-  shapeAttributes,
-  addShapes
-}: OperationDispatcherProps<null>
+const useCreateCanvasDispatcher = ({
+  shapeAttributes: _shapeAttributes,
+  addShapes: _addShapes,
+  onCreate: onCreateCanvas,
+}: OperationDispatcherProps<NewCanvasDimensions>
 ): OperationDispatcher => {
   const [mouseDownCoords, setMouseDownCoords] = useState<EventCoords | null>(null);
   const [mouseCoords, setMouseCoords] = useState<EventCoords | null>(null);
@@ -56,6 +60,10 @@ const useRectangleDispatcher = ({
   };
 
   const handlePointerUp = (ev: Konva.KonvaEventObject<MouseEvent>) => {
+    if (! onCreateCanvas) {
+      throw new Error('CreateCanvasDispatcher requires an onCreate callback function');
+    }
+
     const pos = ev.currentTarget.getRelativePointerPosition();
 
     if (pos && mouseDownCoords) {
@@ -66,14 +74,14 @@ const useRectangleDispatcher = ({
       const width = Math.abs(xA - xB);
       const height = Math.abs(yA - yB);
 
-      addShapes([{
-        type: 'rect',
-        ...shapeAttributes,
-        x: xMin,
-        y: yMin,
+      const newCanvasData : NewCanvasDimensions = {
+        originX: xMin,
+        originY: yMin,
         width,
-        height
-      }]);
+        height,
+      };
+
+      onCreateCanvas(newCanvasData);
       setMouseDownCoords(null);
     }
   };
@@ -89,7 +97,8 @@ const useRectangleDispatcher = ({
           y={Math.min(yA, yB)}
           width={Math.abs(xA - xB)}
           height={Math.abs(yA - yB)}
-          fill="#ffaaaa"
+          stroke="black"
+          dash={[10, 10]}
         />
       );
     } else {
@@ -98,53 +107,19 @@ const useRectangleDispatcher = ({
   };
 
   const renderShape = (
-    key: string | number,
-    model: CanvasObjectModel,
-    isDraggable: boolean,
-    handleUpdateShapes: (shapes: Record<CanvasObjectIdType, CanvasObjectModel>) => void
+    _key: string | number,
+    _model: CanvasObjectModel,
+    _isDraggable: boolean,
+    _handleUpdateShapes: (shapes: Record<CanvasObjectIdType, CanvasObjectModel>) => void
   ): React.JSX.Element | null => {
-    if (model.type !== 'rect') {
-      return null;
-    } else {
-      const {
-        x,
-        y,
-        fillColor,
-        strokeColor,
-        strokeWidth,
-        width,
-        height,
-        rotation,
-      } = model;
-
-      return (
-        <EditableShape<RectModel>
-          key={key}
-          id={`${key}`}
-          draggable={isDraggable}
-          shapeModel={model}
-          handleUpdateShapes={handleUpdateShapes}
-        >
-          <Rect
-            x={x}
-            y={y}
-            width={width}
-            height={height}
-            fill={fillColor}
-            stroke={strokeColor}
-            strokeWidth={strokeWidth}
-            rotation={rotation}
-          />
-        </EditableShape>
-      );
-    }
+    throw new Error('Canvas is not a valid shape type');
   };
 
   const getTooltipText = () => {
     if (mouseDownCoords) {
-      return 'Drag to desired shape, then release';
+      return 'Drag to desired size, then release';
     } else {
-      return 'Click to draw a rectangle';
+      return 'Click to carve a new canvas from this canvas.';
     }
   };
 
@@ -156,6 +131,6 @@ const useRectangleDispatcher = ({
     renderShape,
     getTooltipText,
   });
-};// end useRectangleDispatcher
+};// end useCreateCanvasDispatcher
 
-export default useRectangleDispatcher;
+export default useCreateCanvasDispatcher;

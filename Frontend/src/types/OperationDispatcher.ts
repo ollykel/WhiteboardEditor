@@ -44,7 +44,8 @@ export interface OperationDispatcher {
   getTooltipText: () => string;
 }// end interface OperationDispatcher
 
-export interface OperationDispatcherProps {
+export interface OperationDispatcherProps <OnCreateInputType> {
   shapeAttributes: ShapeAttributesState;
   addShapes: (shapes: CanvasObjectModel[]) => void;
+  onCreate?: (data: OnCreateInputType) => void;
 }
