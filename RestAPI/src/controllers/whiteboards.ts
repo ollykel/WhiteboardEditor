@@ -186,8 +186,8 @@ export const createWhiteboard = async (
     // initialize every new whiteboard with a single empty canvas
     const rootCanvasModel = new Canvas({
       name: "Main Canvas",
-      width: 512,
-      height: 512,
+      width: 1024,
+      height: 1024,
       allowed_users: [],
     });
 
