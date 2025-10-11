@@ -131,20 +131,24 @@ function CanvasCard(props: CanvasCardProps) {
   return (
     <div className="flex flex-col p-6">
       {/* Name selected canvas, if a canvas is selected */}
-      {selectedCanvas && (
-        <>
-          <h2>
-            <strong>Selected Canvas:</strong> {selectedCanvas.name}
-          </h2>
-          <h3>
-            <strong>Allowed Users:</strong> {selectedCanvasAllowedUsers
-              ?.map(user => user.username)
-              .join(', ')
-              ?? 'all'
-            }
-          </h3>
-        </>
-      )}
+      <div
+        className="min-h-16"
+      >
+        {selectedCanvas && (
+          <>
+            <h2>
+              <strong>Selected Canvas:</strong> {selectedCanvas.name}
+            </h2>
+            <h3>
+              <strong>Allowed Users:</strong> {selectedCanvasAllowedUsers
+                ?.map(user => user.username)
+                .join(', ')
+                ?? 'all'
+              }
+            </h3>
+          </>
+        )}
+      </div>
 
       {/* Konva Canvas */}
       <div className="border border-black">
