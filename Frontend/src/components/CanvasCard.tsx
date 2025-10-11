@@ -3,6 +3,7 @@ import {
   useContext,
   useEffect,
   type Dispatch,
+  type SetStateAction,
 } from 'react';
 
 import {
@@ -59,7 +60,7 @@ export interface CanvasCardProps {
   currentTool: ToolChoice;
   selectedCanvasId: CanvasIdType | null;
   onSelectCanvasDimensions: (canvasId: CanvasIdType, dimensions: NewCanvasDimensions) => void;
-  setSelectedCanvasId: Dispatch<CanvasIdType | null>;
+  setSelectedCanvasId: Dispatch<SetStateAction<CanvasIdType | null>>;
 }
 
 function CanvasCard(props: CanvasCardProps) {

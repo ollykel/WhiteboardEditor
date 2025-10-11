@@ -1,5 +1,6 @@
 import type {
-  Dispatch
+  Dispatch,
+  SetStateAction,
 } from 'react';
 
 export interface User {
@@ -11,7 +12,7 @@ export interface User {
 
 export interface AuthContextType {
   user: User | null;
-  setUser: Dispatch<User | null>;
+  setUser: Dispatch<SetStateAction<User | null>>;
   authToken: string | null;
-  setAuthToken: Dispatch<string | null>;
+  setAuthToken: Dispatch<SetStateAction<string | null>>;
 }
