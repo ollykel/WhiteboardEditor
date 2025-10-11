@@ -19,7 +19,14 @@ interface ToolbarButtonProps {
   onClick?: () => void;
 
 }
-const tools: ToolChoice[] = ["hand", "vector", "rect", "ellipse", "text"];
+const tools: ToolChoice[] = [
+  "hand",
+  "vector",
+  "rect",
+  "ellipse",
+  "text",
+  "create_canvas",
+];
 
 const ToolbarButton = React.forwardRef<HTMLButtonElement, ToolbarButtonProps>(
   ({ label, variant, onClick }, ref) => (
@@ -59,13 +66,6 @@ function Toolbar({ toolChoice, onToolChange }: ToolbarProps) {
       <ToolbarButton
         label="Import Image"
         variant="default"
-      />
-
-      {/** New Canvas Button **/}
-      <ToolbarButton
-        label="New Canvas"
-        variant="default"
-        onClick={() => onToolChange('create_canvas')}
       />
     </div>
   )
