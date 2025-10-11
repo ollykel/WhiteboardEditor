@@ -28,7 +28,7 @@ import EditableVector from '@/components/EditableVector';
 const useVectorDispatcher = ({
   shapeAttributes,
   addShapes
-}: OperationDispatcherProps
+}: OperationDispatcherProps<null>
 ): OperationDispatcher => {
   const [mouseDownCoords, setMouseDownCoords] = useState<EventCoords | null>(null);
   const [mouseCoords, setMouseCoords] = useState<EventCoords | null>(null);

@@ -10,6 +10,7 @@
 import {
   useRef,
   useContext,
+  type SetStateAction,
   type Dispatch,
 } from 'react';
 import {
@@ -45,6 +46,10 @@ import type {
   OperationDispatcher,
 } from '@/types/OperationDispatcher';
 
+import {
+  type NewCanvasDimensions,
+} from '@/types/CreateCanvas';
+
 // -- dispatchers
 import useMockDispatcher from '@/dispatchers/useMockDispatcher';
 import useInaccessibleDispatcher from '@/dispatchers/useInaccessibleDispatcher';
@@ -53,6 +58,7 @@ import useEllipseDispatcher from '@/dispatchers/useEllipseDispatcher';
 import useVectorDispatcher from '@/dispatchers/useVectorDispatcher';
 import useHandDispatcher from '@/dispatchers/useHandDispatcher';
 import useTextDispatcher from '@/dispatchers/useTextDispatcher';
+import useCreateCanvasDispatcher from '@/dispatchers/useCreateCanvasDispatcher';
 
 export interface CanvasProps extends CanvasData {
   shapeAttributes: ShapeAttributesState;
@@ -62,7 +68,8 @@ export interface CanvasProps extends CanvasData {
   // -- should be fetched from selector in root calling component
   canvasesByKey: Record<string, CanvasData>;
   selectedCanvasId: CanvasIdType | null;
-  setSelectedCanvasId: Dispatch<CanvasIdType | null>;
+  setSelectedCanvasId: Dispatch<SetStateAction<CanvasIdType | null>>;
+  onSelectCanvasDimensions: (canvasId: CanvasIdType, dimensions: NewCanvasDimensions) => void;
   disabled: boolean;
 }
 
@@ -79,6 +86,7 @@ const Canvas = (props: CanvasProps) => {
     canvasesByKey,
     selectedCanvasId,
     setSelectedCanvasId,
+    onSelectCanvasDimensions,
     disabled,
   } = props;
 
@@ -128,7 +136,7 @@ const Canvas = (props: CanvasProps) => {
     addShapes
   });
 
-  const dispatcherMap = {
+  const dispatcherMap : Record<ToolChoice, OperationDispatcher> = {
     'hand': useHandDispatcher({
       shapeAttributes,
       addShapes
@@ -148,7 +156,14 @@ const Canvas = (props: CanvasProps) => {
     'text': useTextDispatcher({
       shapeAttributes,
       addShapes
-    })
+    }),
+    'create_canvas': useCreateCanvasDispatcher({
+      shapeAttributes,
+      addShapes,
+      onCreate: (dimensions: NewCanvasDimensions) => {
+        onSelectCanvasDimensions(id, dimensions);
+      },
+    }),
   };
 
   let dispatcher: OperationDispatcher;
@@ -167,8 +182,12 @@ const Canvas = (props: CanvasProps) => {
   const handlePointerDown = (ev: Konva.KonvaEventObject<MouseEvent>) => {
     ev.cancelBubble = true;
 
-    setSelectedCanvasId(id);
-    dispatcher.handlePointerDown(ev);
+    setSelectedCanvasId(prevSelectedCanvasId => {
+      if (prevSelectedCanvasId === id) {
+        dispatcher.handlePointerDown(ev);
+      }
+      return id;
+    });
   };
 
   const handlePointerMove = (ev: Konva.KonvaEventObject<MouseEvent>) => {
@@ -180,7 +199,12 @@ const Canvas = (props: CanvasProps) => {
   const handlePointerUp = (ev: Konva.KonvaEventObject<MouseEvent>) => {
     ev.cancelBubble = true;
 
-    dispatcher.handlePointerUp(ev);
+    setSelectedCanvasId(prevSelectedCanvasId => {
+      if (prevSelectedCanvasId === id) {
+        dispatcher.handlePointerUp(ev);
+      }
+      return id;
+    });
   };
 
   // TODO: delegate draggability to tool definitions

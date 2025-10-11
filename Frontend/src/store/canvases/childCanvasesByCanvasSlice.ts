@@ -25,6 +25,31 @@ const childCanvasesByCanvasSlice = createSlice({
         ...action.payload
       };
     },
+    addChildCanvasesByCanvas(state, action: PayloadAction<Record<string, CanvasKeyType[]>>) {
+      const out = { ...state };
+
+      Object.entries(action.payload).forEach(([key, records]) => {
+        if (key.toString() in state) {
+          const canvasKeySet : Record<string, CanvasKeyType> = {};
+
+          // add existing keys to set
+          state[key.toString()]?.forEach(canvasKey => {
+            canvasKeySet[canvasKey.toString()] = canvasKey;
+          });
+
+          // add new keys to set
+          records.forEach(canvasKey => {
+            canvasKeySet[canvasKey.toString()] = canvasKey;
+          });
+
+          out[key.toString()] = Object.values(canvasKeySet);
+        } else {
+          out[key.toString()] = [...records];
+        }
+      });
+
+      return out;
+    },
     removeCanvases(state, action: PayloadAction<CanvasKeyType[]>) {
       const canvasIdSet = Object.fromEntries(action.payload.map(key => [
         key.toString(), true
@@ -42,6 +67,7 @@ const childCanvasesByCanvasSlice = createSlice({
 
 export const {
   setChildCanvasesByCanvas,
+  addChildCanvasesByCanvas,
   removeCanvases,
 } = childCanvasesByCanvasSlice.actions;
 

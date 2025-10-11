@@ -263,6 +263,11 @@ export interface ClientMessageCreateCanvas {
   width: number;
   height: number;
   name: string;
+  parentCanvas: {
+    canvasId: CanvasIdType;
+    originX: number;
+    originY: number;
+  };
   allowedUsers?: string[];
 }
 
@@ -286,4 +291,5 @@ export type SocketClientMessage =
   | ClientMessageUpdateShapes
   | ClientMessageCreateCanvas
   | ClientMessageDeleteCanvases
-  | ClientMessageUpdateAllowedUsers;
+  | ClientMessageUpdateAllowedUsers
+;

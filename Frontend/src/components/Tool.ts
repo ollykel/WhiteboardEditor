@@ -1,5 +1,12 @@
 
-export type ToolChoice = 'hand' | 'rect' | 'ellipse' | 'vector' | 'text';
+export type ToolChoice =
+  | 'hand' 
+  | 'rect' 
+  | 'ellipse' 
+  | 'vector' 
+  | 'text'
+  | 'create_canvas'
+;
 
 const getToolChoiceLabel = (toolChoice: ToolChoice): string => {
   switch (toolChoice) {
@@ -13,8 +20,10 @@ const getToolChoiceLabel = (toolChoice: ToolChoice): string => {
       return 'Ellipse';
     case 'text':
       return 'Text';
+    case 'create_canvas':
+      return 'Create Canvas';
     default:
-      return 'UNDEFINED';
+      throw new Error(`Unrecognized tool choice: ${toolChoice}`);
   }// end switch (toolChoice)
 };// end getToolChoiceLabel
 

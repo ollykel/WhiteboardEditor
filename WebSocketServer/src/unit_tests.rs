@@ -153,8 +153,8 @@ mod unit_tests {
                     canvas_a_id.clone(),
                     Canvas {
                         id: canvas_a_id.clone(),
-                        width: 512,
-                        height: 512,
+                        width: 512.0,
+                        height: 512.0,
                         name: String::from("Canvas A"),
                         time_created: Utc::now(),
                         time_last_modified: Utc::now(),
@@ -316,8 +316,8 @@ mod unit_tests {
         let canvas = whiteboard.canvases.get(&root_canvas_id).unwrap();
 
         assert!(canvas.id == root_canvas_id);
-        assert!(canvas.width == 800);
-        assert!(canvas.height == 600);
+        assert!(canvas.width == 800.0);
+        assert!(canvas.height == 600.0);
         assert!(canvas.name.as_str() == "Canvas Alpha");
 
         let exp_time_created = match Utc.timestamp_opt(1754050200, 0) {

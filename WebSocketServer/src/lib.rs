@@ -206,8 +206,8 @@ pub struct CanvasClientView {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde_as(as = "Option<DisplayFromStr>")]
     pub id: Option<ObjectId>,
-    pub width: i32,
-    pub height: i32,
+    pub width: f64,
+    pub height: f64,
     pub name: String,
     pub parent_canvas: Option<CanvasParentRefClientView>,
     pub time_created: String,               // rfc3339-encoded datetime
@@ -374,8 +374,8 @@ pub enum ClientSocketMessage {
     },
     CreateCanvas {
         name: String,
-        width: i32,
-        height: i32,
+        width: f64,
+        height: f64,
         parent_canvas: CanvasParentRefClientView,
         allowed_users: HashSet::<ObjectId>,
     },
@@ -400,8 +400,8 @@ pub enum ClientSocketMessage {
 #[derive(Clone, Debug, PartialEq)]
 pub struct CanvasParentRef {
     canvas_id: ObjectId,
-    origin_x: i32,
-    origin_y: i32,
+    origin_x: f64,
+    origin_y: f64,
 }// -- end struct CanvasParentRef
 
 #[serde_as]
@@ -410,8 +410,8 @@ pub struct CanvasParentRef {
 pub struct CanvasParentRefClientView {
     #[serde_as(as = "DisplayFromStr")]
     canvas_id: ObjectId,
-    origin_x: i32,
-    origin_y: i32,
+    origin_x: f64,
+    origin_y: f64,
 }// -- end struct CanvasParentRefClientView
 
 impl CanvasParentRefClientView {
@@ -436,8 +436,8 @@ impl CanvasParentRefClientView {
 #[serde(rename_all = "snake_case")]
 pub struct CanvasParentRefMongoDBView {
     canvas_id: ObjectId,
-    origin_x: i32,
-    origin_y: i32,
+    origin_x: f64,
+    origin_y: f64,
 }// -- end struct CanvasParentRefClientView
 
 impl CanvasParentRefMongoDBView {
@@ -461,8 +461,8 @@ impl CanvasParentRefMongoDBView {
 #[derive(Clone, Debug)]
 pub struct Canvas {
     pub id: CanvasIdType,
-    pub width: i32,
-    pub height: i32,
+    pub width: f64,
+    pub height: f64,
     pub name: String,
     pub time_created: chrono::DateTime<Utc>,
     pub time_last_modified: chrono::DateTime<Utc>,
@@ -586,8 +586,8 @@ pub struct SharedWhiteboardEntry {
 pub struct CanvasMongoDBView {
     #[serde(rename = "_id")]
     pub id: ObjectId,
-    pub width: i32,
-    pub height: i32,
+    pub width: f64,
+    pub height: f64,
     pub name: String,
     pub time_created: bson::DateTime,
     pub time_last_modified: bson::DateTime,
