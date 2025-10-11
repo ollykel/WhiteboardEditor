@@ -37,7 +37,9 @@ export interface OperationDispatcher {
     key: string | number,
     model: CanvasObjectModel,
     isDraggable: boolean,
-    handleUpdateShapes: (shapes: Record<CanvasObjectIdType, CanvasObjectModel>) => void
+    handleUpdateShapes: (shapes: Record<CanvasObjectIdType, CanvasObjectModel>) => void,
+    selectedShapeIds: CanvasObjectIdType[],
+    setSelectedShapeIds: React.Dispatch<React.SetStateAction<CanvasObjectIdType[]>>,
   ) => React.JSX.Element | null;
   getTooltipText: () => string;
 }// end interface OperationDispatcher
