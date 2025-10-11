@@ -302,7 +302,7 @@ mod unit_tests {
         assert!(whiteboard.id == whiteboard_id);
         assert!(whiteboard.metadata.name == "Project Alpha");
         assert!(whiteboard.metadata.owner_id == ObjectId::parse_str("68d5e8cf829da666aece5f47").unwrap());
-        assert!(whiteboard.metadata.shared_users.len() == 0);
+        assert!(whiteboard.metadata.shared_users.len() == 1);
         assert!(whiteboard.root_canvas == root_canvas_id);
         assert!(whiteboard.canvases.len() == 4);
         assert!(whiteboard.canvases.contains_key(&root_canvas_id));
@@ -316,8 +316,8 @@ mod unit_tests {
         let canvas = whiteboard.canvases.get(&root_canvas_id).unwrap();
 
         assert!(canvas.id == root_canvas_id);
-        assert!(canvas.width == 800.0);
-        assert!(canvas.height == 600.0);
+        assert!(f64::abs(canvas.width - 1024.0) < 1.0e-16);
+        assert!(f64::abs(canvas.height - 1024.0) < 1.0e-16);
         assert!(canvas.name.as_str() == "Canvas Alpha");
 
         let exp_time_created = match Utc.timestamp_opt(1754050200, 0) {
