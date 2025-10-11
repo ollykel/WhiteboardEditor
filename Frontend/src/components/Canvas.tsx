@@ -73,6 +73,7 @@ const Canvas = (props: CanvasProps) => {
     handleUpdateShapes,
     ownPermission,
   } = whiteboardContext;
+  
   const stageRef = useRef<Konva.Stage | null>(null);
 
   const handleObjectUpdateShapes = (shapes: Record<CanvasObjectIdType, CanvasObjectModel>) => {

@@ -1,9 +1,26 @@
-import type { EditableObjectProps } from "@/dispatchers/editableObjectProps";
-import editableObjectProps from "@/dispatchers/editableObjectProps";
-import type { CanvasObjectIdType, ShapeModel } from "@/types/CanvasObjectModel";
+import React, 
+{ 
+  useContext,
+  useEffect, 
+  useRef, 
+} from "react";
+import { 
+  Group, 
+  Transformer, 
+  type KonvaNodeEvents 
+} from "react-konva";
 import type Konva from "konva";
-import React, { useEffect, useRef, useState } from "react";
-import { Group, Transformer, type KonvaNodeEvents } from "react-konva";
+
+// Local imports
+import type { 
+  EditableObjectProps 
+} from "@/dispatchers/editableObjectProps";
+import type { 
+  CanvasObjectIdType, 
+  ShapeModel, 
+} from "@/types/CanvasObjectModel";
+import editableObjectProps from "@/dispatchers/editableObjectProps";
+import WhiteboardContext from "@/context/WhiteboardContext";
 
 interface EditableShapeProps<ShapeType extends ShapeModel> extends EditableObjectProps {
   id: string;
@@ -21,9 +38,20 @@ const EditableShape = <ShapeType extends ShapeModel> ({
   children,
   ...props
 }: EditableShapeProps<ShapeType>) => {
-  const [isSelected, setIsSelected] = useState(false);
   const shapeRef = useRef<Konva.Shape>(null);
   const trRef = useRef<Konva.Transformer>(null);
+
+  const whiteboardContext = useContext(WhiteboardContext);
+
+  if (! whiteboardContext) {
+    throw new Error('No whiteboard context');
+  }
+
+  const {
+    selectedShapeIds,
+    setSelectedShapeIds,
+  } = whiteboardContext;
+  const isSelected = selectedShapeIds.includes(id);
 
   // Transformer attach/detach
   useEffect(() => {
@@ -31,7 +59,10 @@ const EditableShape = <ShapeType extends ShapeModel> ({
     trRef.current.nodes(isSelected ? [shapeRef.current] : []);
   }, [isSelected]);
 
-  const handleSelect = () => setIsSelected(true);
+  const handleSelect = (ev: Konva.KonvaEventObject<MouseEvent>) => {
+    ev.cancelBubble = true;
+    setSelectedShapeIds([id]);
+  }
 
   // Click outside to deselect
   useEffect(() => {
@@ -39,7 +70,7 @@ const EditableShape = <ShapeType extends ShapeModel> ({
     if (!stage) return;
 
     const listener = (ev: Konva.KonvaEventObject<MouseEvent>) => {
-      if (ev.target !== shapeRef.current) setIsSelected(false);
+      if (ev.target !== shapeRef.current) setSelectedShapeIds([]);
     };
 
     stage.on("click", listener);
@@ -54,7 +85,7 @@ const EditableShape = <ShapeType extends ShapeModel> ({
     if (onDragEnd) {
       onDragEnd(ev);
     }
-    setIsSelected(true);
+    setSelectedShapeIds([id]);
   }
 
   const shapeEditableProps = {
@@ -70,7 +101,7 @@ const EditableShape = <ShapeType extends ShapeModel> ({
         draggable,
         onClick: handleSelect,
         onTap: handleSelect,
-        onDragStart: () => setIsSelected(false),
+        onDragStart: () => setSelectedShapeIds([]),
         ...shapeEditableProps,
         ...props
       })}
