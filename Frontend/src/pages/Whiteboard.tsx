@@ -617,6 +617,7 @@ const WrappedWhiteboard = () => {
   const socketRef = useRef<WebSocket | null>(null);
   const [whiteboardId, setWhiteboardId] = useState<WhiteboardIdType>("");
   const [newCanvasAllowedUsers, setNewCanvasAllowedUsers] = useState<string[]>([]);
+  const [selectedShapeIds, setSelectedShapeIds] = useState<CanvasObjectIdType[]>([]);
 
   const { data: whiteboardData, isLoading: isWhiteboardDataLoading } = useQuery<APIWhiteboard, string>({
     queryKey: ['whiteboard', whiteboardId],
@@ -758,6 +759,8 @@ const WrappedWhiteboard = () => {
       setNewCanvasAllowedUsers={setNewCanvasAllowedUsers}
       ownPermission={ownPermission}
       setOwnPermission={setOwnPermission}
+      selectedShapeIds={selectedShapeIds}
+      setSelectedShapeIds={setSelectedShapeIds}
     >
       <Whiteboard />
     </WhiteboardProvider>
