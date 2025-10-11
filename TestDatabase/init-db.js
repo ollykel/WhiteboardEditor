@@ -56,8 +56,8 @@ const insertedUsers = db.users.find().toArray();
 const canvases = [
   {
     _id: new ObjectId('68d5e8d4829da666aece5f4e'),
-    width: 800,
-    height: 600,
+    width: 1024,
+    height: 1024,
     name: "Canvas Alpha",
     time_created: new Date("2025-08-01T12:10:00.000Z"),
     time_last_modified: new Date("2025-08-10T12:10:00.000Z"),
@@ -67,7 +67,7 @@ const canvases = [
   {
     _id: new ObjectId('68d5e8d4829da666aece5f4f'),
     width: 1024,
-    height: 768,
+    height: 1024,
     name: "Canvas Beta",
     time_created: new Date("2025-08-02T12:20:00.000Z"),
     time_last_modified: new Date("2025-08-03T12:10:00.000Z"),
