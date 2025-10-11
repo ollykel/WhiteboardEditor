@@ -64,7 +64,7 @@ const Canvas = (props: CanvasProps) => {
     disabled
   } = props;
 
-  const [selectedShapeId, setSelectedShapeId] = useState<CanvasObjectIdType[]>([]);
+  const [selectedShapeIds, setSelectedShapeIds] = useState<CanvasObjectIdType[]>([]);
 
   const whiteboardContext = useContext(WhiteboardContext);
 
@@ -166,7 +166,14 @@ const Canvas = (props: CanvasProps) => {
               const renderDispatcher = dispatcherMap[shape.type] || defaultDispatcher;
               const { renderShape } = renderDispatcher;
 
-              return renderShape(id, shape, areShapesDraggable, handleObjectUpdateShapes);
+              return renderShape(
+                id, 
+                shape, 
+                areShapesDraggable, 
+                handleObjectUpdateShapes,
+                selectedShapeIds,
+                setSelectedShapeIds,
+              );
             })
           }
         </Layer>
