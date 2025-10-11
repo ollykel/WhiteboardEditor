@@ -10,7 +10,6 @@
 import {
   useRef,
   useContext,
-  useState
 } from 'react';
 import { Stage, Layer, Text } from 'react-konva';
 import Konva from 'konva';
@@ -63,8 +62,6 @@ const Canvas = (props: CanvasProps) => {
     currentTool,
     disabled
   } = props;
-
-  const [selectedShapeIds, setSelectedShapeIds] = useState<CanvasObjectIdType[]>([]);
 
   const whiteboardContext = useContext(WhiteboardContext);
 
@@ -171,8 +168,6 @@ const Canvas = (props: CanvasProps) => {
                 shape, 
                 areShapesDraggable, 
                 handleObjectUpdateShapes,
-                selectedShapeIds,
-                setSelectedShapeIds,
               );
             })
           }
