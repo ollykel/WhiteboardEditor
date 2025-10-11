@@ -37,6 +37,8 @@ export interface WhiteboardContextType {
   // -- view/edit/own permission - determines which actions to enable/disable
   ownPermission: UserPermissionEnum | null;
   setOwnPermission: React.Dispatch<React.SetStateAction<UserPermissionEnum | null>>;
+  selectedShapeIds: CanvasObjectIdType[];
+  setSelectedShapeIds: React.Dispatch<React.SetStateAction<CanvasObjectIdType[]>>;
 }
 
 export type WhiteboardProvidersProps = WhiteboardContextType;
@@ -58,6 +60,8 @@ const WhiteboardProvider = (props: PropsWithChildren<WhiteboardProvidersProps>):
     setNewCanvasAllowedUsers,
     ownPermission,
     setOwnPermission,
+    setSelectedShapeIds,
+    selectedShapeIds,
   } = props;
 
   return (
@@ -74,6 +78,8 @@ const WhiteboardProvider = (props: PropsWithChildren<WhiteboardProvidersProps>):
       setNewCanvasAllowedUsers,
       ownPermission,
       setOwnPermission,
+      setSelectedShapeIds,
+      selectedShapeIds,
     }}>
       {children}
     </WhiteboardContext.Provider>
