@@ -91,9 +91,7 @@ const useRectangleDispatcher = ({
     key: string | number,
     model: CanvasObjectModel,
     isDraggable: boolean,
-    handleUpdateShapes: (shapes: Record<CanvasObjectIdType, CanvasObjectModel>) => void,
-    selectedShapeIds: CanvasObjectIdType[],
-    setSelectedShapeIds: React.Dispatch<React.SetStateAction<CanvasObjectIdType[]>>,
+    handleUpdateShapes: (shapes: Record<CanvasObjectIdType, CanvasObjectModel>) => void
   ): React.JSX.Element | null => {
     if (model.type !== 'rect') {
       return null;
@@ -108,11 +106,6 @@ const useRectangleDispatcher = ({
         height,
         rotation,
       } = model;
-
-      const handleSelectShape = (e: Konva.KonvaEventObject<MouseEvent>) => {
-        e.cancelBubble = true;
-        setSelectedShapeIds([key as CanvasObjectIdType]);
-      }
 
       return (
         <EditableShape<RectModel>
@@ -131,7 +124,6 @@ const useRectangleDispatcher = ({
             stroke={strokeColor}
             strokeWidth={strokeWidth}
             rotation={rotation}
-            onClick={handleSelectShape}
           />
         </EditableShape>
       );
