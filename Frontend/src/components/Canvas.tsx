@@ -182,12 +182,11 @@ const Canvas = (props: CanvasProps) => {
   const handlePointerDown = (ev: Konva.KonvaEventObject<MouseEvent>) => {
     ev.cancelBubble = true;
 
-    setSelectedCanvasId(prevSelectedCanvasId => {
-      if (prevSelectedCanvasId === id) {
-        dispatcher.handlePointerDown(ev);
-      }
-      return id;
-    });
+    if (selectedCanvasId === id) {
+      dispatcher.handlePointerDown(ev);
+    }
+
+    setSelectedCanvasId(id);
   };
 
   const handlePointerMove = (ev: Konva.KonvaEventObject<MouseEvent>) => {
@@ -199,12 +198,11 @@ const Canvas = (props: CanvasProps) => {
   const handlePointerUp = (ev: Konva.KonvaEventObject<MouseEvent>) => {
     ev.cancelBubble = true;
 
-    setSelectedCanvasId(prevSelectedCanvasId => {
-      if (prevSelectedCanvasId === id) {
-        dispatcher.handlePointerUp(ev);
-      }
-      return id;
-    });
+    if (selectedCanvasId === id) {
+      dispatcher.handlePointerUp(ev);
+    }
+
+    setSelectedCanvasId(id);
   };
 
   // TODO: delegate draggability to tool definitions
