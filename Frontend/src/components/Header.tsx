@@ -8,6 +8,7 @@
 
 export interface HeaderProps {
   title: string;
+  zIndex?: number;
   // Buttons and other elements to display on left side of header
   toolbarElemsLeft?: React.JSX.Element[];
   // Buttons and other elements to display on right side of header
@@ -16,13 +17,17 @@ export interface HeaderProps {
 
 const Header = ({
   title ,
+  zIndex = 50,
   toolbarElemsLeft = [],
   toolbarElemsRight = []
 }: HeaderProps): React.JSX.Element => {
   return (
     <>
       {/** Floating header **/}
-      <div className="fixed z-50 top-1 left-0 right-0 max-h-15 shadow-md rounded-lg mx-20 m-1 p-3 bg-stone-50"> 
+      <div
+        className="fixed top-1 left-0 right-0 max-h-15 shadow-md rounded-lg mx-20 m-1 p-3 bg-stone-50"
+        style={{ zIndex }}
+      > 
         <div className="relative flex items-center justify-center">
           <div className="absolute left-2">
             {toolbarElemsLeft}

@@ -18,11 +18,9 @@ import {
 import { Button } from "./ui/button";
 
 import { 
-  store,
   type RootState,
 } from "@/store";
 import WhiteboardContext from "@/context/WhiteboardContext";
-import { deleteCanvas } from "@/controllers";
 import AllowedUsersPopover from "@/components/AllowedUsersPopover";
 
 import type { 
@@ -40,10 +38,9 @@ interface CanvasMenuProps {
 
 function CanvasMenu({ canvasId, whiteboardId }: CanvasMenuProps) {
   const [dialogOpen, setDialogOpen] = useState(false);
-  const dispatch = store.dispatch;
   const allowedUsers = useSelector((state: RootState) =>
-    selectAllowedUsersByCanvas(state, [whiteboardId, canvasId]) ?? []
-  );
+    selectAllowedUsersByCanvas(state, [whiteboardId, canvasId])
+  ) ?? [];
   const [selectedUsers, setSelectedUsers] = useState<string[]>(allowedUsers);
 
   const context = useContext(WhiteboardContext);
@@ -60,15 +57,12 @@ function CanvasMenu({ canvasId, whiteboardId }: CanvasMenuProps) {
       socketRef.current.send(JSON.stringify({
         type: 'update_canvas_allowed_users',
         canvasId,
-        allowedUsers: allowedUsers,
+        allowedUsers,
       }));
     }
   };
 
   const handleDelete = () => {
-    // update Redux
-    deleteCanvas(dispatch, whiteboardId, canvasId);
-
     // broadcast to server
     if (socketRef.current) {
       const msg: ClientMessageDeleteCanvases = {

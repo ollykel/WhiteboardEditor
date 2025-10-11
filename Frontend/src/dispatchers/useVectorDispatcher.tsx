@@ -28,28 +28,43 @@ import EditableVector from '@/components/EditableVector';
 const useVectorDispatcher = ({
   shapeAttributes,
   addShapes
-}: OperationDispatcherProps
+}: OperationDispatcherProps<null>
 ): OperationDispatcher => {
   const [mouseDownCoords, setMouseDownCoords] = useState<EventCoords | null>(null);
   const [mouseCoords, setMouseCoords] = useState<EventCoords | null>(null);
 
   const handlePointerDown = (ev: Konva.KonvaEventObject<MouseEvent>) => {
+    const { x: targetX, y: targetY } = ev.currentTarget.getPosition();
     const { offsetX, offsetY } = ev.evt;
 
-    setMouseDownCoords({ x: offsetX, y: offsetY });
-    setMouseCoords({ x: offsetX, y: offsetY });
+    setMouseDownCoords({
+      x: offsetX - targetX,
+      y: offsetY - targetY
+    });
+    setMouseCoords({
+      x: offsetX - targetX,
+      y: offsetY - targetY
+    });
   };
 
   const handlePointerMove = (ev: Konva.KonvaEventObject<MouseEvent>) => {
+    const { x: targetX, y: targetY } = ev.currentTarget.getPosition();
     const { offsetX, offsetY } = ev.evt;
 
-    setMouseCoords({ x: offsetX, y: offsetY });
+    setMouseCoords({
+      x: offsetX - targetX,
+      y: offsetY - targetY
+    });
   };
 
   const handlePointerUp = (ev: Konva.KonvaEventObject<MouseEvent>) => {
     if (mouseDownCoords !== null) {
-      const { offsetX: xA, offsetY: yA } = ev.evt;
+      const { x: targetX, y: targetY } = ev.currentTarget.getPosition();
+      const { offsetX, offsetY } = ev.evt;
       const { x: xB, y: yB } = mouseDownCoords;
+
+      const xA = offsetX - targetX;
+      const yA = offsetY - targetY;
 
       addShapes([{
         type: 'vector',

@@ -1,13 +1,13 @@
 import { Request, Response } from "express";
 import {
-  Types
+  Types,
 } from "mongoose";
 
 // --- local imports
 import {
   Whiteboard,
   Canvas,
-  type IWhiteboard,
+  type IWhiteboardFull,
   type IWhiteboardAttribView,
   type WhiteboardIdType,
   type IWhiteboardPermissionEnum,
@@ -36,7 +36,7 @@ export interface CreateWhiteboardRequest extends AuthorizedRequestBody {
 }
 
 export type GetWhiteboardRes = 
-  | { status: 'ok'; whiteboard: IWhiteboard<IUser>; }
+  | { status: 'ok'; whiteboard: IWhiteboardFull; }
   | { status: 'invalid_id'; }
   | { status: 'not_found'; }
   | { status: 'server_error'; message: string; }
@@ -183,10 +183,21 @@ export const createWhiteboard = async (
       ...collarboratorPermissionsFromEmail
     ];
 
+    // initialize every new whiteboard with a single empty canvas
+    const rootCanvasModel = new Canvas({
+      name: "Main Canvas",
+      width: 1024,
+      height: 1024,
+      allowed_users: [],
+    });
+
+    const rootCanvas = await rootCanvasModel.save();
+
     const whiteboard = new Whiteboard({
       name,
       // canvases: [defaultCanvas], // TODO: remove
       owner: ownerId,
+      root_canvas: rootCanvas._id,
       shared_users: [ownerPermission, ...collaboratorPermissions]
     });
 
@@ -194,19 +205,6 @@ export const createWhiteboard = async (
 
     const whiteboardOut = await whiteboard.save()
       .then(wb => wb.populateFull());
-
-    // initialize every new whiteboard with a single empty canvas
-    const defaultCanvas = new Canvas({
-      whiteboard_id: whiteboardOut._id,
-      name: "Main Canvas",
-      id: 0,
-      width: 512,
-      height: 512,
-      allowed_users: [],
-    });
-
-    await defaultCanvas.save();
-    await whiteboardOut.populateFull();
     
     res.status(201).json(whiteboardOut.toPublicView());
   } catch (err: any) {

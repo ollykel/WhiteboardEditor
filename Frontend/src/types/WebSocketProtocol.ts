@@ -42,6 +42,11 @@ export interface CanvasAttribs {
   width: number;
   height: number;
   name: string;
+  parentCanvas?: {
+    canvasId: string;
+    originX: number;
+    originY: number;
+  };
   timeCreated: string;
   timeLastModified: string;
 }
@@ -63,7 +68,8 @@ export interface WhiteboardAttribs {
   id: WhiteboardIdType;
   name: string;
   owner: User;
-  shared_users: UserPermission[];
+  rootCanvas: WhiteboardIdType;
+  sharedUsers: UserPermission[];
 }
 
 // Contains nested data
@@ -257,6 +263,11 @@ export interface ClientMessageCreateCanvas {
   width: number;
   height: number;
   name: string;
+  parentCanvas: {
+    canvasId: CanvasIdType;
+    originX: number;
+    originY: number;
+  };
   allowedUsers?: string[];
 }
 
@@ -280,4 +291,5 @@ export type SocketClientMessage =
   | ClientMessageUpdateShapes
   | ClientMessageCreateCanvas
   | ClientMessageDeleteCanvases
-  | ClientMessageUpdateAllowedUsers;
+  | ClientMessageUpdateAllowedUsers
+;

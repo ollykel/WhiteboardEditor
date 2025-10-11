@@ -19,9 +19,9 @@ import HeaderButton from '@/components/HeaderButton';
 export type HeaderAuthedProps = HeaderProps;
 
 const HeaderAuthed = ({
-  title,
   toolbarElemsLeft = [],
-  toolbarElemsRight = []
+  toolbarElemsRight = [],
+  ...props
 }: HeaderAuthedProps): React.JSX.Element => {
   const navigate = useNavigate();
   const { setUser } = useUser();
@@ -33,7 +33,7 @@ const HeaderAuthed = ({
 
   return (
     <Header
-      title={title}
+      {...props}
       toolbarElemsLeft={[
         (
           <HeaderButton 

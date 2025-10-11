@@ -29,27 +29,41 @@ import EditableShape from '@/components/EditableShape';
 const useEllipseDispatcher = ({
   shapeAttributes,
   addShapes
-}: OperationDispatcherProps
+}: OperationDispatcherProps<null>
 ): OperationDispatcher => {
   const [mouseDownCoords, setMouseDownCoords] = useState<EventCoords | null>(null);
   const [mouseCoords, setMouseCoords] = useState<EventCoords | null>(null);
 
   const handlePointerDown = (ev: Konva.KonvaEventObject<MouseEvent>) => {
-    const { offsetX, offsetY } = ev.evt;
+    const pos = ev.currentTarget.getRelativePointerPosition();
 
-    setMouseDownCoords({ x: offsetX, y: offsetY });
-    setMouseCoords({ x: offsetX, y: offsetY });
+    if (pos) {
+      const { x, y } = pos;
+
+      setMouseDownCoords({ x, y });
+      setMouseCoords({ x, y });
+    }
   };
 
   const handlePointerMove = (ev: Konva.KonvaEventObject<MouseEvent>) => {
-    const { offsetX, offsetY } = ev.evt;
+    ev.cancelBubble = true;
 
-    setMouseCoords({ x: offsetX, y: offsetY });
+    const pos = ev.currentTarget.getRelativePointerPosition();
+
+    if (pos) {
+      const { x, y } = pos;
+
+      setMouseCoords({ x, y });
+    }
   };
 
   const handlePointerUp = (ev: Konva.KonvaEventObject<MouseEvent>) => {
-    if (mouseDownCoords !== null) {
-      const { offsetX: xRelease, offsetY: yRelease } = ev.evt;
+    ev.cancelBubble = true;
+
+    const pos = ev.currentTarget.getRelativePointerPosition();
+
+    if (pos && mouseDownCoords) {
+      const { x: xRelease, y: yRelease } = pos;
       const { x: xOrigin, y: yOrigin } = mouseDownCoords;
 
       const xCenter = (xOrigin + xRelease) / 2;

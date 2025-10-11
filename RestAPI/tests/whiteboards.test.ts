@@ -69,6 +69,9 @@ const validateWhiteboardAttribView = (
   expect(whiteboard).toHaveProperty('owner');
   validateUser(whiteboard.owner, {});
 
+  // -- root canvas
+  expect(whiteboard).toHaveProperty('root_canvas');
+
   // -- shared users
   expect(whiteboard).toHaveProperty('shared_users');
   expect(Array.isArray(whiteboard.shared_users)).toBe(true);

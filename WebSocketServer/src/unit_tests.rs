@@ -16,6 +16,7 @@ mod unit_tests {
         // not even valid json
         let test_client_id = 0;
         let client_msg_s = "This is not valid json";
+        let test_canvas_id = ObjectId::new();
 
         // -- initialize client state
         let whiteboard = Whiteboard {
@@ -26,6 +27,7 @@ mod unit_tests {
                 shared_users: vec![],
                 permissions_by_user_id: HashMap::new(),
             },
+            root_canvas: test_canvas_id,
             canvases: HashMap::new(),
         };
 
@@ -145,17 +147,18 @@ mod unit_tests {
                 shared_users: vec![],
                 permissions_by_user_id: HashMap::new(),
             },
+            root_canvas: canvas_a_id,
             canvases: HashMap::from([
                 (
                     canvas_a_id.clone(),
                     Canvas {
                         id: canvas_a_id.clone(),
-                        next_shape_id_base: 0,
-                        width: 512,
-                        height: 512,
+                        width: 512.0,
+                        height: 512.0,
                         name: String::from("Canvas A"),
                         time_created: Utc::now(),
                         time_last_modified: Utc::now(),
+                        parent_canvas: None,
                         shapes: HashMap::new(),
                         allowed_users: None, // None = open to all
                     }
@@ -279,28 +282,42 @@ mod unit_tests {
         let db = mongo_client.default_database().unwrap();
 
         // -- call get_whiteboard_by_id; uses ID for "Project Alpha" in TestDatabase/init-db.js
-        let whiteboard_id_s = "68d5e8d4829da666aece5f4c";
+        let whiteboard_id_s = "68d5e8d4829da666aece5f56";
         let whiteboard_id = ObjectId::parse_str(&whiteboard_id_s).unwrap();
-        // -- id for single canvas
-        let canvas_id = ObjectId::parse_str("68d5e8d4829da666aece5f4e").unwrap();
+        // -- id for root canvas
+        let root_canvas_id = ObjectId::parse_str("68d5e8d4829da666aece5f4e").unwrap();
+
+        // -- ids for all canvases
+        let canvas_ids = vec![
+            ObjectId::parse_str("68d5e8d4829da666aece5f4e").unwrap(),
+            ObjectId::parse_str("68d5e8d4829da666aece5f50").unwrap(),
+            ObjectId::parse_str("68d5e8d4829da666aece5f51").unwrap(),
+            ObjectId::parse_str("68d5e8d4829da666aece5f52").unwrap(),
+        ];
+
         let whiteboard = get_whiteboard_by_id(&db, &whiteboard_id).await.unwrap().unwrap();
 
-        // TODO: actually check contents of whiteboard with assert statement
         println!("Whiteboard Received: {:?}", whiteboard);
 
         assert!(whiteboard.id == whiteboard_id);
         assert!(whiteboard.metadata.name == "Project Alpha");
         assert!(whiteboard.metadata.owner_id == ObjectId::parse_str("68d5e8cf829da666aece5f47").unwrap());
-        assert!(whiteboard.metadata.shared_users.len() == 0);
-        assert!(whiteboard.canvases.len() == 1);
-        assert!(whiteboard.canvases.contains_key(&canvas_id));
+        assert!(whiteboard.metadata.shared_users.len() == 1);
+        assert!(whiteboard.root_canvas == root_canvas_id);
+        assert!(whiteboard.canvases.len() == 4);
+        assert!(whiteboard.canvases.contains_key(&root_canvas_id));
 
-        // check contents of single canvas
-        let canvas = whiteboard.canvases.get(&canvas_id).unwrap();
+        // -- ensure all expected canvases are present
+        for canvas_id in &canvas_ids {
+            assert!(whiteboard.canvases.contains_key(canvas_id));
+        }// -- end for canvas_id in &canvas_ids
 
-        assert!(canvas.id == canvas_id);
-        assert!(canvas.width == 800);
-        assert!(canvas.height == 600);
+        // -- check contents of root canvas
+        let canvas = whiteboard.canvases.get(&root_canvas_id).unwrap();
+
+        assert!(canvas.id == root_canvas_id);
+        assert!(f64::abs(canvas.width - 1024.0) < 1.0e-16);
+        assert!(f64::abs(canvas.height - 1024.0) < 1.0e-16);
         assert!(canvas.name.as_str() == "Canvas Alpha");
 
         let exp_time_created = match Utc.timestamp_opt(1754050200, 0) {
@@ -418,6 +435,7 @@ mod unit_tests {
                     (String::from(target_uid_s), WhiteboardPermissionEnum::Edit),
                 ]),
             },
+            root_canvas: ObjectId::new(),
             canvases: HashMap::new(),
         };
         let client_state = ClientState {
@@ -561,6 +579,7 @@ mod unit_tests {
                 ]),
             },
             // no canvases
+            root_canvas: ObjectId::new(),
             canvases: HashMap::new(),
         };
 

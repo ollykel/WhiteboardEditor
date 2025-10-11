@@ -15,13 +15,13 @@ import HeaderButton from '@/components/HeaderButton';
 export type HeaderUnauthedProps = HeaderProps;
 
 const HeaderUnauthed = ({
-  title,
   toolbarElemsLeft = [],
-  toolbarElemsRight = []
+  toolbarElemsRight = [],
+  ...props
 }: HeaderUnauthedProps): React.JSX.Element => {
   return (
     <Header
-      title={title}
+      {...props}
       toolbarElemsLeft={toolbarElemsLeft}
       toolbarElemsRight={[
         ...toolbarElemsRight,

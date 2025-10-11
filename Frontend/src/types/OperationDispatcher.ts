@@ -20,12 +20,14 @@
 
 // -- third-party imports
 import Konva from 'konva';
-import type {
-  CanvasObjectIdType,
-  CanvasObjectModel
+
+import {
+  type CanvasObjectIdType,
+  type CanvasObjectModel,
 } from '@/types/CanvasObjectModel';
-import type {
-  ShapeAttributesState
+
+import {
+  type ShapeAttributesState,
 } from '@/reducers/shapeAttributesReducer';
 
 export interface OperationDispatcher {
@@ -42,7 +44,8 @@ export interface OperationDispatcher {
   getTooltipText: () => string;
 }// end interface OperationDispatcher
 
-export interface OperationDispatcherProps {
+export interface OperationDispatcherProps <OnCreateInputType> {
   shapeAttributes: ShapeAttributesState;
   addShapes: (shapes: CanvasObjectModel[]) => void;
+  onCreate?: (data: OnCreateInputType) => void;
 }

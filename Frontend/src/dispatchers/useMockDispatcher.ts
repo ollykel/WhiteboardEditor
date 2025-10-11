@@ -13,7 +13,7 @@ import type {
 // Use as a dummy for unimplemented functionalities.
 //
 // =============================================================================
-const useMockDispatcher = (_props: OperationDispatcherProps): OperationDispatcher => {
+const useMockDispatcher = (_props: OperationDispatcherProps<null>): OperationDispatcher => {
   return ({
     handlePointerDown: (_ev: Konva.KonvaEventObject<MouseEvent>) => {
       console.log('TODO: implement');

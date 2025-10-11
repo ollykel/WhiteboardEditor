@@ -5,7 +5,7 @@ import {
 // --- local imports
 import {
   Whiteboard,
-  type IWhiteboard,
+  type IWhiteboardFull,
   type WhiteboardIdType,
   type IWhiteboardUserPermission,
   type IWhiteboardUserPermissionModel,
@@ -20,7 +20,7 @@ import {
 } from '../models/User';
 
 export type ShareWhiteboardResType =
-  | { status: "success"; whiteboard: IWhiteboard<IUser> }
+  | { status: "success"; whiteboard: IWhiteboardFull; }
   | { status: "no_whiteboard" }
   | { status: "invalid_users"; invalid_users: UserIdType[] }
   | { status: "invalid_permissions"; invalid_permissions: IWhiteboardUserPermission <Types.ObjectId>[] }

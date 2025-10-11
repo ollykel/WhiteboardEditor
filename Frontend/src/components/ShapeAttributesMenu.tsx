@@ -1,3 +1,6 @@
+import {
+  type Dispatch,
+} from 'react';
 // -- local imports
 import type {
   ShapeAttributesState,
@@ -6,7 +9,7 @@ import type {
 
 export interface ShapeAttributesMenuProps {
   attributes: ShapeAttributesState;
-  dispatch: React.Dispatch<ShapeAttributesAction>;
+  dispatch: Dispatch<ShapeAttributesAction>;
 }
 
 const ShapeAttributesMenu = (props: ShapeAttributesMenuProps) => {
