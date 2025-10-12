@@ -44,12 +44,26 @@ const ShapeAttributesMenu = (props: ShapeAttributesMenuProps) => {
   // Updates are dispatched every time an input is changed.
   const onChangeStrokeWidth = (ev: React.ChangeEvent<HTMLInputElement>) => {
     ev.preventDefault();
-    dispatch({ type: 'SET_STROKE_WIDTH', payload: parseInt(ev.target.value) });
+    const width = parseInt(ev.target.value);
+
+    dispatch({ type: 'SET_STROKE_WIDTH', payload: width });
+
+    handleUpdateShapes(
+      canvasId,
+      Object.fromEntries(selectedShapeIds.map(id => [id, { strokeWidth: width }])) as Record<CanvasObjectIdType, Partial<CanvasObjectModel>>
+    );  
   };
 
   const onChangeStrokeColor = (ev: React.ChangeEvent<HTMLInputElement>) => {
     ev.preventDefault();
-    dispatch({ type: 'SET_STROKE_COLOR', payload: ev.target.value.toString() });
+    const color = ev.target.value.toString();
+
+    dispatch({ type: 'SET_STROKE_COLOR',  payload: color });
+
+    handleUpdateShapes(
+      canvasId,
+      Object.fromEntries(selectedShapeIds.map(id => [id, { strokeColor: color }])) as Record<CanvasObjectIdType, Partial<CanvasObjectModel>>
+    ); 
   };
 
   const onChangeFillColor = (ev: React.ChangeEvent<HTMLInputElement>) => {
