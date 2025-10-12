@@ -684,7 +684,7 @@ const WrappedWhiteboard = () => {
 
   console.log("canvasObjects: ", canvasObjectsByCanvas);
 
-  const handleUpdateShapes = useCallback((canvasId: CanvasIdType, shapes: Record<CanvasObjectIdType, CanvasObjectModel>) => {
+  const handleUpdateShapes = useCallback((canvasId: CanvasIdType, shapes: Record<CanvasObjectIdType, Partial<CanvasObjectModel>>) => {
     if (socketRef.current) {
       // find relevant objects and merge the new attributes into the existing
       // attributes
@@ -699,12 +699,16 @@ const WrappedWhiteboard = () => {
 
       for (const [objId, objUpdate] of Object.entries(shapes)) {
         console.log("updated shape: ", objId, " : ", objUpdate);
+
+        const existingShape = canvasObjects[objId];
+        if (!existingShape) continue;
+
         if (objId in canvasObjects) {
           console.log("updated shape is in canvas objects"); // debug
-          changedObjects[objId] = ({
+          changedObjects[objId] = {
             ...canvasObjects[objId],
-            ...objUpdate
-          });
+            ...(objUpdate as Partial<typeof existingShape>),
+          } as CanvasObjectModel;
         }
       }// end for (const [objId, objUpdate] of Object.entries(shapes))
 
