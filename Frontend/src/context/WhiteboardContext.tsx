@@ -25,7 +25,7 @@ import type {
 
 export interface WhiteboardContextType {
   socketRef: RefObject<WebSocket | null>;
-  handleUpdateShapes: (canvasId: CanvasIdType, shapes: Record<CanvasObjectIdType, CanvasObjectModel>) => void;
+  handleUpdateShapes: (canvasId: CanvasIdType, shapes: Record<CanvasObjectIdType, Partial<CanvasObjectModel>>) => void;
   currentTool: ToolChoice;
   setCurrentTool: React.Dispatch<React.SetStateAction<ToolChoice>>;
   whiteboardId: WhiteboardIdType;
