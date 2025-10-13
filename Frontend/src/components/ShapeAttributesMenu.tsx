@@ -1,6 +1,10 @@
 import { useContext } from 'react';
 import { useSelector } from 'react-redux';
 
+import {
+  type Dispatch,
+} from 'react';
+
 // -- local imports
 import WhiteboardContext from '@/context/WhiteboardContext';
 import type {
@@ -13,7 +17,7 @@ import type { CanvasObjectIdType, CanvasObjectModel } from '@/types/CanvasObject
 
 export interface ShapeAttributesMenuProps {
   attributes: ShapeAttributesState;
-  dispatch: React.Dispatch<ShapeAttributesAction>;
+  dispatch: Dispatch<ShapeAttributesAction>;
 }
 
 const ShapeAttributesMenu = (props: ShapeAttributesMenuProps) => {

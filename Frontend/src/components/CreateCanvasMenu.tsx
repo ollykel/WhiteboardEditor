@@ -6,7 +6,8 @@ import { Label } from "@/components/ui/label";
 import AllowedUsersPopover from '@/components/AllowedUsersPopover';
 
 interface CreateCanvasMenuProps {
-  onCreate: (canvas: NewCanvas) => void
+  onCreate: (canvas: NewCanvas) => void;
+  onCancel: () => void;
 }
 
 // Add more fields later (height, width, etc.)
@@ -15,7 +16,10 @@ export interface  NewCanvas {
   allowedUsers: string[];
 }
 
-function CreateCanvasMenu({ onCreate }: CreateCanvasMenuProps) {
+function CreateCanvasMenu({
+  onCreate,
+  onCancel,
+}: CreateCanvasMenuProps) {
   const [canvasName, setCanvasName] = useState("");
   const [newCanvasAllowedUsers, setNewCanvasAllowedUsers] = useState<string[]>([]);
 
@@ -55,6 +59,14 @@ function CreateCanvasMenu({ onCreate }: CreateCanvasMenuProps) {
 
       <Button className="mt-2" onClick={handleSubmit}>
         Create
+      </Button>
+
+      <Button
+        className="mt-2"
+        variant="secondary"
+        onClick={onCancel}
+      >
+        Cancel
       </Button>
     </div>
   );

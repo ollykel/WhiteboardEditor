@@ -437,6 +437,7 @@ const Whiteboard = () => {
               {/* Header */}
               <HeaderAuthed 
                 title="Loading ..."
+                zIndex={10}
               />
               {
                 /** Display if socket not connected **/
@@ -464,6 +465,7 @@ const Whiteboard = () => {
               {/* Header */}
               <HeaderAuthed 
                 title="Error Loading Whiteboard"
+                zIndex={10}
               />
 
               <p className="text-xl font-semibold font-red">
@@ -543,6 +545,7 @@ const Whiteboard = () => {
             {/* Header */}
             <HeaderAuthed 
               title={title}
+              zIndex={10}
               toolbarElemsLeft={[
                 <ShareWhiteboardButton />
               ]}
@@ -556,7 +559,10 @@ const Whiteboard = () => {
               **/
               }
               {(ownPermission && (ownPermission !== 'view')) && (
-                <Sidebar side="left">
+                <Sidebar
+                  side="left"
+                  zIndex={10}
+                >
                   {/* Toolbar */}
                   <Toolbar
                     toolChoice={currentTool}
@@ -619,7 +625,7 @@ const Whiteboard = () => {
             </div>
       
             {/** Modal that opens to share the whiteboard **/}
-            <ShareModal zIndex={100}>
+            <ShareModal zIndex={20}>
               <div className="flex flex-col">
                 <button
                   onClick={closeShareModal}
@@ -681,7 +687,7 @@ const Whiteboard = () => {
       
             {/** Create Canvas Modal **/}
             <CreateCanvasModal
-              zIndex={100}
+              zIndex={20}
               className="p-4 rounded-sm"
             >
               <CreateCanvasMenu 
@@ -689,6 +695,7 @@ const Whiteboard = () => {
                   handleNewCanvas(canvas);
                   closeCreateCanvasModal();
                 }}
+                onCancel={closeCreateCanvasModal}
               />
             </CreateCanvasModal>
           </main>
