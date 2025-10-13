@@ -9,7 +9,7 @@
 
 import {
   useRef,
-  useContext
+  useContext,
 } from 'react';
 import { Stage, Layer, Text } from 'react-konva';
 import Konva from 'konva';
@@ -17,9 +17,9 @@ import Konva from 'konva';
 // -- local imports
 import WhiteboardContext from '@/context/WhiteboardContext';
 import type { ToolChoice } from '@/components/Tool';
-import type {
-  CanvasObjectIdType,
-  CanvasObjectModel
+import {
+  type CanvasObjectIdType,
+  type CanvasObjectModel
 } from '@/types/CanvasObjectModel';
 import type {
   CanvasIdType,
@@ -73,6 +73,7 @@ const Canvas = (props: CanvasProps) => {
     handleUpdateShapes,
     ownPermission,
   } = whiteboardContext;
+  
   const stageRef = useRef<Konva.Stage | null>(null);
 
   const handleObjectUpdateShapes = (shapes: Record<CanvasObjectIdType, CanvasObjectModel>) => {
@@ -163,7 +164,12 @@ const Canvas = (props: CanvasProps) => {
               const renderDispatcher = dispatcherMap[shape.type] || defaultDispatcher;
               const { renderShape } = renderDispatcher;
 
-              return renderShape(id, shape, areShapesDraggable, handleObjectUpdateShapes);
+              return renderShape(
+                id, 
+                shape, 
+                areShapesDraggable, 
+                handleObjectUpdateShapes,
+              );
             })
           }
         </Layer>

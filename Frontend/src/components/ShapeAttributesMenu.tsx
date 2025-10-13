@@ -1,8 +1,15 @@
+import { useContext } from 'react';
+import { useSelector } from 'react-redux';
+
 // -- local imports
+import WhiteboardContext from '@/context/WhiteboardContext';
 import type {
   ShapeAttributesState,
   ShapeAttributesAction
 } from '@/reducers/shapeAttributesReducer';
+import { selectCanvasIdForShape } from '@/store/canvasObjects/canvasObjectsSelectors';
+import type { RootState } from '@/store';
+import type { CanvasObjectIdType, CanvasObjectModel } from '@/types/CanvasObjectModel';
 
 export interface ShapeAttributesMenuProps {
   attributes: ShapeAttributesState;
@@ -13,21 +20,62 @@ const ShapeAttributesMenu = (props: ShapeAttributesMenuProps) => {
   const { attributes, dispatch } = props;
   const { strokeWidth, strokeColor, fillColor } = attributes;
 
+  const whiteboardContext = useContext(WhiteboardContext);
+
+  if (! whiteboardContext) {
+    throw new Error('No whiteboard context');
+  }
+
+  const {
+    selectedShapeIds,
+    handleUpdateShapes,
+    whiteboardId,
+  } = whiteboardContext;
+
+  // TODO: Change this for multiple select, right now only handles one shape
+  const firstShapeId = selectedShapeIds[0];
+  const canvasId = useSelector((state: RootState) => 
+      selectCanvasIdForShape(state, whiteboardId, firstShapeId)
+  );
+  if (!firstShapeId) return;
+  if (!canvasId) return;
+
   // This isn't a proper form, since there's nothing to submit.
   // Updates are dispatched every time an input is changed.
   const onChangeStrokeWidth = (ev: React.ChangeEvent<HTMLInputElement>) => {
     ev.preventDefault();
-    dispatch({ type: 'SET_STROKE_WIDTH', payload: parseInt(ev.target.value) });
+    const width = parseInt(ev.target.value);
+
+    dispatch({ type: 'SET_STROKE_WIDTH', payload: width });
+
+    handleUpdateShapes(
+      canvasId,
+      Object.fromEntries(selectedShapeIds.map(id => [id, { strokeWidth: width }])) as Record<CanvasObjectIdType, Partial<CanvasObjectModel>>
+    );  
   };
 
   const onChangeStrokeColor = (ev: React.ChangeEvent<HTMLInputElement>) => {
     ev.preventDefault();
-    dispatch({ type: 'SET_STROKE_COLOR', payload: ev.target.value.toString() });
+    const color = ev.target.value.toString();
+
+    dispatch({ type: 'SET_STROKE_COLOR',  payload: color });
+
+    handleUpdateShapes(
+      canvasId,
+      Object.fromEntries(selectedShapeIds.map(id => [id, { strokeColor: color }])) as Record<CanvasObjectIdType, Partial<CanvasObjectModel>>
+    ); 
   };
 
   const onChangeFillColor = (ev: React.ChangeEvent<HTMLInputElement>) => {
     ev.preventDefault();
-    dispatch({ type: 'SET_FILL_COLOR', payload: ev.target.value.toString() });
+    const color = ev.target.value.toString();
+    
+    dispatch({ type: 'SET_FILL_COLOR', payload: color });
+
+    handleUpdateShapes(
+      canvasId,
+      Object.fromEntries(selectedShapeIds.map(id => [id, { fillColor: color }])) as Record<CanvasObjectIdType, Partial<CanvasObjectModel>>
+    );
   };
 
   return (
