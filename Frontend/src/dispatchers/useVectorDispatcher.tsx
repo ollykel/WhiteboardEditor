@@ -34,8 +34,6 @@ const useVectorDispatcher = ({
   const [mouseCoords, setMouseCoords] = useState<EventCoords | null>(null);
 
   const handlePointerDown = (ev: Konva.KonvaEventObject<MouseEvent>) => {
-    ev.cancelBubble = true;
-
     const { x: targetX, y: targetY } = ev.currentTarget.getPosition();
     const { offsetX, offsetY } = ev.evt;
 
@@ -50,8 +48,6 @@ const useVectorDispatcher = ({
   };
 
   const handlePointerMove = (ev: Konva.KonvaEventObject<MouseEvent>) => {
-    ev.cancelBubble = true;
-
     const { x: targetX, y: targetY } = ev.currentTarget.getPosition();
     const { offsetX, offsetY } = ev.evt;
 
@@ -62,8 +58,6 @@ const useVectorDispatcher = ({
   };
 
   const handlePointerUp = (ev: Konva.KonvaEventObject<MouseEvent>) => {
-    ev.cancelBubble = true;
-
     if (mouseDownCoords !== null) {
       const { x: targetX, y: targetY } = ev.currentTarget.getPosition();
       const { offsetX, offsetY } = ev.evt;

@@ -10,6 +10,7 @@
 import {
   useRef,
   useContext,
+  type Dispatch,
 } from 'react';
 import {
   Group,
@@ -20,18 +21,26 @@ import Konva from 'konva';
 
 // -- local imports
 import WhiteboardContext from '@/context/WhiteboardContext';
-import type { ToolChoice } from '@/components/Tool';
+
 import {
-  type CanvasObjectIdType,
-  type CanvasObjectModel
+  type ToolChoice,
+} from '@/components/Tool';
+
+import type {
+  CanvasObjectIdType,
+  CanvasObjectModel,
 } from '@/types/CanvasObjectModel';
+
 import type {
   CanvasKeyType,
+  CanvasIdType,
   CanvasData,
 } from '@/types/WebSocketProtocol';
-import type {
-  ShapeAttributesState
+
+import {
+  type ShapeAttributesState,
 } from '@/reducers/shapeAttributesReducer';
+
 import type {
   OperationDispatcher,
 } from '@/types/OperationDispatcher';
@@ -47,12 +56,13 @@ import useTextDispatcher from '@/dispatchers/useTextDispatcher';
 
 export interface CanvasProps extends CanvasData {
   shapeAttributes: ShapeAttributesState;
-  dispatcher: OperationDispatcher;
   currentTool: ToolChoice;
   // -- should be fetched from selector in root calling component
   childCanvasesByCanvas: Record<string, CanvasKeyType[]>;
   // -- should be fetched from selector in root calling component
   canvasesByKey: Record<string, CanvasData>;
+  selectedCanvasId: CanvasIdType | null;
+  setSelectedCanvasId: Dispatch<CanvasIdType | null>;
   disabled: boolean;
 }
 
@@ -67,6 +77,8 @@ const Canvas = (props: CanvasProps) => {
     currentTool,
     childCanvasesByCanvas,
     canvasesByKey,
+    selectedCanvasId,
+    setSelectedCanvasId,
     disabled,
   } = props;
 
@@ -151,12 +163,28 @@ const Canvas = (props: CanvasProps) => {
   }
 
   const {
-    handlePointerDown,
-    handlePointerMove,
-    handlePointerUp,
     getPreview,
     getTooltipText
   } = dispatcher;
+
+  const handlePointerDown = (ev: Konva.KonvaEventObject<MouseEvent>) => {
+    ev.cancelBubble = true;
+
+    setSelectedCanvasId(id);
+    dispatcher.handlePointerDown(ev);
+  };
+
+  const handlePointerMove = (ev: Konva.KonvaEventObject<MouseEvent>) => {
+    ev.cancelBubble = true;
+
+    dispatcher.handlePointerMove(ev);
+  };
+
+  const handlePointerUp = (ev: Konva.KonvaEventObject<MouseEvent>) => {
+    ev.cancelBubble = true;
+
+    dispatcher.handlePointerUp(ev);
+  };
 
   // TODO: delegate draggability to tool definitions
   const areShapesDraggable = ((ownPermission !== 'view') && (currentTool === 'hand'));
@@ -171,8 +199,6 @@ const Canvas = (props: CanvasProps) => {
     .filter((canvas: CanvasData | null): canvas is CanvasData => !!canvas)
     ?? [];
 
-  console.log('!! Child canvases of', id, ':', childCanvasesData);
-
   const {
     originX,
     originY,
@@ -180,6 +206,8 @@ const Canvas = (props: CanvasProps) => {
       originX: 0,
       originY: 0,
   };
+
+  const isCanvasSelected = (id === selectedCanvasId);
 
   return (
     <Group
@@ -199,14 +227,16 @@ const Canvas = (props: CanvasProps) => {
       <Rect
         width={width}
         height={height}
-        stroke="black"
-        strokeWidth={1}
+        stroke={isCanvasSelected ? 'green' : 'black'}
+        strokeWidth={isCanvasSelected ? 4 : 1}
         fill="white"
       />
-      <Text
-        text={tooltipText}
-        fontSize={15}
-      />
+      {isCanvasSelected && (
+        <Text
+          text={tooltipText}
+          fontSize={15}
+        />
+      )}
       {/** Preview Shape **/}
       {getPreview()}
 

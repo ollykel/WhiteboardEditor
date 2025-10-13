@@ -393,6 +393,8 @@ const Whiteboard = () => {
     closeModal: closeShareModal
   } = useModal();
 
+  const [selectedCanvasId, setSelectedCanvasId] = useState<CanvasIdType | null>(null);
+
   // -- derived state
   let status : ComponentStatus;
 
@@ -464,10 +466,6 @@ const Whiteboard = () => {
 
       const rootCanvasId = currWhiteboard.rootCanvas;
 
-      // -- get root canvas, from which to render all other canvases
-      const rootCanvasKey : CanvasKeyType = [whiteboardId, rootCanvasId];
-      const rootCanvas : CanvasData = canvasesByKey[rootCanvasKey.toString()];
-
       const canvasesSorted = [...canvases];
 
       canvasesSorted.sort((a, b) => new Date(a.timeCreated) < new Date(b.timeCreated) ? -1 : 1);
@@ -490,22 +488,6 @@ const Whiteboard = () => {
           });
 
           socketRef.current.send(JSON.stringify(createCanvasMsg));
-        }
-      };
-
-      const makeHandleAddShapes = (canvasId: CanvasIdType) => (shapes: CanvasObjectModel[]) => {
-        if (socketRef.current) {
-          // TODO: modify backend to take multiple shapes (i.e. create_shapes)
-          const createShapesMsg = ({
-            type: 'create_shapes',
-            canvasId,
-            shapes
-          });
-
-          socketRef.current.send(JSON.stringify(createShapesMsg));
-
-          // Switch to hand tool after shape creation
-          setCurrentTool("hand");
         }
       };
 
@@ -592,13 +574,12 @@ const Whiteboard = () => {
                 {/* Display Canvases */}
                 <div className="flex flex-1 flex-row justify-center flex-wrap">
                   <CanvasCard
-                    {...rootCanvas}
-                    title={rootCanvas.name}
-                    onAddShapes={makeHandleAddShapes(rootCanvasId)}
+                    whiteboardId={whiteboardId}
+                    rootCanvasId={rootCanvasId}
+                    selectedCanvasId={selectedCanvasId}
+                    setSelectedCanvasId={setSelectedCanvasId}
                     shapeAttributes={shapeAttributesState}
                     currentTool={currentTool}
-                    disabled={false}
-                    whiteboardId={whiteboardId}
                     canvasesByKey={canvasesByKey}
                     childCanvasesByCanvas={childCanvasesByCanvas}
                   />
