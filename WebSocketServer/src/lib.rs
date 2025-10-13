@@ -329,8 +329,7 @@ pub enum ServerSocketMessage {
     CreateShapes {
         client_id: ClientIdType,
         canvas_id: String,
-        shapes: HashMap<String,
-        ShapeModel>,
+        shapes: HashMap<String, ShapeModel>,
     },
     UpdateShapes {
         client_id: ClientIdType,
@@ -580,7 +579,6 @@ pub struct SharedWhiteboardEntry {
     pub diffs: Arc<Mutex<Vec<WhiteboardDiff>>>,
 }
 
-#[serde_as]
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub struct CanvasMongoDBView {
@@ -606,7 +604,7 @@ pub struct CanvasMongoDBView {
 impl CanvasMongoDBView {
     pub fn to_canvas(&self) -> Canvas {
         Canvas {
-            id: self.id.clone(),
+            id: self.id,
             width: self.width,
             height: self.height,
             name: self.name.clone(),
@@ -915,7 +913,7 @@ pub async fn handle_authenticated_client_message(
                                 let mut diffs = client_state.diffs.lock().await;
                             
                                 diffs.push(WhiteboardDiff::CreateShapes{
-                                    canvas_id: canvas_id,
+                                    canvas_id,
                                     shapes: new_shapes.clone()
                                 });
                             }
@@ -966,7 +964,7 @@ pub async fn handle_authenticated_client_message(
                                 let mut diffs = client_state.diffs.lock().await;
                             
                                 diffs.push(WhiteboardDiff::UpdateShapes{
-                                    canvas_id: canvas_id,
+                                    canvas_id,
                                     shapes: new_shapes.clone()
                                 });
                             }
@@ -996,8 +994,8 @@ pub async fn handle_authenticated_client_message(
                     let canvas = Canvas {
                         id: new_canvas_id,
                         name: name.clone(),
-                        width: width,
-                        height: height,
+                        width,
+                        height,
                         parent_canvas: Some(parent_canvas.to_canvas_parent_ref()),
                         time_created: Utc::now(),
                         time_last_modified: Utc::now(),
@@ -1095,7 +1093,7 @@ pub async fn handle_authenticated_client_message(
                                 let mut diffs = client_state.diffs.lock().await;
 
                                 diffs.push(WhiteboardDiff::UpdateCanvasAllowedUsers{
-                                    canvas_id: canvas_id, 
+                                    canvas_id, 
                                     allowed_users: allowed_users.iter()
                                         .map(|oid| *oid)
                                         .collect(), 
@@ -1231,7 +1229,7 @@ pub async fn handle_unauthenticated_client_message<StoreType: UserStore + Whiteb
                         Some(ServerSocketMessage::InitClient {
                             client_id: client_state.client_id,
                             whiteboard: client_state.whiteboard_ref.lock().await.to_client_view(),
-                            active_clients: active_clients,
+                            active_clients,
                         })
                     } else {
                         // User has no valid permission; send back an error message
@@ -1298,7 +1296,7 @@ pub async fn get_whiteboard_by_id(db: &Database, wid: &WhiteboardIdType) -> Resu
         Some(wb) => wb
     };
 
-    // let canvas_cursor = canvas_coll.find(doc! { "whiteboard_id": wid.clone() }).await?;
+    eprintln!("!! whiteboard view: {:?}", whiteboard_view);
     let canvas_cursor = canvas_coll.aggregate([
         // -- locate root canvas
         doc! {
@@ -1340,6 +1338,20 @@ pub async fn get_whiteboard_by_id(db: &Database, wid: &WhiteboardIdType) -> Resu
                 "foreignField" : "canvas_id",
                 "as" : "canvas_hierarchy.shapes",
             }
+        },
+        // -- exclude empty canvas hierarchy containing only shapes from previous stage
+        doc! {
+          "$set": {
+            "canvas_hierarchy": {
+              "$cond": {
+                "if": {
+                  "$not": "$canvas_hierarchy._id"
+                },
+                "then": "$$REMOVE",
+                "else": "$canvas_hierarchy"
+              }
+            }
+          }
         },
         // -- re-group descendant canvases
         doc! {
