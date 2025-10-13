@@ -35,27 +35,45 @@ const useEllipseDispatcher = ({
   const [mouseCoords, setMouseCoords] = useState<EventCoords | null>(null);
 
   const handlePointerDown = (ev: Konva.KonvaEventObject<MouseEvent>) => {
+    ev.evt.stopImmediatePropagation();
+
+    const { x: targetX, y: targetY } = ev.currentTarget.getPosition();
     const { offsetX, offsetY } = ev.evt;
 
-    setMouseDownCoords({ x: offsetX, y: offsetY });
-    setMouseCoords({ x: offsetX, y: offsetY });
+    setMouseDownCoords({
+      x: offsetX - targetX,
+      y: offsetY - targetY
+    });
+    setMouseCoords({
+      x: offsetX - targetX,
+      y: offsetY - targetY
+    });
   };
 
   const handlePointerMove = (ev: Konva.KonvaEventObject<MouseEvent>) => {
+    ev.evt.stopImmediatePropagation();
+
+    const { x: targetX, y: targetY } = ev.currentTarget.getPosition();
     const { offsetX, offsetY } = ev.evt;
 
-    setMouseCoords({ x: offsetX, y: offsetY });
+    setMouseCoords({
+      x: offsetX - targetX,
+      y: offsetY - targetY
+    });
   };
 
   const handlePointerUp = (ev: Konva.KonvaEventObject<MouseEvent>) => {
+    ev.evt.stopImmediatePropagation();
+
     if (mouseDownCoords !== null) {
+      const { x: targetX, y: targetY } = ev.currentTarget.getPosition();
       const { offsetX: xRelease, offsetY: yRelease } = ev.evt;
       const { x: xOrigin, y: yOrigin } = mouseDownCoords;
 
-      const xCenter = (xOrigin + xRelease) / 2;
-      const yCenter = (yOrigin + yRelease) / 2;
-      const xRadius = Math.abs((xRelease - xOrigin) / 2);
-      const yRadius = Math.abs((yRelease - yOrigin) / 2); 
+      const xCenter = (xOrigin + xRelease - targetX) / 2;
+      const yCenter = (yOrigin + yRelease - targetY) / 2;
+      const xRadius = Math.abs((xRelease - xOrigin - targetX) / 2);
+      const yRadius = Math.abs((yRelease - yOrigin - targetY) / 2); 
 
       addShapes([{
         type: 'ellipse',

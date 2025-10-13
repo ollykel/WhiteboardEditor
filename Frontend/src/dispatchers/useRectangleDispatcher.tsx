@@ -35,26 +35,44 @@ const useRectangleDispatcher = ({
   const [mouseCoords, setMouseCoords] = useState<EventCoords | null>(null);
 
   const handlePointerDown = (ev: Konva.KonvaEventObject<MouseEvent>) => {
+    ev.evt.stopImmediatePropagation();
+
+    const { x: targetX, y: targetY } = ev.currentTarget.getPosition();
     const { offsetX, offsetY } = ev.evt;
 
-    setMouseDownCoords({ x: offsetX, y: offsetY });
-    setMouseCoords({ x: offsetX, y: offsetY });
+    setMouseDownCoords({
+      x: offsetX - targetX,
+      y: offsetY - targetY
+    });
+    setMouseCoords({
+      x: offsetX - targetX,
+      y: offsetY - targetY
+    });
   };
 
   const handlePointerMove = (ev: Konva.KonvaEventObject<MouseEvent>) => {
+    ev.evt.stopImmediatePropagation();
+
+    const { x: targetX, y: targetY } = ev.currentTarget.getPosition();
     const { offsetX, offsetY } = ev.evt;
 
-    setMouseCoords({ x: offsetX, y: offsetY });
+    setMouseCoords({
+      x: offsetX - targetX,
+      y: offsetY - targetY
+    });
   };
 
   const handlePointerUp = (ev: Konva.KonvaEventObject<MouseEvent>) => {
-    if (mouseDownCoords !== null) {
+    ev.evt.stopImmediatePropagation();
+
+    if (mouseDownCoords) {
+      const { x: targetX, y: targetY } = ev.currentTarget.getPosition();
       const { offsetX: xA, offsetY: yA } = ev.evt;
       const { x: xB, y: yB } = mouseDownCoords;
-      const xMin = Math.min(xA, xB);
-      const yMin = Math.min(yA, yB);
-      const width = Math.abs(xA - xB);
-      const height = Math.abs(yA - yB);
+      const xMin = Math.min(xA - targetX, xB);
+      const yMin = Math.min(yA - targetY, yB);
+      const width = Math.abs(xA - targetX - xB);
+      const height = Math.abs(yA - targetY - yB);
 
       addShapes([{
         type: 'rect',
@@ -144,7 +162,7 @@ const useRectangleDispatcher = ({
     handlePointerUp,
     getPreview,
     renderShape,
-    getTooltipText
+    getTooltipText,
   });
 };// end useRectangleDispatcher
 
