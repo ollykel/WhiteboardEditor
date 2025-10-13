@@ -81,6 +81,7 @@ const canvases = [
     height: 200,
     name: "Canvas Alpha - One",
     parent_canvas: {
+      // Canvas Alpha
       canvas_id: new ObjectId('68d5e8d4829da666aece5f4e'),
       origin_x: 100,
       origin_y: 100,
@@ -96,6 +97,7 @@ const canvases = [
     height: 200,
     name: "Canvas Alpha - Two",
     parent_canvas: {
+      // Canvas Alpha
       canvas_id: new ObjectId('68d5e8d4829da666aece5f4e'),
       origin_x: 300,
       origin_y: 300,
@@ -127,6 +129,7 @@ const canvases = [
     height: 600,
     name: "Canvas Beta - One",
     parent_canvas: {
+      // Canvas Beta
       canvas_id: new ObjectId('68d5e8d4829da666aece5f4f'),
       origin_x: 100,
       origin_y: 100,
@@ -184,12 +187,12 @@ const whiteboards = [
     _id: new ObjectId('68d5e8d4829da666aece5f56'),
     name: "Project Alpha",
     time_created: new Date("2025-08-01T12:00:00.000Z"),
-    owner: insertedUsers[0]._id, // Alice
+    owner: new ObjectId('68d5e8cf829da666aece5f47'),  // Alice
     root_canvas: insertedCanvases[0]._id,
     shared_users: [
       {
         type: 'user',
-        user: new ObjectId('68d5e8cf829da666aece5f47'), // Alice
+        user: new ObjectId('68d5e8cf829da666aece5f47'),  // Alice
         permission: 'own',
       }
     ],
@@ -198,7 +201,7 @@ const whiteboards = [
     _id: new ObjectId('68d5e8d4829da666aece5f57'),
     name: "Project Beta",
     time_created: new Date("2025-08-02T12:10:00.000Z"),
-    owner: insertedUsers[1]._id, // Bob
+    owner: new ObjectId('68d5e8d4829da666aece5f48'),  // Bob
     root_canvas: insertedCanvases[1]._id,
     shared_users: [
       {
