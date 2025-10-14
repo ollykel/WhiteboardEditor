@@ -155,6 +155,7 @@ function CanvasCard(props: CanvasCardProps) {
         <Stage
           width={width}
           height={height}
+          zIndex={0}
         >
           <Layer>
             {/** Sub-canvases will be rendered recursively by Canvas component **/}
