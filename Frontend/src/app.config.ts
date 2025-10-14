@@ -4,4 +4,5 @@
 //
 // =============================================================================
 
+// -- Human-readable app name to be displayed to users.
 export const APP_NAME = "Boardly";
