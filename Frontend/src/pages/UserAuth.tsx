@@ -1,3 +1,7 @@
+import {
+  APP_NAME,
+} from '@/app.config';
+
 import HeaderUnauthed from "@/components/HeaderUnauthed";
 import AuthForm from "@/components/AuthForm";
 import Page from '@/components/Page';
@@ -8,7 +12,7 @@ interface UserAuthProps {
 
 function UserAuth({ action }: UserAuthProps) {
   const title = action === "login" ? "Log In" : "Create an Account";
-  const pageTitle = `${title} | Whiteboard Editor`;
+  const pageTitle = `${title} | ${APP_NAME}`;
 
   return (
     <Page
