@@ -46,6 +46,33 @@ listing.
 To update a collaborator's permissions, simply re-invite them using a different
 permission level.
 
+## Editing your Whiteboard
+
+To edit your whiteboard, use the tools provided in the toolbar at the left side
+of the editor. The editing tools provided are as follows:
+
+- Hand: Select, move, and update existing shapes
+- Vector Tool: Draw lines
+- Rectangle: Draw rectangles
+- Ellipse: Draw ellipses
+- Text: Insert text
+- Import Image: Insert an image (NOT YET IMPLEMENTED)
+
+## Subdividing your Whiteboard with Canvases
+
+Canvases allow you to break your whiteboard into components and assign which
+members of your team can work on which components.
+
+To create a new sub-canvas, simply click on the existing canvas you wish to
+subdivide, then choose the "Create Canvas" tool. You will choose the size and
+position of the new canvas by clicking and dragging a rectangular area on the
+existing canvas. Once you have chosen the dimensions of your new canvas, choose
+a name for the new canvas and select which users will be allowed to edit the new
+canvas. If you do not specify any allowed users, all collaborators will be
+allowed to edit the canvas.
+
+## Setup
+
 ### Install Dependencies
 
 Boardly requires Docker to run. [Follow instructions to install
@@ -59,7 +86,7 @@ To enable containerd image store with Docker Desktop, follow the instructions
 To enable containerd image store with Docker Engine, follow the instructions
 [here](https://docs.docker.com/engine/storage/containerd/#enable-containerd-image-store-on-docker-engine).
 
-### Configure Settings
+### Configure
 
 You must create three files to properly configure the app:
     - .env: Miscellaneous environment variables used by multiple services.
@@ -67,22 +94,33 @@ You must create three files to properly configure the app:
     - .secrets/cert.pem: The signed certificate used for SSL.
 
 To create .env, copy example.env to .env and fill out the required values
-indicated by the comments.
+indicated by the comments. The main variables to set are as follows:
+
+- WHITEBOARD\_EDITOR\_JWT\_SECRET: The secret used to sign authentication tokens.
+Should be a randomly generated string at least 64 characters in length.
+- WHITEBOARD\_EDITOR\_MONGO\_URI: The URI of your Mongo database.
+- WHITEBOARD\_EDITOR\_JWT\_EXPIRATION\_SECS: The number of seconds for which an
+authentication token remains valid.
+- WHITEBOARD\_EDITOR\_HTTP\_PORT: The port at which to access Boardly via http. In
+a production environment, this should be set to 80.
+- WHITEBOARD\_EDITOR\_HTTPS\_PORT: The port at which to access Boardly via https.
+In a production environment, this should be set to 443.
 
 To create key.pem and cert.pem for a testing environment, you may run the
 following commands to create a private key and self-signed certificate.
 
 Generate a private key:
-```
+``` bash
 openssl genrsa -out .secrets/key.pem 2048
 ```
 
 Generate a certificate signing request:
-```
+``` bash
 openssl req -key .secrets/key.pem -new -out .secrets/cert.csr
+```
 
 Generate a self-signed certificate:
-```
+``` bash
 openssl x509 -signkey .secrets/key.pem -in .secrets/cert.csr -req -days 10 -out .secrets/cert.pem
 ```
 
@@ -96,39 +134,72 @@ menu your browsers presents when you try to access Boardly.
 To build the Docker services that make up Boardly, simply run the
 following from the repository root directory:
 
-```
+``` bash
 docker compose build
 ```
 
 To get caching to work correctly on your first attempt, you may need to run this
 command with the --no-cache option:
 
-```
+``` bash
 docker compose build --no-cache
 ```
 
+### Set up Test Database (Optional)
+
+If you do not wish to create a new database to run Boardly (i.e. in a testing or
+demo environment), you may use the test database provided in docker-compose.yml.
+To set up the test database, simply run the following command:
+
+``` bash
+docker compose up -d test_db
+```
+
+To instruct Boardly to use this database, set WHITEBOARD\_EDITOR\_MONGO\_URI to
+the following in your .env:
+
+``` bash
+WHITEBOARD_EDITOR_MONGO_URI="mongodb://test_db:27017/testdb"
+```
 
 ### Run
 
 To run Boardly, simply run the following from the repository root
 directory:
 
-```
+``` bash
 docker compose up --build -d
 ```
 
 ### View Logs
 
-To view logs while Boardly is running, simply run:
+To print logs while Boardly is running, simply run:
 
+``` bash
+docker compose logs --timestamps SERVICE_NAME
 ```
-docker compose logs
+
+To view logs in real time, add the --follow option:
+
+``` bash
+docker compose logs --follow --timestamps SERVICE_NAME
 ```
+
+SERVICE\_NAME indicates the name of the service, as provided in
+docker-compose.yml. If left blank, logs from all services will be displayed. The
+main services are:
+
+- frontend
+- rest\_api
+- web\_socket\_server
+- reverse\_proxy
+
+For detailed information on each of these services, see [Architecture](#Architecture).
 
 ### Stop
 
 To stop Boardly, run the following from the repository root:
 
-```
+``` bash
 docker compose down
 ```
