@@ -121,7 +121,7 @@ const EditableVector = <VectorType extends VectorModel>({
       ...props,
     })}
 
-    {isSelected && (
+    {isSelected && draggable && (
       <>
         <Circle
           x={localPoints[0]}
