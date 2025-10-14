@@ -105,7 +105,7 @@ const EditableShape = <ShapeType extends ShapeModel> ({
         ...shapeEditableProps,
         ...props
       })}
-      {<Transformer ref={trRef} />}
+      {draggable && <Transformer ref={trRef} />}
     </Group>
   );
 }
