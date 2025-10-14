@@ -11,7 +11,7 @@ interface UserAuthProps {
 }
 
 function UserAuth({ action }: UserAuthProps) {
-  const title = action === "login" ? "Log In" : "Create an Account";
+  const title = APP_NAME;
   const pageTitle = `${title} | ${APP_NAME}`;
 
   return (
