@@ -10,6 +10,10 @@ import {
 
 // -- local imports
 
+import {
+  APP_NAME,
+} from '@/app.config';
+
 // -- api
 import api from '@/api/axios';
 
@@ -34,7 +38,7 @@ import WhiteboardList from '@/components/WhiteboardList';
 
 const Dashboard = (): React.JSX.Element => {
   const navigate = useNavigate();
-  const title: string = "<Whiteboard App>";
+  const pageTitle = `Your Dashboard | ${APP_NAME}`;
   const user: User | null = useUser().user;
 
   const {
@@ -98,14 +102,12 @@ const Dashboard = (): React.JSX.Element => {
     }
   };
 
-  const pageTitle = 'Your Dashboard | Whiteboard Editor';
-
   return (
     <Page
       title={pageTitle}
     >
       <HeaderAuthed
-        title={title}
+        title={APP_NAME}
       />
 
       <main>

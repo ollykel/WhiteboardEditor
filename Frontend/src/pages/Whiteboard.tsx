@@ -24,6 +24,10 @@ import { X } from 'lucide-react';
 
 // -- local types
 import {
+  APP_NAME,
+} from '@/app.config';
+
+import {
   axiosResponseIsError,
   type Whiteboard as APIWhiteboard,
   type UserPermissionEnum,
@@ -535,7 +539,7 @@ const Whiteboard = () => {
         /> 
       );
       
-      const pageTitle = `${title} | Whiteboard Editor`;
+      const pageTitle = `${title} | ${APP_NAME}`;
       
       return (
         <Page

@@ -11,6 +11,10 @@ import {
 } from 'axios';
 
 import {
+  APP_NAME,
+} from '@/app.config';
+
+import {
   type User,
 } from '@/types/APIProtocol';
 
@@ -97,7 +101,7 @@ export default function AccountSettings() {
   };
 
   const title = "Account Settings";
-  const pageTitle = `${title} | Whiteboard Editor`;
+  const pageTitle = `${title} | ${APP_NAME}`;
 
   return (
     <Page

@@ -18,6 +18,10 @@ import {
 } from 'axios';
 
 import {
+  APP_NAME,
+} from '@/app.config';
+
+import {
   type AuthLoginSuccessResponse,
 } from '@/types/APIProtocol';
 
@@ -84,7 +88,7 @@ function AuthForm({ initialAction }: AuthFormProps) {
   return (
     <div className="flex flex-col min-w-60 w-120">
       <h1 className="text-2xl font-bold text-center mb-6">
-        {action === "login" ? "Welcome Back!" : "Welcome to <Whiteboard App>!"}
+        {action === "login" ? "Welcome Back!" : `Welcome to ${APP_NAME}!`}
       </h1>
 
       {/* Entry Form */}
@@ -132,7 +136,7 @@ function AuthForm({ initialAction }: AuthFormProps) {
       {/* Toggle Login/Signup */}
       <div className="flex justify-center mt-4 pt-6 border-t-1 border-gray-400">
         <div className="p-2">
-          {action === "login" ? "New to <Whiteboard App>?" : "Already have an account?"}
+          {action === "login" ? `New to ${APP_NAME}?` : "Already have an account?"}
         </div>
         <button 
           onClick={handleToggle}
