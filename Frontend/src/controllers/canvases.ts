@@ -32,6 +32,10 @@ import {
 } from '@/store/canvases/canvasesByWhiteboardSlice';
 
 import {
+  addChildCanvasesByCanvas,
+} from '@/store/canvases/childCanvasesByCanvasSlice';
+
+import {
   normalizeCanvas
 } from '@/store/canvases/canvasesNormalizers';
 
@@ -47,12 +51,22 @@ export const addCanvas = (
     allowedUsersByCanvas
   } = normalizeCanvas(whiteboardId, canvas);
 
+  const canvasKey : CanvasKeyType = [whiteboardId, canvas.id];
+
+  if (canvas.parentCanvas) {
+    const parentCanvasKey = [whiteboardId, canvas.parentCanvas.canvasId];
+
+    dispatch(addChildCanvasesByCanvas({
+      [parentCanvasKey.toString()]: [canvasKey],
+    }));
+  }
+
   dispatch(setCanvases(canvases));
   dispatch(setCanvasObjects(canvasObjects));
   dispatch(setObjectsByCanvas(canvasObjectsByCanvas));
   dispatch(setAllowedUsersByCanvas(allowedUsersByCanvas));
   dispatch(addCanvasesByWhiteboard({
-    [whiteboardId]: [[whiteboardId, canvas.id]]
+    [whiteboardId]: [canvasKey]
   }));
 };
 

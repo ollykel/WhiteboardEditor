@@ -19,7 +19,7 @@ import type {
 // or render shapes.
 //
 // =============================================================================
-const useHandDispatcher = (_props: OperationDispatcherProps): OperationDispatcher => {
+const useHandDispatcher = (_props: OperationDispatcherProps<null>): OperationDispatcher => {
   const [isMouseDown, setIsMouseDown] = useState<boolean>(false);
 
   return ({

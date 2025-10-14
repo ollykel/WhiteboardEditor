@@ -63,7 +63,7 @@ async fn main() -> process::ExitCode {
     let connection_state_ref = Arc::new(ConnectionState{
         jwt_secret: jwt_secret.clone(),
         next_client_id: Mutex::new(0),
-        mongo_client: mongo_client,
+        mongo_client,
         program_state: ProgramState{
             whiteboards: Mutex::new(HashMap::new()),
         }
@@ -273,18 +273,25 @@ async fn handle_connection(ws: WebSocket, whiteboard_id: WhiteboardIdType, conne
                         if ! diffs.is_empty() {
                             for diff in diffs.iter() {
                                 match &diff {
-                                    WhiteboardDiff::CreateCanvas { name, width, height } => {
-                                        println!("Creating canvas \"{}\" in database ...", name);
+                                    WhiteboardDiff::CreateCanvas { canvas } => {
+                                        println!("Creating canvas \"{}\" in database ...", canvas.name);
 
                                         let now = bson::DateTime::now();
                                         let canvas_doc = CanvasMongoDBView {
-                                            id: ObjectId::new(),
-                                            whiteboard_id: whiteboard_id.clone(),
-                                            name: name.clone(),
-                                            width: *width,
-                                            height: *height,
+                                            id: canvas.id,
+                                            name: canvas.name.clone(),
+                                            width: canvas.width,
+                                            height: canvas.height,
                                             time_created: now.clone(),
                                             time_last_modified: now.clone(),
+                                            parent_canvas: match &canvas.parent_canvas {
+                                                None => None,
+                                                Some(parent) => Some(
+                                                    CanvasParentRefMongoDBView::from_canvas_parent_ref(parent)
+                                                ),
+                                            },
+                                            canvas_hierarchy: None,
+                                            shapes: vec![],
                                             allowed_users: None,
                                         };
                                         let create_canvas_res = canvas_coll.insert_one(&canvas_doc).await;
@@ -338,7 +345,7 @@ async fn handle_connection(ws: WebSocket, whiteboard_id: WhiteboardIdType, conne
 
                                         let canvas_obj_docs : Vec<CanvasObjectMongoDBView> = shapes.iter()
                                             .map(|(obj_id, shape)| CanvasObjectMongoDBView {
-                                                id: obj_id.clone(),
+                                                id: *obj_id,
                                                 canvas_id: canvas_id.clone(),
                                                 shape: shape.clone()
                                             })
@@ -361,7 +368,7 @@ async fn handle_connection(ws: WebSocket, whiteboard_id: WhiteboardIdType, conne
                                         for (obj_id, shape) in shapes.iter() {
                                             let query_doc = doc! { "_id": obj_id.clone() };
                                             let canvas_obj_doc = CanvasObjectMongoDBView {
-                                                id: obj_id.clone(),
+                                                id: *obj_id,
                                                 canvas_id: canvas_id.clone(),
                                                 shape: shape.clone()
                                             };
@@ -449,18 +456,25 @@ async fn handle_connection(ws: WebSocket, whiteboard_id: WhiteboardIdType, conne
                         if ! diffs.is_empty() {
                             for diff in diffs.iter() {
                                 match &diff {
-                                    WhiteboardDiff::CreateCanvas { name, width, height } => {
-                                        println!("Creating canvas \"{}\" in database ...", name);
+                                    WhiteboardDiff::CreateCanvas { canvas } => {
+                                        println!("Creating canvas \"{}\" in database ...", canvas.name);
 
                                         let now = bson::DateTime::now();
                                         let canvas_doc = CanvasMongoDBView {
                                             id: ObjectId::new(),
-                                            whiteboard_id: whiteboard_id.clone(),
-                                            name: name.clone(),
-                                            width: *width,
-                                            height: *height,
+                                            name: canvas.name.clone(),
+                                            width: canvas.width,
+                                            height: canvas.height,
                                             time_created: now.clone(),
                                             time_last_modified: now.clone(),
+                                            parent_canvas: match &canvas.parent_canvas {
+                                                None => None,
+                                                Some(parent) => Some(
+                                                    CanvasParentRefMongoDBView::from_canvas_parent_ref(parent)
+                                                ),
+                                            },
+                                            canvas_hierarchy: None,
+                                            shapes: vec![],
                                             allowed_users: None,
                                         };
                                         let create_canvas_res = canvas_coll.insert_one(&canvas_doc).await;
@@ -514,7 +528,7 @@ async fn handle_connection(ws: WebSocket, whiteboard_id: WhiteboardIdType, conne
 
                                         let canvas_obj_docs : Vec<CanvasObjectMongoDBView> = shapes.iter()
                                             .map(|(obj_id, shape)| CanvasObjectMongoDBView {
-                                                id: obj_id.clone(),
+                                                id: *obj_id,
                                                 canvas_id: canvas_id.clone(),
                                                 shape: shape.clone()
                                             })
@@ -537,7 +551,7 @@ async fn handle_connection(ws: WebSocket, whiteboard_id: WhiteboardIdType, conne
                                         for (obj_id, shape) in shapes.iter() {
                                             let query_doc = doc! { "_id": obj_id.clone() };
                                             let canvas_obj_doc = CanvasObjectMongoDBView {
-                                                id: obj_id.clone(),
+                                                id: *obj_id,
                                                 canvas_id: canvas_id.clone(),
                                                 shape: shape.clone()
                                             };

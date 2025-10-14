@@ -29,27 +29,37 @@ import editableObjectProps from './editableObjectProps';
 const useTextDispatcher = ({
   // shapeAttributes,
   addShapes,
-}: OperationDispatcherProps
+}: OperationDispatcherProps<null>
 ): OperationDispatcher => {
   const [mouseDownCoords, setMouseDownCoords] = useState<EventCoords | null>(null);
   const [mouseCoords, setMouseCoords] = useState<EventCoords | null>(null);
 
   const handlePointerDown = (ev: Konva.KonvaEventObject<MouseEvent>) => {
-    const { offsetX, offsetY } = ev.evt;
+    const pos = ev.currentTarget.getRelativePointerPosition();
 
-    setMouseDownCoords({ x: offsetX, y: offsetY }); 
-    setMouseCoords({ x: offsetX, y: offsetY });
+    if (pos) {
+      const { x, y } = pos;
+
+      setMouseDownCoords({ x, y });
+      setMouseCoords({ x, y });
+    }
   };
 
   const handlePointerMove = (ev: Konva.KonvaEventObject<MouseEvent>) => {
-    const { offsetX, offsetY } = ev.evt;
+    const pos = ev.currentTarget.getRelativePointerPosition();
 
-    setMouseCoords({ x: offsetX, y: offsetY });
+    if (pos) {
+      const { x, y } = pos;
+
+      setMouseCoords({ x, y });
+    }
   };
 
   const handlePointerUp = (ev: Konva.KonvaEventObject<MouseEvent>) => {
-    if (mouseDownCoords !== null) {
-      const { offsetX: xA, offsetY: yA } = ev.evt;
+    const pos = ev.currentTarget.getRelativePointerPosition();
+
+    if (pos && mouseDownCoords) {
+      const { x: xA, y: yA } = pos;
       const { x: xB, y: yB } = mouseDownCoords;
       const xMin = Math.min(xA, xB);
       const yMin = Math.min(yA, yB);

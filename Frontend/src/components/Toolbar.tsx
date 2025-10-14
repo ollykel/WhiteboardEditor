@@ -1,17 +1,16 @@
-import React, { useContext, useState } from 'react';
+import React, {
+  useContext,
+} from 'react';
 
 import WhiteboardContext from '@/context/WhiteboardContext';
 
 import { getToolChoiceLabel } from '@/components/Tool';
-import PopoverMenu from '@/components/PopoverMenu'
-import CreateCanvasMenu, { type NewCanvas } from '@/components/CreateCanvasMenu'
 
 import type { ToolChoice } from '@/components/Tool';
 
 interface ToolbarProps {
   toolChoice: ToolChoice;
   onToolChange: (choice: ToolChoice) => void;
-  onNewCanvas: (canvas: NewCanvas) => void;
 }
 
 interface ToolbarButtonProps {
@@ -20,7 +19,14 @@ interface ToolbarButtonProps {
   onClick?: () => void;
 
 }
-const tools: ToolChoice[] = ["hand", "vector", "rect", "ellipse", "text"];
+const tools: ToolChoice[] = [
+  "hand",
+  "vector",
+  "rect",
+  "ellipse",
+  "text",
+  "create_canvas",
+];
 
 const ToolbarButton = React.forwardRef<HTMLButtonElement, ToolbarButtonProps>(
   ({ label, variant, onClick }, ref) => (
@@ -34,8 +40,7 @@ const ToolbarButton = React.forwardRef<HTMLButtonElement, ToolbarButtonProps>(
   )
 );
 
-function Toolbar({ toolChoice, onToolChange, onNewCanvas }: ToolbarProps) {
-  const [newCanvasOpen, setNewCanvasOpen] = useState(false);
+function Toolbar({ toolChoice, onToolChange }: ToolbarProps) {
   
   const context = useContext(WhiteboardContext);
   if (!context) {
@@ -56,19 +61,12 @@ function Toolbar({ toolChoice, onToolChange, onNewCanvas }: ToolbarProps) {
       {tools.map((tool) => renderToolChoice(tool))}
 
       {/** Additional, non-tool choices **/}
-      <ToolbarButton label="Import Image" variant="default" />
-      <PopoverMenu
-        open={newCanvasOpen}
-        onOpenChange={setNewCanvasOpen}
-        trigger={<ToolbarButton label="New Canvas" variant="default" />}
-      >
-        <CreateCanvasMenu 
-          onCreate={(canvas) => {
-            onNewCanvas(canvas);
-            setNewCanvasOpen(false); // close popover after creating
-          }}
-        />
-      </PopoverMenu>
+
+      {/** Import Image Button **/}
+      <ToolbarButton
+        label="Import Image"
+        variant="default"
+      />
     </div>
   )
 }

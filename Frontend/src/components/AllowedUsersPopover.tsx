@@ -73,7 +73,7 @@ const AllowedUsersPopover = ({ selected, onChange }: AllowedUsersPopoverProps) =
     isLoading: isWhiteboardLoading,
     isFetching: isWhiteboardFetching,
   } = useQuery<APIWhiteboard>({
-    queryKey: ["whiteboard", whiteboardId],
+    queryKey: ["whiteboard", whiteboardId, 'shared_users'],
     queryFn: async () => {
       const res : AxiosResponse<APIWhiteboard> = await api.get(`/whiteboards/${whiteboardId}`);
 

@@ -16,7 +16,16 @@ use futures::{
 };
 
 use tokio::sync::broadcast;
-use serde::{Deserialize, Serialize};
+use serde::{
+    self,
+    Deserialize,
+    Serialize,
+};
+use serde_json;
+use serde_with::{
+    serde_as,
+    DisplayFromStr,
+};
 
 use mongodb::{
     Collection,
@@ -189,26 +198,39 @@ pub struct UserSummary {
     pub username: String,
 }
 
+#[serde_as]
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CanvasClientView {
-    pub id: String,
-    pub width: i32,
-    pub height: i32,
+    // Option because it won't have an ID assigned when coming from the client
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde_as(as = "Option<DisplayFromStr>")]
+    pub id: Option<ObjectId>,
+    pub width: f64,
+    pub height: f64,
     pub name: String,
-    pub time_created: String,           // rfc3339-encoded datetime
-    pub time_last_modified: String,     // rfc3339-encoded datetime
-    pub shapes: HashMap<String, ShapeModel>,
-    pub allowed_users: Vec<String>,     // cast ObjectId to string for proper client-side parsing
-}
+    pub parent_canvas: Option<CanvasParentRefClientView>,
+    pub time_created: String,               // rfc3339-encoded datetime
+    pub time_last_modified: String,         // rfc3339-encoded datetime
+    #[serde_as(as = "HashMap<DisplayFromStr, _>")]
+    pub shapes: HashMap<CanvasObjectIdType, ShapeModel>,
+    #[serde_as(as = "Vec<DisplayFromStr>")]
+    pub allowed_users: Vec<ObjectId>,         // cast ObjectId to string for proper client-side parsing
+}// -- end struct CanvasClientView
 
+#[serde_as]
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct WhiteboardClientView {
-    pub id: String,
+    // Option because it won't have an ID assigned when coming from the client
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde_as(as = "Option<DisplayFromStr>")]
+    pub id: Option<ObjectId>,
     pub name: String,
     pub canvases: Vec<CanvasClientView>,
-}
+    #[serde_as(as = "DisplayFromStr")]
+    pub root_canvas: CanvasIdType,
+}// -- end struct WhiteboardClientView
 
 // === WhiteboardDiff =============================================================================
 //
@@ -221,15 +243,27 @@ pub struct WhiteboardClientView {
 // instead of duplicating the given fields.
 //
 // ================================================================================================
-#[derive(Debug, Clone, Serialize)]
-#[serde(tag = "type", rename_all = "snake_case", rename_all_fields="camelCase")]
+#[derive(Debug, Clone)]
 pub enum WhiteboardDiff {
-    CreateCanvas { name: String, width: i32, height: i32 },
-    DeleteCanvases { canvas_ids: Vec<CanvasIdType> },
-    CreateShapes { canvas_id: CanvasIdType, shapes: HashMap<CanvasObjectIdType, ShapeModel> },
-    UpdateShapes { canvas_id: CanvasIdType, shapes: HashMap<CanvasObjectIdType, ShapeModel> },
-    UpdateCanvasAllowedUsers { canvas_id: CanvasIdType, allowed_users: Vec<ObjectId> },
-}
+    CreateCanvas {
+       canvas: Canvas,
+    },
+    DeleteCanvases {
+        canvas_ids: Vec<CanvasIdType>,
+    },
+    CreateShapes {
+        canvas_id: CanvasIdType,
+        shapes: HashMap<CanvasObjectIdType, ShapeModel>,
+    },
+    UpdateShapes {
+        canvas_id: CanvasIdType,
+        shapes: HashMap<CanvasObjectIdType, ShapeModel>,
+    },
+    UpdateCanvasAllowedUsers {
+        canvas_id: CanvasIdType,
+        allowed_users: Vec<ObjectId>,
+    },
+}// -- end enum WhiteboardDiff
 
 // === ClientError ================================================================================
 //
@@ -295,8 +329,7 @@ pub enum ServerSocketMessage {
     CreateShapes {
         client_id: ClientIdType,
         canvas_id: String,
-        shapes: HashMap<String,
-        ShapeModel>,
+        shapes: HashMap<String, ShapeModel>,
     },
     UpdateShapes {
         client_id: ClientIdType,
@@ -339,9 +372,10 @@ pub enum ClientSocketMessage {
         ShapeModel>,
     },
     CreateCanvas {
-        width: i32,
-        height: i32,
         name: String,
+        width: f64,
+        height: f64,
+        parent_canvas: CanvasParentRefClientView,
         allowed_users: HashSet::<ObjectId>,
     },
     DeleteCanvases {
@@ -356,15 +390,82 @@ pub enum ClientSocketMessage {
     },
 }
 
+// === CanvasParentRef ============================================================================
+//
+// Reference to a Canvas' parent, together with the xy coordinates of the top-left corner of the
+// current Canvas within its parent.
+//
+// ================================================================================================
+#[derive(Clone, Debug, PartialEq)]
+pub struct CanvasParentRef {
+    canvas_id: ObjectId,
+    origin_x: f64,
+    origin_y: f64,
+}// -- end struct CanvasParentRef
+
+#[serde_as]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CanvasParentRefClientView {
+    #[serde_as(as = "DisplayFromStr")]
+    canvas_id: ObjectId,
+    origin_x: f64,
+    origin_y: f64,
+}// -- end struct CanvasParentRefClientView
+
+impl CanvasParentRefClientView {
+    pub fn from_canvas_parent_ref(parent_ref: &CanvasParentRef) -> Self {
+        Self {
+            canvas_id: parent_ref.canvas_id,
+            origin_x: parent_ref.origin_x,
+            origin_y: parent_ref.origin_y,
+        }
+    }// -- end from_canvas_parent_ref
+
+    pub fn to_canvas_parent_ref(&self) -> CanvasParentRef {
+        CanvasParentRef {
+            canvas_id: self.canvas_id,
+            origin_x: self.origin_x,
+            origin_y: self.origin_y,
+        }
+    }// -- end to_canvas_parent_ref
+}// -- end impl CanvasParentRefClientView
+
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub struct CanvasParentRefMongoDBView {
+    canvas_id: ObjectId,
+    origin_x: f64,
+    origin_y: f64,
+}// -- end struct CanvasParentRefClientView
+
+impl CanvasParentRefMongoDBView {
+    pub fn from_canvas_parent_ref(parent_ref: &CanvasParentRef) -> Self {
+        Self {
+            canvas_id: parent_ref.canvas_id,
+            origin_x: parent_ref.origin_x,
+            origin_y: parent_ref.origin_y,
+        }
+    }// -- end from_canvas_parent_ref
+
+    pub fn to_canvas_parent_ref(&self) -> CanvasParentRef {
+        CanvasParentRef {
+            canvas_id: self.canvas_id,
+            origin_x: self.origin_x,
+            origin_y: self.origin_y,
+        }
+    }// -- end to_canvas_parent_ref
+}// -- end impl CanvasParentRefMongoDBView
+
 #[derive(Clone, Debug)]
 pub struct Canvas {
     pub id: CanvasIdType,
-    pub next_shape_id_base: u64,
-    pub width: i32,
-    pub height: i32,
+    pub width: f64,
+    pub height: f64,
     pub name: String,
     pub time_created: chrono::DateTime<Utc>,
     pub time_last_modified: chrono::DateTime<Utc>,
+    pub parent_canvas: Option<CanvasParentRef>,
     pub shapes: HashMap<CanvasObjectIdType, ShapeModel>,
     pub allowed_users: Option<HashSet<ObjectId>>, // None = open to all
 }
@@ -374,19 +475,22 @@ impl Canvas {
         // At the moment, the client view is identical to the Canvas type itself, but this may not
         // always be the case.
         CanvasClientView {
-            id: self.id.to_string(),
+            id: Some(self.id),
             width: self.width,
             height: self.height,
             name: self.name.clone(),
-            // shapes: self.shapes.clone(),
-            shapes: self.shapes.iter()
-                .map(|(obj_id, shape)| (obj_id.to_string(), shape.clone()))
-                .collect(),
+            parent_canvas: match self.parent_canvas {
+                None => None,
+                Some(ref parent) => Some(
+                    CanvasParentRefClientView::from_canvas_parent_ref(parent)
+                ),
+            },
+            shapes: self.shapes.clone(),
             time_created: self.time_created.to_rfc3339(),
             time_last_modified: self.time_last_modified.to_rfc3339(),
             allowed_users: match &self.allowed_users {
                 Some(set) => set.iter()
-                    .map(|oid| oid.to_string())
+                    .map(|oid| *oid)
                     .collect(),
                 None => vec![], // empty array means open to all
             },
@@ -423,7 +527,7 @@ pub type WhiteboardPermissionMongoDBView = WhiteboardPermission;
 // === WhiteboardMetadata =========================================================================
 //
 // Encompasses data about a whiteboard that doesn't pertain to graphic elements that are updated
-// during the process of users editing the whtieboard. This includes the whiteboard's name, owner
+// during the process of users editing the whiteboard. This includes the whiteboard's name, owner
 // id, user permissions, etc.
 //
 // ================================================================================================
@@ -442,18 +546,20 @@ pub struct Whiteboard {
     pub id: WhiteboardIdType,
     pub metadata: WhiteboardMetadata,
     pub canvases: HashMap<CanvasIdType, Canvas>,
-}
+    pub root_canvas: CanvasIdType,
+}// -- end struct Whiteboard
 
 impl Whiteboard {
     pub fn to_client_view(&self) -> WhiteboardClientView {
         // At the moment, the client view is identical to the Canvas type itself, but this may not
         // always be the case.
         WhiteboardClientView {
-            id: self.id.to_string(),
+            id: Some(self.id),
             name: self.metadata.name.clone(),
             canvases: self.canvases.iter()
-                .map(|(_, c)| c.to_client_view())
-                .collect()
+                .map(|(_, canvas)| canvas.to_client_view())
+                .collect(),
+            root_canvas: self.root_canvas.clone(),
         }
     }// end pub fn to_client_view(&self) -> CanvasClientView
 }
@@ -474,33 +580,43 @@ pub struct SharedWhiteboardEntry {
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
 pub struct CanvasMongoDBView {
     #[serde(rename = "_id")]
     pub id: ObjectId,
-    pub whiteboard_id: ObjectId,
-    pub width: i32,
-    pub height: i32,
+    pub width: f64,
+    pub height: f64,
     pub name: String,
     pub time_created: bson::DateTime,
     pub time_last_modified: bson::DateTime,
+    pub parent_canvas: Option<CanvasParentRefMongoDBView>,
+    // used to fetch all descendants of the root canvas via a $graphLookup operation in an
+    // aggregation pipeline
+    // virtual field - don't serialize
+    #[serde(skip_serializing)]
+    pub canvas_hierarchy: Option<Vec<CanvasMongoDBView>>,
+    // virtual field - don't serialize
+    #[serde(skip_serializing)]
+    pub shapes: Vec<CanvasObjectMongoDBView>,
     pub allowed_users: Option<Vec<ObjectId>>
 }
 
 impl CanvasMongoDBView {
-    pub fn to_canvas(&self, canvas_objects: &[CanvasObject]) -> Canvas {
-        let shapes : HashMap<CanvasObjectIdType, ShapeModel> = canvas_objects.iter()
-            .map(|obj| (obj.id, obj.shape.clone()))
-            .collect();
-
+    pub fn to_canvas(&self) -> Canvas {
         Canvas {
-            id: self.id.clone(),
-            next_shape_id_base: 0,
+            id: self.id,
             width: self.width,
             height: self.height,
             name: self.name.clone(),
             time_created: dt_bson_to_chrono_utc(&self.time_created),
             time_last_modified: dt_bson_to_chrono_utc(&self.time_last_modified),
-            shapes: shapes,
+            shapes: self.shapes.iter()
+                .map(|shape| (shape.id, shape.to_canvas_object().shape))
+                .collect(),
+            parent_canvas: match self.parent_canvas {
+                None => None,
+                Some(ref parent_ref) => Some(parent_ref.to_canvas_parent_ref()),
+            },
             allowed_users: match &self.allowed_users {
                 None => None,
                 Some(users) => Some(users.iter().map(|uid| uid.clone()).collect())
@@ -565,16 +681,18 @@ pub struct WhiteboardMongoDBView {
     pub id: ObjectId,
     #[serde(flatten)]
     metadata: WhiteboardMetadataMongoDBView,
+    root_canvas: ObjectId,
 }// -- end struct WhiteboardMongoDBView
 
 impl WhiteboardMongoDBView {
     pub fn to_whiteboard(&self, canvases: &[Canvas]) -> Whiteboard {
         Whiteboard {
-            id: self.id.clone(),
+            id: self.id,
             metadata: self.metadata.to_whiteboard_metadata(),
             canvases: canvases.iter()
-                .map(|canvas| (canvas.id.clone(), canvas.clone()))
+                .map(|canvas| (canvas.id, canvas.clone()))
                 .collect(),
+            root_canvas: self.root_canvas,
         }
     }
 }
@@ -795,7 +913,7 @@ pub async fn handle_authenticated_client_message(
                                 let mut diffs = client_state.diffs.lock().await;
                             
                                 diffs.push(WhiteboardDiff::CreateShapes{
-                                    canvas_id: canvas_id,
+                                    canvas_id,
                                     shapes: new_shapes.clone()
                                 });
                             }
@@ -846,7 +964,7 @@ pub async fn handle_authenticated_client_message(
                                 let mut diffs = client_state.diffs.lock().await;
                             
                                 diffs.push(WhiteboardDiff::UpdateShapes{
-                                    canvas_id: canvas_id,
+                                    canvas_id,
                                     shapes: new_shapes.clone()
                                 });
                             }
@@ -861,7 +979,7 @@ pub async fn handle_authenticated_client_message(
                         }
                     }
                 },
-                CreateCanvas { width, height, name, allowed_users } => {
+                CreateCanvas { name, width, height, parent_canvas, allowed_users } => {
                     let mut whiteboard = client_state.whiteboard_ref.lock().await;
                     let new_canvas_id = ObjectId::new();
 
@@ -872,24 +990,13 @@ pub async fn handle_authenticated_client_message(
                     // TODO: actually fetch user's id from database
                     // allowed_users.insert(ObjectId::new());
 
-                    // valid input: add to diffs
-                    {
-                        let mut diffs = client_state.diffs.lock().await;
-                    
-                        diffs.push(WhiteboardDiff::CreateCanvas{
-                            name: name.clone(),
-                            width: width,
-                            height: height,
-                        });
-                    }
-
                     // instantiate new canvas
                     let canvas = Canvas {
                         id: new_canvas_id,
-                        next_shape_id_base: 0,
-                        width: width,
-                        height: height,
                         name: name.clone(),
+                        width,
+                        height,
+                        parent_canvas: Some(parent_canvas.to_canvas_parent_ref()),
                         time_created: Utc::now(),
                         time_last_modified: Utc::now(),
                         shapes: HashMap::<CanvasObjectIdType, ShapeModel>::new(),
@@ -900,6 +1007,15 @@ pub async fn handle_authenticated_client_message(
                         new_canvas_id,
                         canvas.clone()
                     );
+
+                    // valid input: add to diffs
+                    {
+                        let mut diffs = client_state.diffs.lock().await;
+                    
+                        diffs.push(WhiteboardDiff::CreateCanvas{
+                            canvas: canvas.clone(),
+                        });
+                    }
 
                     Some(ServerSocketMessage::CreateCanvas{
                         client_id: client_state.client_id,
@@ -977,7 +1093,7 @@ pub async fn handle_authenticated_client_message(
                                 let mut diffs = client_state.diffs.lock().await;
 
                                 diffs.push(WhiteboardDiff::UpdateCanvasAllowedUsers{
-                                    canvas_id: canvas_id, 
+                                    canvas_id, 
                                     allowed_users: allowed_users.iter()
                                         .map(|oid| *oid)
                                         .collect(), 
@@ -1113,7 +1229,7 @@ pub async fn handle_unauthenticated_client_message<StoreType: UserStore + Whiteb
                         Some(ServerSocketMessage::InitClient {
                             client_id: client_state.client_id,
                             whiteboard: client_state.whiteboard_ref.lock().await.to_client_view(),
-                            active_clients: active_clients,
+                            active_clients,
                         })
                     } else {
                         // User has no valid permission; send back an error message
@@ -1174,26 +1290,108 @@ pub async fn get_whiteboard_metadata_by_id(db: &Database, wid: &WhiteboardIdType
 pub async fn get_whiteboard_by_id(db: &Database, wid: &WhiteboardIdType) -> Result<Option<Whiteboard>, mongodb::error::Error> {
     let whiteboard_coll = db.collection::<WhiteboardMongoDBView>("whiteboards");
     let canvas_coll = db.collection::<CanvasMongoDBView>("canvases");
-    let shape_coll = db.collection::<CanvasObjectMongoDBView>("shapes");
 
     let whiteboard_view = match whiteboard_coll.find_one(doc! { "_id": wid.clone() }).await? {
         None => { return Ok(None); },
         Some(wb) => wb
     };
 
-    let canvas_cursor = canvas_coll.find(doc! { "whiteboard_id": wid.clone() }).await?;
+    eprintln!("!! whiteboard view: {:?}", whiteboard_view);
+    let canvas_cursor = canvas_coll.aggregate([
+        // -- locate root canvas
+        doc! {
+            "$match": {
+                "_id": whiteboard_view.root_canvas
+            }
+        },
+        // -- add shapes to root canvas
+        doc! {
+            "$lookup" : {
+                "from" : "shapes",
+                "localField" : "_id",
+                "foreignField" : "canvas_id",
+                "as" : "shapes",
+            }
+        },
+        // -- aggregate descendant canvases
+        doc! {
+            "$graphLookup" : {
+                "from" : "canvases",
+                "startWith" : "$_id",
+                "connectFromField" : "_id",
+                "connectToField" : "parent_canvas.canvas_id",
+                "as" : "canvas_hierarchy",
+            }
+        },
+        // -- unwind to allow adding shapes to each descendant canvas
+        doc! {
+            "$unwind": {
+                "path": "$canvas_hierarchy",
+                "preserveNullAndEmptyArrays": true
+            }
+        },
+        // -- look up shapes for each descendant canvas
+        doc! {
+            "$lookup" : {
+                "from" : "shapes",
+                "localField" : "canvas_hierarchy._id",
+                "foreignField" : "canvas_id",
+                "as" : "canvas_hierarchy.shapes",
+            }
+        },
+        // -- exclude empty canvas hierarchy containing only shapes from previous stage
+        doc! {
+          "$set": {
+            "canvas_hierarchy": {
+              "$cond": {
+                "if": {
+                  "$not": "$canvas_hierarchy._id"
+                },
+                "then": "$$REMOVE",
+                "else": "$canvas_hierarchy"
+              }
+            }
+          }
+        },
+        // -- re-group descendant canvases
+        doc! {
+            "$group": {
+                "_id": "$_id",
+                "rootDoc": {
+                    "$first": "$$ROOT"
+                },
+                "canvas_hierarchy": {
+                    "$push": "$canvas_hierarchy"
+                },
+            }
+        },
+        // -- rebuild root canvas
+        doc! {
+            "$replaceRoot": {
+                "newRoot": {
+                    "$mergeObjects": [
+                        "$rootDoc",
+                        {
+                            "canvas_hierarchy": "$canvas_hierarchy"
+                        }
+                    ]
+                }
+            }
+        },
+    ])
+        .with_type::<CanvasMongoDBView>()
+        .await?;
     let canvas_views : Vec<CanvasMongoDBView> = canvas_cursor.try_collect().await?;
-    let mut canvases = Vec::<Canvas>::new();
+    let root_canvas_view = canvas_views.first().ok_or_else(|| mongodb::error::Error::custom(
+        format!("Could not find root canvas with id {}", whiteboard_view.root_canvas)
+    ))?;
+    let mut canvases = vec![ root_canvas_view.to_canvas() ];
 
-    for canvas_view in canvas_views.iter() {
-        let object_views_cursor = shape_coll.find(doc! { "canvas_id": canvas_view.id }).await?;
-        let object_views : Vec<CanvasObjectMongoDBView> = object_views_cursor.try_collect().await?;
-        let canvas_objects : Vec<CanvasObject> = object_views.iter()
-            .map(|obj_view| obj_view.to_canvas_object())
-            .collect();
-
-        canvases.push(canvas_view.to_canvas(canvas_objects.as_slice()));
-    }// end for canvas_view in canvas_views.iter()
+    if let Some(canvas_views) = &root_canvas_view.canvas_hierarchy {
+        for canvas_view in canvas_views {
+            canvases.push(canvas_view.to_canvas());
+        }// -- end for canvas_view in canvas_views
+    }
 
     Ok(Some(whiteboard_view.to_whiteboard(canvases.as_slice())))
 }// -- end fn get_whiteboard_by_id

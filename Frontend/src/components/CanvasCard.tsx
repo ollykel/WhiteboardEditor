@@ -2,83 +2,186 @@ import {
   useState,
   useContext,
   useEffect,
+  type Dispatch,
+  type SetStateAction,
 } from 'react';
 
 import {
   useSelector,
-} from "react-redux";
+} from 'react-redux';
 
-import { type RootState } from "@/store";
-import { selectAllowedUsersByCanvas } from "@/store/allowedUsers/allowedUsersByCanvasSlice";
+import {
+  Stage,
+  Layer,
+} from 'react-konva';
 
 import Canvas from "./Canvas";
 import CanvasMenu from "./CanvasMenu";
 
-import type { CanvasProps } from '@/components/Canvas';
-import type { WhiteboardIdType } from "@/types/WebSocketProtocol";
 import type {
-  User,
-} from "@/types/APIProtocol";
+  ToolChoice,
+} from '@/components/Tool';
+
+import {
+  type WhiteboardIdType,
+  type CanvasIdType,
+  type CanvasKeyType,
+  type CanvasData,
+} from "@/types/WebSocketProtocol";
+
+import {
+  type User,
+} from '@/types/APIProtocol';
 
 import UserCacheContext from '@/context/UserCacheContext';
 
-interface CanvasCardProps extends CanvasProps {
-  title: string;
+import {
+  type ShapeAttributesState,
+} from '@/reducers/shapeAttributesReducer';
+
+import {
+  type RootState,
+} from '@/store';
+
+import {
+  selectAllowedUsersByCanvas,
+} from '@/store/allowedUsers/allowedUsersByCanvasSlice';
+
+import {
+  type NewCanvasDimensions,
+} from '@/types/CreateCanvas';
+
+export interface CanvasCardProps {
   whiteboardId: WhiteboardIdType;
+  rootCanvasId: CanvasIdType,
+  shapeAttributes: ShapeAttributesState;
+  childCanvasesByCanvas: Record<string, CanvasKeyType[]>;
+  canvasesByKey: Record<string, CanvasData>;
+  currentTool: ToolChoice;
+  selectedCanvasId: CanvasIdType | null;
+  onSelectCanvasDimensions: (canvasId: CanvasIdType, dimensions: NewCanvasDimensions) => void;
+  setSelectedCanvasId: Dispatch<SetStateAction<CanvasIdType | null>>;
 }
 
-// Ugly workaround for now
-// TODO: rewrite selectAllowedUsersByCanvas selector to use memoization
-const EMPTY_ALLOWED_USER_IDS: string[] = [];
-
 function CanvasCard(props: CanvasCardProps) {
+  const {
+    whiteboardId,
+    rootCanvasId,
+    shapeAttributes,
+    childCanvasesByCanvas,
+    canvasesByKey,
+    currentTool,
+    selectedCanvasId,
+    setSelectedCanvasId,
+    onSelectCanvasDimensions,
+  } = props;
+
   const userCacheContext = useContext(UserCacheContext);
 
   if (! userCacheContext) {
-    throw new Error('User cache context not provided');
+    throw new Error('No UserCacheContext provided to CanvasCard');
   }
+
   const {
     getUserById,
   } = userCacheContext;
-  const { id, title, whiteboardId } = props;
-  const allowedUserIds = useSelector((state: RootState) =>
-    selectAllowedUsersByCanvas(state, [whiteboardId, id])
-  ) ?? EMPTY_ALLOWED_USER_IDS;
-  const [allowedUsers, setAllowedUsers] = useState<User[]>([]);
+
+  const [selectedCanvasAllowedUsers, setSelectedCanvasAllowedUsers] = useState<User[] | null>(null);
+
+  const rootCanvasKey : CanvasKeyType = [whiteboardId, rootCanvasId];
+  const rootCanvas : CanvasData | undefined = canvasesByKey[rootCanvasKey.toString()];
+
+  if (! rootCanvas) {
+    throw new Error(`Could not find canvas ${rootCanvasId}`);
+  }
+
+  const {
+    width,
+    height,
+  } = rootCanvas;
+
+  const selectedCanvasKey : CanvasKeyType | null = selectedCanvasId ? [whiteboardId, selectedCanvasId] : null;
+  const selectedCanvasKeyStr : string = selectedCanvasKey?.toString() ?? '';
+  const selectedCanvas : CanvasData | null = canvasesByKey[selectedCanvasKeyStr] || null;
+
+  const allowedUserIds = useSelector(
+    // ['', ''] is effectively a null canvas key
+    (state: RootState) => selectAllowedUsersByCanvas(state, selectedCanvasKey || ['', ''])
+  );
 
   useEffect(
     () => {
-      const mapUsers = async () => {
-        const newAllowedUsers = (await Promise.all(allowedUserIds.map(uid => getUserById(uid))))
-          .filter(user => !!user);
+      if (! selectedCanvas) {
+        setSelectedCanvasAllowedUsers(null);
+      } else {
+        const mapUsers = async () => {
+          const newAllowedUsers = (await Promise.all(allowedUserIds
+            .map(uid => getUserById(uid))))
+            .filter(user => !!user);
 
-        setAllowedUsers(newAllowedUsers);
-      };
+          setSelectedCanvasAllowedUsers(newAllowedUsers);
+        };// -- end mapUsers
 
-      mapUsers();
+        mapUsers();
+      }
     },
-    [allowedUserIds, getUserById]
+    [selectedCanvas, allowedUserIds, getUserById]
   );
 
   return (
     <div className="flex flex-col p-6">
-      {/* Active Users */}
-      <div className="text-center">
-        Allowed Users: {allowedUsers.map(user => user.username).join(', ')} {/* TODO: Map to usernames */}
+      {/* Name selected canvas, if a canvas is selected */}
+      <div
+        className="min-h-16"
+      >
+        {selectedCanvas && (
+          <>
+            <h2>
+              <strong>Selected Canvas:</strong> {selectedCanvas.name}
+            </h2>
+            <h3>
+              <strong>Allowed Users:</strong> {selectedCanvasAllowedUsers
+                ?.map(user => user.username)
+                .join(', ')
+                ?? 'all'
+              }
+            </h3>
+          </>
+        )}
       </div>
-      {/* Title */}
-      <div className="text-center p-4">{title}</div>
+
       {/* Konva Canvas */}
       <div className="border border-black">
-        <Canvas {...props} />
+        <Stage
+          width={width}
+          height={height}
+        >
+          <Layer>
+            {/** Sub-canvases will be rendered recursively by Canvas component **/}
+            <Canvas
+              {...{
+                ...rootCanvas,
+                shapeAttributes,
+                currentTool,
+                childCanvasesByCanvas,
+                canvasesByKey,
+                selectedCanvasId,
+                setSelectedCanvasId,
+                onSelectCanvasDimensions,
+                disabled: false
+              }}
+            />
+          </Layer>
+        </Stage>
       </div>
-      {/* Currently Drawing */}
-      <div className="currently-drawing">Joe is drawing...</div>
+
       {/* Canvas Menu */}
-      <CanvasMenu 
-        canvasId={id}
-        whiteboardId={whiteboardId}
-      />
+      {selectedCanvasId && (
+        <CanvasMenu 
+          canvasId={selectedCanvasId}
+          whiteboardId={whiteboardId}
+        />
+      )}
     </div>
   );
 }

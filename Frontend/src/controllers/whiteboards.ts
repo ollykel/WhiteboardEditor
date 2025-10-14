@@ -15,6 +15,10 @@ import {
 } from '@/store/canvasObjects/canvasObjectsByCanvasSlice';
 
 import {
+  setChildCanvasesByCanvas,
+} from '@/store/canvases/childCanvasesByCanvasSlice';
+
+import {
   setCanvases
 } from '@/store/canvases/canvasesSlice';
 
@@ -41,6 +45,7 @@ export const addWhiteboard = (
   const {
     whiteboards,
     canvases,
+    childCanvasesByCanvas,
     canvasesByWhiteboard,
     canvasObjects,
     canvasObjectsByCanvas,
@@ -50,6 +55,7 @@ export const addWhiteboard = (
   dispatch(setWhiteboards(whiteboards));
   dispatch(setCanvases(canvases));
   dispatch(setCanvasObjects(canvasObjects));
+  dispatch(setChildCanvasesByCanvas(childCanvasesByCanvas));
   dispatch(setObjectsByCanvas(canvasObjectsByCanvas));
   dispatch(setCanvasesByWhiteboard(canvasesByWhiteboard));
   dispatch(setAllowedUsersByCanvas(allowedUsersByCanvas));

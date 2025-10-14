@@ -10,26 +10,45 @@
 import {
   useRef,
   useContext,
+  type SetStateAction,
+  type Dispatch,
 } from 'react';
-import { Stage, Layer, Text } from 'react-konva';
+import {
+  Group,
+  Text,
+  Rect,
+} from 'react-konva';
 import Konva from 'konva';
 
 // -- local imports
 import WhiteboardContext from '@/context/WhiteboardContext';
-import type { ToolChoice } from '@/components/Tool';
+
 import {
-  type CanvasObjectIdType,
-  type CanvasObjectModel
+  type ToolChoice,
+} from '@/components/Tool';
+
+import type {
+  CanvasObjectIdType,
+  CanvasObjectModel,
 } from '@/types/CanvasObjectModel';
+
 import type {
+  CanvasKeyType,
   CanvasIdType,
+  CanvasData,
 } from '@/types/WebSocketProtocol';
-import type {
-  ShapeAttributesState
+
+import {
+  type ShapeAttributesState,
 } from '@/reducers/shapeAttributesReducer';
+
 import type {
   OperationDispatcher,
 } from '@/types/OperationDispatcher';
+
+import {
+  type NewCanvasDimensions,
+} from '@/types/CreateCanvas';
 
 // -- dispatchers
 import useMockDispatcher from '@/dispatchers/useMockDispatcher';
@@ -39,28 +58,36 @@ import useEllipseDispatcher from '@/dispatchers/useEllipseDispatcher';
 import useVectorDispatcher from '@/dispatchers/useVectorDispatcher';
 import useHandDispatcher from '@/dispatchers/useHandDispatcher';
 import useTextDispatcher from '@/dispatchers/useTextDispatcher';
+import useCreateCanvasDispatcher from '@/dispatchers/useCreateCanvasDispatcher';
 
-export interface CanvasProps {
-  id: CanvasIdType;
-  width: number;
-  height: number;
-  shapes: Record<CanvasObjectIdType, CanvasObjectModel>;
-  onAddShapes: (shapes: CanvasObjectModel[]) => void;
+export interface CanvasProps extends CanvasData {
   shapeAttributes: ShapeAttributesState;
   currentTool: ToolChoice;
+  // -- should be fetched from selector in root calling component
+  childCanvasesByCanvas: Record<string, CanvasKeyType[]>;
+  // -- should be fetched from selector in root calling component
+  canvasesByKey: Record<string, CanvasData>;
+  selectedCanvasId: CanvasIdType | null;
+  setSelectedCanvasId: Dispatch<SetStateAction<CanvasIdType | null>>;
+  onSelectCanvasDimensions: (canvasId: CanvasIdType, dimensions: NewCanvasDimensions) => void;
   disabled: boolean;
 }
 
 const Canvas = (props: CanvasProps) => {
   const {
     id,
+    parentCanvas,
     width,
     height,
     shapes,
-    onAddShapes,
     shapeAttributes,
     currentTool,
-    disabled
+    childCanvasesByCanvas,
+    canvasesByKey,
+    selectedCanvasId,
+    setSelectedCanvasId,
+    onSelectCanvasDimensions,
+    disabled,
   } = props;
 
   const whiteboardContext = useContext(WhiteboardContext);
@@ -70,11 +97,14 @@ const Canvas = (props: CanvasProps) => {
   }
 
   const {
+    socketRef,
+    setCurrentTool,
+    whiteboardId,
     handleUpdateShapes,
     ownPermission,
   } = whiteboardContext;
-  
-  const stageRef = useRef<Konva.Stage | null>(null);
+
+  const groupRef = useRef<Konva.Group | null>(null);
 
   const handleObjectUpdateShapes = (shapes: Record<CanvasObjectIdType, CanvasObjectModel>) => {
     handleUpdateShapes(id, shapes);
@@ -82,7 +112,21 @@ const Canvas = (props: CanvasProps) => {
 
   // In the future, we may wrap onAddShapes with some other logic.
   // For now, it's just an alias.
-  const addShapes = onAddShapes;
+  const addShapes = (shapes: CanvasObjectModel[]) => {
+    if (socketRef.current) {
+      // TODO: modify backend to take multiple shapes (i.e. create_shapes)
+      const createShapesMsg = ({
+        type: 'create_shapes',
+        canvasId: id,
+        shapes
+      });
+
+      socketRef.current.send(JSON.stringify(createShapesMsg));
+
+      // Switch to hand tool after shape creation
+      setCurrentTool("hand");
+    }
+  };
   
   const defaultDispatcher = useMockDispatcher({
     shapeAttributes,
@@ -93,7 +137,7 @@ const Canvas = (props: CanvasProps) => {
     addShapes
   });
 
-  const dispatcherMap = {
+  const dispatcherMap : Record<ToolChoice, OperationDispatcher> = {
     'hand': useHandDispatcher({
       shapeAttributes,
       addShapes
@@ -113,7 +157,14 @@ const Canvas = (props: CanvasProps) => {
     'text': useTextDispatcher({
       shapeAttributes,
       addShapes
-    })
+    }),
+    'create_canvas': useCreateCanvasDispatcher({
+      shapeAttributes,
+      addShapes,
+      onCreate: (dimensions: NewCanvasDimensions) => {
+        onSelectCanvasDimensions(id, dimensions);
+      },
+    }),
   };
 
   let dispatcher: OperationDispatcher;
@@ -125,12 +176,35 @@ const Canvas = (props: CanvasProps) => {
   }
 
   const {
-    handlePointerDown,
-    handlePointerMove,
-    handlePointerUp,
     getPreview,
     getTooltipText
   } = dispatcher;
+
+  const handlePointerDown = (ev: Konva.KonvaEventObject<MouseEvent>) => {
+    ev.cancelBubble = true;
+
+    if (selectedCanvasId === id) {
+      dispatcher.handlePointerDown(ev);
+    }
+
+    setSelectedCanvasId(id);
+  };
+
+  const handlePointerMove = (ev: Konva.KonvaEventObject<MouseEvent>) => {
+    ev.cancelBubble = true;
+
+    dispatcher.handlePointerMove(ev);
+  };
+
+  const handlePointerUp = (ev: Konva.KonvaEventObject<MouseEvent>) => {
+    ev.cancelBubble = true;
+
+    if (selectedCanvasId === id) {
+      dispatcher.handlePointerUp(ev);
+    }
+
+    setSelectedCanvasId(id);
+  };
 
   // TODO: delegate draggability to tool definitions
   const areShapesDraggable = ((ownPermission !== 'view') && (currentTool === 'hand'));
@@ -139,42 +213,106 @@ const Canvas = (props: CanvasProps) => {
     'You are in view-only mode'
     : getTooltipText();
 
+  const currCanvasKey : CanvasKeyType = [whiteboardId, id];
+  const childCanvasesData : CanvasData[] = childCanvasesByCanvas[currCanvasKey.toString()]
+    ?.map((childCanvasKey: CanvasKeyType) => canvasesByKey[childCanvasKey.toString()] || null)
+    .filter((canvas: CanvasData | null): canvas is CanvasData => !!canvas)
+    ?? [];
+
+  const {
+    originX,
+    originY,
+  } = parentCanvas || {
+      originX: 0,
+      originY: 0,
+  };
+
+  const isCanvasSelected = (id === selectedCanvasId);
+
+  const handleMouseOver = (ev: Konva.KonvaEventObject<MouseEvent>) => {
+    ev.cancelBubble = true;
+
+    const stage = ev.target.getStage();
+
+    if (stage) {
+      if (! isCanvasSelected) {
+        // indicate that canvas is selectable
+        stage.container().style.cursor = 'pointer';
+      } else {
+        stage.container().style.cursor = 'default';
+      }
+    }
+  };// -- end handleMouseOver
+
+  const handleMouseOut = (ev: Konva.KonvaEventObject<MouseEvent>) => {
+    ev.cancelBubble = true;
+
+    const stage = ev.target.getStage();
+
+    if (stage) {
+      if (! isCanvasSelected) {
+        // indicate that canvas is selectable
+        stage.container().style.cursor = 'default';
+      }
+    }
+  };// -- end handleMouseOut
+
   return (
-    <>
-      <Stage
-        ref={stageRef}
+    <Group
+      ref={groupRef}
+      x={originX}
+      y={originY}
+      width={width}
+      height={height}
+      clipWidth={width}
+      clipHeight={height}
+      onPointerdown={handlePointerDown}
+      onPointermove={handlePointerMove}
+      onPointerup={handlePointerUp}
+      onMouseOver={handleMouseOver}
+      onMouseOut={handleMouseOut}
+      listening={ownPermission !== 'view'}
+    >
+      {/** Border **/}
+      <Rect
         width={width}
         height={height}
-        onPointerdown={handlePointerDown}
-        onPointermove={handlePointerMove}
-        onPointerup={handlePointerUp}
-        listening={ownPermission !== 'view'}
-      >
-        <Layer>
-          <Text
-            text={tooltipText}
-            fontSize={15}
+        stroke={isCanvasSelected ? 'green' : 'black'}
+        strokeWidth={isCanvasSelected ? 4 : 1}
+        fill="white"
+      />
+      {isCanvasSelected && (
+        <Text
+          text={tooltipText}
+          fontSize={15}
+        />
+      )}
+      {/** Preview Shape **/}
+      {getPreview()}
+
+      {/** Shapes **/}
+      {
+        Object.entries(shapes).filter(([_id, sh]) => !!sh).map(([id, shape]) => {
+          const renderDispatcher = dispatcherMap[shape.type] || defaultDispatcher;
+          const { renderShape } = renderDispatcher;
+
+          return renderShape(id, shape, areShapesDraggable, handleObjectUpdateShapes);
+        })
+      }
+      {/** Layer child canvases on top **/}
+      {childCanvasesData && (
+        childCanvasesData.map(canvasData => (
+          <Canvas
+            {
+              ...{
+                ...props,
+                ...canvasData
+              }
+            }
           />
-          {/** Preview Shape **/}
-          {getPreview()}
-
-          {/** Shapes **/}
-          {
-            Object.entries(shapes).filter(([_id, sh]) => !!sh).map(([id, shape]) => {
-              const renderDispatcher = dispatcherMap[shape.type] || defaultDispatcher;
-              const { renderShape } = renderDispatcher;
-
-              return renderShape(
-                id, 
-                shape, 
-                areShapesDraggable, 
-                handleObjectUpdateShapes,
-              );
-            })
-          }
-        </Layer>
-      </Stage>
-    </>
+        ))
+      )}
+    </Group>
   );
 };
 
