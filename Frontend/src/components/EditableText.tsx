@@ -88,7 +88,10 @@ const EditableText = ({
   }, [isEditing]);
 
   const handleTextDblClick = useCallback((e: Konva.KonvaEventObject<MouseEvent>) => {
+    if (!draggable) return;
+
     e.cancelBubble = true;
+
     setIsEditing(true);
     setIsSelected(false); 
   }, []);
@@ -130,7 +133,7 @@ const EditableText = ({
         onTap={handleSelect}
         onDblClick={handleTextDblClick}
         onDblTap={handleTextDblClick}
-        listening={!isEditing}
+        listening={!isEditing && draggable}
         visible={!isEditing}
         onDragEnd={onDragEnd}
         onMouseUp={onMouseUp}
@@ -140,7 +143,7 @@ const EditableText = ({
         onTransform={onTransform} 
         onTransformEnd={onTransformEnd}
       />
-      {isEditing && textRef.current && (
+      {isEditing && textRef.current && draggable && (
         <TextEditor
           textNode={textRef.current}
           onClose={(newText) => {
@@ -149,7 +152,7 @@ const EditableText = ({
           }}
         />
       )} 
-      {isSelected && !isEditing && (
+      {isSelected && !isEditing && draggable && (
         <Transformer
           ref={trRef}
           boundBoxFunc={(_oldBox, newBox) => ({

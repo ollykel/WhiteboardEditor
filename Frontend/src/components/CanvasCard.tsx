@@ -168,7 +168,6 @@ function CanvasCard(props: CanvasCardProps) {
                 selectedCanvasId,
                 setSelectedCanvasId,
                 onSelectCanvasDimensions,
-                disabled: false
               }}
             />
           </Layer>

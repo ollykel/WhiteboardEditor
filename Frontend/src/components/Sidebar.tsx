@@ -15,26 +15,17 @@ export interface SidebarProps {
   zIndex?: number;
 }
 
-const defaultSidebarProps = ({
-  width: '10em',
-  zIndex: 50
-});
-
-const Sidebar = (props: PropsWithChildren<SidebarProps>): React.JSX.Element => {
-  const propsFull = ({
-    ...defaultSidebarProps,
-    ...props
-  });
-
-  const {
-    side,
-    width,
-    zIndex,
-    children
-  } = propsFull;
-
+const Sidebar = ({
+  side,
+  width = '10em',
+  zIndex = 50,
+  children,
+}: PropsWithChildren<SidebarProps>): React.JSX.Element => {
   return (
-    <aside className={`fixed z-${zIndex} top-1/2 -translate-y-1/2 ${side}-2 ${width} flex flex-col flex-shrink-0`}>
+    <aside
+      className={`fixed top-1/2 -translate-y-1/2 ${side}-2 ${width} flex flex-col flex-shrink-0`}
+      style={{ zIndex }}
+    >
       {children}
     </aside>
   );

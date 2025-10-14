@@ -72,8 +72,6 @@ const editableObjectProps = <ShapeType extends CanvasObjectModel> (
       [id]: ({ ...shapeModel, x, y })
     };
 
-    console.log("in handleDragEnd"); // debug
-
     handleUpdateShapes(update);
   };
 
@@ -104,7 +102,6 @@ const editableObjectProps = <ShapeType extends CanvasObjectModel> (
     const rotation = node.rotation();
 
     let update: ShapeType;
-    console.log("in transform end"); // debug
 
     switch(shapeModel.type) {
       case "rect": 
@@ -150,8 +147,8 @@ const editableObjectProps = <ShapeType extends CanvasObjectModel> (
     onMouseDown: isDraggable && handleMouseDown || undefined,
     onMouseUp: isDraggable && handleMouseUp || undefined,
     onDragEnd: isDraggable && handleDragEnd || undefined,
-    onTransform: handleTransform || undefined,
-    onTransformEnd: handleTransformEnd || undefined,
+    onTransform: isDraggable && handleTransform || undefined,
+    onTransformEnd: isDraggable && handleTransformEnd || undefined,
   });
 };
 

@@ -20,8 +20,24 @@ import {
 } from 'react-konva';
 import Konva from 'konva';
 
+import {
+  useSelector,
+} from 'react-redux';
+
 // -- local imports
 import WhiteboardContext from '@/context/WhiteboardContext';
+
+import {
+  type RootState,
+} from '@/store';
+
+import {
+  selectAllowedUsersByCanvas,
+} from '@/store/allowedUsers/allowedUsersByCanvasSlice';
+
+import {
+  useUser,
+} from '@/hooks/useUser';
 
 import {
   type ToolChoice,
@@ -70,7 +86,6 @@ export interface CanvasProps extends CanvasData {
   selectedCanvasId: CanvasIdType | null;
   setSelectedCanvasId: Dispatch<SetStateAction<CanvasIdType | null>>;
   onSelectCanvasDimensions: (canvasId: CanvasIdType, dimensions: NewCanvasDimensions) => void;
-  disabled: boolean;
 }
 
 const Canvas = (props: CanvasProps) => {
@@ -87,7 +102,6 @@ const Canvas = (props: CanvasProps) => {
     selectedCanvasId,
     setSelectedCanvasId,
     onSelectCanvasDimensions,
-    disabled,
   } = props;
 
   const whiteboardContext = useContext(WhiteboardContext);
@@ -97,12 +111,28 @@ const Canvas = (props: CanvasProps) => {
   }
 
   const {
+    whiteboardId,
     socketRef,
     setCurrentTool,
-    whiteboardId,
     handleUpdateShapes,
     ownPermission,
   } = whiteboardContext;
+
+  const {
+    user,
+  } = useUser();
+
+  const canvasKey : CanvasKeyType = [whiteboardId, id];
+
+  const allowedUserIds = useSelector(
+    // ['', ''] is effectively a null canvas key
+    (state: RootState) => selectAllowedUsersByCanvas(state, canvasKey || ['', ''])
+  );
+
+  const userHasAccess = user?.id
+    ? allowedUserIds === undefined || allowedUserIds.length === 0 || allowedUserIds.includes(user.id)
+    : false;
+
 
   const groupRef = useRef<Konva.Group | null>(null);
 
@@ -169,7 +199,7 @@ const Canvas = (props: CanvasProps) => {
 
   let dispatcher: OperationDispatcher;
 
-  if (disabled) {
+  if (! userHasAccess) {
     dispatcher = inaccessibleDispatcher;
   } else {
     dispatcher = dispatcherMap[currentTool] || defaultDispatcher;
@@ -207,7 +237,7 @@ const Canvas = (props: CanvasProps) => {
   };
 
   // TODO: delegate draggability to tool definitions
-  const areShapesDraggable = ((ownPermission !== 'view') && (currentTool === 'hand'));
+  const areShapesDraggable = ((ownPermission !== 'view') && (currentTool === 'hand') && userHasAccess);
 
   const tooltipText = ownPermission === 'view' ? 
     'You are in view-only mode'
