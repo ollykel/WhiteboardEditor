@@ -207,7 +207,7 @@ const Canvas = (props: CanvasProps) => {
   };
 
   // TODO: delegate draggability to tool definitions
-  const areShapesDraggable = ((ownPermission !== 'view') && (currentTool === 'hand'));
+  const areShapesDraggable = ((ownPermission !== 'view') && (currentTool === 'hand') && (!disabled));
 
   const tooltipText = ownPermission === 'view' ? 
     'You are in view-only mode'
