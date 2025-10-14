@@ -203,3 +203,27 @@ To stop Boardly, run the following from the repository root:
 ``` bash
 docker compose down
 ```
+
+## Architecture
+
+Boardly follows a Modular Monolith architecture: multiple services which depend
+on a single database to store persistent state. The services are built and
+orchestrated using Docker Compose.
+
+### Services
+
+The services that make up Boardly are as follows:
+
+- Frontend: The web app the user views in-browser. Built using React with
+Redux and Typescript.
+- Rest API: The RESTful API that allows users to perform simple CRUD operations,
+including authentication, creating whiteboards, and sharing whiteboards with
+other users. Built using Express.js.
+- Web Socket Server: The server that provides real-time funcionality to the
+whiteboard editor, enabling users to edit a whiteboard concurrently. Built using
+Rust.
+- Reverse Proxy: Enables clients to access all other services at a single URL,
+with services indicated by paths. Built using Nginx.
+
+The MongoDB database accessed at $WHITEBOARD\_EDITOR\_MONGO\_URI may be
+considered an additional external service.
