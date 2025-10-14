@@ -51,8 +51,6 @@ import {
   type NewCanvasDimensions,
 } from '@/types/CreateCanvas';
 
-import { useUser } from '@/hooks/useUser';
-
 export interface CanvasCardProps {
   whiteboardId: WhiteboardIdType;
   rootCanvasId: CanvasIdType,
@@ -83,8 +81,6 @@ function CanvasCard(props: CanvasCardProps) {
   if (! userCacheContext) {
     throw new Error('No UserCacheContext provided to CanvasCard');
   }
-
-  const { user } = useUser();
 
   const {
     getUserById,
@@ -132,10 +128,6 @@ function CanvasCard(props: CanvasCardProps) {
     [selectedCanvas, allowedUserIds, getUserById]
   );
 
-  const hasAccess = user?.id
-    ? allowedUserIds === undefined || allowedUserIds.length === 0 || allowedUserIds.includes(user.id)
-    : false;
-
   return (
     <div className="flex flex-col p-6">
       {/* Name selected canvas, if a canvas is selected */}
@@ -176,7 +168,6 @@ function CanvasCard(props: CanvasCardProps) {
                 selectedCanvasId,
                 setSelectedCanvasId,
                 onSelectCanvasDimensions,
-                disabled: !hasAccess,
               }}
             />
           </Layer>
