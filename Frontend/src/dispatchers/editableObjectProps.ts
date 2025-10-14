@@ -150,8 +150,8 @@ const editableObjectProps = <ShapeType extends CanvasObjectModel> (
     onMouseDown: isDraggable && handleMouseDown || undefined,
     onMouseUp: isDraggable && handleMouseUp || undefined,
     onDragEnd: isDraggable && handleDragEnd || undefined,
-    onTransform: handleTransform || undefined,
-    onTransformEnd: handleTransformEnd || undefined,
+    onTransform: isDraggable && handleTransform || undefined,
+    onTransformEnd: isDraggable && handleTransformEnd || undefined,
   });
 };
 
