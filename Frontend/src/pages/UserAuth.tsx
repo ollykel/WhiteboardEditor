@@ -11,8 +11,6 @@ interface UserAuthProps {
 }
 
 function UserAuth({ action }: UserAuthProps) {
-  const title = APP_NAME;
-  const pageTitle = `${title} | ${APP_NAME}`;
   let authActionLabel : string;
 
   switch (action) {
@@ -25,6 +23,8 @@ function UserAuth({ action }: UserAuthProps) {
     default:
       throw new Error(`unrecognized auth action: ${action}`);
   }// -- end switch (action)
+
+  const pageTitle = `${authActionLabel} | ${APP_NAME}`;
 
   return (
     <Page
