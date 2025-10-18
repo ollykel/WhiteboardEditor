@@ -20,6 +20,7 @@ import type {
 } from '@/types/EventCoords';
 
 import EditableShape from '@/components/EditableShape';
+import type { Attribute } from '@/types/Attribute';
 
 // === useRectangleDispatcher ==================================================
 //
@@ -140,6 +141,10 @@ const useRectangleDispatcher = ({
     }
   };
 
+  const getAttributes = (): Attribute[] => {
+    return []
+  }
+
   const getTooltipText = () => {
     if (mouseDownCoords) {
       return 'Drag to desired shape, then release';
@@ -153,6 +158,7 @@ const useRectangleDispatcher = ({
     handlePointerMove,
     handlePointerUp,
     getPreview,
+    getAttributes,
     renderShape,
     getTooltipText,
   });
