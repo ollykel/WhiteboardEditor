@@ -20,10 +20,7 @@ import type {
 } from '@/types/EventCoords';
 
 import EditableShape from '@/components/EditableShape';
-import type { AttributeDefinition } from '@/types/Attribute';
-import AttributeStrokeWidth from '@/components/AttributeStrokeWidth';
-import AttributeStrokeColor from '@/components/AttributeStrokeColor';
-import AttributeFillColor from '@/components/AttributeFillColor';
+import { getAttributesByShape, type AttributeDefinition } from '@/types/Attribute';
 
 // === useRectangleDispatcher ==================================================
 //
@@ -144,13 +141,7 @@ const useRectangleDispatcher = ({
     }
   };
 
-  const getAttributes = (): AttributeDefinition[] => {
-    return [
-      AttributeStrokeWidth,
-      AttributeStrokeColor,
-      AttributeFillColor,
-    ];
-  }
+  const getAttributes = (): AttributeDefinition[] => getAttributesByShape('rect');
 
   const getTooltipText = () => {
     if (mouseDownCoords) {
