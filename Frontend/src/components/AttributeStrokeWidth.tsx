@@ -20,8 +20,6 @@ const AttributeStrokeWidth = ({
       Object.fromEntries(selectedShapeIds.map(id => [id, { strokeWidth: width }])) as Record<CanvasObjectIdType, Partial<CanvasObjectModel>>
     );  
   };
-
-  console.log("in AttributeStrokeWidth"); // debugging
  
   return (
     <div>
