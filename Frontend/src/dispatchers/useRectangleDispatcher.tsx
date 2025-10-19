@@ -20,7 +20,8 @@ import type {
 } from '@/types/EventCoords';
 
 import EditableShape from '@/components/EditableShape';
-import type { Attribute } from '@/types/Attribute';
+import type { AttributeComponent } from '@/types/Attribute';
+import AttributeStrokeWidth from '@/components/AttributeStrokeWidth';
 
 // === useRectangleDispatcher ==================================================
 //
@@ -141,8 +142,10 @@ const useRectangleDispatcher = ({
     }
   };
 
-  const getAttributes = (): Attribute[] => {
-    return []
+  const getAttributes = (): AttributeComponent[] => {
+    return [
+      AttributeStrokeWidth,
+    ];
   }
 
   const getTooltipText = () => {
