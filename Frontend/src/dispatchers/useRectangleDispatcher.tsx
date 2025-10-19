@@ -22,6 +22,8 @@ import type {
 import EditableShape from '@/components/EditableShape';
 import type { AttributeComponent } from '@/types/Attribute';
 import AttributeStrokeWidth from '@/components/AttributeStrokeWidth';
+import AttributeStrokeColor from '@/components/AttributeStrokeColor';
+import AttributeFillColor from '@/components/AttributeFillColor';
 
 // === useRectangleDispatcher ==================================================
 //
@@ -145,6 +147,8 @@ const useRectangleDispatcher = ({
   const getAttributes = (): AttributeComponent[] => {
     return [
       AttributeStrokeWidth,
+      AttributeStrokeColor,
+      AttributeFillColor,
     ];
   }
 
