@@ -414,7 +414,6 @@ const Whiteboard = () => {
     closeModal: closeCreateCanvasModal,
   } = useModal();
 
-  const [selectedCanvasId, setSelectedCanvasId] = useState<CanvasIdType | null>(null);
   const [newCanvasDimensions, setNewCanvasDimensions] = useState<NewCanvasDimensions | null>(null);
   const [newCanvasParentId, setNewCanvasParentId] = useState<CanvasIdType | null>(null);
 
@@ -617,8 +616,6 @@ const Whiteboard = () => {
                   <CanvasCard
                     whiteboardId={whiteboardId}
                     rootCanvasId={rootCanvasId}
-                    selectedCanvasId={selectedCanvasId}
-                    setSelectedCanvasId={setSelectedCanvasId}
                     shapeAttributes={shapeAttributesState}
                     currentTool={currentTool}
                     canvasesByKey={canvasesByKey}
@@ -719,6 +716,7 @@ const WrappedWhiteboard = () => {
   const [newCanvasAllowedUsers, setNewCanvasAllowedUsers] = useState<string[]>([]);
   const [selectedShapeIds, setSelectedShapeIds] = useState<CanvasObjectIdType[]>([]);
   const [currentDispatcher, setCurrentDispatcher] = useState<OperationDispatcher | null>(null);
+  const [selectedCanvasId, setSelectedCanvasId] = useState<CanvasIdType | null>(null);
 
   const { data: whiteboardData, isLoading: isWhiteboardDataLoading } = useQuery<APIWhiteboard, string>({
     queryKey: ['whiteboard', whiteboardId],
@@ -868,6 +866,8 @@ const WrappedWhiteboard = () => {
       setSelectedShapeIds={setSelectedShapeIds}
       currentDispatcher={currentDispatcher}
       setCurrentDispatcher={setCurrentDispatcher}
+      selectedCanvasId={selectedCanvasId}
+      setSelectedCanvasId={setSelectedCanvasId}
     >
       <Whiteboard />
     </WhiteboardProvider>
