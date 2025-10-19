@@ -23,6 +23,7 @@ import {
 import type {
   EventCoords
 } from '@/types/EventCoords';
+import type { AttributeComponent } from '@/types/Attribute';
 
 // === useCreateCanvasDispatcher ===============================================
 //
@@ -115,6 +116,10 @@ const useCreateCanvasDispatcher = ({
     throw new Error('Canvas is not a valid shape type');
   };
 
+  const getAttributes = (): AttributeComponent[] => {
+    return [];
+  }
+
   const getTooltipText = () => {
     if (mouseDownCoords) {
       return 'Drag to desired size, then release';
@@ -128,6 +133,7 @@ const useCreateCanvasDispatcher = ({
     handlePointerMove,
     handlePointerUp,
     getPreview,
+    getAttributes,
     renderShape,
     getTooltipText,
   });
