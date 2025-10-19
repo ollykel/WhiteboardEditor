@@ -1,18 +1,28 @@
+import type { AttributeProps } from "@/types/Attribute";
+import type { CanvasObjectIdType, CanvasObjectModel } from "@/types/CanvasObjectModel";
 
+const AttributeStrokeWidth = ({
+  selectedShapeIds, 
+  handleUpdateShapes, 
+  dispatch, 
+  canvasId, 
+  value,
+  className,
+}: AttributeProps) => {
+  const onChangeStrokeWidth = (ev: React.ChangeEvent<HTMLInputElement>) => {
+    ev.preventDefault();
+    const width = parseInt(ev.target.value);
+  
+    dispatch({ type: 'SET_STROKE_WIDTH', payload: width });
+  
+    handleUpdateShapes(
+      canvasId,
+      Object.fromEntries(selectedShapeIds.map(id => [id, { strokeWidth: width }])) as Record<CanvasObjectIdType, Partial<CanvasObjectModel>>
+    );  
+  };
 
-const onChangeStrokeWidth = (ev: React.ChangeEvent<HTMLInputElement>) => {
-  ev.preventDefault();
-  const width = parseInt(ev.target.value);
-
-  dispatch({ type: 'SET_STROKE_WIDTH', payload: width });
-
-  handleUpdateShapes(
-    canvasId,
-    Object.fromEntries(selectedShapeIds.map(id => [id, { strokeWidth: width }])) as Record<CanvasObjectIdType, Partial<CanvasObjectModel>>
-  );  
-};
-
-const AttributeStrokeWidth = () => {
+  console.log("in AttributeStrokeWidth"); // debugging
+ 
   return (
     <div>
       <label>Stroke Width</label>
@@ -21,9 +31,9 @@ const AttributeStrokeWidth = () => {
         type="number"
         min={1}
         step={0.5}
-        value={strokeWidth}
+        value={value}
         onChange={onChangeStrokeWidth}
-        className="rounded-lg border-gray-50"
+        className={className}
       />
     </div>
   );
