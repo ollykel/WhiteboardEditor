@@ -8,6 +8,11 @@
 //
 // =============================================================================
 
+import type { Dispatch } from "react";
+import type { CanvasObjectIdType, CanvasObjectModel } from "./CanvasObjectModel";
+import type { CanvasIdType } from "./WebSocketProtocol";
+import type { ShapeAttributesAction } from "@/reducers/shapeAttributesReducer";
+
 export type AttributeType =
   | "number"
   | "color"
@@ -39,3 +44,13 @@ export type Attribute =
   | ColorAttribute
   | TextAttribute;
 
+export interface AttributeProps {
+  selectedShapeIds: CanvasObjectIdType[];
+  handleUpdateShapes(canvasId: CanvasIdType, shapes: Record<CanvasObjectIdType, Partial<CanvasObjectModel>>): void;
+  dispatch: Dispatch<ShapeAttributesAction>;
+  canvasId: string;
+  value: any;
+  className: string;
+}
+
+export type AttributeComponent = React.FC<AttributeProps>;
