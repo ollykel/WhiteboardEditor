@@ -123,6 +123,7 @@ import type {
 import { useUser } from '@/hooks/useUser';
 import { setAllowedUsersByCanvas } from '@/store/allowedUsers/allowedUsersByCanvasSlice';
 import { setActiveUser } from '@/controllers/activeUsers';
+import { type OperationDispatcher } from '@/types/OperationDispatcher';
 
 type ComponentStatus = 
   | { status: 'ready'; }
@@ -717,6 +718,7 @@ const WrappedWhiteboard = () => {
   const [whiteboardId, setWhiteboardId] = useState<WhiteboardIdType>("");
   const [newCanvasAllowedUsers, setNewCanvasAllowedUsers] = useState<string[]>([]);
   const [selectedShapeIds, setSelectedShapeIds] = useState<CanvasObjectIdType[]>([]);
+  const [currentDispatcher, setCurrentDispatcher] = useState<OperationDispatcher | null>(null);
 
   const { data: whiteboardData, isLoading: isWhiteboardDataLoading } = useQuery<APIWhiteboard, string>({
     queryKey: ['whiteboard', whiteboardId],
@@ -864,6 +866,8 @@ const WrappedWhiteboard = () => {
       setOwnPermission={setOwnPermission}
       selectedShapeIds={selectedShapeIds}
       setSelectedShapeIds={setSelectedShapeIds}
+      currentDispatcher={currentDispatcher}
+      setCurrentDispatcher={setCurrentDispatcher}
     >
       <Whiteboard />
     </WhiteboardProvider>
