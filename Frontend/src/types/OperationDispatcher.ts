@@ -29,14 +29,14 @@ import {
 import {
   type ShapeAttributesState,
 } from '@/reducers/shapeAttributesReducer';
-import type { AttributeComponent } from '@/types/Attribute';
+import type { AttributeDefinition } from '@/types/Attribute';
 
 export interface OperationDispatcher {
   handlePointerDown: (ev: Konva.KonvaEventObject<MouseEvent>) => void;
   handlePointerMove: (ev: Konva.KonvaEventObject<MouseEvent>) => void;
   handlePointerUp: (ev: Konva.KonvaEventObject<MouseEvent>) => void;
   getPreview: () => React.JSX.Element | null;
-  getAttributes: () => AttributeComponent[];
+  getAttributes: () => AttributeDefinition[];
   renderShape: (
     key: string | number,
     model: CanvasObjectModel,
