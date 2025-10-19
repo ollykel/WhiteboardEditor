@@ -20,6 +20,8 @@ import type {
   EventCoords
 } from '@/types/EventCoords';
 import editableObjectProps from './editableObjectProps';
+import type { AttributeComponent } from '@/types/Attribute';
+import AttributeStrokeWidth from '@/components/AttributeStrokeWidth';
 
 // === useTextDispatcher ==================================================
 //
@@ -141,6 +143,12 @@ const useTextDispatcher = ({
     }
   };
 
+  const getAttributes = (): AttributeComponent[] => {
+    return [
+      AttributeStrokeWidth,
+    ];
+  }
+
   const getTooltipText = () => {
     if (mouseDownCoords) {
       return 'Drag to desired textbox size, then release';
@@ -154,6 +162,7 @@ const useTextDispatcher = ({
     handlePointerMove,
     handlePointerUp,
     getPreview,
+    getAttributes,
     renderShape,
     getTooltipText,
   });
