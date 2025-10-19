@@ -2,8 +2,6 @@ import {
   useState,
   useContext,
   useEffect,
-  type Dispatch,
-  type SetStateAction,
 } from 'react';
 
 import {
@@ -50,6 +48,7 @@ import {
 import {
   type NewCanvasDimensions,
 } from '@/types/CreateCanvas';
+import WhiteboardContext from '@/context/WhiteboardContext';
 
 export interface CanvasCardProps {
   whiteboardId: WhiteboardIdType;
@@ -58,9 +57,7 @@ export interface CanvasCardProps {
   childCanvasesByCanvas: Record<string, CanvasKeyType[]>;
   canvasesByKey: Record<string, CanvasData>;
   currentTool: ToolChoice;
-  selectedCanvasId: CanvasIdType | null;
   onSelectCanvasDimensions: (canvasId: CanvasIdType, dimensions: NewCanvasDimensions) => void;
-  setSelectedCanvasId: Dispatch<SetStateAction<CanvasIdType | null>>;
 }
 
 function CanvasCard(props: CanvasCardProps) {
@@ -71,8 +68,6 @@ function CanvasCard(props: CanvasCardProps) {
     childCanvasesByCanvas,
     canvasesByKey,
     currentTool,
-    selectedCanvasId,
-    setSelectedCanvasId,
     onSelectCanvasDimensions,
   } = props;
 
@@ -85,6 +80,16 @@ function CanvasCard(props: CanvasCardProps) {
   const {
     getUserById,
   } = userCacheContext;
+
+  const whiteboardContext = useContext(WhiteboardContext);
+
+  if (! whiteboardContext) {
+    throw new Error('No WhiteboardContext provided to CanvasCard');
+  }
+
+  const {
+    selectedCanvasId
+  } = whiteboardContext;
 
   const [selectedCanvasAllowedUsers, setSelectedCanvasAllowedUsers] = useState<User[] | null>(null);
 
@@ -165,8 +170,6 @@ function CanvasCard(props: CanvasCardProps) {
                 currentTool,
                 childCanvasesByCanvas,
                 canvasesByKey,
-                selectedCanvasId,
-                setSelectedCanvasId,
                 onSelectCanvasDimensions,
               }}
             />
