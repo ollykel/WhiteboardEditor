@@ -67,20 +67,3 @@ const ShapeAttributesMenu = (props: ShapeAttributesMenuProps) => {
 };// end ShapeAttributesMenu
 
 export default ShapeAttributesMenu;
-
-{/** stroke color **/}
-{/* <label>Stroke Color</label>
-<input
-  name="stroke-color"
-  type="color"
-  value={strokeColor}
-  onChange={onChangeStrokeColor}
-/> */}
-{/** fill color **/}
-{/* <label>Fill Color</label>
-<input
-  name="fill-color"
-  type="color"
-  value={fillColor}
-  onChange={onChangeFillColor}
-/> */}
