@@ -23,6 +23,7 @@ const useInaccessibleDispatcher = (_props: OperationDispatcherProps<null>): Oper
     handlePointerMove: (_ev: Konva.KonvaEventObject<MouseEvent>) => null,
     handlePointerUp: (_ev: Konva.KonvaEventObject<MouseEvent>) => null,
     getPreview: () => null,
+    getAttributes: () => [],
     renderShape: (
       _key: string | number,
       _model: CanvasObjectModel,
