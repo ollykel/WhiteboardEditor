@@ -117,6 +117,7 @@ const Canvas = (props: CanvasProps) => {
     setCurrentTool,
     handleUpdateShapes,
     ownPermission,
+    currentDispatcher,
     setCurrentDispatcher,
   } = whiteboardContext;
 
@@ -208,7 +209,9 @@ const Canvas = (props: CanvasProps) => {
   }
 
   useEffect(() => {
-    setCurrentDispatcher(dispatcher);
+    if (currentDispatcher !== dispatcher) {
+      setCurrentDispatcher(dispatcher);
+    }
   }, [currentTool]);
 
   const {

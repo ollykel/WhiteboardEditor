@@ -94,7 +94,7 @@ const EditableText = ({
 
     setIsEditing(true);
     setIsSelected(false); 
-  }, []);
+  }, [draggable]);
 
   const handleTextChange = useCallback((newText: string): void => {
     const node = textRef.current;

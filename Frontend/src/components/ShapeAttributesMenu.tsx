@@ -13,6 +13,7 @@ import type {
 } from '@/reducers/shapeAttributesReducer';
 import { selectCanvasIdForShape } from '@/store/canvasObjects/canvasObjectsSelectors';
 import type { RootState } from '@/store';
+import type { AttributeDefinition } from '@/types/Attribute';
 
 export interface ShapeAttributesMenuProps {
   attributes: ShapeAttributesState;
@@ -42,7 +43,7 @@ const ShapeAttributesMenu = (props: ShapeAttributesMenuProps) => {
   );
   if (!firstShapeId || !canvasId || !currentDispatcher) return null;
   console.log("currentDispatcher: ", currentDispatcher);
-  const AttributeComponents = currentDispatcher.getAttributes();
+  const AttributeComponents: AttributeDefinition[] = currentDispatcher.getAttributes();
 
   return (
     <div className="max-w-40 flex flex-col flex-shrink-0 text-center p-4 m-1 rounded-2xl shadow-md bg-stone-50">
@@ -50,14 +51,14 @@ const ShapeAttributesMenu = (props: ShapeAttributesMenuProps) => {
       <form
         className="flex flex-col"
       >
-        {AttributeComponents.map((Attr, i) => (
-          <Attr 
-            key={i}
+        {AttributeComponents.map(({ Component, key }) => (
+          <Component
+            key={key}
             selectedShapeIds={selectedShapeIds}
             handleUpdateShapes={handleUpdateShapes}
             dispatch={dispatch}
             canvasId={canvasId}
-            value={(attributes as any)[Attr.name.replace('Attribute', '').toLocaleLowerCase()]}
+            value={attributes[key]}
             className="rounded-lg border-gray-50"
           />
         ))}
