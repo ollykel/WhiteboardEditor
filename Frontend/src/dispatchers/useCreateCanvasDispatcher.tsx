@@ -23,7 +23,7 @@ import {
 import type {
   EventCoords
 } from '@/types/EventCoords';
-import type { AttributeComponent } from '@/types/Attribute';
+import type { AttributeDefinition } from '@/types/Attribute';
 
 // === useCreateCanvasDispatcher ===============================================
 //
@@ -116,7 +116,7 @@ const useCreateCanvasDispatcher = ({
     throw new Error('Canvas is not a valid shape type');
   };
 
-  const getAttributes = (): AttributeComponent[] => {
+  const getAttributes = (): AttributeDefinition[] => {
     return [];
   }
 

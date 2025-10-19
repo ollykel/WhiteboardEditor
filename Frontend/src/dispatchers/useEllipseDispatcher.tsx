@@ -20,8 +20,10 @@ import type {
 } from '@/types/EventCoords';
 
 import EditableShape from '@/components/EditableShape';
-import type { AttributeComponent } from '@/types/Attribute';
+import type { AttributeDefinition } from '@/types/Attribute';
 import AttributeStrokeWidth from '@/components/AttributeStrokeWidth';
+import AttributeStrokeColor from '@/components/AttributeStrokeColor';
+import AttributeFillColor from '@/components/AttributeFillColor';
 
 // === useEllipseDispatcher ====================================================
 //
@@ -152,9 +154,23 @@ const useEllipseDispatcher = ({
     }
   };
 
-  const getAttributes = (): AttributeComponent[] => {
+  const getAttributes = (): AttributeDefinition[] => {
     return [
-      AttributeStrokeWidth,
+      {
+        name: "Stroke Width",
+        key: "strokeWidth",
+        Component: AttributeStrokeWidth,
+      },
+      {
+        name: "Stroke Color",
+        key: "strokeColor",
+        Component: AttributeStrokeColor,
+      },
+      {
+        name: "Fill Color",
+        key: "fillColor",
+        Component: AttributeFillColor,
+      },
     ];
   }
 
