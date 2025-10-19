@@ -42,6 +42,8 @@ export interface WhiteboardContextType {
   setSelectedShapeIds: React.Dispatch<React.SetStateAction<CanvasObjectIdType[]>>;
   currentDispatcher: OperationDispatcher | null;
   setCurrentDispatcher: React.Dispatch<React.SetStateAction<OperationDispatcher | null>>;
+  selectedCanvasId: CanvasIdType | null;
+  setSelectedCanvasId: (id: CanvasIdType | null) => void;
 }
 
 export type WhiteboardProvidersProps = WhiteboardContextType;
@@ -67,6 +69,8 @@ const WhiteboardProvider = (props: PropsWithChildren<WhiteboardProvidersProps>):
     selectedShapeIds,
     currentDispatcher,
     setCurrentDispatcher,
+    selectedCanvasId,
+    setSelectedCanvasId,
   } = props;
 
   return (
@@ -87,6 +91,8 @@ const WhiteboardProvider = (props: PropsWithChildren<WhiteboardProvidersProps>):
       selectedShapeIds,
       currentDispatcher,
       setCurrentDispatcher,
+      selectedCanvasId,
+      setSelectedCanvasId,
     }}>
       {children}
     </WhiteboardContext.Provider>
