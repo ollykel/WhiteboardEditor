@@ -19,6 +19,8 @@ import type {
   EventCoords
 } from '@/types/EventCoords';
 import EditableVector from '@/components/EditableVector';
+import type { AttributeComponent } from '@/types/Attribute';
+import AttributeStrokeWidth from '@/components/AttributeStrokeWidth';
 
 // === useVectorDispatcher =====================================================
 //
@@ -120,6 +122,12 @@ const useVectorDispatcher = ({
     }
   };
 
+  const getAttributes = (): AttributeComponent[] => {
+    return [
+      AttributeStrokeWidth,
+    ];
+  }
+
   const getTooltipText = () => {
     if (mouseDownCoords) {
       return 'Drag to desired length, then release';
@@ -133,6 +141,7 @@ const useVectorDispatcher = ({
     handlePointerMove,
     handlePointerUp,
     getPreview,
+    getAttributes,
     renderShape,
     getTooltipText
   });
