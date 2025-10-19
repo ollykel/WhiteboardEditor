@@ -11,7 +11,7 @@
 import type { Dispatch } from "react";
 import type { CanvasObjectIdType, CanvasObjectModel } from "./CanvasObjectModel";
 import type { CanvasIdType } from "./WebSocketProtocol";
-import type { ShapeAttributesAction } from "@/reducers/shapeAttributesReducer";
+import type { ShapeAttributesAction, ShapeAttributesState } from "@/reducers/shapeAttributesReducer";
 
 export type AttributeType =
   | "number"
@@ -49,8 +49,14 @@ export interface AttributeProps {
   handleUpdateShapes(canvasId: CanvasIdType, shapes: Record<CanvasObjectIdType, Partial<CanvasObjectModel>>): void;
   dispatch: Dispatch<ShapeAttributesAction>;
   canvasId: string;
-  value: any;
+  value: Attribute['value'];
   className: string;
+}
+
+export interface AttributeDefinition {
+  name: string;
+  Component: AttributeComponent;
+  key: keyof ShapeAttributesState;
 }
 
 export type AttributeComponent = React.FC<AttributeProps>;
