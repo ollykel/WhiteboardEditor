@@ -173,6 +173,7 @@ const Whiteboard = () => {
     ownPermission,
     currentTool,
     setCurrentTool,
+    setSelectedShapeIds,
   } = context;
 
   const {
@@ -570,7 +571,10 @@ const Whiteboard = () => {
                   {/* Toolbar */}
                   <Toolbar
                     toolChoice={currentTool}
-                    onToolChange={setCurrentTool}
+                    onToolChange={(choice) => {
+                      setSelectedShapeIds([]);
+                      setCurrentTool(choice);
+                    }}
                   />
       
                   {/** Shape Attributes Menu **/}
