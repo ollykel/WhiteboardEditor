@@ -11,9 +11,9 @@ import type {
   ShapeAttributesState,
   ShapeAttributesAction
 } from '@/reducers/shapeAttributesReducer';
-import { selectCanvasIdForShape } from '@/store/canvasObjects/canvasObjectsSelectors';
+import { getShapeType, selectCanvasIdForShape } from '@/store/canvasObjects/canvasObjectsSelectors';
 import type { RootState } from '@/store';
-import type { AttributeDefinition } from '@/types/Attribute';
+import { getAttributesByShape, type AttributeDefinition } from '@/types/Attribute';
 
 export interface ShapeAttributesMenuProps {
   attributes: ShapeAttributesState;
@@ -33,17 +33,40 @@ const ShapeAttributesMenu = (props: ShapeAttributesMenuProps) => {
     selectedShapeIds,
     handleUpdateShapes,
     whiteboardId,
+    currentTool,
     currentDispatcher,
+    selectedCanvasId,
   } = whiteboardContext;
 
   // TODO: Change this for multiple select, right now only handles one shape
   const firstShapeId = selectedShapeIds[0];
-  const canvasId = useSelector((state: RootState) => 
-      selectCanvasIdForShape(state, whiteboardId, firstShapeId)
+
+  let canvasId = useSelector((state: RootState) => 
+    firstShapeId ? selectCanvasIdForShape(state, whiteboardId, firstShapeId): undefined
   );
-  if (!firstShapeId || !canvasId || !currentDispatcher) return null;
-  console.log("currentDispatcher: ", currentDispatcher);
-  const AttributeComponents: AttributeDefinition[] = currentDispatcher.getAttributes();
+  const shapeType = useSelector((state: RootState) => 
+    canvasId && firstShapeId ? getShapeType(state, whiteboardId, canvasId, firstShapeId) : undefined
+  );
+
+  if (!canvasId) {
+    if (!selectedCanvasId) {
+      return null;
+    }
+    canvasId = selectedCanvasId;
+  }
+  
+  let AttributeComponents: AttributeDefinition[];
+
+  if (currentTool === "hand" && shapeType) {
+    // Shape edit mode
+    AttributeComponents = getAttributesByShape(shapeType);
+  }
+  else {
+    // Tool mode
+    console.log("tool mode", currentDispatcher, currentTool);
+    if (!currentDispatcher || currentTool == "hand") return null;
+    AttributeComponents = currentDispatcher.getAttributes();
+  }
 
   return (
     <div className="max-w-40 flex flex-col flex-shrink-0 text-center p-4 m-1 rounded-2xl shadow-md bg-stone-50">
