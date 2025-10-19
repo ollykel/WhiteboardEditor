@@ -38,6 +38,8 @@ const ShapeAttributesMenu = (props: ShapeAttributesMenuProps) => {
     selectedCanvasId,
   } = whiteboardContext;
 
+  if (currentTool === 'create_canvas') return null;
+
   // TODO: Change this for multiple select, right now only handles one shape
   const firstShapeId = selectedShapeIds[0];
 
