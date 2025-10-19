@@ -12,6 +12,7 @@ import {
   useContext,
   type SetStateAction,
   type Dispatch,
+  useEffect,
 } from 'react';
 import {
   Group,
@@ -116,6 +117,7 @@ const Canvas = (props: CanvasProps) => {
     setCurrentTool,
     handleUpdateShapes,
     ownPermission,
+    setCurrentDispatcher,
   } = whiteboardContext;
 
   const {
@@ -204,6 +206,10 @@ const Canvas = (props: CanvasProps) => {
   } else {
     dispatcher = dispatcherMap[currentTool] || defaultDispatcher;
   }
+
+  useEffect(() => {
+    setCurrentDispatcher(dispatcher);
+  }, [currentTool]);
 
   const {
     getPreview,
