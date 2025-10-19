@@ -1,7 +1,7 @@
-import type { AttributeProps } from "@/types/Attribute";
+import type { AttributeDefinition, AttributeProps } from "@/types/Attribute";
 import type { CanvasObjectIdType, CanvasObjectModel } from "@/types/CanvasObjectModel";
 
-const AttributeStrokeWidth = ({
+const StrokeWidthComponent = ({
   selectedShapeIds, 
   handleUpdateShapes, 
   dispatch, 
@@ -35,6 +35,12 @@ const AttributeStrokeWidth = ({
       />
     </div>
   );
+}
+
+const AttributeStrokeWidth: AttributeDefinition = {
+  name: "Stroke Width",
+  key: "strokeWidth",
+  Component: StrokeWidthComponent,
 }
 
 export default AttributeStrokeWidth;

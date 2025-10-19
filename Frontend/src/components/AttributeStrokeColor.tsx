@@ -1,7 +1,7 @@
-import type { AttributeProps } from "@/types/Attribute";
+import type { AttributeDefinition, AttributeProps } from "@/types/Attribute";
 import type { CanvasObjectIdType, CanvasObjectModel } from "@/types/CanvasObjectModel";
 
-const AttributeStrokeColor = ({
+const StrokeColorComponent = ({
   selectedShapeIds, 
   handleUpdateShapes, 
   dispatch, 
@@ -23,7 +23,7 @@ const AttributeStrokeColor = ({
  
   return (
     <div>
-      <label>Stroke Color</label>
+      <label>Stroke Width</label>
       <input
         name="stroke-color"
         type="color"
@@ -33,6 +33,12 @@ const AttributeStrokeColor = ({
       />
     </div>
   );
+}
+
+const AttributeStrokeColor: AttributeDefinition = {
+  name: "Stroke Color",
+  key: "strokeColor",
+  Component: StrokeColorComponent,
 }
 
 export default AttributeStrokeColor;

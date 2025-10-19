@@ -147,21 +147,9 @@ const useTextDispatcher = ({
 
   const getAttributes = (): AttributeDefinition[] => {
     return [
-      {
-        name: "Stroke Width",
-        key: "strokeWidth",
-        Component: AttributeStrokeWidth,
-      },
-      {
-        name: "Stroke Color",
-        key: "strokeColor",
-        Component: AttributeStrokeColor,
-      },
-      {
-        name: "Fill Color",
-        key: "fillColor",
-        Component: AttributeFillColor,
-      },
+      AttributeStrokeWidth,
+      AttributeStrokeColor,
+      AttributeFillColor,
     ];
   }
 

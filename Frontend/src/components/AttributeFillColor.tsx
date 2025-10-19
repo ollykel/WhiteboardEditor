@@ -1,7 +1,7 @@
-import type { AttributeProps } from "@/types/Attribute";
+import type { AttributeDefinition, AttributeProps } from "@/types/Attribute";
 import type { CanvasObjectIdType, CanvasObjectModel } from "@/types/CanvasObjectModel";
 
-const AttributeFillColor = ({
+const FillColorComponent = ({
   selectedShapeIds, 
   handleUpdateShapes, 
   dispatch, 
@@ -33,6 +33,12 @@ const AttributeFillColor = ({
       />
     </div>
   );
+}
+
+const AttributeFillColor: AttributeDefinition = {
+  name: "Fill Color",
+  key: "fillColor",
+  Component: FillColorComponent,
 }
 
 export default AttributeFillColor;
