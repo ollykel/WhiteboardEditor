@@ -12,6 +12,9 @@ import type { Dispatch } from "react";
 import type { CanvasObjectIdType, CanvasObjectModel } from "./CanvasObjectModel";
 import type { CanvasIdType } from "./WebSocketProtocol";
 import type { ShapeAttributesAction, ShapeAttributesState } from "@/reducers/shapeAttributesReducer";
+import AttributeStrokeWidth from "@/components/AttributeStrokeWidth";
+import AttributeStrokeColor from "@/components/AttributeStrokeColor";
+import AttributeFillColor from "@/components/AttributeFillColor";
 
 export type AttributeType =
   | "number"
@@ -60,3 +63,32 @@ export interface AttributeDefinition {
 }
 
 export type AttributeComponent = React.FC<AttributeProps>;
+
+export type ShapeType = 'rect' | 'ellipse' | 'text' | 'vector';
+
+export const shapeAttributes: Record<ShapeType, AttributeDefinition[]> = {
+  rect: [
+    AttributeStrokeWidth,
+    AttributeStrokeColor,
+    AttributeFillColor,
+  ],
+  ellipse: [
+    AttributeStrokeWidth,
+    AttributeStrokeColor,
+    AttributeFillColor,
+  ],
+  text: [
+    AttributeStrokeWidth,
+    AttributeStrokeColor,
+    AttributeFillColor,
+  ],
+  vector: [
+    AttributeStrokeWidth,
+    AttributeStrokeColor,
+    AttributeFillColor,
+  ],
+}
+
+export const getAttributesByShape = (shapeType: ShapeType): AttributeDefinition[] => {
+  return shapeAttributes[shapeType];
+}
