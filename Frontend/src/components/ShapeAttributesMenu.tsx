@@ -11,9 +11,10 @@ import type {
   ShapeAttributesState,
   ShapeAttributesAction
 } from '@/reducers/shapeAttributesReducer';
-import { getShapeType, selectCanvasIdForShape } from '@/store/canvasObjects/canvasObjectsSelectors';
+import { getShapeType, selectCanvasIdForShape, selectCanvasObjectById } from '@/store/canvasObjects/canvasObjectsSelectors';
 import type { RootState } from '@/store';
 import { getAttributesByShape, type AttributeDefinition } from '@/types/Attribute';
+import type { CanvasObjectModel } from '@/types/CanvasObjectModel';
 
 export interface ShapeAttributesMenuProps {
   attributes: ShapeAttributesState;
@@ -49,6 +50,11 @@ const ShapeAttributesMenu = (props: ShapeAttributesMenuProps) => {
   const shapeType = useSelector((state: RootState) => 
     canvasId && firstShapeId ? getShapeType(state, whiteboardId, canvasId, firstShapeId) : undefined
   );
+  const firstShape = useSelector((state: RootState) =>
+    firstShapeId && canvasId
+      ? selectCanvasObjectById(state, whiteboardId, canvasId, firstShapeId)
+      : undefined
+  );
 
   if (!canvasId) {
     if (!selectedCanvasId) {
@@ -83,7 +89,7 @@ const ShapeAttributesMenu = (props: ShapeAttributesMenuProps) => {
             handleUpdateShapes={handleUpdateShapes}
             dispatch={dispatch}
             canvasId={canvasId}
-            value={attributes[key]}
+            value={firstShape ? firstShape[key as keyof CanvasObjectModel] : attributes[key]}
             className="rounded-lg border-gray-50"
           />
         ))}
