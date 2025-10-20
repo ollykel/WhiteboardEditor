@@ -40,6 +40,8 @@ export interface ShapeModelAttributes {
   y: number;
   rotation: number;
   fillColor: ShapeColor;
+  fontSize: number;
+  color: ShapeColor;
 }
 
 export type ShapeModelBase = CanvasObjectBase & ShapeModelAttributes;
@@ -71,13 +73,9 @@ export type VectorRecord = VectorModel & ObjectID;
 export type VectorRecordFull = VectorModel & ObjectUID;
 
 // TODO: Pull out common fields and extend if possible
-export interface TextModel {
+export interface TextModel extends ShapeModelAttributes {
   type: 'text';
   text: string;
-  fontSize: number;
-  color: string;
-  x: number;
-  y: number;
   width: number;
   height: number;
   rotation: number;
