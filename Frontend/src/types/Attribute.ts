@@ -15,6 +15,8 @@ import type { ShapeAttributesAction, ShapeAttributesState } from "@/reducers/sha
 import AttributeStrokeWidth from "@/components/AttributeStrokeWidth";
 import AttributeStrokeColor from "@/components/AttributeStrokeColor";
 import AttributeFillColor from "@/components/AttributeFillColor";
+import AttributeFontSize from "@/components/AttributeFontSize";
+import AttributeFontColor from "@/components/AttributeFontColor";
 
 export type AttributeType =
   | "number"
@@ -78,9 +80,8 @@ export const shapeAttributes: Record<ShapeType, AttributeDefinition[]> = {
     AttributeFillColor,
   ],
   text: [
-    AttributeStrokeWidth,
-    AttributeStrokeColor,
-    AttributeFillColor,
+    AttributeFontSize,
+    AttributeFontColor,
   ],
   vector: [
     AttributeStrokeWidth,
