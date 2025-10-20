@@ -1,9 +1,10 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useContext, useEffect, useRef, useState } from "react";
 import Konva from "konva";
 import { Circle, Group, type KonvaNodeEvents } from "react-konva";
 import type { CanvasObjectIdType, VectorModel } from "@/types/CanvasObjectModel";
 import type { EditableObjectProps } from "@/dispatchers/editableObjectProps";
 import editableObjectProps from "@/dispatchers/editableObjectProps";
+import WhiteboardContext from "@/context/WhiteboardContext";
 
 interface EditableVectorProps<VectorType extends VectorModel> extends EditableObjectProps {
   id: string;
@@ -21,13 +22,25 @@ const EditableVector = <VectorType extends VectorModel>({
   children,
   ...props
 }: EditableVectorProps<VectorType>) => {
-  const [isSelected, setIsSelected] = useState(false);
+  // const [isSelected, setIsSelected] = useState(false);
   const [localPoints, setLocalPoints] = useState(shapeModel.points);
   const vectorRef = useRef<Konva.Shape>(null);
 
+  const whiteboardContext = useContext(WhiteboardContext);
+
+  if (! whiteboardContext) {
+    throw new Error('No whiteboard context');
+  }
+
+  const {
+    selectedShapeIds,
+    setSelectedShapeIds,
+  } = whiteboardContext;
+  const isSelected = selectedShapeIds.includes(id);
+
   const handleSelect = (e: Konva.KonvaEventObject<MouseEvent>) => {
     e.cancelBubble = true;
-    setIsSelected(true);
+    setSelectedShapeIds([id]);
   };
 
   // Click outside to deselect
@@ -36,7 +49,7 @@ const EditableVector = <VectorType extends VectorModel>({
     if (!stage) return;
 
     const listener = (ev: Konva.KonvaEventObject<MouseEvent>) => {
-      if (ev.target !== vectorRef.current) setIsSelected(false);
+      if (ev.target !== vectorRef.current) setSelectedShapeIds([]);
     };
 
     stage.on("click", listener);
@@ -92,7 +105,7 @@ const EditableVector = <VectorType extends VectorModel>({
       [id]: { ...shapeModel, points: updatedPoints } as VectorType,
     });
 
-    setIsSelected(true);
+    setSelectedShapeIds([id]);;
   };
 
 
@@ -104,7 +117,7 @@ const EditableVector = <VectorType extends VectorModel>({
   // Override the onDragEnd handler for vectors to change points rather than x, y
   const vectorEditableProps = {
     ...editableObjectProps(shapeModel, draggable, handleUpdateShapes),
-    onDragStart: () => setIsSelected(false),
+    onDragStart: () => setSelectedShapeIds([]),
     onDragEnd: handleVectorDragEnd,
   }
 
