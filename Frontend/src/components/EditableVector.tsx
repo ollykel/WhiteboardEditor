@@ -56,7 +56,7 @@ const EditableVector = <VectorType extends VectorModel>({
     return () => {
       stage.off("click", listener);
     };
-  }, []);
+  }, [setSelectedShapeIds]);
 
   const handleAnchorDragMove = (index: number, e: Konva.KonvaEventObject<DragEvent>) => {
     const node = e.target;
