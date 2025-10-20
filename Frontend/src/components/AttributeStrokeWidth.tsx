@@ -11,7 +11,9 @@ const StrokeWidthComponent = ({
 }: AttributeProps) => {
   const onChangeStrokeWidth = (ev: React.ChangeEvent<HTMLInputElement>) => {
     ev.preventDefault();
-    const width = parseInt(ev.target.value);
+
+    const widthParsed = parseInt(ev.target.value);
+    const width = isNaN(widthParsed) ? 0 : widthParsed;
   
     dispatch({ type: 'SET_STROKE_WIDTH', payload: width });
   
