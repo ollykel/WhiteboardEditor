@@ -20,6 +20,7 @@ import type {
   EventCoords
 } from '@/types/EventCoords';
 import editableObjectProps from './editableObjectProps';
+import { getAttributesByShape, type AttributeDefinition } from '@/types/Attribute';
 
 // === useTextDispatcher ==================================================
 //
@@ -27,7 +28,7 @@ import editableObjectProps from './editableObjectProps';
 //
 // =============================================================================
 const useTextDispatcher = ({
-  // shapeAttributes,
+  shapeAttributes,
   addShapes,
 }: OperationDispatcherProps<null>
 ): OperationDispatcher => {
@@ -68,9 +69,8 @@ const useTextDispatcher = ({
 
       addShapes([{
         type: 'text',
-        text: 'Text',
-        fontSize: 20,
-        color: 'black',
+        text: 'Enter Text',
+        ...shapeAttributes,
         x: xMin,
         y: yMin,
         width,
@@ -141,6 +141,8 @@ const useTextDispatcher = ({
     }
   };
 
+  const getAttributes = (): AttributeDefinition[] => getAttributesByShape('text');
+
   const getTooltipText = () => {
     if (mouseDownCoords) {
       return 'Drag to desired textbox size, then release';
@@ -154,6 +156,7 @@ const useTextDispatcher = ({
     handlePointerMove,
     handlePointerUp,
     getPreview,
+    getAttributes,
     renderShape,
     getTooltipText,
   });

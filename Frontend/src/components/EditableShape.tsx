@@ -77,7 +77,7 @@ const EditableShape = <ShapeType extends ShapeModel> ({
     return () => {
       stage.off("click", listener)
     };
-  }, []);
+  }, [setSelectedShapeIds]);
 
   // Override onDragEnd to reselect at end
   const { onDragEnd } = editableObjectProps(shapeModel, draggable, handleUpdateShapes);

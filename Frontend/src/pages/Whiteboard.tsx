@@ -123,6 +123,7 @@ import type {
 import { useUser } from '@/hooks/useUser';
 import { setAllowedUsersByCanvas } from '@/store/allowedUsers/allowedUsersByCanvasSlice';
 import { setActiveUser } from '@/controllers/activeUsers';
+import { type OperationDispatcher } from '@/types/OperationDispatcher';
 
 type ComponentStatus = 
   | { status: 'ready'; }
@@ -172,6 +173,7 @@ const Whiteboard = () => {
     ownPermission,
     currentTool,
     setCurrentTool,
+    setSelectedShapeIds,
   } = context;
 
   const {
@@ -224,7 +226,9 @@ const Whiteboard = () => {
     rotation: 0,
     fillColor: '#999999',
     strokeColor: '#000000',
-    strokeWidth: 1
+    strokeWidth: 1,
+    fontSize: 20,
+    color: '#000000',
   });
 
   const activeUsers = useSelector(selectActiveUsers);
@@ -413,7 +417,6 @@ const Whiteboard = () => {
     closeModal: closeCreateCanvasModal,
   } = useModal();
 
-  const [selectedCanvasId, setSelectedCanvasId] = useState<CanvasIdType | null>(null);
   const [newCanvasDimensions, setNewCanvasDimensions] = useState<NewCanvasDimensions | null>(null);
   const [newCanvasParentId, setNewCanvasParentId] = useState<CanvasIdType | null>(null);
 
@@ -570,7 +573,10 @@ const Whiteboard = () => {
                   {/* Toolbar */}
                   <Toolbar
                     toolChoice={currentTool}
-                    onToolChange={setCurrentTool}
+                    onToolChange={(choice) => {
+                      setSelectedShapeIds([]);
+                      setCurrentTool(choice);
+                    }}
                   />
       
                   {/** Shape Attributes Menu **/}
@@ -616,8 +622,6 @@ const Whiteboard = () => {
                   <CanvasCard
                     whiteboardId={whiteboardId}
                     rootCanvasId={rootCanvasId}
-                    selectedCanvasId={selectedCanvasId}
-                    setSelectedCanvasId={setSelectedCanvasId}
                     shapeAttributes={shapeAttributesState}
                     currentTool={currentTool}
                     canvasesByKey={canvasesByKey}
@@ -717,6 +721,8 @@ const WrappedWhiteboard = () => {
   const [whiteboardId, setWhiteboardId] = useState<WhiteboardIdType>("");
   const [newCanvasAllowedUsers, setNewCanvasAllowedUsers] = useState<string[]>([]);
   const [selectedShapeIds, setSelectedShapeIds] = useState<CanvasObjectIdType[]>([]);
+  const [currentDispatcher, setCurrentDispatcher] = useState<OperationDispatcher | null>(null);
+  const [selectedCanvasId, setSelectedCanvasId] = useState<CanvasIdType | null>(null);
 
   const { data: whiteboardData, isLoading: isWhiteboardDataLoading } = useQuery<APIWhiteboard, string>({
     queryKey: ['whiteboard', whiteboardId],
@@ -864,6 +870,10 @@ const WrappedWhiteboard = () => {
       setOwnPermission={setOwnPermission}
       selectedShapeIds={selectedShapeIds}
       setSelectedShapeIds={setSelectedShapeIds}
+      currentDispatcher={currentDispatcher}
+      setCurrentDispatcher={setCurrentDispatcher}
+      selectedCanvasId={selectedCanvasId}
+      setSelectedCanvasId={setSelectedCanvasId}
     >
       <Whiteboard />
     </WhiteboardProvider>

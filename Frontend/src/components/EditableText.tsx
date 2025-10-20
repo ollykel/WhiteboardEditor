@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect, useCallback } from "react";
+import { useRef, useState, useEffect, useCallback, useContext } from "react";
 
 import { Group, Text, Transformer } from 'react-konva';
 
@@ -7,6 +7,7 @@ import TextEditor from "./TextEditor";
 
 import { type EditableObjectProps } from "@/dispatchers/editableObjectProps";
 import type { CanvasObjectIdType, ShapeModel, TextModel } from "@/types/CanvasObjectModel";
+import WhiteboardContext from "@/context/WhiteboardContext";
 
 interface EditableTextProps extends EditableObjectProps {
   id: string;
@@ -50,6 +51,21 @@ const EditableText = ({
   const textRef = useRef<Konva.Text>(null);
   const trRef = useRef<Konva.Transformer>(null);
 
+  const whiteboardContext = useContext(WhiteboardContext);
+
+  if (! whiteboardContext) {
+    throw new Error('No whiteboard context');
+  }
+
+  const {
+    selectedShapeIds,
+    setSelectedShapeIds,
+  } = whiteboardContext;
+
+  useEffect(() => {
+    setIsSelected(selectedShapeIds.includes(id));
+  }, [selectedShapeIds, id]);
+
   // attach Transformer for editing when selected
   useEffect(() => {
     if (trRef.current) {
@@ -61,6 +77,15 @@ const EditableText = ({
       }
     }
   }, [isSelected])
+  
+  const handleSelect = useCallback((ev: Konva.KonvaEventObject<MouseEvent>) => {
+    ev.cancelBubble = true;
+
+    if (!isEditing) {
+      setIsSelected(true);
+      setSelectedShapeIds([id]);
+    }
+  }, [isEditing, setSelectedShapeIds, id]);
 
   // deselect when clicking outside of text node
   useEffect(() => {
@@ -72,6 +97,7 @@ const EditableText = ({
       }
       if (e.target !== textRef.current) {
         setIsSelected(false);
+        setSelectedShapeIds([]);
       }
     };
 
@@ -81,11 +107,8 @@ const EditableText = ({
     return () => {
       stage.off("click", handleStageClick);
     };
-  }, [isEditing]);
+  }, [isEditing, setSelectedShapeIds]);
 
-  const handleSelect = useCallback(() => {
-    if (!isEditing) setIsSelected(true);
-  }, [isEditing]);
 
   const handleTextDblClick = useCallback((e: Konva.KonvaEventObject<MouseEvent>) => {
     if (!draggable) return;
@@ -94,7 +117,7 @@ const EditableText = ({
 
     setIsEditing(true);
     setIsSelected(false); 
-  }, []);
+  }, [draggable]);
 
   const handleTextChange = useCallback((newText: string): void => {
     const node = textRef.current;

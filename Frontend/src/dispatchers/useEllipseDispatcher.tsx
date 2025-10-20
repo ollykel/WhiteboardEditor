@@ -20,6 +20,7 @@ import type {
 } from '@/types/EventCoords';
 
 import EditableShape from '@/components/EditableShape';
+import { getAttributesByShape, type AttributeDefinition } from '@/types/Attribute';
 
 // === useEllipseDispatcher ====================================================
 //
@@ -150,6 +151,8 @@ const useEllipseDispatcher = ({
     }
   };
 
+  const getAttributes = (): AttributeDefinition[] => getAttributesByShape('ellipse'); 
+
   const getTooltipText = () => {
     if (mouseDownCoords) {
       return 'Drag to desired shape, then release';
@@ -163,6 +166,7 @@ const useEllipseDispatcher = ({
     handlePointerMove,
     handlePointerUp,
     getPreview,
+    getAttributes,
     renderShape,
     getTooltipText
   });

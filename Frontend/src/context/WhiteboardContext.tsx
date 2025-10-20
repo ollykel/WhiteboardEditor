@@ -22,6 +22,7 @@ import type {
   UserPermission,
   UserPermissionEnum,
 } from '@/types/APIProtocol'
+import type { OperationDispatcher } from '@/types/OperationDispatcher';
 
 export interface WhiteboardContextType {
   socketRef: RefObject<WebSocket | null>;
@@ -39,6 +40,10 @@ export interface WhiteboardContextType {
   setOwnPermission: React.Dispatch<React.SetStateAction<UserPermissionEnum | null>>;
   selectedShapeIds: CanvasObjectIdType[];
   setSelectedShapeIds: React.Dispatch<React.SetStateAction<CanvasObjectIdType[]>>;
+  currentDispatcher: OperationDispatcher | null;
+  setCurrentDispatcher: React.Dispatch<React.SetStateAction<OperationDispatcher | null>>;
+  selectedCanvasId: CanvasIdType | null;
+  setSelectedCanvasId: (id: CanvasIdType | null) => void;
 }
 
 export type WhiteboardProvidersProps = WhiteboardContextType;
@@ -62,6 +67,10 @@ const WhiteboardProvider = (props: PropsWithChildren<WhiteboardProvidersProps>):
     setOwnPermission,
     setSelectedShapeIds,
     selectedShapeIds,
+    currentDispatcher,
+    setCurrentDispatcher,
+    selectedCanvasId,
+    setSelectedCanvasId,
   } = props;
 
   return (
@@ -80,6 +89,10 @@ const WhiteboardProvider = (props: PropsWithChildren<WhiteboardProvidersProps>):
       setOwnPermission,
       setSelectedShapeIds,
       selectedShapeIds,
+      currentDispatcher,
+      setCurrentDispatcher,
+      selectedCanvasId,
+      setSelectedCanvasId,
     }}>
       {children}
     </WhiteboardContext.Provider>

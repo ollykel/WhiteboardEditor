@@ -33,6 +33,7 @@ const useHandDispatcher = (_props: OperationDispatcherProps<null>): OperationDis
       setIsMouseDown(false);
     },
     getPreview: () => null,
+    getAttributes: () => [],
     renderShape: (
       _key: string | number,
       _model: CanvasObjectModel,

@@ -25,6 +25,7 @@ const useMockDispatcher = (_props: OperationDispatcherProps<null>): OperationDis
       console.log('TODO: implement');
     },
     getPreview: () => null,
+    getAttributes: () => [],
     renderShape: (
       _key: string | number,
       _model: CanvasObjectModel,

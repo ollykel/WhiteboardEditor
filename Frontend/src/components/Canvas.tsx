@@ -10,8 +10,7 @@
 import {
   useRef,
   useContext,
-  type SetStateAction,
-  type Dispatch,
+  useEffect,
 } from 'react';
 import {
   Group,
@@ -83,8 +82,6 @@ export interface CanvasProps extends CanvasData {
   childCanvasesByCanvas: Record<string, CanvasKeyType[]>;
   // -- should be fetched from selector in root calling component
   canvasesByKey: Record<string, CanvasData>;
-  selectedCanvasId: CanvasIdType | null;
-  setSelectedCanvasId: Dispatch<SetStateAction<CanvasIdType | null>>;
   onSelectCanvasDimensions: (canvasId: CanvasIdType, dimensions: NewCanvasDimensions) => void;
 }
 
@@ -99,8 +96,6 @@ const Canvas = (props: CanvasProps) => {
     currentTool,
     childCanvasesByCanvas,
     canvasesByKey,
-    selectedCanvasId,
-    setSelectedCanvasId,
     onSelectCanvasDimensions,
   } = props;
 
@@ -116,6 +111,10 @@ const Canvas = (props: CanvasProps) => {
     setCurrentTool,
     handleUpdateShapes,
     ownPermission,
+    currentDispatcher,
+    setCurrentDispatcher,
+    selectedCanvasId,
+    setSelectedCanvasId,
   } = whiteboardContext;
 
   const {
@@ -204,6 +203,12 @@ const Canvas = (props: CanvasProps) => {
   } else {
     dispatcher = dispatcherMap[currentTool] || defaultDispatcher;
   }
+
+  useEffect(() => {
+    if (currentDispatcher !== dispatcher) {
+      setCurrentDispatcher(dispatcher);
+    }
+  }, [currentTool]);
 
   const {
     getPreview,

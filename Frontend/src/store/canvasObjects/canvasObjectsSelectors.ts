@@ -107,3 +107,14 @@ export const selectCanvasIdForShape = (
 
   return null;
 };
+
+export const getShapeType = (
+  state: RootState,
+  whiteboardId: string,
+  canvasId: string,
+  shapeId: CanvasObjectIdType,
+): CanvasObjectModel['type'] | undefined => {
+  const key: CanvasObjectKeyType = [whiteboardId, canvasId, shapeId];
+  const shape = state.canvasObjects[key.toString()];
+  return shape?.type;
+}
