@@ -226,7 +226,9 @@ const Whiteboard = () => {
     rotation: 0,
     fillColor: '#999999',
     strokeColor: '#000000',
-    strokeWidth: 1
+    strokeWidth: 1,
+    fontSize: 20,
+    color: '#000000',
   });
 
   const activeUsers = useSelector(selectActiveUsers);
