@@ -208,7 +208,7 @@ const Canvas = (props: CanvasProps) => {
     if (currentDispatcher !== dispatcher) {
       setCurrentDispatcher(dispatcher);
     }
-  }, [currentTool, currentDispatcher, setCurrentDispatcher]);
+  }, [currentTool]);
 
   const {
     getPreview,
