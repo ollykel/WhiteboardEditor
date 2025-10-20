@@ -81,6 +81,9 @@ const ShapeAttributesMenu = (props: ShapeAttributesMenuProps) => {
       <h2 className="text-xl font-bold mb-2">Shape Attributes</h2>
       <form
         className="flex flex-col"
+        onSubmit={(ev: React.FormEvent<HTMLFormElement>) => {
+          ev.preventDefault();
+        }}
       >
         {AttributeComponents.map(({ Component, key }) => (
           <Component
