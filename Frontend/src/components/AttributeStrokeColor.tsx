@@ -23,7 +23,7 @@ const StrokeColorComponent = ({
  
   return (
     <div>
-      <label>Stroke Width</label>
+      <label>Stroke Color</label>
       <input
         name="stroke-color"
         type="color"

@@ -19,10 +19,7 @@ import type {
   EventCoords
 } from '@/types/EventCoords';
 import EditableVector from '@/components/EditableVector';
-import type { AttributeDefinition } from '@/types/Attribute';
-import AttributeStrokeWidth from '@/components/AttributeStrokeWidth';
-import AttributeStrokeColor from '@/components/AttributeStrokeColor';
-import AttributeFillColor from '@/components/AttributeFillColor';
+import { getAttributesByShape, type AttributeDefinition } from '@/types/Attribute';
 
 // === useVectorDispatcher =====================================================
 //
@@ -124,13 +121,7 @@ const useVectorDispatcher = ({
     }
   };
 
-  const getAttributes = (): AttributeDefinition[] => {
-    return [
-      AttributeStrokeWidth,
-      AttributeStrokeColor,
-      AttributeFillColor,
-    ];
-  }
+  const getAttributes = (): AttributeDefinition[] => getAttributesByShape('vector');
 
   const getTooltipText = () => {
     if (mouseDownCoords) {

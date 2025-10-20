@@ -85,7 +85,6 @@ export const shapeAttributes: Record<ShapeType, AttributeDefinition[]> = {
   vector: [
     AttributeStrokeWidth,
     AttributeStrokeColor,
-    AttributeFillColor,
   ],
 }
 
