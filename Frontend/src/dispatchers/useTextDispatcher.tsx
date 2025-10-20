@@ -28,7 +28,7 @@ import { getAttributesByShape, type AttributeDefinition } from '@/types/Attribut
 //
 // =============================================================================
 const useTextDispatcher = ({
-  // shapeAttributes,
+  shapeAttributes,
   addShapes,
 }: OperationDispatcherProps<null>
 ): OperationDispatcher => {
@@ -70,8 +70,7 @@ const useTextDispatcher = ({
       addShapes([{
         type: 'text',
         text: 'Enter Text',
-        fontSize: 20,
-        color: 'black',
+        ...shapeAttributes,
         x: xMin,
         y: yMin,
         width,
