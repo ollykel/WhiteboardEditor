@@ -58,8 +58,13 @@ const EditableText = ({
   }
 
   const {
+    selectedShapeIds,
     setSelectedShapeIds,
   } = whiteboardContext;
+
+  useEffect(() => {
+    setIsSelected(selectedShapeIds.includes(id));
+  }, [selectedShapeIds, id]);
 
   // attach Transformer for editing when selected
   useEffect(() => {

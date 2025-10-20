@@ -69,7 +69,7 @@ const useTextDispatcher = ({
 
       addShapes([{
         type: 'text',
-        text: 'Text',
+        text: 'Enter Text',
         fontSize: 20,
         color: 'black',
         x: xMin,
