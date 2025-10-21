@@ -86,7 +86,7 @@ function AuthForm({ initialAction }: AuthFormProps) {
   }
 
   return (
-    <div className="flex flex-col min-w-60 w-120">
+    <div className="flex flex-col w-75 sm:w-95 md:w-120">
       <h1 className="text-2xl font-bold text-center mb-6">
         {action === "login" ? "Welcome Back!" : `Welcome to ${APP_NAME}!`}
       </h1>
