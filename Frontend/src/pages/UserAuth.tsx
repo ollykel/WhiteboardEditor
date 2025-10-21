@@ -55,7 +55,7 @@ function UserAuth({ action }: UserAuthProps) {
         </div>
 
         {/** Auth portal **/}
-        <div className="rounded-lg shadow-md bg-stone-50 p-10">
+        <div className="rounded-lg shadow-md bg-stone-50 py-5 px-2 sm:p-10">
           <AuthForm initialAction={action}/>
         </div>
       </div>
