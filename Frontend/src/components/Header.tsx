@@ -16,7 +16,7 @@ export interface HeaderProps {
 }
 
 const Header = ({
-  title ,
+  title,
   zIndex = 50,
   toolbarElemsLeft = [],
   toolbarElemsRight = []
@@ -33,7 +33,7 @@ const Header = ({
             {toolbarElemsLeft}
           </div>
 
-          <h1 className="text-2xl font-bold">{title}</h1>
+          <h1 className="text-lg md:text-2xl font-bold">{title}</h1>
           
           <div className="absolute right-2 hidden md:flex">
             {toolbarElemsRight}
