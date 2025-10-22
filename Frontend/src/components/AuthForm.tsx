@@ -135,7 +135,7 @@ function AuthForm({ initialAction }: AuthFormProps) {
 
       {/* Toggle Login/Signup */}
       <div className="flex justify-center mt-4 pt-6 border-t-1 border-gray-400">
-        <div className="p-2">
+        <div className="p-2 text-center">
           {action === "login" ? `New to ${APP_NAME}?` : "Already have an account?"}
         </div>
         <button 
