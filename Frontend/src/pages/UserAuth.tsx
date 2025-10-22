@@ -34,7 +34,7 @@ function UserAuth({ action }: UserAuthProps) {
         title={authActionLabel}
       />
 
-      <div className="flex flex-col justify-center items-center">
+      <div className="flex flex-col justify-center items-center mb-12">
         {/** Main branding section **/}
         <div
           id="branding"
