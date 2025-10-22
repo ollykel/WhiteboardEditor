@@ -25,17 +25,17 @@ const Header = ({
     <>
       {/** Floating header **/}
       <div
-        className="fixed top-1 left-0 right-0 max-h-15 shadow-md rounded-lg mx-20 m-1 p-3 bg-stone-50"
+        className="fixed top-1 left-0 right-0 max-h-15 shadow-md rounded-lg mx-5 lg:mx-20 m-1 p-3 bg-stone-50"
         style={{ zIndex }}
       > 
         <div className="relative flex items-center justify-center">
-          <div className="absolute left-2">
+          <div className="absolute left-2 hidden md:flex">
             {toolbarElemsLeft}
           </div>
 
           <h1 className="text-2xl font-bold">{title}</h1>
           
-          <div className="absolute right-2">
+          <div className="absolute right-2 hidden md:flex">
             {toolbarElemsRight}
           </div>
         </div>
