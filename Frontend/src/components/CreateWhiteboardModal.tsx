@@ -149,7 +149,7 @@ const CreateWhiteboardModal = ({
         </Button>
       </PopoverTrigger>
 
-      <PopoverContent className="w-200 p-0 m-4 flex flex-col flex-shrink">
+      <PopoverContent className="md:w-160 md:ml-8 flex flex-col flex-shrink">
         <form onSubmit={handleSubmit}>
           <h2 className="text-center text-2xl font-bold m-2">Create a new whiteboard</h2>
 
@@ -168,13 +168,10 @@ const CreateWhiteboardModal = ({
           </Command>
 
           <Command className="flex flex-col flex-shrink p-4">
-            <h3 className="text-lg font-semibold">
-              Invite collaborators by email
-            </h3>
-
             <div
-              className="flex flex-row align-top w-160"
+              className="flex flex-col md:flex-row align-top"
             >
+              <label htmlFor="email">Invite Collaborators by Email:</label>
               <Input
                 name="new-email"
                 type="email"
@@ -185,6 +182,7 @@ const CreateWhiteboardModal = ({
               />
 
               <Button
+                className="my-1"
                 variant="secondary"
                 onClick={handleAddNewEmail}
               >
@@ -210,10 +208,10 @@ const CreateWhiteboardModal = ({
             </CommandGroup>
           </Command>
 
-          <div className="flex flex-row justify-center">
+          <div className="flex flex-row justify-center mb-4">
             <Button
               type="submit"
-              className="w-1/2"
+              className="md:w-1/2"
             >
               + Create Whiteboard
             </Button>
