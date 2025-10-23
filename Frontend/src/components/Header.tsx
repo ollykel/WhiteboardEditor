@@ -50,7 +50,18 @@ const Header = ({
                   <TextAlignJustify />
                 </NavigationMenuTrigger>
                 <NavigationMenuContent>
-                  <NavigationMenuLink href="">Link</NavigationMenuLink>
+                  <div className="flex flex-col">
+                    {toolbarElemsLeft.map((el, idx) => (
+                      <NavigationMenuLink asChild key={idx}>
+                        {el}
+                      </NavigationMenuLink>
+                    ))}
+                    {toolbarElemsRight.map((el, idx) => (
+                      <NavigationMenuLink asChild key={`right-${idx}`}>
+                        {el}
+                      </NavigationMenuLink>
+                    ))}
+                  </div>
                 </NavigationMenuContent>
               </NavigationMenuItem>
             </NavigationMenuList>
