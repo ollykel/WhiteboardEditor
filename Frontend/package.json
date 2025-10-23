@@ -29,7 +29,7 @@
     "dotenv": "^17.2.3",
     "its-fine": "^2.0.0",
     "konva": "^9.3.22",
-    "lucide-react": "^0.542.0",
+    "lucide-react": "^0.546.0",
     "path": "^0.12.7",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
