@@ -115,13 +115,13 @@ const Dashboard = (): React.JSX.Element => {
           Welcome Back, {user?.username}!
         </h1>
 
-        <div className='text-center md:text-left p-4 md:px-12 md:pb-12'>
+        <div className='text-center md:text-left m-4 md:mx-12 md:mb-12'>
           <CreateWhiteboardModal
             onSubmit={handleCreateWhiteboard}
           />
         </div>
 
-        <h1 className="my-2 text-2xl font-bold font-mono">
+        <h1 className="my-6 m-4 text-2xl font-bold font-mono">
           Your Whiteboards
         </h1>
         {(() => {
@@ -144,7 +144,7 @@ const Dashboard = (): React.JSX.Element => {
           }
         })()}
 
-        <h1 className="my-2 text-2xl font-bold font-mono">
+        <h1 className="my-6 m-4 text-2xl font-bold font-mono">
           Shared Whiteboards
         </h1>
         {(() => {
