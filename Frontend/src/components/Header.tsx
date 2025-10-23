@@ -29,6 +29,11 @@ const Header = ({
         style={{ zIndex }}
       > 
         <div className="relative flex items-center justify-center">
+          {/* Hamburger Menu */}
+          <div className="absolute left-2 md:hidden">
+            
+          </div>
+
           <div className="absolute left-2 hidden md:flex">
             {toolbarElemsLeft}
           </div>
