@@ -13,6 +13,10 @@
 //
 // =============================================================================
 
+import {
+  LoaderCircle,
+} from 'lucide-react';
+
 // -- local imports
 import type {
   Whiteboard
@@ -41,7 +45,7 @@ const WhiteboardList = (props: WhiteboardListProps): React.JSX.Element => {
 
         return (
           <div>
-            <p className="text-lg font-bold text-red">
+            <p className="text-lg font-bold text-red m-12">
               Error: {message}
             </p>
           </div>
@@ -51,8 +55,9 @@ const WhiteboardList = (props: WhiteboardListProps): React.JSX.Element => {
     {
         return (
           <div>
-            <p className="text-lg font-bold">
-              Loading...
+            <p className="text-lg font-bold m-12 flex space-x-2">
+              <LoaderCircle className='animate-spin'/> 
+              <span>Loading...</span>
             </p>
           </div>
         );
@@ -72,7 +77,7 @@ const WhiteboardList = (props: WhiteboardListProps): React.JSX.Element => {
         } else {
           return (
             <ul
-              className="flex flex-row flex-wrap"
+              className="flex flex-col md:flex-row justify-center flex-wrap content-center"
             >
             {
                 whiteboardsAttribs.map(attribs => (

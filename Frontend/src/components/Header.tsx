@@ -1,3 +1,16 @@
+import {
+  NavigationMenu,
+  NavigationMenuContent,
+  NavigationMenuItem,
+  NavigationMenuLink,
+  NavigationMenuList,
+  NavigationMenuTrigger,
+} from "@/components/ui/navigation-menu"
+
+import {
+  TextAlignJustify,
+} from "lucide-react";
+
 // === Header ==================================================================
 //
 // Framework for displaying a floating header at the top of a page. Allows
@@ -16,7 +29,7 @@ export interface HeaderProps {
 }
 
 const Header = ({
-  title ,
+  title,
   zIndex = 50,
   toolbarElemsLeft = [],
   toolbarElemsRight = []
@@ -25,17 +38,42 @@ const Header = ({
     <>
       {/** Floating header **/}
       <div
-        className="fixed top-1 left-0 right-0 max-h-15 shadow-md rounded-lg mx-20 m-1 p-3 bg-stone-50"
+        className="fixed top-1 left-0 right-0 max-h-15 shadow-md rounded-lg mx-5 lg:mx-20 m-1 p-3 bg-stone-50"
         style={{ zIndex }}
       > 
         <div className="relative flex items-center justify-center">
-          <div className="absolute left-2">
+          {/* Hamburger Menu */}
+          <NavigationMenu className="absolute left-2 md:hidden">
+            <NavigationMenuList>
+              <NavigationMenuItem>
+                <NavigationMenuTrigger>
+                  <TextAlignJustify />
+                </NavigationMenuTrigger>
+                <NavigationMenuContent>
+                  <div className="flex flex-col">
+                    {toolbarElemsLeft.map((elem, idx) => (
+                      <NavigationMenuLink asChild key={idx}>
+                        {elem}
+                      </NavigationMenuLink>
+                    ))}
+                    {toolbarElemsRight.map((elem, idx) => (
+                      <NavigationMenuLink asChild key={`right-${idx}`}>
+                        {elem}
+                      </NavigationMenuLink>
+                    ))}
+                  </div>
+                </NavigationMenuContent>
+              </NavigationMenuItem>
+            </NavigationMenuList>
+          </NavigationMenu>
+
+          <div className="absolute left-2 hidden md:flex">
             {toolbarElemsLeft}
           </div>
 
-          <h1 className="text-2xl font-bold">{title}</h1>
+          <h1 className="text-lg md:text-2xl font-bold">{title}</h1>
           
-          <div className="absolute right-2">
+          <div className="absolute right-2 hidden md:flex">
             {toolbarElemsRight}
           </div>
         </div>
