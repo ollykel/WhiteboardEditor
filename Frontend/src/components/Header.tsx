@@ -1,3 +1,16 @@
+import {
+  NavigationMenu,
+  NavigationMenuContent,
+  NavigationMenuItem,
+  NavigationMenuLink,
+  NavigationMenuList,
+  NavigationMenuTrigger,
+} from "@/components/ui/navigation-menu"
+
+import {
+  TextAlignJustify,
+} from "lucide-react";
+
 // === Header ==================================================================
 //
 // Framework for displaying a floating header at the top of a page. Allows
@@ -30,9 +43,18 @@ const Header = ({
       > 
         <div className="relative flex items-center justify-center">
           {/* Hamburger Menu */}
-          <div className="absolute left-2 md:hidden">
-            
-          </div>
+          <NavigationMenu className="absolute left-2 md:hidden">
+            <NavigationMenuList>
+              <NavigationMenuItem>
+                <NavigationMenuTrigger>
+                  <TextAlignJustify />
+                </NavigationMenuTrigger>
+                <NavigationMenuContent>
+                  <NavigationMenuLink href="">Link</NavigationMenuLink>
+                </NavigationMenuContent>
+              </NavigationMenuItem>
+            </NavigationMenuList>
+          </NavigationMenu>
 
           <div className="absolute left-2 hidden md:flex">
             {toolbarElemsLeft}
