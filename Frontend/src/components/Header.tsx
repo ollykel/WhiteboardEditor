@@ -51,14 +51,14 @@ const Header = ({
                 </NavigationMenuTrigger>
                 <NavigationMenuContent>
                   <div className="flex flex-col">
-                    {toolbarElemsLeft.map((el, idx) => (
+                    {toolbarElemsLeft.map((elem, idx) => (
                       <NavigationMenuLink asChild key={idx}>
-                        {el}
+                        {elem}
                       </NavigationMenuLink>
                     ))}
-                    {toolbarElemsRight.map((el, idx) => (
+                    {toolbarElemsRight.map((elem, idx) => (
                       <NavigationMenuLink asChild key={`right-${idx}`}>
-                        {el}
+                        {elem}
                       </NavigationMenuLink>
                     ))}
                   </div>
