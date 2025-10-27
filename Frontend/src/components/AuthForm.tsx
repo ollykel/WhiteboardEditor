@@ -133,7 +133,7 @@ const AuthForm = ({
         console.error('Error handling authentication:', err);
 
         // -- display error to user
-        toast.error('Error handling login.', {
+        toast.error('Error handling authentication.', {
           position: "bottom-center",
           autoClose: 10000,
           hideProgressBar: false,
