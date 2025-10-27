@@ -45,10 +45,14 @@ interface AuthFormProps {
 const AuthForm = ({
   initialAction,
 }: AuthFormProps): React.JSX.Element => {
-  const [email, setEmail] = useState("");
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
+  // -- form fields
+  const [email, setEmail] = useState<string>("");
+  const [username, setUsername] = useState<string>("");
+  const [password, setPassword] = useState<string>("");
+  const [confirmPassword, setConfirmPassword] = useState<string>("");
+
+  // -- ui state
+  const [uiStatus, setUiStatus] = useState<'ok' | 'error'>('ok');
 
   const location = useLocation();
   const searchParams = new URLSearchParams(location.search);
@@ -84,31 +88,17 @@ const AuthForm = ({
     try {
       const res : AxiosResponse<AuthLoginSuccessResponse> = await api.post(endpoint, payload);
 
-      if (res.status >= 400) {
-        console.log('Login failed with status', res.status);
+      const {
+        user,
+        token,
+      } = res.data;
 
-        // -- display error to user
-        toast.error('Authentication Failed. Try again.', {
-          position: "bottom-center",
-          autoClose: 10000,
-          hideProgressBar: false,
-          closeOnClick: false,
-          pauseOnHover: true,
-          draggable: true,
-          progress: undefined,
-          theme: "colored",
-          transition: Bounce,
-        });
-      } else {
-        const {
-          user,
-          token,
-        } = res.data;
+      // -- ensure fields are not highlit as errors
+      setUiStatus('ok');
 
-        setAuthToken(token);
-        setUser(user);
-        navigate(redirectUrl);
-      }
+      setAuthToken(token);
+      setUser(user);
+      navigate(redirectUrl);
     } catch (err: unknown) {
       const axiosErr = err as AxiosError;
 
@@ -117,7 +107,12 @@ const AuthForm = ({
 
         console.log('Authentication request failed with status', status);
 
-        // -- display error to user
+        // === Display error to user ===========================================
+
+        // -- ensure fields are highlit
+        setUiStatus('error');
+
+        // -- display popup alert
         toast.error('Authentication Failed. Try again.', {
           position: "bottom-center",
           autoClose: 10000,
@@ -149,6 +144,9 @@ const AuthForm = ({
   }
 
   const handleToggle = () => {
+    // -- remove highlighting
+    setUiStatus('ok');
+
     navigate(action === "login" ? "/signup" : "/login");
   }
 
@@ -161,13 +159,17 @@ const AuthForm = ({
         </h1>
 
         {/* Entry Form */}
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form
+          onSubmit={handleSubmit}
+          className="space-y-4"
+        >
           <AuthInput
             name="Email"
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="you@example.com"
+            variant={uiStatus === 'error' ? 'error' : 'default'}
           />
           {action === "signup" && (
             <AuthInput 
@@ -176,6 +178,7 @@ const AuthForm = ({
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               placeholder="yourname"
+              variant={uiStatus === 'error' ? 'error' : 'default'}
             />
           )}
           <AuthInput
@@ -184,6 +187,7 @@ const AuthForm = ({
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             placeholder="********"
+            variant={uiStatus === 'error' ? 'error' : 'default'}
           />
           {action === "signup" && (
             <AuthInput
