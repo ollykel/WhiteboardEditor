@@ -52,7 +52,7 @@ const AuthForm = ({
   const [confirmPassword, setConfirmPassword] = useState<string>("");
 
   // -- ui state
-  const [uiStatus, setUiStatus] = useState<'ok' | 'error'>('ok');
+  const [uiStatus, setUiStatus] = useState<'ok' | 'err_user' | 'err_system'>('ok');
 
   const location = useLocation();
   const searchParams = new URLSearchParams(location.search);
@@ -110,7 +110,7 @@ const AuthForm = ({
         // === Display error to user ===========================================
 
         // -- ensure fields are highlit
-        setUiStatus('error');
+        setUiStatus('err_user');
 
         // -- display popup alert
         toast.error('Authentication Failed. Try again.', {
@@ -126,6 +126,9 @@ const AuthForm = ({
         });
       } else {
         console.error('Error handling authentication:', err);
+
+        // -- notify user of a system error (fields not highlit)
+        setUiStatus('err_system');
 
         // -- display error to user
         toast.error('Error handling authentication.', {
@@ -169,7 +172,7 @@ const AuthForm = ({
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="you@example.com"
-            variant={uiStatus === 'error' ? 'error' : 'default'}
+            variant={uiStatus === 'err_user' ? 'error' : 'default'}
           />
           {action === "signup" && (
             <AuthInput 
@@ -178,7 +181,7 @@ const AuthForm = ({
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               placeholder="yourname"
-              variant={uiStatus === 'error' ? 'error' : 'default'}
+              variant={uiStatus === 'err_user' ? 'error' : 'default'}
             />
           )}
           <AuthInput
@@ -187,7 +190,7 @@ const AuthForm = ({
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             placeholder="********"
-            variant={uiStatus === 'error' ? 'error' : 'default'}
+            variant={uiStatus === 'err_user' ? 'error' : 'default'}
           />
           {action === "signup" && (
             <AuthInput
