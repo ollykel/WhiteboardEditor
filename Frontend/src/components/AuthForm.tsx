@@ -109,13 +109,13 @@ const AuthForm = ({
         setUser(user);
         navigate(redirectUrl);
       }
-    } catch (err: any) {
-      console.log(err);
+    } catch (err: unknown) {
+      const axiosErr = err as AxiosError;
 
-      if (err?.name === 'AxiosError') {
-        const axiosErr = err as AxiosError;
+      if ((axiosErr?.response?.status) && (axiosErr.response.status >= 400) && (axiosErr.response.status < 500)) {
+        const status = axiosErr.response.status;
 
-        console.log('Authentication request failed with status', axiosErr.code);
+        console.log('Authentication request failed with status', status);
 
         // -- display error to user
         toast.error('Authentication Failed. Try again.', {
