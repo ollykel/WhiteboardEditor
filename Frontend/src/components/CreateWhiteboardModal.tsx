@@ -122,9 +122,14 @@ const CreateWhiteboardModal = ({
     ev.preventDefault();
 
     const collaboratorEmails = Object.keys(emailSet);
+    const windowWidth = window.innerWidth;
+    const windowHeight = window.innerHeight;
+
     const data = {
       ...formInputs,
-      collaboratorEmails
+      collaboratorEmails,
+      windowWidth,
+      windowHeight,
     };
 
     if (!data.name) {
