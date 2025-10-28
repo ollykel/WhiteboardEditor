@@ -183,11 +183,16 @@ export const createWhiteboard = async (
       ...collarboratorPermissionsFromEmail
     ];
 
+    let windowWidth = window.innerWidth;
+    let windowHeight = window.innerHeight;
+    console.log("window width: ", windowWidth);
+    console.log("window height: ", windowHeight);
+
     // initialize every new whiteboard with a single empty canvas
     const rootCanvasModel = new Canvas({
       name: "Main Canvas",
-      width: 1024,
-      height: 1024,
+      width: windowWidth,
+      height: windowHeight,
       allowed_users: [],
     });
 
