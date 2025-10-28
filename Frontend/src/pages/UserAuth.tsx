@@ -1,3 +1,4 @@
+// -- local imports
 import {
   APP_NAME,
 } from '@/app.config';
@@ -10,7 +11,9 @@ interface UserAuthProps {
   action: "login" | "signup";
 }
 
-function UserAuth({ action }: UserAuthProps) {
+const UserAuth = ({
+  action,
+}: UserAuthProps): React.JSX.Element => {
   let authActionLabel : string;
 
   switch (action) {
@@ -56,11 +59,13 @@ function UserAuth({ action }: UserAuthProps) {
 
         {/** Auth portal **/}
         <div className="rounded-lg shadow-md bg-stone-50 py-5 px-2 sm:p-10">
-          <AuthForm initialAction={action}/>
+          <AuthForm
+            initialAction={action}
+          />
         </div>
       </div>
     </Page>
-  );
-}
+);
+};
 
 export default UserAuth;
