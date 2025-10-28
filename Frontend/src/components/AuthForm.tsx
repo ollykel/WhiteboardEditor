@@ -199,6 +199,7 @@ const AuthForm = ({
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               placeholder="********"
+              variant={uiStatus === 'err_user' ? 'error' : 'default'}
             />
           )}
           <button
