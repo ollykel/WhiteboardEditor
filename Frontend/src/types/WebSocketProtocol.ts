@@ -21,8 +21,10 @@ import type {
 } from '@/types/APIProtocol';
 
 // The unique identifier for clients within a web socket session.
+export type ClientIdType = number;
+
 // -- string represents Mongo ObjectId
-export type ClientIdType = string;
+export type UserIdType = string;
 
 // Unique identifier for each canvas within a whiteboard
 // -- string represents Mongo ObjectId
@@ -33,7 +35,8 @@ export type WhiteboardIdType = string;
 
 // User presence update (canonical list of active users)
 export interface UserSummary {
-  userId: string;
+  clientId: ClientIdType;
+  userId: UserIdType;
   username: string;
 }
 
@@ -168,9 +171,9 @@ export type ClientError =
 // Sent to an individual client to initialize the whiteboard on their end
 export interface ServerMessageInitClient {
   type: "init_client";
-  clientId: ClientIdType;
+  clientId: UserIdType;
   whiteboard: WhiteboardData;
-  activeClients: Record<number, UserSummary>;
+  activeClients: Record<ClientIdType, UserSummary>;
 }
 
 export interface ServerMessageActiveUsers {

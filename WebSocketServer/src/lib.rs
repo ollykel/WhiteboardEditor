@@ -194,6 +194,7 @@ impl UserMongoDBView {
 #[derive(Debug, Clone, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct UserSummary {
+    pub client_id: ClientIdType,
     pub user_id: String,
     pub username: String,
 }
@@ -320,7 +321,7 @@ pub enum ServerSocketMessage {
     InitClient {
         client_id: ClientIdType,
         whiteboard: WhiteboardClientView,
-        active_clients: HashMap<i32, UserSummary>,
+        active_clients: HashMap<ClientIdType, UserSummary>,
     },
     ActiveUsers {
         users: Vec<UserSummary>,
@@ -334,8 +335,7 @@ pub enum ServerSocketMessage {
     UpdateShapes {
         client_id: ClientIdType,
         canvas_id: String,
-        shapes: HashMap<String,
-        ShapeModel>,
+        shapes: HashMap<String, ShapeModel>,
     },
     CreateCanvas {
         client_id: ClientIdType,
@@ -1211,6 +1211,7 @@ pub async fn handle_unauthenticated_client_message<StoreType: UserStore + Whiteb
                             clients.insert(
                                 client_state.client_id,
                                 UserSummary {
+                                    client_id: client_state.client_id,
                                     user_id: user_id.to_string(),
                                     username: user.username.clone(),
                                 },

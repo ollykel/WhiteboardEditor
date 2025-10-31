@@ -11,6 +11,7 @@ import {
   useRef,
   useContext,
   useEffect,
+  useState,
 } from 'react';
 import {
   Group,
@@ -25,6 +26,8 @@ import {
 
 // -- local imports
 import WhiteboardContext from '@/context/WhiteboardContext';
+
+import UserCacheContext from '@/context/UserCacheContext';
 
 import {
   type RootState,
@@ -52,6 +55,10 @@ import type {
   CanvasIdType,
   CanvasData,
 } from '@/types/WebSocketProtocol';
+
+import {
+  type User,
+} from '@/types/UserAuth';
 
 import {
   type ShapeAttributesState,
@@ -82,6 +89,8 @@ export interface CanvasProps extends CanvasData {
   childCanvasesByCanvas: Record<string, CanvasKeyType[]>;
   // -- should be fetched from selector in root calling component
   canvasesByKey: Record<string, CanvasData>;
+  // -- editor identified by user id
+  currentEditorByCanvas: Record<string, string>;
   onSelectCanvasDimensions: (canvasId: CanvasIdType, dimensions: NewCanvasDimensions) => void;
 }
 
@@ -96,13 +105,21 @@ const Canvas = (props: CanvasProps) => {
     currentTool,
     childCanvasesByCanvas,
     canvasesByKey,
+    currentEditorByCanvas,
     onSelectCanvasDimensions,
   } = props;
+  console.log('!! currentEditorByCanvas:', currentEditorByCanvas);// TODO: remove debug
 
   const whiteboardContext = useContext(WhiteboardContext);
 
   if (! whiteboardContext) {
     throw new Error('No whiteboard context');
+  }
+
+  const userCacheContext = useContext(UserCacheContext);
+
+  if (! userCacheContext) {
+    throw new Error('No user cache context provided to Canvas');
   }
 
   const {
@@ -118,6 +135,10 @@ const Canvas = (props: CanvasProps) => {
   } = whiteboardContext;
 
   const {
+    getUserById,
+  } = userCacheContext;
+
+  const {
     user,
   } = useUser();
 
@@ -128,10 +149,28 @@ const Canvas = (props: CanvasProps) => {
     (state: RootState) => selectAllowedUsersByCanvas(state, canvasKey || ['', ''])
   );
 
+  const currentEditorId : string | null = currentEditorByCanvas[id] || null;
+
+  const [currentEditor, setCurrentEditor] = useState<User | null>(null);
+
+  useEffect(
+    () => {
+      const fetchCurrentEditor = async () => {
+        if (currentEditorId) {
+          const user : User | null = await getUserById(currentEditorId);
+
+          setCurrentEditor(user);
+        }
+      };
+
+      fetchCurrentEditor();
+    },
+    [currentEditorId, setCurrentEditor, getUserById]
+  );
+
   const userHasAccess = user?.id
     ? allowedUserIds === undefined || allowedUserIds.length === 0 || allowedUserIds.includes(user.id)
     : false;
-
 
   const groupRef = useRef<Konva.Group | null>(null);
 
@@ -320,6 +359,17 @@ const Canvas = (props: CanvasProps) => {
         <Text
           text={tooltipText}
           fontSize={15}
+        />
+      )}
+
+      {/** Display current editor, if given **/}
+      {currentEditor && (
+        <Text
+          text={`${currentEditor.username} is currently editing`}
+          fontSize={15}
+          fontStyle="italic"
+          height={height}
+          verticalAlign="bottom"
         />
       )}
       {/** Preview Shape **/}
