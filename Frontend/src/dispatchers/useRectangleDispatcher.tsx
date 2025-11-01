@@ -29,7 +29,8 @@ import { getAttributesByShape, type AttributeDefinition } from '@/types/Attribut
 // =============================================================================
 const useRectangleDispatcher = ({
   shapeAttributes,
-  addShapes
+  onStartEditing,
+  addShapes,
 }: OperationDispatcherProps<null>
 ): OperationDispatcher => {
   const [mouseDownCoords, setMouseDownCoords] = useState<EventCoords | null>(null);
@@ -43,6 +44,10 @@ const useRectangleDispatcher = ({
 
       setMouseDownCoords({ x, y });
       setMouseCoords({ x, y });
+
+      if (onStartEditing) {
+        onStartEditing();
+      }
     }
   };
 

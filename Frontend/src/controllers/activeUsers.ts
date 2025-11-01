@@ -7,7 +7,7 @@ import type {
 } from "@/types/WebSocketProtocol";
 
 import { 
-  addActiveUsers,
+  addActiveUser as addActiveUserReducer,
   setActiveUsers
 } from "@/store/activeUsers/activeUsersSlice";
 
@@ -17,7 +17,7 @@ export const addActiveUser = (
 ) => {
   users.forEach((u) => {
     console.log('Processing user:', u);
-    dispatch(addActiveUsers(u));
+    dispatch(addActiveUserReducer(u));
   });
 };
 

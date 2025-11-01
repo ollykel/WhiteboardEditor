@@ -56,6 +56,8 @@ export interface CanvasCardProps {
   shapeAttributes: ShapeAttributesState;
   childCanvasesByCanvas: Record<string, CanvasKeyType[]>;
   canvasesByKey: Record<string, CanvasData>;
+  // -- editor identified by user id
+  currentEditorByCanvas: Record<string, string>;
   currentTool: ToolChoice;
   onSelectCanvasDimensions: (canvasId: CanvasIdType, dimensions: NewCanvasDimensions) => void;
 }
@@ -67,6 +69,7 @@ function CanvasCard(props: CanvasCardProps) {
     shapeAttributes,
     childCanvasesByCanvas,
     canvasesByKey,
+    currentEditorByCanvas,
     currentTool,
     onSelectCanvasDimensions,
   } = props;
@@ -170,6 +173,7 @@ function CanvasCard(props: CanvasCardProps) {
                 currentTool,
                 childCanvasesByCanvas,
                 canvasesByKey,
+                currentEditorByCanvas,
                 onSelectCanvasDimensions,
               }}
             />
