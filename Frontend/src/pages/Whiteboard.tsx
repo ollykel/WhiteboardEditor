@@ -25,6 +25,7 @@ import { X } from 'lucide-react';
 // -- local types
 import {
   APP_NAME,
+  CURRENT_EDITOR_NUM_MILLIS,
 } from '@/app.config';
 
 import {
@@ -205,6 +206,7 @@ const Whiteboard = () => {
     }
   });
   const whiteboardIdRef = useRef<WhiteboardIdType>(whiteboardId);
+  const currentEditorTimeoutsByCanvasRef = useRef<Record<CanvasIdType, number>>({});
 
   // alert user of any errors fetching whiteboard
   useEffect(
@@ -261,7 +263,6 @@ const Whiteboard = () => {
       try {
         const msg = JSON.parse(event.data) as SocketServerMessage;
         console.log('Parsed message:', msg);
-        console.log('activeUsers:', activeUsers);// TODO: remove debug
 
         switch (msg.type) {
           case 'init_client':
@@ -303,6 +304,24 @@ const Whiteboard = () => {
                 [canvasId]: activeUsers[clientId].userId,
               }));
               setCanvasObjects(dispatch, whiteboardIdRef.current, canvasId, shapes);
+
+              const oldCurrentEditorTimeoutId = currentEditorTimeoutsByCanvasRef.current[canvasId];
+
+              if (oldCurrentEditorTimeoutId) {
+                window.clearTimeout(oldCurrentEditorTimeoutId);
+                currentEditorTimeoutsByCanvasRef.current[canvasId] = 0;
+              }
+
+              currentEditorTimeoutsByCanvasRef.current[canvasId] = window.setTimeout(
+                () => {
+                  setCurrentEditorByCanvas(prev => Object.fromEntries(Object.entries(prev).filter(
+                    ([k, _v]) => k !== canvasId
+                  )));
+                  window.clearTimeout(currentEditorTimeoutsByCanvasRef.current[canvasId]);
+                  currentEditorTimeoutsByCanvasRef.current[canvasId] = 0;
+                },
+                CURRENT_EDITOR_NUM_MILLIS
+              );
             }
             break;
           case 'update_shapes':
@@ -318,6 +337,24 @@ const Whiteboard = () => {
                 [canvasId]: activeUsers[clientId].userId,
               }));
               setCanvasObjects(dispatch, whiteboardIdRef.current, canvasId, shapes);
+
+              const oldCurrentEditorTimeoutId = currentEditorTimeoutsByCanvasRef.current[canvasId];
+
+              if (oldCurrentEditorTimeoutId) {
+                clearTimeout(oldCurrentEditorTimeoutId);
+                currentEditorTimeoutsByCanvasRef.current[canvasId] = 0;
+              }
+
+              currentEditorTimeoutsByCanvasRef.current[canvasId] = window.setTimeout(
+                () => {
+                  setCurrentEditorByCanvas(prev => Object.fromEntries(Object.entries(prev).filter(
+                    ([k, _v]) => k !== canvasId
+                  )));
+                  clearTimeout(currentEditorTimeoutsByCanvasRef.current[canvasId]);
+                  currentEditorTimeoutsByCanvasRef.current[canvasId] = 0;
+                },
+                CURRENT_EDITOR_NUM_MILLIS
+              );
             }
             break;
           case 'create_canvas':

@@ -108,7 +108,6 @@ const Canvas = (props: CanvasProps) => {
     currentEditorByCanvas,
     onSelectCanvasDimensions,
   } = props;
-  console.log('!! currentEditorByCanvas:', currentEditorByCanvas);// TODO: remove debug
 
   const whiteboardContext = useContext(WhiteboardContext);
 
@@ -160,6 +159,8 @@ const Canvas = (props: CanvasProps) => {
           const user : User | null = await getUserById(currentEditorId);
 
           setCurrentEditor(user);
+        } else {
+          setCurrentEditor(null);
         }
       };
 
