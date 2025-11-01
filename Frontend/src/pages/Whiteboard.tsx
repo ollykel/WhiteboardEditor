@@ -556,6 +556,7 @@ const Whiteboard = () => {
               toolbarElemsLeft={[
                 <ShareWhiteboardButton />
               ]}
+              noMarginTop={true}
             />
       
             {/* Content */}
