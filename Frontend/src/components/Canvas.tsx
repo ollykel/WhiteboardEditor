@@ -54,6 +54,7 @@ import type {
   CanvasKeyType,
   CanvasIdType,
   CanvasData,
+  ClientMessageEditingCanvas,
 } from '@/types/WebSocketProtocol';
 
 import {
@@ -195,7 +196,18 @@ const Canvas = (props: CanvasProps) => {
       // Switch to hand tool after shape creation
       setCurrentTool("hand");
     }
-  };
+  };// -- end addShapes
+
+  const notifyStartEditing = () => {
+    if (socketRef.current) {
+      const editingCanvasMsg : ClientMessageEditingCanvas = {
+        type: 'editing_canvas',
+        canvasId: id,
+      };
+
+      socketRef.current.send(JSON.stringify(editingCanvasMsg));
+    }
+  };// -- end notifyStartEditing
   
   const defaultDispatcher = useMockDispatcher({
     shapeAttributes,
@@ -209,23 +221,28 @@ const Canvas = (props: CanvasProps) => {
   const dispatcherMap : Record<ToolChoice, OperationDispatcher> = {
     'hand': useHandDispatcher({
       shapeAttributes,
-      addShapes
+      addShapes,
+      onStartEditing: notifyStartEditing,
     }),
     'rect': useRectangleDispatcher({
       shapeAttributes,
-      addShapes
+      addShapes,
+      onStartEditing: notifyStartEditing,
     }),
     'ellipse': useEllipseDispatcher({
       shapeAttributes,
-      addShapes
+      addShapes,
+      onStartEditing: notifyStartEditing,
     }),
     'vector': useVectorDispatcher({
       shapeAttributes,
-      addShapes
+      addShapes,
+      onStartEditing: notifyStartEditing,
     }),
     'text': useTextDispatcher({
       shapeAttributes,
-      addShapes
+      addShapes,
+      onStartEditing: notifyStartEditing,
     }),
     'create_canvas': useCreateCanvasDispatcher({
       shapeAttributes,

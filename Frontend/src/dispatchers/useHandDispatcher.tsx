@@ -19,12 +19,18 @@ import type {
 // or render shapes.
 //
 // =============================================================================
-const useHandDispatcher = (_props: OperationDispatcherProps<null>): OperationDispatcher => {
+const useHandDispatcher = ({
+  onStartEditing,
+}: OperationDispatcherProps<null>): OperationDispatcher => {
   const [isMouseDown, setIsMouseDown] = useState<boolean>(false);
 
   return ({
     handlePointerDown: (_ev: Konva.KonvaEventObject<MouseEvent>) => {
       setIsMouseDown(true);
+
+      if (onStartEditing) {
+        onStartEditing();
+      }
     },
     handlePointerMove: (_ev: Konva.KonvaEventObject<MouseEvent>) => {
       // Nothing to do

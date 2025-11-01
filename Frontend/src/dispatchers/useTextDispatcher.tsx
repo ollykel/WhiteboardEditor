@@ -29,6 +29,7 @@ import { getAttributesByShape, type AttributeDefinition } from '@/types/Attribut
 // =============================================================================
 const useTextDispatcher = ({
   shapeAttributes,
+  onStartEditing,
   addShapes,
 }: OperationDispatcherProps<null>
 ): OperationDispatcher => {
@@ -43,6 +44,10 @@ const useTextDispatcher = ({
 
       setMouseDownCoords({ x, y });
       setMouseCoords({ x, y });
+
+      if (onStartEditing) {
+        onStartEditing();
+      }
     }
   };
 

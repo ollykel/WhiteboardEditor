@@ -171,7 +171,7 @@ export type ClientError =
 // Sent to an individual client to initialize the whiteboard on their end
 export interface ServerMessageInitClient {
   type: "init_client";
-  clientId: UserIdType;
+  clientId: ClientIdType;
   whiteboard: WhiteboardData;
   activeClients: Record<ClientIdType, UserSummary>;
 }
@@ -179,6 +179,15 @@ export interface ServerMessageInitClient {
 export interface ServerMessageActiveUsers {
   type: "active_users";
   users: UserSummary[];
+}
+
+// Used to notify clients when a user has started editing a canvas but hasn't
+// performed any edits yet (i.e. when they click and drag to start drawing a
+// shape).
+export interface ServerMessageEditingCanvas {
+  type: 'editing_canvas';
+  clientId: ClientIdType;
+  canvasId: CanvasIdType;
 }
 
 // Creates a new shape in a canvas
@@ -230,6 +239,7 @@ export interface ServerMessageBroadcastError {
 export type SocketServerMessage =
   | ServerMessageInitClient
   | ServerMessageActiveUsers
+  | ServerMessageEditingCanvas
   | ServerMessageCreateShapes
   | ServerMessageUpdateShapes
   | ServerMessageCreateCanvas
@@ -244,6 +254,14 @@ export type SocketServerMessage =
 export interface ClientMessageLogin {
   type: "login";
   jwt: string;
+}
+
+// Used to notify clients when a user has started editing a canvas but hasn't
+// performed any edits yet (i.e. when they click and drag to start drawing a
+// shape).
+export interface ClientMessageEditingCanvas {
+  type: 'editing_canvas';
+  canvasId: CanvasIdType;
 }
 
 // Notify the server that the client has created a new shape.
@@ -290,6 +308,7 @@ export interface ClientMessageUpdateAllowedUsers {
 // Tagged union of all possible client-server messages
 export type SocketClientMessage =
   | ClientMessageLogin
+  | ClientMessageEditingCanvas
   | ClientMessageCreateShapes
   | ClientMessageUpdateShapes
   | ClientMessageCreateCanvas

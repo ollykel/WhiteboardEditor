@@ -291,6 +291,37 @@ const Whiteboard = () => {
               setActiveUser(dispatch, users);
             } 
             break;
+          case 'editing_canvas':
+            {
+              const {
+                clientId,
+                canvasId,
+              } = msg;
+
+              setCurrentEditorByCanvas(prev => ({
+                ...prev,
+                [canvasId]: activeUsers[clientId].userId,
+              }));
+
+              const oldCurrentEditorTimeoutId = currentEditorTimeoutsByCanvasRef.current[canvasId];
+
+              if (oldCurrentEditorTimeoutId) {
+                window.clearTimeout(oldCurrentEditorTimeoutId);
+                currentEditorTimeoutsByCanvasRef.current[canvasId] = 0;
+              }
+
+              currentEditorTimeoutsByCanvasRef.current[canvasId] = window.setTimeout(
+                () => {
+                  setCurrentEditorByCanvas(prev => Object.fromEntries(Object.entries(prev).filter(
+                    ([k, _v]) => k !== canvasId
+                  )));
+                  window.clearTimeout(currentEditorTimeoutsByCanvasRef.current[canvasId]);
+                  currentEditorTimeoutsByCanvasRef.current[canvasId] = 0;
+                },
+                CURRENT_EDITOR_NUM_MILLIS
+              );
+            }
+            break;
           case 'create_shapes':
             {
               const {
