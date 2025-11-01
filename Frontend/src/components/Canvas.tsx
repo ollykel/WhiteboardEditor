@@ -132,7 +132,6 @@ const Canvas = (props: CanvasProps) => {
     ? allowedUserIds === undefined || allowedUserIds.length === 0 || allowedUserIds.includes(user.id)
     : false;
 
-
   const groupRef = useRef<Konva.Group | null>(null);
 
   const handleObjectUpdateShapes = (shapes: Record<CanvasObjectIdType, CanvasObjectModel>) => {

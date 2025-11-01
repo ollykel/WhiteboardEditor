@@ -2,6 +2,7 @@ import {
   useState,
   useContext,
   useEffect,
+  useRef,
 } from 'react';
 
 import {
@@ -133,6 +134,16 @@ function CanvasCard(props: CanvasCardProps) {
     [selectedCanvas, allowedUserIds, getUserById]
   );
 
+  // Handle initial scroll to the center of the stage
+  const containerRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const container = containerRef.current;
+    if (container) {
+      container.scrollLeft = (width - container.clientWidth) / 2;
+      container.scrollTop = (height - container.clientHeight) / 2;
+    }
+  }, [width, height])
+
   return (
     <div className="flex flex-col">
       {/* Name selected canvas, if a canvas is selected */}
@@ -156,7 +167,16 @@ function CanvasCard(props: CanvasCardProps) {
       </div>
 
       {/* Konva Canvas */}
-      <div className="border border-black">
+      <div 
+        className="border border-black"
+        ref={containerRef}
+        style={{
+          width: "100vw",
+          height: "100vh",
+          overflow: "scroll",
+          background: "#f0f0f0",
+        }}
+      >
         <Stage
           width={width}
           height={height}
