@@ -321,6 +321,20 @@ const Canvas = (props: CanvasProps) => {
 
   const isCanvasSelected = (id === selectedCanvasId);
 
+  let canvasFrameColor : 'black' | 'green' | 'red';
+  let canvasFrameWidth : number;
+
+  if (currentEditor && (currentEditor.id !== user?.id)) {
+    canvasFrameColor = 'red';
+    canvasFrameWidth = 4;
+  } else if (isCanvasSelected) {
+    canvasFrameColor = 'green';
+    canvasFrameWidth = 4;
+  } else {
+    canvasFrameColor = 'black';
+    canvasFrameWidth = 1;
+  }
+
   const handleMouseOver = (ev: Konva.KonvaEventObject<MouseEvent>) => {
     ev.cancelBubble = true;
 
@@ -369,8 +383,8 @@ const Canvas = (props: CanvasProps) => {
       <Rect
         width={width}
         height={height}
-        stroke={isCanvasSelected ? 'green' : 'black'}
-        strokeWidth={isCanvasSelected ? 4 : 1}
+        stroke={canvasFrameColor}
+        strokeWidth={canvasFrameWidth}
         fill="white"
       />
       {isCanvasSelected && (
