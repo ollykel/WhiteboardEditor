@@ -179,10 +179,12 @@ function CanvasCard(props: CanvasCardProps) {
 
       {/* Canvas Menu */}
       {selectedCanvasId && (
-        <CanvasMenu 
-          canvasId={selectedCanvasId}
-          whiteboardId={whiteboardId}
-        />
+        <div className='fixed bottom-0 left-1 z-50'>
+          <CanvasMenu 
+            canvasId={selectedCanvasId}
+            whiteboardId={whiteboardId}
+          />
+        </div>
       )}
     </div>
   );
