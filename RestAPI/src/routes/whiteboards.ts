@@ -29,7 +29,6 @@ const router = Router();
 // --- all routes authenticated
 router.use(authenticateJWT);
 
-
 router.post("/", createWhiteboard);
 
 // -- Get user's own whiteboards

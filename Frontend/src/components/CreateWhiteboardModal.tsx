@@ -122,9 +122,17 @@ const CreateWhiteboardModal = ({
     ev.preventDefault();
 
     const collaboratorEmails = Object.keys(emailSet);
+    // Possibly useful when implementing custom scrolling
+    // const windowWidth = window.innerWidth;
+    // const windowHeight = window.innerHeight;
+    const rootCanvasWidth = 3000;
+    const rootCanvasHeight = 3000;
+
     const data = {
       ...formInputs,
-      collaboratorEmails
+      collaboratorEmails,
+      rootCanvasWidth,
+      rootCanvasHeight,
     };
 
     if (!data.name) {
