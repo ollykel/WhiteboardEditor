@@ -33,8 +33,8 @@ import {
 export interface CreateWhiteboardRequest extends AuthorizedRequestBody {
   name: string;
   collaboratorEmails?: string[];
-  windowWidth: number;
-  windowHeight: number;
+  width: number;
+  height: number;
 }
 
 export type GetWhiteboardRes = 
@@ -188,8 +188,8 @@ export const createWhiteboard = async (
     // initialize every new whiteboard with a single empty canvas
     const rootCanvasModel = new Canvas({
       name: "Main Canvas",
-      width: req.body.windowWidth,
-      height: req.body.windowHeight,
+      width: req.body.width,
+      height: req.body.height,
       allowed_users: [],
     });
 
