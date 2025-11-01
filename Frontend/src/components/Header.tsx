@@ -26,13 +26,15 @@ export interface HeaderProps {
   toolbarElemsLeft?: React.JSX.Element[];
   // Buttons and other elements to display on right side of header
   toolbarElemsRight?: React.JSX.Element[];
+  noMarginTop?: boolean;
 }
 
 const Header = ({
   title,
   zIndex = 50,
   toolbarElemsLeft = [],
-  toolbarElemsRight = []
+  toolbarElemsRight = [],
+  noMarginTop,
 }: HeaderProps): React.JSX.Element => {
   return (
     <>
@@ -77,7 +79,12 @@ const Header = ({
             {toolbarElemsRight}
           </div>
         </div>
-      </div> 
+      </div>
+      {/** Dummy static element to ensure header doesn't overlap top of page **/}
+      {(!noMarginTop &&
+        <div className="h-20">
+        </div>
+      )}
     </>
   );
 };
