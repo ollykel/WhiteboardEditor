@@ -134,7 +134,7 @@ function CanvasCard(props: CanvasCardProps) {
   );
 
   return (
-    <div className="flex flex-col p-6">
+    <div className="flex flex-col">
       {/* Name selected canvas, if a canvas is selected */}
       <div
         className="min-h-16"
