@@ -366,7 +366,11 @@ const Canvas = (props: CanvasProps) => {
       {/** Display current editor, if given **/}
       {currentEditor && (
         <Text
-          text={`${currentEditor.username} is currently editing`}
+          text={
+            currentEditor.id === user?.id ?
+              'You are currently editing'
+              : `${currentEditor.username} is currently editing`
+          }
           fontSize={15}
           fontStyle="italic"
           height={height}
