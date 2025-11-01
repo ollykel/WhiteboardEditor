@@ -77,10 +77,7 @@ const Header = ({
             {toolbarElemsRight}
           </div>
         </div>
-      </div>
-      {/** Dummy static element to ensure header doesn't overlap top of page **/}
-      <div className="h-20">
-      </div>
+      </div> 
     </>
   );
 };
