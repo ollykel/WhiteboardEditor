@@ -28,7 +28,8 @@ import { getAttributesByShape, type AttributeDefinition } from '@/types/Attribut
 // =============================================================================
 const useVectorDispatcher = ({
   shapeAttributes,
-  addShapes
+  onStartEditing,
+  addShapes,
 }: OperationDispatcherProps<null>
 ): OperationDispatcher => {
   const [mouseDownCoords, setMouseDownCoords] = useState<EventCoords | null>(null);
@@ -46,6 +47,10 @@ const useVectorDispatcher = ({
       x: offsetX - targetX,
       y: offsetY - targetY
     });
+
+    if (onStartEditing) {
+      onStartEditing();
+    }
   };
 
   const handlePointerMove = (ev: Konva.KonvaEventObject<MouseEvent>) => {

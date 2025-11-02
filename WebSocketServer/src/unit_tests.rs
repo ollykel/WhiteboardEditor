@@ -469,6 +469,7 @@ mod unit_tests {
                 assert_eq!(*user_perm, Some(WhiteboardPermissionEnum::Edit));
                 assert_eq!(active_clients, HashMap::from([
                     (test_client_id, UserSummary {
+                        client_id: test_client_id,
                         user_id: String::from(target_uid_s),
                         username: String::from("bob"),
                     })

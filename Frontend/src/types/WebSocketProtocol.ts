@@ -21,8 +21,10 @@ import type {
 } from '@/types/APIProtocol';
 
 // The unique identifier for clients within a web socket session.
+export type ClientIdType = number;
+
 // -- string represents Mongo ObjectId
-export type ClientIdType = string;
+export type UserIdType = string;
 
 // Unique identifier for each canvas within a whiteboard
 // -- string represents Mongo ObjectId
@@ -33,7 +35,8 @@ export type WhiteboardIdType = string;
 
 // User presence update (canonical list of active users)
 export interface UserSummary {
-  userId: string;
+  clientId: ClientIdType;
+  userId: UserIdType;
   username: string;
 }
 
@@ -170,12 +173,21 @@ export interface ServerMessageInitClient {
   type: "init_client";
   clientId: ClientIdType;
   whiteboard: WhiteboardData;
-  activeClients: Record<number, UserSummary>;
+  activeClients: Record<ClientIdType, UserSummary>;
 }
 
 export interface ServerMessageActiveUsers {
   type: "active_users";
   users: UserSummary[];
+}
+
+// Used to notify clients when a user has started editing a canvas but hasn't
+// performed any edits yet (i.e. when they click and drag to start drawing a
+// shape).
+export interface ServerMessageEditingCanvas {
+  type: 'editing_canvas';
+  clientId: ClientIdType;
+  canvasId: CanvasIdType;
 }
 
 // Creates a new shape in a canvas
@@ -227,6 +239,7 @@ export interface ServerMessageBroadcastError {
 export type SocketServerMessage =
   | ServerMessageInitClient
   | ServerMessageActiveUsers
+  | ServerMessageEditingCanvas
   | ServerMessageCreateShapes
   | ServerMessageUpdateShapes
   | ServerMessageCreateCanvas
@@ -241,6 +254,14 @@ export type SocketServerMessage =
 export interface ClientMessageLogin {
   type: "login";
   jwt: string;
+}
+
+// Used to notify clients when a user has started editing a canvas but hasn't
+// performed any edits yet (i.e. when they click and drag to start drawing a
+// shape).
+export interface ClientMessageEditingCanvas {
+  type: 'editing_canvas';
+  canvasId: CanvasIdType;
 }
 
 // Notify the server that the client has created a new shape.
@@ -287,6 +308,7 @@ export interface ClientMessageUpdateAllowedUsers {
 // Tagged union of all possible client-server messages
 export type SocketClientMessage =
   | ClientMessageLogin
+  | ClientMessageEditingCanvas
   | ClientMessageCreateShapes
   | ClientMessageUpdateShapes
   | ClientMessageCreateCanvas

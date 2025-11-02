@@ -194,6 +194,7 @@ impl UserMongoDBView {
 #[derive(Debug, Clone, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct UserSummary {
+    pub client_id: ClientIdType,
     pub user_id: String,
     pub username: String,
 }
@@ -320,10 +321,14 @@ pub enum ServerSocketMessage {
     InitClient {
         client_id: ClientIdType,
         whiteboard: WhiteboardClientView,
-        active_clients: HashMap<i32, UserSummary>,
+        active_clients: HashMap<ClientIdType, UserSummary>,
     },
     ActiveUsers {
         users: Vec<UserSummary>,
+    },
+    EditingCanvas {
+        client_id: ClientIdType,
+        canvas_id: String,
     },
     // TODO: replace HashMaps with Vectors, so object ids don't need to be cast to strings
     CreateShapes {
@@ -334,8 +339,7 @@ pub enum ServerSocketMessage {
     UpdateShapes {
         client_id: ClientIdType,
         canvas_id: String,
-        shapes: HashMap<String,
-        ShapeModel>,
+        shapes: HashMap<String, ShapeModel>,
     },
     CreateCanvas {
         client_id: ClientIdType,
@@ -362,6 +366,9 @@ pub enum ServerSocketMessage {
 #[derive(Debug, Clone, Deserialize)]
 #[serde(tag = "type", rename_all = "snake_case", rename_all_fields = "camelCase")]
 pub enum ClientSocketMessage {
+    EditingCanvas {
+        canvas_id: String,
+    },
     CreateShapes {
         canvas_id: CanvasIdType,
         shapes: Vec<ShapeModel>,
@@ -885,6 +892,14 @@ pub async fn handle_authenticated_client_message(
                     client_id: client_state.client_id,
                     error: ClientError::AlreadyAuthorized,
                 }),
+                EditingCanvas { canvas_id } => {
+                    // TODO: validate that canvas id is valid and user has permission to edit
+                    // canvas.
+                    Some(ServerSocketMessage::EditingCanvas {
+                        client_id: client_state.client_id,
+                        canvas_id: canvas_id,
+                    })
+                },
                 CreateShapes{ canvas_id, ref shapes } => {
                     let mut whiteboard = client_state.whiteboard_ref.lock().await;
                     println!("Creating shape on canvas {} ...", canvas_id);
@@ -1211,6 +1226,7 @@ pub async fn handle_unauthenticated_client_message<StoreType: UserStore + Whiteb
                             clients.insert(
                                 client_state.client_id,
                                 UserSummary {
+                                    client_id: client_state.client_id,
                                     user_id: user_id.to_string(),
                                     username: user.username.clone(),
                                 },

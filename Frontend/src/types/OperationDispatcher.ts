@@ -49,5 +49,6 @@ export interface OperationDispatcher {
 export interface OperationDispatcherProps <OnCreateInputType> {
   shapeAttributes: ShapeAttributesState;
   addShapes: (shapes: CanvasObjectModel[]) => void;
+  onStartEditing?: () => void;
   onCreate?: (data: OnCreateInputType) => void;
 }
