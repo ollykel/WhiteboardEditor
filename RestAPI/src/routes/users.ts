@@ -31,6 +31,10 @@ import type {
   CreateUserRequest
 } from "../models/User";
 
+import {
+  type IWhiteboardPermissionEnum,
+} from '../models/Whiteboard';
+
 const router = Router();
 
 router.post("/", async (
@@ -161,8 +165,9 @@ router.get('/:userId/shared_whiteboards', async (
     authUserId
     : userId;
     
-  const includeOpts: SetInclusionOptionType<string> = ({
-    type: 'all',
+  const includeOpts: SetInclusionOptionType<IWhiteboardPermissionEnum> = ({
+    type: 'exclude',
+    excluded: ['own'],
   });
 
   const resp = await getSharedWhiteboardsByUser(targetUserId, includeOpts);
