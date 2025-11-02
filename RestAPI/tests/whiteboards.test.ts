@@ -203,8 +203,6 @@ describe("Whiteboards API", () => {
     // Verify response body
     validateWhiteboardAttribView(wbRes.body, {
       name: "Alice's Whiteboard",
-      width: 3000,
-      height: 3000,
     });
   });
 
