@@ -78,18 +78,6 @@ function CanvasMenu({ canvasId, whiteboardId }: CanvasMenuProps) {
     console.log("download clicked");
   };
 
-  const handleViewMain = () => {
-    console.log("view main screen clicked")
-  };
-
-  const handleRequestAccess = () => {
-    console.log("request access clicked");
-  };
-
-  const handleMerge = () => {
-    console.log("merge clicked");
-  };
-
   return (
     <div>
       <DropdownMenu>
@@ -101,24 +89,12 @@ function CanvasMenu({ canvasId, whiteboardId }: CanvasMenuProps) {
             Edit Allowed Users
           </DropdownMenuItem>
 
-          <DropdownMenuItem onSelect={handleDelete}>
-            Delete Canvas
-          </DropdownMenuItem>
-
           <DropdownMenuItem onSelect={handleDownload}>
             Download
           </DropdownMenuItem>
 
-          <DropdownMenuItem onSelect={handleViewMain}>
-            View Main Screen
-          </DropdownMenuItem>
-
-          <DropdownMenuItem onSelect={handleRequestAccess}>
-            Request Access
-          </DropdownMenuItem>
-
-          <DropdownMenuItem onSelect={handleMerge}>
-            Merge with Main
+          <DropdownMenuItem onSelect={handleDelete}>
+            Delete Canvas
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
