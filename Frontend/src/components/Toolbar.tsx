@@ -62,11 +62,11 @@ function Toolbar({ toolChoice, onToolChange }: ToolbarProps) {
 
       {/** Additional, non-tool choices **/}
 
-      {/** Import Image Button **/}
-      <ToolbarButton
+      {/** Import Image Button - Future implementation **/}
+      {/* <ToolbarButton
         label="Import Image"
         variant="default"
-      />
+      /> */}
     </div>
   )
 }
