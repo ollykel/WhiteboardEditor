@@ -21,7 +21,6 @@ export type UserIdType = Types.ObjectId;
 export interface IUserModel {
   username: string;
   email: string;
-  profilePicture?: string;
 
   // -- sensitive fields: ensure they are omitted from public-facing views
   passwordHashed: string;
@@ -118,7 +117,6 @@ const userSchema = new Schema<IUser, UserModelType, {}, {}, IUserVirtual>(
     username: { type: String, required: true, unique: true },
     email:    { type: String, required: true, unique: true },
     passwordHashed: { type: String, required: true },
-    profilePicture: { type: String, required: false },
   },
   {
     // -- options
