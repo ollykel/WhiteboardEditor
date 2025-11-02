@@ -194,7 +194,9 @@ describe("Whiteboards API", () => {
       .post("/api/v1/whiteboards")
       .set("Authorization", `Bearer ${authToken}`)
       .send({
-        name: "Alice's Whiteboard"
+        name: "Alice's Whiteboard",
+        width: 3000,
+        height: 3000,
       })
       .expect(201);
 

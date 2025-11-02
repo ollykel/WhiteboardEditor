@@ -316,8 +316,8 @@ mod unit_tests {
         let canvas = whiteboard.canvases.get(&root_canvas_id).unwrap();
 
         assert!(canvas.id == root_canvas_id);
-        assert!(f64::abs(canvas.width - 1024.0) < 1.0e-16);
-        assert!(f64::abs(canvas.height - 1024.0) < 1.0e-16);
+        assert!(f64::abs(canvas.width - 3000.0) < 1.0e-16);
+        assert!(f64::abs(canvas.height - 3000.0) < 1.0e-16);
         assert!(canvas.name.as_str() == "Canvas Alpha");
 
         let exp_time_created = match Utc.timestamp_opt(1754050200, 0) {

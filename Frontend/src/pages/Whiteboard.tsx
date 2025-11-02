@@ -672,10 +672,11 @@ const Whiteboard = () => {
               toolbarElemsLeft={[
                 <ShareWhiteboardButton />
               ]}
+              noMarginTop={true}
             />
       
             {/* Content */}
-            <div className="mt-20">
+            <div className="">
               {/**
                 Left-hand sidebar for toolbar and menus
                 Not displayed in view-only mode.
@@ -704,10 +705,10 @@ const Whiteboard = () => {
               )}
       
               {/* Canvas Container */}
-              <div className="flex flex-col justify-center flex-wrap ml-50">
+              <div className="flex flex-col justify-center flex-wrap">
+                
                 {/** Misc. info **/}
-      
-                <div className="flex flex-col justify-center flex-wrap">
+                <div className="fixed top-20 left-2 right-0 z-50 flex flex-col justify-center flex-wrap">
                   {/** Indicate if the user is in view-only mode **/}
                   {(ownPermission && (ownPermission === 'view')) && (
                     <div>

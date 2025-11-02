@@ -40,6 +40,8 @@ const FORM_ATTRIBS_DEFAULT = {
 
 export interface CreateWhiteboardFormData extends CreateWhiteboardFormAttribs {
   collaboratorEmails: string[];
+  width: number;
+  height: number;
 }
 
 export interface CreateWhiteboardModalProps {
@@ -122,9 +124,17 @@ const CreateWhiteboardModal = ({
     ev.preventDefault();
 
     const collaboratorEmails = Object.keys(emailSet);
+    // Possibly useful when implementing custom scrolling
+    // const windowWidth = window.innerWidth;
+    // const windowHeight = window.innerHeight;
+    const rootCanvasWidth = 3000;
+    const rootCanvasHeight = 3000;
+
     const data = {
       ...formInputs,
-      collaboratorEmails
+      collaboratorEmails,
+      width: rootCanvasWidth,
+      height: rootCanvasHeight,
     };
 
     if (!data.name) {
