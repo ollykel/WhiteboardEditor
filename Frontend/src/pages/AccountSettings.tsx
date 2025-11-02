@@ -1,4 +1,4 @@
-import { useContext, useState } from "react";
+import { useContext } from "react";
 import { useForm } from "@tanstack/react-form";
 import AuthContext from "@/context/AuthContext";
 import { useModal } from "@/components/Modal";
@@ -21,18 +21,15 @@ import {
 export default function AccountSettings() {
   const { user, setUser } = useContext(AuthContext)!;
   const { Modal, openModal, closeModal } = useModal();
-  const [profilePicture, setProfilePicture] = useState<string | null>(user?.profilePicture || null);
 
   const profileForm = useForm({
     defaultValues: {
       username: user?.username || "",
-      profilePicture: user?.profilePicture || "",
     },
     onSubmit: async ({ value }) => {
       try {
         const res : AxiosResponse<User> = await api.patch("/users/me", {
           username: value.username,
-          profilePicture,
         });
 
         if (res.status === 201) {
@@ -91,15 +88,6 @@ export default function AccountSettings() {
     },
   });
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => setProfilePicture(reader.result as string);
-      reader.readAsDataURL(file);
-    }
-  };
-
   const title = "Account Settings";
   const pageTitle = `${title} | ${APP_NAME}`;
 
@@ -119,14 +107,6 @@ export default function AccountSettings() {
               ev.preventDefault();
               profileForm.handleSubmit(ev);
             }} className="space-y-4">
-              <div className="flex items-center space-x-4">
-                {profilePicture ? (
-                  <img src={profilePicture} alt="Profile" className="w-16 h-16 rounded-full" />
-                ) : (
-                  <div className="w-16 h-16 bg-gray-300 rounded-full" />
-                )}
-                <input type="file" accept="image/*" onChange={handleFileChange} />
-              </div>
               <profileForm.Field name="username">
                 {(field) => (
                   <>
