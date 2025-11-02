@@ -40,6 +40,8 @@ const FORM_ATTRIBS_DEFAULT = {
 
 export interface CreateWhiteboardFormData extends CreateWhiteboardFormAttribs {
   collaboratorEmails: string[];
+  width: number;
+  height: number;
 }
 
 export interface CreateWhiteboardModalProps {
@@ -131,8 +133,8 @@ const CreateWhiteboardModal = ({
     const data = {
       ...formInputs,
       collaboratorEmails,
-      rootCanvasWidth,
-      rootCanvasHeight,
+      width: rootCanvasWidth,
+      height: rootCanvasHeight,
     };
 
     if (!data.name) {
