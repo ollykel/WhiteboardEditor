@@ -5,10 +5,16 @@ import {
 
 // -- third-party imports
 import {
-  X
+  X,
 } from 'lucide-react';
 
 // -- local imports
+
+import {
+  USER_PERMISSION_TYPES,
+  type UserPermission,
+  type UserPermissionEnum
+} from '@/types/APIProtocol';
 
 // -- ui
 import {
@@ -19,7 +25,6 @@ import {
 
 import {
   Command,
-  CommandGroup
 } from '@/components/ui/command';
 
 import {
@@ -58,6 +63,13 @@ const CreateWhiteboardModal = ({
   const [formInputs, setFormInputs] = useState<CreateWhiteboardFormAttribs>({
     ...FORM_ATTRIBS_DEFAULT
   });
+  const [newUserPermType, setNewUserPermType] = useState<UserPermissionEnum>(
+    USER_PERMISSION_TYPES[0] as UserPermissionEnum
+  );
+  const [permissionsByEmail, setPermissionsByEmail] = useState<Record<string, UserPermission>>({});
+
+  // -- derived state
+  const permissions: UserPermission[] = Object.values(permissionsByEmail);
 
   const handleChangeNewEmail = (ev: React.ChangeEvent<HTMLInputElement>) => {
     ev.preventDefault();
@@ -69,43 +81,22 @@ const CreateWhiteboardModal = ({
 
     setNewEmail(newEmail => {
       if (newEmail) {
-        setEmailSet(prev => ({ ...prev, [newEmail]: true }));
+        setPermissionsByEmail(prev => ({
+          ...prev,
+          [newEmail]: ({
+            type: 'email',
+            email: newEmail,
+            permission: newUserPermType
+          })
+        }));
       }
 
       return "";
     });
   };
 
-  const makeHandleRemoveEmail = (email: string) => () => {
-    setEmailSet(prev => {
-      const next = ({ ...prev });
-
-      delete next[email];
-
-      return next;
-    });
-  };
-
   const handleOpenModal = () => {
     setIsOpen(true);
-  };
-
-  const RemovableEmail = (email: string): React.JSX.Element => {
-    return (
-      <div
-        className="mr-2 mb-2 px-2 py-1 inline-block align-middle rounded-2xl bg-gray-200 border-gray-600"
-      >
-        <button
-          onClick={makeHandleRemoveEmail(email)}
-          className="hover:cursor-pointer p-1 inline-block align-middle"
-        >
-          <X size={18} />
-        </button>
-        <span>
-          {email}
-        </span>
-      </div>
-    );
   };
 
   const handleChangeInput = (ev: React.ChangeEvent<HTMLInputElement>) => {
@@ -118,6 +109,11 @@ const CreateWhiteboardModal = ({
       ...prev,
       [name]: value
     }));
+  };
+
+  const handleChangePermType = (ev: React.ChangeEvent<HTMLSelectElement>) => {
+    ev.preventDefault();
+    setNewUserPermType(ev.target.value as UserPermissionEnum);
   };
 
   const handleSubmit = (ev: React.FormEvent<HTMLFormElement>) => {
@@ -148,8 +144,45 @@ const CreateWhiteboardModal = ({
     setEmailSet({});
   };
 
+  const makeHandleRemoveEmail = (email: string) => () => {
+    setPermissionsByEmail(prev => {
+      const next = ({ ...prev });
+
+      delete next[email];
+
+      return next;
+    });
+  };
+
+  const RemovablePermission = (perm: UserPermission): React.JSX.Element => {
+    // as an entry in a table
+    const email: string = perm.type === 'email' ? perm.email : perm.user.email;
+    const username: string = perm.type === 'user' ? perm.user.username : '-';
+    const { permission } = perm;
+
+    return (
+      <tr key={email}>
+        <td className="text-center">{email}</td>
+        <td className="text-center">{username}</td>
+        <td className="text-center">{permission}</td>
+        <td className="text-center">
+          <button
+            onClick={makeHandleRemoveEmail(email)}
+            className="hover:cursor-pointer p-1 inline-block align-middle"
+          >
+            <X size={18} />
+          </button>
+        </td>
+      </tr>
+    );
+  };
+
   return (
-    <Popover open={isOpen} onOpenChange={setIsOpen}>
+    <Popover
+      modal
+      open={isOpen}
+      onOpenChange={setIsOpen}
+    >
       <PopoverTrigger asChild>
         <Button
           size="lg"
@@ -178,44 +211,83 @@ const CreateWhiteboardModal = ({
           </Command>
 
           <Command className="flex flex-col flex-shrink p-4">
-            <div
-              className="flex flex-col md:flex-row align-top"
-            >
-              <label htmlFor="email">Invite Collaborators by Email:</label>
-              <Input
-                name="new-email"
-                type="email"
-                placeholder="Email"
-                onChange={handleChangeNewEmail}
-                value={newEmail}
-                className="mr-2"
-              />
+            <h3 className="text-center text-xl font-semibold m-2">
+              Collaborators
+            </h3>
 
-              <Button
-                className="my-1"
-                variant="secondary"
-                onClick={handleAddNewEmail}
+            <div className="flex flex-col flex-shrink p-4">
+              <h4 className="text-md font-semibold my-2">
+                Invite collaborators by email
+              </h4>
+
+              <div
+                className="flex flex-row align-bottom align-text-bottom w-full"
               >
-                + Add Email
-              </Button>
-            </div>
+                <Input
+                  name="new-email"
+                  type="email"
+                  placeholder="Email"
+                  onChange={handleChangeNewEmail}
+                  value={newEmail}
+                  className="mr-2 grow"
+                />
 
-            <CommandGroup>
-              {/** Display user emails to add, with option to remove **/}
-              <h3>Collaborators to invite:</h3>
-              <ul className="flex flex-row flex-wrap">
-              {
-                  Object.keys(emailSet).length ?
-                    Object.keys(emailSet).map(email => (
-                        <li>
-                          {RemovableEmail(email)}
-                        </li>
-                      ))
-                    :
-                    "No emails selected"
-              }
-              </ul>
-            </CommandGroup>
+                <label
+                  htmlFor="permission-type"
+                  className="mr-2 grow"
+                >
+                  Permission:
+                </label>
+                <select
+                  name="permission-type"
+                  value={newUserPermType}
+                  onChange={handleChangePermType}
+                  className="hover:cursor-pointer mr-2"
+                >
+                  {USER_PERMISSION_TYPES.map(perm => (
+                    <option key={perm} value={perm}>{perm}</option>
+                  ))}
+                </select>
+
+                <Button
+                  variant="secondary"
+                  onClick={handleAddNewEmail}
+                >
+                  + Add Collaborator
+                </Button>
+              </div>
+
+              <div>
+                {/** Display user emails to add, with option to remove **/}
+                <h4 className="text-md font-semibold my-2">
+                  Collaborators to invite:
+                </h4>
+                <table className="w-full">
+                  <thead>
+                    <tr>
+                      <th>
+                        Email
+                      </th>
+                      <th>
+                        Username
+                      </th>
+                      <th>
+                        Permission
+                      </th>
+                      <th>
+                        Delete
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {permissions.map(perm => RemovablePermission(perm)) }
+                  </tbody>
+                </table>
+                {
+                  permissions.length < 1 && <span>No user permissions created</span>
+                }
+              </div>
+            </div>
           </Command>
 
           <div className="flex flex-row justify-center mb-4">
