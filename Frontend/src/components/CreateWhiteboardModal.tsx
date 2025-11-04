@@ -13,6 +13,7 @@ import {
 import {
   USER_PERMISSION_TYPES,
   type UserPermission,
+  type UserPermissionByEmail,
   type UserPermissionEnum
 } from '@/types/APIProtocol';
 
@@ -44,7 +45,7 @@ const FORM_ATTRIBS_DEFAULT = {
 };
 
 export interface CreateWhiteboardFormData extends CreateWhiteboardFormAttribs {
-  collaboratorEmails: string[];
+  collaboratorPermissions: UserPermissionByEmail[];
   width: number;
   height: number;
 }
@@ -58,7 +59,6 @@ const CreateWhiteboardModal = ({
 }: CreateWhiteboardModalProps): React.JSX.Element => {
   // -- managed state
   const [isOpen, setIsOpen] = useState<boolean>();
-  const [emailSet, setEmailSet] = useState<Record<string, boolean>>({});
   const [newEmail, setNewEmail] = useState<string>("");
   const [formInputs, setFormInputs] = useState<CreateWhiteboardFormAttribs>({
     ...FORM_ATTRIBS_DEFAULT
@@ -66,10 +66,10 @@ const CreateWhiteboardModal = ({
   const [newUserPermType, setNewUserPermType] = useState<UserPermissionEnum>(
     USER_PERMISSION_TYPES[0] as UserPermissionEnum
   );
-  const [permissionsByEmail, setPermissionsByEmail] = useState<Record<string, UserPermission>>({});
+  const [permissionsByEmail, setPermissionsByEmail] = useState<Record<string, UserPermissionByEmail>>({});
 
   // -- derived state
-  const permissions: UserPermission[] = Object.values(permissionsByEmail);
+  const permissions: UserPermissionByEmail[] = Object.values(permissionsByEmail);
 
   const handleChangeNewEmail = (ev: React.ChangeEvent<HTMLInputElement>) => {
     ev.preventDefault();
@@ -119,7 +119,6 @@ const CreateWhiteboardModal = ({
   const handleSubmit = (ev: React.FormEvent<HTMLFormElement>) => {
     ev.preventDefault();
 
-    const collaboratorEmails = Object.keys(emailSet);
     // Possibly useful when implementing custom scrolling
     // const windowWidth = window.innerWidth;
     // const windowHeight = window.innerHeight;
@@ -128,12 +127,12 @@ const CreateWhiteboardModal = ({
 
     const data = {
       ...formInputs,
-      collaboratorEmails,
+      collaboratorPermissions: permissions,
       width: rootCanvasWidth,
       height: rootCanvasHeight,
     };
 
-    if (!data.name) {
+    if (! data.name) {
       alert('Name required');
       return;
     }
@@ -141,7 +140,6 @@ const CreateWhiteboardModal = ({
     onSubmit(data);
     setIsOpen(false);
     setFormInputs({ ...FORM_ATTRIBS_DEFAULT });
-    setEmailSet({});
   };
 
   const makeHandleRemoveEmail = (email: string) => () => {

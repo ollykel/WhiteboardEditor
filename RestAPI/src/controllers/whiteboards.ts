@@ -32,7 +32,7 @@ import {
 
 export interface CreateWhiteboardRequest extends AuthorizedRequestBody {
   name: string;
-  collaboratorEmails?: string[];
+  collaboratorPermissions?: IWhiteboardUserPermissionByEmail[];
   width: number;
   height: number;
 }
@@ -153,8 +153,12 @@ export const createWhiteboard = async (
       permission: 'own',
     };
 
-    // Get collaborator emails if provided
-    const collaboratorEmails: string[] = req.body.collaboratorEmails || [];
+    // Get collaborator permissions if provided
+    const collaboratorPermissions: IWhiteboardUserPermissionByEmail[] = req.body.collaboratorPermissions || [];
+    const collaboratorPermissionsByEmail : Record<string, IWhiteboardUserPermissionByEmail> = Object.fromEntries(
+      collaboratorPermissions.map(perm => [perm.email, perm])
+    );
+    const collaboratorEmails : string[] = collaboratorPermissions.map(perm => perm.email);
 
     // Fetch users whose emails match
     const foundUsers = await User.find({ email: { $in: collaboratorEmails } });
@@ -167,7 +171,7 @@ export const createWhiteboard = async (
       foundUsers.map(user => ({
         type: 'user',
         user: user._id,
-        permission: 'edit',
+        permission: collaboratorPermissionsByEmail[user.email].permission,
       }) as IWhiteboardUserPermissionById <Types.ObjectId>);
 
     // For emails that don't match an account, keep them as email permissions
@@ -177,10 +181,10 @@ export const createWhiteboard = async (
         .map(email => ({
           type: 'email',
           email,
-          permission: 'edit',
+          permission: collaboratorPermissionsByEmail[email].permission,
         }));
 
-    const collaboratorPermissions = [
+    const collaboratorPermissionsFinal = [
       ...collarboratorPermissionsFromUsers,
       ...collarboratorPermissionsFromEmail
     ];
@@ -200,7 +204,7 @@ export const createWhiteboard = async (
       // canvases: [defaultCanvas], // TODO: remove
       owner: ownerId,
       root_canvas: rootCanvas._id,
-      shared_users: [ownerPermission, ...collaboratorPermissions]
+      shared_users: [ownerPermission, ...collaboratorPermissionsFinal]
     });
 
     console.log('Attempting to create new whiteboard:', whiteboard);
