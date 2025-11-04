@@ -54,6 +54,18 @@ export const USER_PERMISSION_TYPES = [
   'own'
 ];
 
+export interface UserPermissionByUser {
+  type: 'user';
+  user: User;
+  permission: UserPermissionEnum;
+}
+
+export interface UserPermissionByEmail {
+  type: 'email';
+  email: string;
+  permission: UserPermissionEnum;
+}
+
 // === UserPermission ==========================================================
 //
 // Specifies the permissions a user has on a given whiteboard. The permissions
@@ -64,8 +76,8 @@ export const USER_PERMISSION_TYPES = [
 //
 // =============================================================================
 export type UserPermission =
-  | { type: 'user'; user: User; permission: UserPermissionEnum; }
-  | { type: 'email'; email: string; permission: UserPermissionEnum; }
+  | UserPermissionByUser
+  | UserPermissionByEmail
 ;
 
 // === Canvas ==================================================================
