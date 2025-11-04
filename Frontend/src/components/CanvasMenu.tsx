@@ -90,7 +90,7 @@ function CanvasMenu({ canvasId, whiteboardId }: CanvasMenuProps) {
           </DropdownMenuItem>
 
           <DropdownMenuItem onSelect={handleDownload}>
-            Download
+            Export to PNG
           </DropdownMenuItem>
 
           <DropdownMenuItem onSelect={handleDelete}>
