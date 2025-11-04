@@ -132,6 +132,7 @@ const Canvas = (props: CanvasProps) => {
     setCurrentDispatcher,
     selectedCanvasId,
     setSelectedCanvasId,
+    canvasGroupRefsByIdRef,
   } = whiteboardContext;
 
   const {
@@ -266,6 +267,21 @@ const Canvas = (props: CanvasProps) => {
       setCurrentDispatcher(dispatcher);
     }
   }, [currentTool]);
+
+  // -- track ref to group enclosing the contents of this Canvas
+  useEffect(
+    () => {
+      const canvasGroupRefsById = canvasGroupRefsByIdRef.current;
+
+      canvasGroupRefsByIdRef.current[id] = groupRef;
+
+      // -- make sure to remove ref if Canvas is removed
+      return () => {
+        delete canvasGroupRefsById[id];
+      };
+    },
+    [canvasGroupRefsByIdRef, groupRef, id]
+  );
 
   const {
     getPreview,

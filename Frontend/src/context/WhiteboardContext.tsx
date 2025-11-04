@@ -1,9 +1,14 @@
+// -- std imports
 import React, {
   createContext,
   type PropsWithChildren,
-  type RefObject
+  type RefObject,
 } from 'react';
 
+// -- third-party imports
+import Konva from 'konva';
+
+// -- local imports
 import type {
   ToolChoice
 } from '@/components/Tool';
@@ -44,6 +49,8 @@ export interface WhiteboardContextType {
   setCurrentDispatcher: React.Dispatch<React.SetStateAction<OperationDispatcher | null>>;
   selectedCanvasId: CanvasIdType | null;
   setSelectedCanvasId: (id: CanvasIdType | null) => void;
+  // -- tracks refs to Canvas groups (Konva Groups serve as frames for each Canvas)
+  canvasGroupRefsByIdRef: RefObject<Record<CanvasIdType, RefObject<Konva.Group | null>>>;
 }
 
 export type WhiteboardProvidersProps = WhiteboardContextType;
@@ -71,6 +78,7 @@ const WhiteboardProvider = (props: PropsWithChildren<WhiteboardProvidersProps>):
     setCurrentDispatcher,
     selectedCanvasId,
     setSelectedCanvasId,
+    canvasGroupRefsByIdRef,
   } = props;
 
   return (
@@ -93,6 +101,7 @@ const WhiteboardProvider = (props: PropsWithChildren<WhiteboardProvidersProps>):
       setCurrentDispatcher,
       selectedCanvasId,
       setSelectedCanvasId,
+      canvasGroupRefsByIdRef,
     }}>
       {children}
     </WhiteboardContext.Provider>

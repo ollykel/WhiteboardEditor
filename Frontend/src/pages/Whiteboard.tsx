@@ -1,3 +1,4 @@
+// -- std imports
 import {
   useState,
   useRef,
@@ -5,6 +6,7 @@ import {
   useReducer,
   useContext,
   useCallback,
+  type RefObject,
 } from 'react';
 
 import {
@@ -15,12 +17,15 @@ import {
   useSelector
 } from 'react-redux';
 
+// -- third-party imports
 import {
   useQuery,
   useQueryClient
 } from '@tanstack/react-query';
 
 import { X } from 'lucide-react';
+
+import Konva from 'konva';
 
 // -- local types
 import {
@@ -972,6 +977,9 @@ const WrappedWhiteboard = () => {
     [currentTool]
   );
 
+  // -- track refs to canvas groups (frames)
+  const canvasGroupRefsByIdRef: RefObject<Record<CanvasIdType, RefObject<Konva.Group | null>>> = useRef({});
+
   return (
     <WhiteboardProvider
       socketRef={socketRef}
@@ -992,6 +1000,7 @@ const WrappedWhiteboard = () => {
       setCurrentDispatcher={setCurrentDispatcher}
       selectedCanvasId={selectedCanvasId}
       setSelectedCanvasId={setSelectedCanvasId}
+      canvasGroupRefsByIdRef={canvasGroupRefsByIdRef}
     >
       <Whiteboard />
     </WhiteboardProvider>
