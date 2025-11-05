@@ -1,57 +1,47 @@
-import { Request, Response } from "express";
-import { Types } from "mongoose";
-import bcrypt from "bcrypt";
+// -- std imports
+import {
+  Request,
+  Response,
+} from "express";
 
-import type {
-  Result,
-  SetInclusionOptionType,
+// -- third-party imports
+import bcrypt from 'bcrypt';
+
+import {
+  Types,
+} from 'mongoose';
+
+// -- local imports
+import {
+  SetInclusionOptionType
 } from '../utils';
 
 import {
+  getUserById,
+  patchUser,
+  deleteUser,
+  getSharedWhiteboardsByUser,
+} from "../services/userService";
+
+import {
+  loginService,
+} from '../services/loginService';
+
+import type {
+  AuthorizedRequestBody
+} from "../models/Auth";
+
+import {
   User,
-  PatchUserData,
-  type IUser,
-  type IUserPublicView,
+  type PatchUserRequest,
   type CreateUserRequest,
 } from "../models/User";
 
 import {
-  Whiteboard,
-  type IWhiteboardFull,
   type IWhiteboardPermissionEnum,
 } from '../models/Whiteboard';
 
-import { loginService } from "../services/loginService";
-
-export type GetUserByIdRes =
-  | { status: 'bad_request'; message: string; }
-  | { status: 'not_found'; }
-  | { status: 'ok'; user: IUser; }
-;
-
-export const getUserById = async (userId: Types.ObjectId): Promise<GetUserByIdRes> => {
-  if (! Types.ObjectId.isValid(userId)) {
-    return ({
-      status: 'bad_request',
-      message: `Invalid object id: ${userId}`,
-    });
-  }
-
-  const user = await User.findOne({ _id: userId });
-
-  if (! user) {
-    return ({
-      status: 'not_found',
-    });
-  } else {
-    return ({
-      status: 'ok',
-      user,
-    });
-  }
-};// end getUser
-
-export const createUser = async (
+export const handleCreateUser = async (
   req: Request<{}, {}, CreateUserRequest>,
   res: Response
 ) => {
@@ -104,130 +94,144 @@ export const createUser = async (
   }
 };
 
-export interface PatchUserOkResult {
-  type: 'ok';
-  data: IUserPublicView;
-}
+// === GET /users/:userId ======================================================
+//
+// Fetch the authenticated user's data.
+//
+// =============================================================================
+export const handleGetUserById = async (
+  req: Request<{ userId: Types.ObjectId | 'me'}, any, AuthorizedRequestBody>,
+  res: Response
+) => {
+    const { authUser } = req.body;
+    const { id: authUserId } = authUser;
+    const { userId } = req.params;
+    const targetUserId = (userId === 'me') ? authUserId : userId;
 
-export interface PatchUserErrorResult {
-  type: 'error';
-  message: string;
-}
-
-export type PatchUserResult = PatchUserOkResult | PatchUserErrorResult;
-
-export const patchUser = async (user: IUser, patchData: PatchUserData): Promise<PatchUserResult> => {
-  try {
-    const patchDataLocal = { ...patchData };
-    const passwordHashed = patchDataLocal.password ? 
-      await bcrypt.hash(patchDataLocal.password, 10)
-    : user.passwordHashed;
-
-    if (patchDataLocal.password) {
-      delete patchDataLocal.password;
+    const resp = await getUserById(targetUserId);
+    
+    switch (resp.status) {
+      case 'bad_request':
+        return res.status(400).json({ message: resp.message });
+      case 'not_found':
+        return res.status(404).json({ message: `User ${targetUserId} not found` });
+      case 'ok':
+        return res.status(200).json(resp.user.toAttribView());
+      default:
+        throw new Error(`Unhandled case: ${resp}`);
     }
+};// -- end handleGetUserById
 
-    user.set({
-      ...patchDataLocal,
-      passwordHashed
-    });
+// === PATCH /users/me =========================================================
+//
+// Update one or more fields in the authenticated user's data.
+//
+// =============================================================================
+export const handlePatchOwnUser = async (
+  req: Request<{}, any, PatchUserRequest>,
+  res: Response
+) => {
+    const { authUser } = req.body;
+    const patchData: Partial<PatchUserRequest> = ({ ...req.body });
+    const { id: userId } = authUser;
+    const resp = await getUserById(userId);
 
-    const userModified = await user.save();
+    switch (resp.status) {
+        case 'bad_request':
+          return res.status(400).json({ message: resp.message });
+        case 'not_found':
+          return res.status(404).json({ message: `User ${userId} not found` });
+        case 'ok':
+        {
+            const {
+              user,
+            } = resp;
 
-    return ({
-      type: 'ok',
-      data: userModified.toPublicView()
-    });
-  } catch (err: any) {
-    return ({
-      type: 'error',
-      message: `${err}`
-    });
-  }
-};
+            if (! user) {
+              return res.status(400).json({
+                message: `Could not find user with id ${userId}`
+              });
+            } else {
+              delete patchData.authUser;
+              const patchUserRes = await patchUser(user, patchData);
 
-export const deleteUser = async (userId: Types.ObjectId): Promise<Result<IUserPublicView, string>> => {
-  try {
-    const deletedUser = await User.findOne({ _id: userId });
-
-    if (! deletedUser) {
-      return ({
-        result: 'err',
-        err: 'No such user found'
-      });
-    } else {
-      await deletedUser.deleteOne();
-
-      return ({
-        result: 'ok',
-        data: deletedUser.toPublicView()
-      });
-    }
-  } catch (err: any) {
-    return ({
-      result: 'err',
-      err: `${err}`
-    });
-  };
-};
-
-export type GetSharedWhiteboardsByUserRes =
-  | { status: 'server_error'; }
-  | { status: 'user_not_found'; }
-  | { status: 'bad_request'; message: string; }
-  | { status: 'ok'; whiteboards: IWhiteboardFull[]; }
-;
-
-export const getSharedWhiteboardsByUser = async (
-  userId: Types.ObjectId,
-  includePermissionOpts: SetInclusionOptionType<IWhiteboardPermissionEnum>,
-): Promise<GetSharedWhiteboardsByUserRes> => {
-  try {
-    if (! Types.ObjectId.isValid(userId)) {
-      return ({
-        status: 'bad_request',
-        message: 'Invalid user id',
-      });
-    }
-
-    const permissionsFilter : object = (() => {
-      switch (includePermissionOpts.type) {
-        case 'all':
-          return ({ '$nin': [] });
-        case 'include':
-          return ({ '$in': includePermissionOpts.included });
-        case 'exclude':
-          return ({ '$nin': includePermissionOpts.excluded });
-        default:
-          throw new Error(`Unhandled case: ${includePermissionOpts}`);
-      }
-    })();
-
-    const query = ({
-      shared_users: {
-        '$elemMatch': {
-          type: 'user',
-          user: userId,
-          permission: permissionsFilter
+              if (patchUserRes.type === 'error') {
+                return res.status(400).json({ message: patchUserRes.message });
+              } else {
+                return res.status(201).json(patchUserRes.data);
+              }
+            }
         }
-      }
-    });
+        default:
+          throw new Error(`Unhandled case: ${resp}`);
+    }
+};// -- end handlePatchOwnUser
 
-    const whiteboards = await Whiteboard.findAttribs(query);
+// === DELETE /users/me ========================================================
+//
+// Deletes the user's own account.
+// 
+// =============================================================================
+export const handleDeleteOwnUser = async (
+  req: Request<{}, any, AuthorizedRequestBody>,
+  res: Response
+) => {
+  const { authUser } = req.body;
+  const { id: userId } = authUser;
+  const resp = await deleteUser(userId);
 
-    // success
-    return ({
-      status: 'ok',
-      whiteboards,
-    });
-  } catch (e: any) {
-    console.error(
-      'An unexpected error occurred while attempting to get whiteboards shared with user',
-      userId, ':', e
-    );
-
-    return ({
-      status: 'server_error'
-    });
+  if (resp.result === 'err') {
+    res.status(400).json({ message: resp.err });
+  } else {
+    res.status(200).json(resp.data);
   }
+};// -- end handleDeleteOwnUser
+
+// === GET /users/:userId:/shared_whiteboards ==================================
+//
+// Get summaries (attribute views) of all whiteboards shared with a given user.
+// If passed "me" as the userId, fetches for the authenticated user.
+// By default, spans all permissions.
+//
+// TODO: implement queries to filter by permission type.
+//
+// =============================================================================
+export const handleGetSharedWhiteboardsByUser = async (
+  req: Request<{ userId: Types.ObjectId | 'me' }, any, AuthorizedRequestBody>,
+  res: Response,
+) => {
+  const {
+    userId,
+  } = req.params;
+  const { authUser } = req.body;
+  const { id: authUserId } = authUser;
+
+  const targetUserId = (userId === 'me') ?
+    authUserId
+    : userId;
+    
+  const includeOpts: SetInclusionOptionType<IWhiteboardPermissionEnum> = ({
+    type: 'exclude',
+    excluded: ['own'],
+  });
+
+  const resp = await getSharedWhiteboardsByUser(targetUserId, includeOpts);
+
+  switch (resp.status) {
+      case 'server_error':
+        return res.status(500).json({ message: 'Unexpected server error' });
+      case 'user_not_found':
+        // This _shouldn't_ happen in our case, since we've already passed the
+        // authentication middleware by this point. Nevertheless, the controller
+        // still accounts for the possibility.
+        return res.status(403).json({ message: 'Invalid user' });
+      case 'bad_request':
+        return res.status(400).json({ message: resp.message });
+      case 'ok':
+        return res.status(200).json(resp.whiteboards);
+      default:
+        // Shouldn't get here. If we get here, there is a case we haven't
+        // accounted for.
+        throw new Error(`Unexpected case: ${resp}`);
+  }// end switch (resp.status)
 };
