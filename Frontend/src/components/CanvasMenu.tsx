@@ -95,9 +95,9 @@ const CanvasMenu = ({
   const handleDownload = () => {
     console.log("!! Download clicked");// TODO: remove debug
 
-    const canvasGroupRef : RefObject<Konva.Group> | undefined = canvasGroupRefsByIdRef.current[canvasId];
+    const canvasGroupRef : RefObject<Konva.Group | null> | undefined = canvasGroupRefsByIdRef.current[canvasId];
 
-    if (! canvasGroupRef) {
+    if (! canvasGroupRef?.current) {
       console.error('Could not find ref to Canvas with id', canvasId);
       alert('Error exporting Canvas');
     } else {
