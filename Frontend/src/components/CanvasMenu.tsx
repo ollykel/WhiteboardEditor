@@ -8,6 +8,10 @@ import {
 // -- third-party imports
 import Konva from 'konva';
 
+import {
+  useSelector,
+} from "react-redux";
+
 // -- local imports
 import {
   KONVA_NODE_UI_ONLY_KEY,
@@ -33,6 +37,10 @@ import {
   type RootState,
 } from "@/store";
 
+import {
+  selectCanvasById,
+} from '@/store/canvases/canvasesSelectors';
+
 import WhiteboardContext from "@/context/WhiteboardContext";
 
 import AllowedUsersPopover from "@/components/AllowedUsersPopover";
@@ -41,11 +49,18 @@ import type {
   ClientMessageDeleteCanvases, 
   CanvasIdType, 
   WhiteboardIdType,
+  WhiteboardAttribs,
+  CanvasKeyType,
+  CanvasAttribs,
 } from "@/types/WebSocketProtocol";
 
-import { useSelector } from "react-redux";
+import {
+  selectAllowedUsersByCanvas
+} from "@/store/allowedUsers/allowedUsersByCanvasSlice";
 
-import { selectAllowedUsersByCanvas } from "@/store/allowedUsers/allowedUsersByCanvasSlice";
+import {
+  selectWhiteboardById
+} from '@/store/whiteboards/whiteboardsSelectors';
 
 interface CanvasMenuProps {
   canvasId: CanvasIdType;
@@ -72,6 +87,24 @@ const CanvasMenu = ({
     socketRef, 
     canvasGroupRefsByIdRef,
   } = whiteboardContext;
+
+  const whiteboard: WhiteboardAttribs | null = useSelector((state: RootState) => (
+    selectWhiteboardById(state, whiteboardId))
+  );
+
+  if (! whiteboard) {
+    throw new Error(`No whiteboard found with ID whiteboardId`);
+  }
+
+  const canvasKey : CanvasKeyType = [whiteboardId, canvasId];
+
+  const canvas : CanvasAttribs | null = useSelector((state: RootState) => (
+    selectCanvasById(state, canvasKey)
+  ));
+
+  if (! canvas) {
+    throw new Error(`Could not find canvas ${canvasId} in application state`);
+  }
 
   const handleUpdateAllowedUsers = (allowedUsers: string[]) => {
     // Send WS message
@@ -132,9 +165,9 @@ const CanvasMenu = ({
 
       // -- create a dummy link that the function can "click"
       const downloadLink : HTMLAnchorElement = document.createElement('a');
+      const fileName = `${whiteboard.name} - ${canvas.name}.png`;
 
-      // TODO: replace with canvas or whiteboard name
-      downloadLink.download = 'canvas_export.png';
+      downloadLink.download = fileName;
       downloadLink.href = exportUrl;
 
       document.body.appendChild(downloadLink);
