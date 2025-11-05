@@ -1,26 +1,36 @@
+// -- std imports
 import { 
   useState,
   useContext,
+  type RefObject,
 } from "react";
 
+// -- third-party imports
+import Konva from 'konva';
+
+// -- local imports
 import { 
   DropdownMenu, 
   DropdownMenuTrigger, 
   DropdownMenuContent, 
   DropdownMenuItem, 
 } from "@/components/ui/dropdown-menu";
+
 import { 
   Dialog, 
   DialogContent, 
   DialogHeader, 
   DialogTitle, 
 } from "@/components/ui/dialog";
+
 import { Button } from "./ui/button";
 
 import { 
   type RootState,
 } from "@/store";
+
 import WhiteboardContext from "@/context/WhiteboardContext";
+
 import AllowedUsersPopover from "@/components/AllowedUsersPopover";
 
 import type { 
@@ -28,7 +38,9 @@ import type {
   CanvasIdType, 
   WhiteboardIdType,
 } from "@/types/WebSocketProtocol";
+
 import { useSelector } from "react-redux";
+
 import { selectAllowedUsersByCanvas } from "@/store/allowedUsers/allowedUsersByCanvasSlice";
 
 interface CanvasMenuProps {
@@ -36,20 +48,26 @@ interface CanvasMenuProps {
   whiteboardId: WhiteboardIdType;
 }
 
-function CanvasMenu({ canvasId, whiteboardId }: CanvasMenuProps) {
+const CanvasMenu = ({
+  canvasId,
+  whiteboardId,
+}: CanvasMenuProps) => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const allowedUsers = useSelector((state: RootState) =>
     selectAllowedUsersByCanvas(state, [whiteboardId, canvasId])
   ) ?? [];
   const [selectedUsers, setSelectedUsers] = useState<string[]>(allowedUsers);
 
-  const context = useContext(WhiteboardContext);
-  if (!context) {
+  const whiteboardContext = useContext(WhiteboardContext);
+
+  if (! whiteboardContext) {
     throw new Error("CanvasMenu must be used inside a WhiteboardProvider");
   }
+
   const { 
     socketRef, 
-  } = context;
+    canvasGroupRefsByIdRef,
+  } = whiteboardContext;
 
   const handleUpdateAllowedUsers = (allowedUsers: string[]) => {
     // Send WS message
@@ -75,7 +93,29 @@ function CanvasMenu({ canvasId, whiteboardId }: CanvasMenuProps) {
   };
 
   const handleDownload = () => {
-    console.log("download clicked");
+    console.log("!! Download clicked");// TODO: remove debug
+
+    const canvasGroupRef : RefObject<Konva.Group> | undefined = canvasGroupRefsByIdRef.current[canvasId];
+
+    if (! canvasGroupRef) {
+      console.error('Could not find ref to Canvas with id', canvasId);
+      alert('Error exporting Canvas');
+    } else {
+      const exportUrl : string = canvasGroupRef.current.toDataURL({
+        mimeType: 'image/png',
+      });
+      //
+      // -- create a dummy link that the function can "click"
+      const downloadLink : HTMLAnchorElement = document.createElement('a');
+
+      // TODO: replace with canvas or whiteboard name
+      downloadLink.download = 'canvas_export.png';
+      downloadLink.href = exportUrl;
+
+      document.body.appendChild(downloadLink);
+      downloadLink.click();
+      document.body.removeChild(downloadLink);
+    }
   };
 
   return (
@@ -129,6 +169,6 @@ function CanvasMenu({ canvasId, whiteboardId }: CanvasMenuProps) {
       </Dialog>
     </div>
   );
-}
+};// -- end CanvasMenu
 
 export default CanvasMenu;
