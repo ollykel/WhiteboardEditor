@@ -9,6 +9,10 @@ import {
 import Konva from 'konva';
 
 // -- local imports
+import {
+  KONVA_NODE_UI_ONLY_KEY,
+} from '@/app.config';
+
 import { 
   DropdownMenu, 
   DropdownMenuTrigger, 
@@ -101,10 +105,31 @@ const CanvasMenu = ({
       console.error('Could not find ref to Canvas with id', canvasId);
       alert('Error exporting Canvas');
     } else {
-      const exportUrl : string = canvasGroupRef.current.toDataURL({
+      // -- create a clone of the Canvas group that excludes UI-only elements
+      //    such as borders and tooltips.
+      const exportableCanvas : Konva.Node = canvasGroupRef.current.clone();
+
+      const isNodeContainer = (node: Konva.Node): node is Konva.Container => node.hasChildren();
+
+      const destroyUIOnlyDescendants = (node: Konva.Node) => {
+        if (isNodeContainer(node)) {
+          for (const child of node.getChildren()) {
+            if (child.hasName(KONVA_NODE_UI_ONLY_KEY)) {
+              child.destroy();
+            } else {
+              destroyUIOnlyDescendants(child);
+            }
+          }// -- end for child
+        }
+      };// -- end destroyUIOnlyDescendants
+
+      // -- filter out UI-only nodes
+      destroyUIOnlyDescendants(exportableCanvas);
+
+      const exportUrl : string = exportableCanvas.toDataURL({
         mimeType: 'image/png',
       });
-      //
+
       // -- create a dummy link that the function can "click"
       const downloadLink : HTMLAnchorElement = document.createElement('a');
 
@@ -115,6 +140,9 @@ const CanvasMenu = ({
       document.body.appendChild(downloadLink);
       downloadLink.click();
       document.body.removeChild(downloadLink);
+
+      // -- destroy temporary exportable canvas node
+      exportableCanvas.destroy();
     }
   };
 
