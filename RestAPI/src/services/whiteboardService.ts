@@ -6,6 +6,7 @@ import {
 import {
   Whiteboard,
   type IWhiteboardFull,
+  type IWhiteboardAttribView,
   type WhiteboardIdType,
   type IWhiteboardUserPermission,
   type IWhiteboardUserPermissionModel,
@@ -18,6 +19,106 @@ import {
   type IUser,
   type UserIdType,
 } from '../models/User';
+
+export type GetWhiteboardRes = 
+  | { status: 'ok'; whiteboard: IWhiteboardFull; }
+  | { status: 'invalid_id'; }
+  | { status: 'not_found'; }
+  | { status: 'server_error'; message: string; }
+;
+
+export const getWhiteboardById = async (whiteboardId: string): Promise<GetWhiteboardRes> => {
+  try {
+    if (! Types.ObjectId.isValid(whiteboardId)) {
+      return ({ status: 'invalid_id' });
+    }
+
+    let whiteboard = await Whiteboard.findById(whiteboardId)
+      .then(wb => wb?.populateAttribs() || null);
+
+    if (! whiteboard) {
+      return ({ status: 'not_found' });
+    } else {
+      // track whether we change any email-based permissions to user-based
+      // permissions
+      let haveSharedUsersChanged = false;
+      const sharedUsers: IWhiteboardUserPermissionModel<Types.ObjectId>[] = await Promise.all(whiteboard.shared_users
+          .map(async perm => {
+        switch (perm.type) {
+          case 'user':
+            return ({
+              ...perm,
+              user: perm.user._id,
+            }) ;
+          case 'email':
+            // check if this email now belongs to a registered user
+            const user = await User.findOne({ email: perm.email });
+            console.log('!! Found email-identified user:', user);
+
+            if (user) {
+              haveSharedUsersChanged = true;
+              return ({
+                type: 'user',
+                user: user._id,
+                permission: perm.permission,
+              });
+            } else {
+              return perm; // keep as email if still unregistered
+            }
+          default:
+            throw new Error(`Unrecognized permission type: ${perm}`);
+        }
+      }));
+
+      if (haveSharedUsersChanged) {
+        // reset the whiteboard's shared_users field in-database, then refetch the
+        // whiteboard
+        whiteboard.set('shared_users', sharedUsers);
+        whiteboard = await whiteboard.save()
+          .then(wb => wb.populateAttribs());
+      }
+
+      if (! whiteboard) {
+        throw new Error(`Whiteboard ${whiteboardId} not properly (re-)fetched`);
+      }
+
+      console.log("Returning whiteboard:", JSON.stringify(whiteboard, null, 2));
+
+      return ({
+        status: 'ok',
+        whiteboard,
+      });
+    }
+  } catch (err: any) {
+    console.log('Error fetching whiteboard', whiteboardId, ':', err);
+    return ({
+      status: 'server_error',
+      message: 'An unexpected error occurred',
+    });
+  }
+};// -- end getWhiteboardById
+
+export const getWhiteboardsByOwner = async (ownerId: Types.ObjectId): Promise<IWhiteboardAttribView[]> => {
+  return await Whiteboard.findAttribs({ owner: ownerId }) as IWhiteboardAttribView[];
+};// -- end getWhiteboardsByOwner
+
+export type GetSharedUsersByWhiteboardRes =
+  | { status: 'ok'; sharedUsers: IWhiteboardUserPermission <IUser>[]; }
+  | { status: 'whiteboard_not_found'; }
+;
+
+export const getSharedUsersByWhiteboard = async (whiteboardId: Types.ObjectId): Promise<GetSharedUsersByWhiteboardRes> => {
+  const sharedUsers: IWhiteboardUserPermission <IUser>[] | null = await Whiteboard.findSharedUsersByWhiteboardId(whiteboardId);
+
+  if (! Array.isArray(sharedUsers)) {
+    return ({ status: 'whiteboard_not_found', });
+  } else {
+    return ({
+      status: 'ok',
+      sharedUsers
+    });
+  }
+};
 
 export type ShareWhiteboardResType =
   | { status: "success"; whiteboard: IWhiteboardFull; }
@@ -130,4 +231,4 @@ export const addSharedUsers = async (
       message: `${err}`
     };
   }
-};
+};// -- end addSharedUsers

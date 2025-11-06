@@ -1,20 +1,18 @@
-// -- std imports
 import {
-  Router,
+  Request,
+  Response,
 } from 'express';
-
-// -- local imports
-import {
-  getHealthCheck,
-} from '../controllers/health';
-
-const router = Router();
 
 // === Health Check ============================================================
 //
 // Basic check to ensure service is running.
 //
 // =============================================================================
-router.get('/', getHealthCheck);
-
-export default router;
+export const getHealthCheck = (
+  _req: Request,
+  res: Response
+) => {
+  res.status(200).json({
+    message: "service healthy"
+  });
+};// -- end getHealthCheck
