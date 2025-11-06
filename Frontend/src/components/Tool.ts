@@ -1,3 +1,12 @@
+import {
+  type LucideIcon,
+  Hand,
+  Minus,
+  RectangleHorizontal,
+  Circle,
+  ALargeSmall,
+  SquarePlus,
+} from 'lucide-react';
 
 export type ToolChoice =
   | 'hand' 
@@ -8,20 +17,20 @@ export type ToolChoice =
   | 'create_canvas'
 ;
 
-const getToolChoiceLabel = (toolChoice: ToolChoice): string => {
+const getToolChoiceLabel = (toolChoice: ToolChoice): LucideIcon => {
   switch (toolChoice) {
     case 'hand':
-      return 'Hand';
+      return Hand;
     case 'rect':
-      return 'Rectangle';
+      return RectangleHorizontal;
     case 'vector':
-      return 'Vector Tool';
+      return Minus;
     case 'ellipse':
-      return 'Ellipse';
+      return Circle;
     case 'text':
-      return 'Text';
+      return ALargeSmall;
     case 'create_canvas':
-      return 'Create Canvas';
+      return SquarePlus;
     default:
       throw new Error(`Unrecognized tool choice: ${toolChoice}`);
   }// end switch (toolChoice)
