@@ -1,7 +1,21 @@
+// -- std imports
 import { 
   useState,
   useContext,
+  type RefObject,
 } from "react";
+
+// -- third-party imports
+import Konva from 'konva';
+
+import {
+  useSelector,
+} from "react-redux";
+
+// -- local imports
+import {
+  KONVA_NODE_UI_ONLY_KEY,
+} from '@/app.config';
 
 import { 
   DropdownMenu, 
@@ -9,47 +23,88 @@ import {
   DropdownMenuContent, 
   DropdownMenuItem, 
 } from "@/components/ui/dropdown-menu";
+
 import { 
   Dialog, 
   DialogContent, 
   DialogHeader, 
   DialogTitle, 
 } from "@/components/ui/dialog";
+
 import { Button } from "./ui/button";
 
 import { 
   type RootState,
 } from "@/store";
+
+import {
+  selectCanvasById,
+} from '@/store/canvases/canvasesSelectors';
+
 import WhiteboardContext from "@/context/WhiteboardContext";
+
 import AllowedUsersPopover from "@/components/AllowedUsersPopover";
 
 import type { 
   ClientMessageDeleteCanvases, 
   CanvasIdType, 
   WhiteboardIdType,
+  WhiteboardAttribs,
+  CanvasKeyType,
+  CanvasAttribs,
 } from "@/types/WebSocketProtocol";
-import { useSelector } from "react-redux";
-import { selectAllowedUsersByCanvas } from "@/store/allowedUsers/allowedUsersByCanvasSlice";
+
+import {
+  selectAllowedUsersByCanvas
+} from "@/store/allowedUsers/allowedUsersByCanvasSlice";
+
+import {
+  selectWhiteboardById
+} from '@/store/whiteboards/whiteboardsSelectors';
 
 interface CanvasMenuProps {
   canvasId: CanvasIdType;
   whiteboardId: WhiteboardIdType;
 }
 
-function CanvasMenu({ canvasId, whiteboardId }: CanvasMenuProps) {
+const CanvasMenu = ({
+  canvasId,
+  whiteboardId,
+}: CanvasMenuProps) => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const allowedUsers = useSelector((state: RootState) =>
     selectAllowedUsersByCanvas(state, [whiteboardId, canvasId])
   ) ?? [];
   const [selectedUsers, setSelectedUsers] = useState<string[]>(allowedUsers);
 
-  const context = useContext(WhiteboardContext);
-  if (!context) {
+  const whiteboardContext = useContext(WhiteboardContext);
+
+  if (! whiteboardContext) {
     throw new Error("CanvasMenu must be used inside a WhiteboardProvider");
   }
+
   const { 
     socketRef, 
-  } = context;
+    canvasGroupRefsByIdRef,
+  } = whiteboardContext;
+
+  const whiteboard: WhiteboardAttribs | null = useSelector((state: RootState) => (
+    selectWhiteboardById(state, whiteboardId))
+  );
+
+  if (! whiteboard) {
+    throw new Error(`No whiteboard found with ID whiteboardId`);
+  }
+
+  const canvasKey : CanvasKeyType = [whiteboardId, canvasId];
+
+  const canvas : CanvasAttribs | null = useSelector((state: RootState) => (
+    selectCanvasById(state, canvasKey)
+  ));
+
+  if (! canvas) {
+    throw new Error(`Could not find canvas ${canvasId} in application state`);
+  }
 
   const handleUpdateAllowedUsers = (allowedUsers: string[]) => {
     // Send WS message
@@ -75,7 +130,53 @@ function CanvasMenu({ canvasId, whiteboardId }: CanvasMenuProps) {
   };
 
   const handleDownload = () => {
-    console.log("download clicked");
+    console.log("!! Download clicked");// TODO: remove debug
+
+    const canvasGroupRef : RefObject<Konva.Group | null> | undefined = canvasGroupRefsByIdRef.current[canvasId];
+
+    if (! canvasGroupRef?.current) {
+      console.error('Could not find ref to Canvas with id', canvasId);
+      alert('Error exporting Canvas');
+    } else {
+      // -- create a clone of the Canvas group that excludes UI-only elements
+      //    such as borders and tooltips.
+      const exportableCanvas : Konva.Node = canvasGroupRef.current.clone();
+
+      const isNodeContainer = (node: Konva.Node): node is Konva.Container => node.hasChildren();
+
+      const destroyUIOnlyDescendants = (node: Konva.Node) => {
+        if (isNodeContainer(node)) {
+          for (const child of node.getChildren()) {
+            if (child.hasName(KONVA_NODE_UI_ONLY_KEY)) {
+              child.destroy();
+            } else {
+              destroyUIOnlyDescendants(child);
+            }
+          }// -- end for child
+        }
+      };// -- end destroyUIOnlyDescendants
+
+      // -- filter out UI-only nodes
+      destroyUIOnlyDescendants(exportableCanvas);
+
+      const exportUrl : string = exportableCanvas.toDataURL({
+        mimeType: 'image/png',
+      });
+
+      // -- create a dummy link that the function can "click"
+      const downloadLink : HTMLAnchorElement = document.createElement('a');
+      const fileName = `${whiteboard.name} - ${canvas.name}.png`;
+
+      downloadLink.download = fileName;
+      downloadLink.href = exportUrl;
+
+      document.body.appendChild(downloadLink);
+      downloadLink.click();
+      document.body.removeChild(downloadLink);
+
+      // -- destroy temporary exportable canvas node
+      exportableCanvas.destroy();
+    }
   };
 
   return (
@@ -90,7 +191,7 @@ function CanvasMenu({ canvasId, whiteboardId }: CanvasMenuProps) {
           </DropdownMenuItem>
 
           <DropdownMenuItem onSelect={handleDownload}>
-            Download
+            Export to PNG
           </DropdownMenuItem>
 
           <DropdownMenuItem onSelect={handleDelete}>
@@ -129,6 +230,6 @@ function CanvasMenu({ canvasId, whiteboardId }: CanvasMenuProps) {
       </Dialog>
     </div>
   );
-}
+};// -- end CanvasMenu
 
 export default CanvasMenu;

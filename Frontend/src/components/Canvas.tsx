@@ -13,11 +13,13 @@ import {
   useEffect,
   useState,
 } from 'react';
+
 import {
   Group,
   Text,
   Rect,
 } from 'react-konva';
+
 import Konva from 'konva';
 
 import {
@@ -25,6 +27,10 @@ import {
 } from 'react-redux';
 
 // -- local imports
+import {
+  KONVA_NODE_UI_ONLY_KEY,
+} from '@/app.config';
+
 import WhiteboardContext from '@/context/WhiteboardContext';
 
 import UserCacheContext from '@/context/UserCacheContext';
@@ -132,6 +138,7 @@ const Canvas = (props: CanvasProps) => {
     setCurrentDispatcher,
     selectedCanvasId,
     setSelectedCanvasId,
+    canvasGroupRefsByIdRef,
   } = whiteboardContext;
 
   const {
@@ -267,6 +274,21 @@ const Canvas = (props: CanvasProps) => {
     }
   }, [currentTool]);
 
+  // -- track ref to group enclosing the contents of this Canvas
+  useEffect(
+    () => {
+      const canvasGroupRefsById = canvasGroupRefsByIdRef.current;
+
+      canvasGroupRefsByIdRef.current[id] = groupRef;
+
+      // -- make sure to remove ref if Canvas is removed
+      return () => {
+        delete canvasGroupRefsById[id];
+      };
+    },
+    [canvasGroupRefsByIdRef, groupRef, id]
+  );
+
   const {
     getPreview,
     getTooltipText
@@ -379,37 +401,50 @@ const Canvas = (props: CanvasProps) => {
       onMouseOut={handleMouseOut}
       listening={ownPermission !== 'view'}
     >
-      {/** Border **/}
+      {/** White background **/}
       <Rect
         width={width}
         height={height}
-        stroke={canvasFrameColor}
-        strokeWidth={canvasFrameWidth}
         fill="white"
       />
-      {isCanvasSelected && (
-        <Text
-          text={tooltipText}
-          fontSize={15}
-        />
-      )}
 
-      {/** Display current editor, if given **/}
-      {currentEditor && (
-        <Text
-          text={
-            currentEditor.id === user?.id ?
-              'You are currently editing'
-              : `${currentEditor.username} is currently editing`
-          }
-          fontSize={15}
-          fontStyle="italic"
+      <Group
+        name={KONVA_NODE_UI_ONLY_KEY}
+      >
+        {/** Border **/}
+        <Rect
+          width={width}
           height={height}
-          verticalAlign="bottom"
+          stroke={canvasFrameColor}
+          strokeWidth={canvasFrameWidth}
         />
-      )}
-      {/** Preview Shape **/}
-      {getPreview()}
+
+        {/** Tooltip **/}
+        {isCanvasSelected && (
+          <Text
+            text={tooltipText}
+            fontSize={15}
+          />
+        )}
+
+        {/** Display current editor, if given **/}
+        {currentEditor && (
+          <Text
+            text={
+              currentEditor.id === user?.id ?
+                'You are currently editing'
+                : `${currentEditor.username} is currently editing`
+            }
+            fontSize={15}
+            fontStyle="italic"
+            height={height}
+            verticalAlign="bottom"
+          />
+        )}
+
+        {/** Preview Shape **/}
+        {getPreview()}
+      </Group>
 
       {/** Shapes **/}
       {
@@ -420,6 +455,7 @@ const Canvas = (props: CanvasProps) => {
           return renderShape(id, shape, areShapesDraggable, handleObjectUpdateShapes);
         })
       }
+
       {/** Layer child canvases on top **/}
       {childCanvasesData && (
         childCanvasesData.map(canvasData => (

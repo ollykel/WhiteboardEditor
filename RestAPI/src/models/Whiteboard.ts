@@ -508,7 +508,7 @@ const whiteboardSchema = new Schema<IWhiteboard<Types.ObjectId, Types.ObjectId>,
 
 const sharedUsersArraySchema = whiteboardSchema.path('shared_users').schema;
 
-sharedUsersArraySchema.discriminator('user', new Schema<IWhiteboardUserPermissionById<Types.ObjectId>>(
+sharedUsersArraySchema?.discriminator('user', new Schema<IWhiteboardUserPermissionById<Types.ObjectId>>(
   {
     user: { type: Schema.Types.ObjectId, ref: 'User', required: true },
   },
@@ -560,7 +560,7 @@ sharedUsersArraySchema.discriminator('user', new Schema<IWhiteboardUserPermissio
   },
 ));
 
-sharedUsersArraySchema.discriminator('email', new Schema<IWhiteboardUserPermissionByEmail>(
+sharedUsersArraySchema?.discriminator('email', new Schema<IWhiteboardUserPermissionByEmail>(
   {
     email: { type: String, required: true },
   },

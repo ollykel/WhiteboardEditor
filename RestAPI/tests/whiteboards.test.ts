@@ -163,7 +163,9 @@ describe("Whiteboards API", () => {
     await request(app)
       .post("/api/v1/whiteboards")
       .send({
-        name: "Bad Whiteboard"
+        name: "Bad Whiteboard",
+        width: 3000,
+        height: 3000,
       })
       .expect(401);
   });
@@ -203,6 +205,78 @@ describe("Whiteboards API", () => {
     // Verify response body
     validateWhiteboardAttribView(wbRes.body, {
       name: "Alice's Whiteboard",
+    });
+  });
+
+  it("should allow setting collaborator permissions when creating a new whiteboard", async () => {
+    const jwtSecret = process.env.JWT_SECRET;
+    const userCollection = mongoose.connection.collection('users');
+
+    const creatingUser = await userCollection.findOne({ username: 'alice' });
+    const sharedUser = await userCollection.findOne({ username: 'bob' });
+
+    expect(jwtSecret).not.toBeNull();
+    expect(creatingUser).not.toBeNull();
+
+    // to please TypeScript
+    if ((! jwtSecret) || (! creatingUser) || (! sharedUser)) {
+      return;
+    }
+
+    // Generate signed JWT
+    const authToken = jwt.sign(
+      { sub: creatingUser._id.toString() },   // sub = subject claim
+      jwtSecret,
+      { expiresIn: 999999999 }
+    );
+
+    const collaboratorPermissionsReq = [
+      {
+        type: 'email',
+        email: sharedUser.email,
+        permission: 'edit',
+      },
+      {
+        type: 'email',
+        email: 'nobody@example.com',
+        permission: 'view',
+      },
+    ];
+
+    const collaboratorPermissionsExpect = [
+      {
+        type: 'user',
+        user: { id: creatingUser._id.toString() },
+        permission: 'own',
+      },
+      {
+        type: 'user',
+        user: { id: sharedUser._id.toString() },
+        permission: 'edit',
+      },
+      {
+        type: 'email',
+        email: 'nobody@example.com',
+        permission: 'view',
+      },
+    ];
+
+    // -- Create whiteboard
+    const wbRes = await request(app)
+      .post("/api/v1/whiteboards")
+      .set("Authorization", `Bearer ${authToken}`)
+      .send({
+        name: "Alice's Shared Whiteboard",
+        width: 3000,
+        height: 3000,
+        collaboratorPermissions: collaboratorPermissionsReq,
+      })
+      .expect(201);
+
+    // Verify response body
+    validateWhiteboardAttribView(wbRes.body, {
+      name: "Alice's Shared Whiteboard",
+      shared_users: collaboratorPermissionsExpect,
     });
   });
 
