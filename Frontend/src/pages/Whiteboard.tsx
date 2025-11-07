@@ -20,7 +20,6 @@ import {
 // -- third-party imports
 
 import {
-  type AxiosResponse,
   type AxiosError,
 } from 'axios';
 
