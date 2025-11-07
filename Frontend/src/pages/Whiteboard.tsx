@@ -18,6 +18,12 @@ import {
 } from 'react-redux';
 
 // -- third-party imports
+
+import {
+  type AxiosResponse,
+  type AxiosError,
+} from 'axios';
+
 import {
   useQuery,
   useQueryClient
@@ -807,51 +813,37 @@ const Whiteboard = () => {
       
                       // No need for AxiosResp<..> type check, as response body
                       // isn't used.
-                      const res = await api.post(`/whiteboards/${whiteboardId}/user_permissions`, ({
+                      await api.post(`/whiteboards/${whiteboardId}/user_permissions`, ({
                         userPermissions: userPermissionsFinal
                       }));
-      
-                      if (res.status >= 400) {
-                        console.error('POST /whiteboards/:id/user_permissions failed:', res.data);
 
-                        // -- display popup alert
-                        toast.error(`User permissions update failed: ${JSON.stringify(res.data)}`, {
-                          position: "bottom-center",
-                          hideProgressBar: true,
-                          closeOnClick: true,
-                          pauseOnHover: true,
-                          draggable: true,
-                          progress: undefined,
-                          theme: "colored",
-                          transition: Bounce,
-                        });
-                      } else {
-                        console.log('User permissions update submitted successfully');
+                      console.log('User permissions update submitted successfully');
 
-                        // -- display popup alert
-                        toast.success('User permissions updated successfully', {
-                          position: "bottom-center",
-                          autoClose: 5000,
-                          hideProgressBar: false,
-                          closeOnClick: true,
-                          pauseOnHover: true,
-                          draggable: true,
-                          progress: undefined,
-                          theme: "colored",
-                          transition: Bounce,
-                        });
+                      // -- display popup alert
+                      toast.success('User permissions updated successfully', {
+                        position: "bottom-center",
+                        autoClose: 5000,
+                        hideProgressBar: false,
+                        closeOnClick: true,
+                        pauseOnHover: true,
+                        draggable: true,
+                        progress: undefined,
+                        theme: "colored",
+                        transition: Bounce,
+                      });
 
-                        queryClient.invalidateQueries({
-                          queryKey: whiteboardKey
-                        });
-                      }
+                      queryClient.invalidateQueries({
+                        queryKey: whiteboardKey
+                      });
 
                       closeShareModal();
                     } catch (err: unknown) {
-                        console.error('POST /whiteboards/:id/user_permissions failed:', err);
+                        const axiosErr = err as AxiosError<{ error: string; }>;
+
+                        console.error('POST /whiteboards/:id/user_permissions failed:', axiosErr);
 
                         // -- display popup alert
-                        toast.error(`Share request failed: ${JSON.stringify(err)}`, {
+                        toast.error(`Share request failed: ${axiosErr.response?.data.error}`, {
                           position: "bottom-center",
                           hideProgressBar: true,
                           closeOnClick: true,
