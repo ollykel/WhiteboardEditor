@@ -27,6 +27,11 @@ import { X } from 'lucide-react';
 
 import Konva from 'konva';
 
+import {
+  Bounce,
+  toast,
+} from 'react-toastify';
+
 // -- local types
 import {
   APP_NAME,
@@ -758,14 +763,16 @@ const Whiteboard = () => {
             {/** Modal that opens to share the whiteboard **/}
             <ShareModal zIndex={20}>
               <div className="flex flex-col">
-                <button
-                  onClick={closeShareModal}
-                  className="flex flex-row justify-end hover:cursor-pointer"
+                <div
+                  className="flex flex-row justify-end"
                 >
-                  <X />
-                </button>
-      
-                <h2 className="text-md font-bold text-center">Share Whiteboard</h2>
+                  <button
+                    onClick={closeShareModal}
+                    className="hover:cursor-pointer"
+                  >
+                    <X />
+                  </button>
+                </div>
       
                 <ShareWhiteboardForm
                   initUserPermissions={userPermissions || []}
@@ -791,6 +798,23 @@ const Whiteboard = () => {
                           return perm;
                         }
                       });
+
+                      // -- make sure we have at least one owner
+                      if (! userPermissionsFinal.find(perm => perm.permission === 'own')) {
+                        // -- display popup alert
+                        toast.error('Whiteboard must have at least one owner.', {
+                          position: "bottom-center",
+                          hideProgressBar: true,
+                          closeOnClick: true,
+                          pauseOnHover: true,
+                          draggable: true,
+                          progress: undefined,
+                          theme: "colored",
+                          transition: Bounce,
+                        });
+
+                        return;
+                      }
       
                       // No need for AxiosResp<..> type check, as response body
                       // isn't used.
@@ -800,16 +824,54 @@ const Whiteboard = () => {
       
                       if (res.status >= 400) {
                         console.error('POST /whiteboards/:id/user_permissions failed:', res.data);
-                        alert(`Share request failed: ${JSON.stringify(res.data)}`);
+
+                        // -- display popup alert
+                        toast.error(`User permissions update failed: ${JSON.stringify(res.data)}`, {
+                          position: "bottom-center",
+                          hideProgressBar: true,
+                          closeOnClick: true,
+                          pauseOnHover: true,
+                          draggable: true,
+                          progress: undefined,
+                          theme: "colored",
+                          transition: Bounce,
+                        });
                       } else {
-                        console.log('Share request submitted successfully');
-                        alert('Share request submitted successfully');
+                        console.log('User permissions update submitted successfully');
+
+                        // -- display popup alert
+                        toast.success('User permissions updated successfully', {
+                          position: "bottom-center",
+                          autoClose: 5000,
+                          hideProgressBar: false,
+                          closeOnClick: true,
+                          pauseOnHover: true,
+                          draggable: true,
+                          progress: undefined,
+                          theme: "colored",
+                          transition: Bounce,
+                        });
+
                         queryClient.invalidateQueries({
                           queryKey: whiteboardKey
                         });
                       }
-                    } finally {
+
                       closeShareModal();
+                    } catch (err: unknown) {
+                        console.error('POST /whiteboards/:id/user_permissions failed:', err);
+
+                        // -- display popup alert
+                        toast.error(`Share request failed: ${JSON.stringify(err)}`, {
+                          position: "bottom-center",
+                          hideProgressBar: true,
+                          closeOnClick: true,
+                          pauseOnHover: true,
+                          draggable: true,
+                          progress: undefined,
+                          theme: "colored",
+                          transition: Bounce,
+                        });
                     }
                   }}
                 />
