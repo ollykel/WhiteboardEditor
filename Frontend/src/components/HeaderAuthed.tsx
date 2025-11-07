@@ -64,12 +64,11 @@ const HeaderAuthed = ({
               Active Users
             </DropdownMenuTrigger>
             <DropdownMenuContent>
-              <DropdownMenuLabel>Online</DropdownMenuLabel>
               <div className="flex flex-col">
                 {Object.values(activeUsers).map((u) => (
-                  <DropdownMenuItem key={u.clientId}>
+                  <DropdownMenuLabel key={u.clientId}>
                     {u.username}
-                  </DropdownMenuItem>
+                  </DropdownMenuLabel>
                 ))}
               </div>
             </DropdownMenuContent>
@@ -78,7 +77,7 @@ const HeaderAuthed = ({
         (
           // Profile Dropdown
           <DropdownMenu key="profile">
-            <DropdownMenuTrigger className="px-3 py-2 rounded-md hover:bg-gray-200">
+            <DropdownMenuTrigger className="px-3 py-2 text-xl font-bold rounded-md hover:bg-gray-200">
               {user?.username}
             </DropdownMenuTrigger>
             <DropdownMenuContent className='flex flex-col items-center'>
