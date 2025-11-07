@@ -126,9 +126,10 @@ export type ShareWhiteboardResType =
   | { status: "invalid_users"; invalid_users: UserIdType[] }
   | { status: "invalid_permissions"; invalid_permissions: IWhiteboardUserPermission <Types.ObjectId>[] }
   | { status: "forbidden" }
+  | { status: "need_one_owner" }
   | { status: "exception"; message: string };
 
-export const addSharedUsers = async (
+export const setSharedUsers = async (
   whiteboardId: WhiteboardIdType,
   ownerId: UserIdType,
   userPermissions: IWhiteboardUserPermission <Types.ObjectId>[]
@@ -209,7 +210,12 @@ export const addSharedUsers = async (
       ...finalEmailPermissions
     ];
 
-    if (finalPermissions.length > 0) {
+    // -- check that we have at least one owner
+    if (finalPermissions.reduce((nOwners, perm) => perm.permission === 'own' ? nOwners + 1 : nOwners, 0) < 1) {
+      return ({
+        status: "need_one_owner",
+      });
+    } else {
       // fully replace old permissions
       whiteboard.set('shared_users', finalPermissions);
 
@@ -220,9 +226,6 @@ export const addSharedUsers = async (
         status: "success",
         whiteboard,
       });
-    } else {
-      // Trivial success: return true
-      return { status: "success", whiteboard };
     }
   } catch (err: any) {
     console.error(`Error sharing whiteboard ${whiteboardId}:`, err);
@@ -231,4 +234,4 @@ export const addSharedUsers = async (
       message: `${err}`
     };
   }
-};// -- end addSharedUsers
+};// -- end setSharedUsers
