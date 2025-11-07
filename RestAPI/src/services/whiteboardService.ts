@@ -42,7 +42,7 @@ export const getWhiteboardById = async (whiteboardId: string): Promise<GetWhiteb
       // track whether we change any email-based permissions to user-based
       // permissions
       let haveSharedUsersChanged = false;
-      const sharedUsers: IWhiteboardUserPermissionModel<Types.ObjectId>[] = await Promise.all(whiteboard.shared_users
+      const sharedUsers: IWhiteboardUserPermissionModel<Types.ObjectId>[] = await Promise.all(whiteboard.user_permissions
           .map(async perm => {
         switch (perm.type) {
           case 'user':
@@ -71,9 +71,9 @@ export const getWhiteboardById = async (whiteboardId: string): Promise<GetWhiteb
       }));
 
       if (haveSharedUsersChanged) {
-        // reset the whiteboard's shared_users field in-database, then refetch the
+        // reset the whiteboard's user_permissions field in-database, then refetch the
         // whiteboard
-        whiteboard.set('shared_users', sharedUsers);
+        whiteboard.set('user_permissions', sharedUsers);
         whiteboard = await whiteboard.save()
           .then(wb => wb.populateAttribs());
       }
@@ -99,7 +99,12 @@ export const getWhiteboardById = async (whiteboardId: string): Promise<GetWhiteb
 };// -- end getWhiteboardById
 
 export const getWhiteboardsByOwner = async (ownerId: Types.ObjectId): Promise<IWhiteboardAttribView[]> => {
-  return await Whiteboard.findAttribs({ owner: ownerId }) as IWhiteboardAttribView[];
+  const query = {
+    'user_permissions.user': ownerId,
+    'user_permissions.permission': 'own',
+  };
+
+  return await Whiteboard.findAttribs(query) as IWhiteboardAttribView[];
 };// -- end getWhiteboardsByOwner
 
 export type GetSharedUsersByWhiteboardRes =
@@ -151,8 +156,7 @@ export const setSharedUsers = async (
     // Verify that the "owner" (the user indicated by ownerId) is either the
     // owner or has "own" permission over the whiteboard.
     const ownerIdSet = Object.fromEntries([
-      [whiteboard.owner._id.toString(), true],
-      ...(whiteboard.shared_users as IWhiteboardUserPermissionModel<IUser>[])
+      ...(whiteboard.user_permissions as IWhiteboardUserPermissionModel<IUser>[])
         .filter((perm: IWhiteboardUserPermissionModel<IUser>): perm is IWhiteboardUserPermissionById<IUser> => (
           perm.type === 'user' && perm.permission === 'own'
         ))
@@ -217,7 +221,7 @@ export const setSharedUsers = async (
       });
     } else {
       // fully replace old permissions
-      whiteboard.set('shared_users', finalPermissions);
+      whiteboard.set('user_permissions', finalPermissions);
 
       await whiteboard.save()
         .then(wb => wb.populateAttribs());

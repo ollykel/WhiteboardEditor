@@ -10,12 +10,7 @@ function YourWhiteboards() {
         id="dummyYourID"
         name="Dummy Whiteboard"
         time_created={new Date()}
-        owner={{
-          id: 'abcd',
-          username: 'Dummy User',
-          email: 'dummy@example.com'
-        }}
-        shared_users={[]}
+        user_permissions={[]}
       /> {/* TODO: Map the list of your whiteboards */}
     </div>
   );

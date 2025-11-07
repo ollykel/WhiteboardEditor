@@ -11,12 +11,7 @@ function SharedWhiteboards() {
         id="dummySharedID"
         name="Dummy Shared Whiteboard"
         time_created={new Date()}
-        owner={{
-          id: 'efgh',
-          username: 'Bob',
-          email: 'bob@example.com',
-        }}
-        shared_users={[]}
+        user_permissions={[]}
       /> {/* TODO: Map the list of your whiteboards */}
     </div>
   );
