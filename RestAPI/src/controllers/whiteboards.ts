@@ -24,7 +24,7 @@ import type {
 } from '../models/Auth';
 
 import {
-  addSharedUsers,
+  setSharedUsers,
   getWhiteboardById,
   getWhiteboardsByOwner,
 } from '../services/whiteboardService';
@@ -185,7 +185,7 @@ export const handleShareWhiteboard = async (
     const { id: whiteboardId } = req.params;
     const { authUser, userPermissions } = req.body;
 
-    const result = await addSharedUsers(
+    const result = await setSharedUsers(
       whiteboardId,
       authUser.id,
       userPermissions
@@ -200,6 +200,14 @@ export const handleShareWhiteboard = async (
         return res
           .status(400)
           .json({ error: "Invalid users", invalid_users: result.invalid_users });
+      case "invalid_permissions":
+        return res
+          .status(400)
+          .json({ error: "Invalid permissions", invalid_permissions: result.invalid_permissions });
+      case "need_one_owner":
+        return res
+          .status(400)
+          .json({ error: "Whiteboard needs at least one owner" });
       case "forbidden":
         return res.status(403).json({ error: "You do not own this whiteboard" });
       default:

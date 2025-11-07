@@ -316,6 +316,11 @@ describe("Whiteboards API", () => {
         userPermissions: [
           {
             type: 'user',
+            user: owner._id.toString(),
+            permission: 'own'
+          },
+          {
+            type: 'user',
             user: sharee._id.toString(),
             permission: 'view'
           }
@@ -325,6 +330,15 @@ describe("Whiteboards API", () => {
 
       validateWhiteboardAttribView(wbRes.body, {
         shared_users: [
+          {
+            type: 'user',
+            user: ({
+              id: owner._id.toString(),
+              username: owner.username,
+              email: owner.email,
+            }),
+            permission: 'own'
+          },
           {
             type: 'user',
             user: ({
@@ -480,24 +494,51 @@ describe("Whiteboards API", () => {
       { expiresIn: 999999999 }
     );
 
-    const userPermissions: IWhiteboardUserPermissionModel<any>[] = [{
-      type: 'email',
-      // no corresponding user in Users collection
-      email: 'noexist@example.com',
-      permission: 'view'
-    }];
+    const userPermissionsReq: IWhiteboardUserPermissionModel<any>[] = [
+      {
+        type: 'user',
+        // no corresponding user in Users collection
+        user: owner._id,
+        permission: 'own'
+      },
+      {
+        type: 'email',
+        // no corresponding user in Users collection
+        email: 'noexist@example.com',
+        permission: 'view'
+      }
+    ];
+
+    const userPermissionsExpect: IWhiteboardUserPermissionModel<any>[] = [
+      {
+        type: 'user',
+        // no corresponding user in Users collection
+        user: {
+          id: owner._id.toString(),
+          username: owner.username,
+          email: owner.email
+        },
+        permission: 'own'
+      },
+      {
+        type: 'email',
+        // no corresponding user in Users collection
+        email: 'noexist@example.com',
+        permission: 'view'
+      }
+    ];
 
     // -- Share whiteboard
     const wbRes = await request(app)
       .post(`/api/v1/whiteboards/${whiteboard._id}/shared_users`)
       .set("Authorization", `Bearer ${authToken}`)
       .send({
-        userPermissions
+        userPermissions: userPermissionsReq
       })
       .expect(200);
 
     validateWhiteboardAttribView(wbRes.body, {
-      shared_users: userPermissions,
+      shared_users: userPermissionsExpect,
     });
   });
 
@@ -535,21 +576,39 @@ describe("Whiteboards API", () => {
       return;
     }
 
-    const userPermissionsReq = [{
-      type: 'email',
-      email: targetUserEmail,
-      permission: 'view'
-    }];
+    const userPermissionsReq = [
+      {
+        type: 'user',
+        user: owner._id,
+        permission: 'own'
+      },
+      {
+        type: 'email',
+        email: targetUserEmail,
+        permission: 'view'
+      },
+    ];
 
-    const userPermissionsExpect = [{
-      type: 'user',
-      user: ({
-        id: targetUser._id.toString(),
-        username: targetUser.username,
-        email: targetUser.email,
-      }),
-      permission: 'view'
-    }];
+    const userPermissionsExpect = [
+      {
+        type: 'user',
+        user: {
+          id: owner._id.toString(),
+          username: owner.username,
+          email: owner.email,
+        },
+        permission: 'own'
+      },
+      {
+        type: 'user',
+        user: ({
+          id: targetUser._id.toString(),
+          username: targetUser.username,
+          email: targetUser.email,
+        }),
+        permission: 'view'
+      },
+    ];
 
     // -- Share whiteboard
     const wbRes = await request(app)
@@ -566,7 +625,7 @@ describe("Whiteboards API", () => {
     expect(wbRes.body.shared_users.length).toBe(userPermissionsExpect.length);
 
     for (const i in userPermissionsExpect) {
-      expect(wbRes.body.shared_users[0]).toMatchObject(userPermissionsExpect[i]);
+      expect(wbRes.body.shared_users[i]).toMatchObject(userPermissionsExpect[i]);
     }// -- end for (const i in userPermissionsExpect)
   });
 });
