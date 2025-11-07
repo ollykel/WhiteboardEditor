@@ -59,9 +59,10 @@ const HeaderAuthed = ({
       toolbarElemsRight={[
         ...toolbarElemsRight,
         (
+          // TODO: Abstract out a generic dropdown menu
           // Active Users
           <DropdownMenu key="active-users">
-            <DropdownMenuTrigger className="flex items-center gap-1 px-3 py-2 rounded-md hover:bg-gray-200 whitespace-nowrap">
+            <DropdownMenuTrigger className="flex items-center gap-1 px-4 py-2 rounded-lg hover:cursor-pointer hover:bg-gray-200 whitespace-nowrap">
               Active Users
               <ChevronDown className="w-4 h-4 transition-transform duration-200 data-[state=open]:rotate-180"/>
             </DropdownMenuTrigger>
@@ -79,7 +80,7 @@ const HeaderAuthed = ({
         (
           // Profile Dropdown
           <DropdownMenu key="profile">
-            <DropdownMenuTrigger className="flex items-center gap-1 px-3 py-2 text-xl font-bold rounded-md hover:bg-gray-200">
+            <DropdownMenuTrigger className="flex items-center gap-1 px-4 py-2 text-xl font-bold rounded-md hover:cursor-pointer hover:bg-gray-200">
               {user?.username}
               <ChevronDown className="w-4 h-4 transition-transform duration-200 data-[state=open]:rotate-180"/>
             </DropdownMenuTrigger>
