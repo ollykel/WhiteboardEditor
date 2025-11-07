@@ -69,13 +69,13 @@ const Header = ({
             </NavigationMenuList>
           </NavigationMenu>
 
-          <div className="absolute left-2 hidden md:flex">
+          <div className="absolute left-2 mx-4 gap-4 hidden md:flex">
             {toolbarElemsLeft}
           </div>
 
           <h1 className="text-lg md:text-2xl font-bold">{title}</h1>
           
-          <div className="absolute right-2 hidden md:flex">
+          <div className="absolute right-2 mx-4 gap-4 hidden md:flex">
             {toolbarElemsRight}
           </div>
         </div>
