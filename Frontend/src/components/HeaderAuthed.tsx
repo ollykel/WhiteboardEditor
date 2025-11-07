@@ -62,9 +62,9 @@ const HeaderAuthed = ({
           // TODO: Abstract out a generic dropdown menu
           // Active Users
           <DropdownMenu key="active-users">
-            <DropdownMenuTrigger className="flex items-center gap-1 px-4 py-2 rounded-lg hover:cursor-pointer hover:bg-gray-200 whitespace-nowrap">
+            <DropdownMenuTrigger className="group flex items-center gap-1 px-4 py-2 rounded-lg hover:cursor-pointer hover:bg-gray-200 whitespace-nowrap">
               Active Users
-              <ChevronDown className="w-4 h-4 transition-transform duration-200 data-[state=open]:rotate-180"/>
+              <ChevronDown className="w-4 h-4 transition-transform duration-300 group-data-[state=open]:rotate-180"/>
             </DropdownMenuTrigger>
             <DropdownMenuContent>
               <div className="flex flex-col">
@@ -80,9 +80,9 @@ const HeaderAuthed = ({
         (
           // Profile Dropdown
           <DropdownMenu key="profile">
-            <DropdownMenuTrigger className="flex items-center gap-1 px-4 py-2 text-xl font-bold rounded-md hover:cursor-pointer hover:bg-gray-200">
+            <DropdownMenuTrigger className="group flex items-center gap-1 px-4 py-2 text-xl font-bold rounded-md hover:cursor-pointer hover:bg-gray-200">
               {user?.username}
-              <ChevronDown className="w-4 h-4 transition-transform duration-200 data-[state=open]:rotate-180"/>
+              <ChevronDown className="w-4 h-4 transition-transform duration-300 group-data-[state=open]:rotate-180"/>
             </DropdownMenuTrigger>
             <DropdownMenuContent className='flex flex-col items-center'>
               <DropdownMenuItem asChild>
