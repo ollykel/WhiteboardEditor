@@ -43,9 +43,9 @@ const Header = ({
         className="fixed top-1 left-0 right-0 max-h-15 shadow-md rounded-lg mx-5 lg:mx-30 m-1 p-3 bg-stone-50"
         style={{ zIndex }}
       > 
-        <div className="relative flex items-center justify-center">
+        <div className="relative flex items-center justify-between">
           {/* Hamburger Menu */}
-          <NavigationMenu className="absolute left-2 md:hidden">
+          <NavigationMenu className="md:hidden">
             <NavigationMenuList>
               <NavigationMenuItem>
                 <NavigationMenuTrigger>
@@ -69,15 +69,18 @@ const Header = ({
             </NavigationMenuList>
           </NavigationMenu>
 
-          <div className="absolute left-2 mx-4 gap-4 hidden md:flex">
+          {/* Left Side Items */}
+          <div className="mx-4 gap-4 hidden md:flex w-60">
             {toolbarElemsLeft}
           </div>
 
-          <h1 className="text-lg md:text-2xl font-bold truncate max-w-[60%] md:max-w-[40%] xl:max-w-[60%] text-center">
+          {/* Title */}
+          <h1 className="flex-1 min-w-0 text-lg md:text-2xl font-bold truncate text-center">
             {title}
           </h1>
           
-          <div className="absolute right-2 mx-4 gap-4 hidden md:flex">
+          {/* Right Side Items */}
+          <div className="mx-4 gap-4 hidden md:flex w-60 justify-end">
             {toolbarElemsRight}
           </div>
         </div>
