@@ -25,6 +25,7 @@ import {
   DropdownMenuLabel, 
   DropdownMenuTrigger, 
 } from './ui/dropdown-menu';
+import { ChevronDown } from 'lucide-react';
 
 export type HeaderAuthedProps = HeaderProps;
 
@@ -60,8 +61,9 @@ const HeaderAuthed = ({
         (
           // Active Users
           <DropdownMenu key="active-users">
-            <DropdownMenuTrigger className="px-3 py-2 rounded-md hover:bg-gray-200">
+            <DropdownMenuTrigger className="flex items-center gap-1 px-3 py-2 rounded-md hover:bg-gray-200 whitespace-nowrap">
               Active Users
+              <ChevronDown className="w-4 h-4 transition-transform duration-200 data-[state=open]:rotate-180"/>
             </DropdownMenuTrigger>
             <DropdownMenuContent>
               <div className="flex flex-col">
@@ -77,8 +79,9 @@ const HeaderAuthed = ({
         (
           // Profile Dropdown
           <DropdownMenu key="profile">
-            <DropdownMenuTrigger className="px-3 py-2 text-xl font-bold rounded-md hover:bg-gray-200">
+            <DropdownMenuTrigger className="flex items-center gap-1 px-3 py-2 text-xl font-bold rounded-md hover:bg-gray-200">
               {user?.username}
+              <ChevronDown className="w-4 h-4 transition-transform duration-200 data-[state=open]:rotate-180"/>
             </DropdownMenuTrigger>
             <DropdownMenuContent className='flex flex-col items-center'>
               <DropdownMenuItem asChild>
