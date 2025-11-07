@@ -214,8 +214,9 @@ export const setSharedUsers = async (
       ...finalEmailPermissions
     ];
 
-    // -- check that we have at least one owner
-    if (finalPermissions.reduce((nOwners, perm) => perm.permission === 'own' ? nOwners + 1 : nOwners, 0) < 1) {
+    // -- check that we have at least one owner whose account exists (not just
+    // an email address)
+    if (! finalPermissions.find(perm => perm.permission === 'own' && perm.type === 'user')) {
       return ({
         status: "need_one_owner",
       });

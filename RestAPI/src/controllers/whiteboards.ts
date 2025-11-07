@@ -211,7 +211,7 @@ export const handleShareWhiteboard = async (
       case "need_one_owner":
         return res
           .status(400)
-          .json({ error: "Whiteboard needs at least one owner" });
+          .json({ error: "Whiteboard needs at least one owner whose account has already been created" });
       case "forbidden":
         return res.status(403).json({ error: "You do not own this whiteboard" });
       default:

@@ -14,6 +14,11 @@ import {
 // -- third-party imports
 
 import {
+  type AxiosResponse,
+  type AxiosError,
+} from 'axios';
+
+import {
   Bounce,
   toast,
 } from 'react-toastify';
@@ -23,11 +28,6 @@ import AuthContext from '@/context/AuthContext';
 import AuthInput from "@/components/AuthInput";
 import { useUser } from "@/hooks/useUser";
 import api from '@/api/axios';
-
-import {
-  type AxiosResponse,
-  type AxiosError,
-} from 'axios';
 
 import {
   APP_NAME,
