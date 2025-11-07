@@ -38,7 +38,7 @@ const ToolbarButton = React.forwardRef<HTMLButtonElement, ToolbarButtonProps>(
       <button
         ref={ref}
         onClick={onClick}
-        className={`p-2 rounded-xl hover:cursor-pointer ${variant === 'selected' && 'bg-gray-400'} hover:bg-gray-200`}
+        className={`p-2 place-items-center rounded-xl hover:cursor-pointer ${variant === 'selected' && 'bg-gray-400'} hover:bg-gray-200`}
       >
         <Icon />
       </button>
@@ -62,8 +62,8 @@ function Toolbar({ toolChoice, onToolChange }: ToolbarProps) {
   );
 
   return (
-    <div className="max-w-40 flex flex-col flex-shrink-0 text-center p-4 m-1 rounded-2xl shadow-md  bg-stone-50">
-      <h2 className="text-2xl font-bold mb-4">Tools</h2>
+    <div className="max-w-40 flex flex-col flex-shrink-0 text-center p-2 rounded-lg shadow-md bg-stone-50">
+      <h2 className="text-lg font-bold mb-1">Tools</h2>
       {tools.map((tool) => renderToolChoice(tool))}
 
       {/** Additional, non-tool choices **/}
