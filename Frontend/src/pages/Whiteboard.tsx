@@ -726,17 +726,6 @@ const Whiteboard = () => {
                       </span>
                     </div>
                   )}
-      
-                  {/** Own Client ID **/}
-                  <div>
-                    <span>Your Username: </span> {user?.username}
-                  </div>
-      
-                  {/* Display Active Clients */}
-                  <div>
-                    <span>Active Users: </span>
-                    { Object.values(activeUsers).map(userSummary => userSummary.username).join(', ') }
-                  </div>
                 </div>
       
                 {/* Display Canvases */}
