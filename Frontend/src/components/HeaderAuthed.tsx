@@ -15,6 +15,7 @@ import Header, {
 } from '@/components/Header';
 
 import HeaderButton from '@/components/HeaderButton';
+import { NavigationMenu, NavigationMenuContent, NavigationMenuItem, NavigationMenuLink, NavigationMenuList, NavigationMenuTrigger } from '@radix-ui/react-navigation-menu';
 
 export type HeaderAuthedProps = HeaderProps;
 
@@ -24,7 +25,7 @@ const HeaderAuthed = ({
   ...props
 }: HeaderAuthedProps): React.JSX.Element => {
   const navigate = useNavigate();
-  const { setUser } = useUser();
+  const { user, setUser } = useUser();
 
   const handleLogOut = () => {
     setUser(null);
@@ -45,18 +46,36 @@ const HeaderAuthed = ({
       ]}
       toolbarElemsRight={[
         ...toolbarElemsRight,
+        // Active Users
+        
+        // Profile Dropdown
         (
-          <HeaderButton 
-            to="/account"
-            title="Settings"
-          />
+          <NavigationMenu className="absolute">
+            <NavigationMenuList>
+              <NavigationMenuItem>
+                <NavigationMenuTrigger>
+                  {user?.username}
+                </NavigationMenuTrigger>
+                <NavigationMenuContent>
+                  <div className="flex flex-col">
+                    <NavigationMenuLink asChild>
+                      <HeaderButton 
+                        to="/account"
+                        title="Settings"
+                      /> 
+                    </NavigationMenuLink>
+                    <NavigationMenuLink asChild>
+                      <HeaderButton 
+                        onClick={handleLogOut}
+                        title="Log Out"
+                      />
+                    </NavigationMenuLink>
+                  </div>
+                </NavigationMenuContent>
+              </NavigationMenuItem>
+            </NavigationMenuList>
+          </NavigationMenu>
         ),
-        (
-          <HeaderButton 
-            onClick={handleLogOut}
-            title="Log Out"
-          />
-        )
       ]}
     />
   );
