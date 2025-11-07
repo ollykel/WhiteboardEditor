@@ -205,6 +205,7 @@ function CanvasCard(props: CanvasCardProps) {
       {selectedCanvasId && (
         <div className='fixed bottom-0 left-1 z-50'>
           <CanvasMenu 
+            name={selectedCanvas.name}
             canvasId={selectedCanvasId}
             whiteboardId={whiteboardId}
           />

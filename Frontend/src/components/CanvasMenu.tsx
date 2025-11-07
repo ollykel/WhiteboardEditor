@@ -63,11 +63,13 @@ import {
 } from '@/store/whiteboards/whiteboardsSelectors';
 
 interface CanvasMenuProps {
+  name: string;
   canvasId: CanvasIdType;
   whiteboardId: WhiteboardIdType;
 }
 
 const CanvasMenu = ({
+  name,
   canvasId,
   whiteboardId,
 }: CanvasMenuProps) => {
@@ -183,7 +185,7 @@ const CanvasMenu = ({
     <div>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="outline">Canvas Menu</Button>
+          <Button variant="outline">{name}</Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent className="w-48">
           <DropdownMenuItem onSelect={() => setDialogOpen(true)}>
