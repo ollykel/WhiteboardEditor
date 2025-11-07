@@ -111,9 +111,8 @@ export interface Canvas {
 export interface Whiteboard {
   id: string;
   name: string;
-  owner: User;
   time_created: Date;
-  shared_users: UserPermission[];
+  user_permissions: UserPermission[];
   canvases?: Canvas[];
 }
 

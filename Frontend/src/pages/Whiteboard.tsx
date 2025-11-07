@@ -176,7 +176,7 @@ const Whiteboard = () => {
   const {
     socketRef,
     setWhiteboardId,
-    sharedUsers,
+    userPermissions,
     ownPermission,
     currentTool,
     setCurrentTool,
@@ -757,7 +757,7 @@ const Whiteboard = () => {
                 <h2 className="text-md font-bold text-center">Share Whiteboard</h2>
       
                 <ShareWhiteboardForm
-                  initUserPermissions={sharedUsers || []}
+                  initUserPermissions={userPermissions || []}
                   onSubmit={async (data: ShareWhiteboardFormData) => {
                     try {
                       const {
@@ -783,12 +783,12 @@ const Whiteboard = () => {
       
                       // No need for AxiosResp<..> type check, as response body
                       // isn't used.
-                      const res = await api.post(`/whiteboards/${whiteboardId}/shared_users`, ({
+                      const res = await api.post(`/whiteboards/${whiteboardId}/user_permissions`, ({
                         userPermissions: userPermissionsFinal
                       }));
       
                       if (res.status >= 400) {
-                        console.error('POST /whiteboards/:id/shared_users failed:', res.data);
+                        console.error('POST /whiteboards/:id/user_permissions failed:', res.data);
                         alert(`Share request failed: ${JSON.stringify(res.data)}`);
                       } else {
                         console.log('Share request submitted successfully');
@@ -872,21 +872,21 @@ const WrappedWhiteboard = () => {
   console.log("Current whiteboard data:", whiteboardData);
   console.log("Loading status:", isWhiteboardDataLoading);
 
-  // update the state of sharedUsers whenever whiteboardData changes
-  const [sharedUsers, setSharedUsers] = useState<APIWhiteboard['shared_users']>([]);
-  console.log("Current shared users:", sharedUsers);
+  // update the state of userPermissions whenever whiteboardData changes
+  const [userPermissions, setSharedUsers] = useState<APIWhiteboard['user_permissions']>([]);
+  console.log("Current shared users:", userPermissions);
 
   // -- view/edit/own - determines which actions to enable or disable
   const [ownPermission, setOwnPermission] = useState<UserPermissionEnum | null>(null);
 
   useEffect(() => {
     if (whiteboardData && user) {
-      const newOwnPermission = whiteboardData.shared_users
+      const newOwnPermission = whiteboardData.user_permissions
         .find(
           (perm: UserPermission) => perm.type === 'user' && perm.user.id === user.id
         ) || null;
 
-      setSharedUsers(whiteboardData.shared_users);
+      setSharedUsers(whiteboardData.user_permissions);
       
       if (newOwnPermission) {
         setOwnPermission(newOwnPermission.permission);
@@ -979,7 +979,7 @@ const WrappedWhiteboard = () => {
       setCurrentTool={setCurrentTool}
       whiteboardId={whiteboardId}
       setWhiteboardId={setWhiteboardId}
-      sharedUsers={sharedUsers}
+      userPermissions={userPermissions}
       setSharedUsers={setSharedUsers}
       newCanvasAllowedUsers={newCanvasAllowedUsers}
       setNewCanvasAllowedUsers={setNewCanvasAllowedUsers}

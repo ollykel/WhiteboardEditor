@@ -16,7 +16,6 @@ import type {
 } from '@/types/CanvasObjectModel';
 
 import type {
-  User,
   UserPermission,
 } from '@/types/APIProtocol';
 
@@ -70,9 +69,8 @@ export interface CanvasRecord extends CanvasAttribs {
 export interface WhiteboardAttribs {
   id: WhiteboardIdType;
   name: string;
-  owner: User;
   rootCanvas: WhiteboardIdType;
-  sharedUsers: UserPermission[];
+  userPermissions: UserPermission[];
 }
 
 // Contains nested data

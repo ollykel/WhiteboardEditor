@@ -151,7 +151,7 @@ export const getSharedWhiteboardsByUser = async (
     })();
 
     const query = ({
-      shared_users: {
+      user_permissions: {
         '$elemMatch': {
           type: 'user',
           user: userId,

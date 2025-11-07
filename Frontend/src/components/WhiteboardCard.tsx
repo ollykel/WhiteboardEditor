@@ -7,10 +7,6 @@ import type {
 } from '@/types/APIProtocol';
 
 import {
-  useUser,
-} from '@/hooks/useUser';
-
-import {
   UserTagBrief,
   UserTagEmail,
 } from '@/components/UserTag';
@@ -20,11 +16,8 @@ export type WhiteboardProps = Whiteboard;
 function WhiteboardCard({
   id,
   name,
-  owner,
-  shared_users: sharedUsers
+  user_permissions: userPermissions
 }: WhiteboardProps) {
-  const { user } = useUser();
-
   // -- rephrase permissions as the user's role
   const permissionTypeToUserRole = (perm: UserPermissionEnum): string => {
     switch (perm) {
@@ -50,20 +43,13 @@ function WhiteboardCard({
       <img src="/images/Screenshot 2025-08-17 at 1.16.54 PM.png" alt="Whiteboard Thumbnail" />
       <div className="p-5">
         <h1 className=" text-lg font-bold">{name}</h1>
-        <h2 className="">
-          Owner: {user?.id === owner.id ?
-            (<strong>You</strong>)
-            :
-            (<>{owner.username} ({owner.email})</>)
-          }
-        </h2>
 
         {/** List shared users **/}
         <h3 className="">Collaborators: </h3>
         <ul
           className="flex flex-row flex-wrap"
         >
-          {sharedUsers?.map(perm => {
+          {userPermissions?.map(perm => {
             if (perm.type === 'user') {
               if ((typeof perm.user) !== 'object') {
                 throw new Error(`User must be object; received ${perm.user}`);

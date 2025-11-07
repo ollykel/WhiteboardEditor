@@ -23,8 +23,7 @@ mod unit_tests {
             id: ObjectId::new(),
             metadata: WhiteboardMetadata {
                 name: String::from("Test"),
-                owner_id: ObjectId::new(),
-                shared_users: vec![],
+                user_permissions: vec![],
                 permissions_by_user_id: HashMap::new(),
             },
             root_canvas: test_canvas_id,
@@ -143,8 +142,7 @@ mod unit_tests {
             id: ObjectId::new(),
             metadata: WhiteboardMetadata {
                 name: String::from("Test"),
-                owner_id: ObjectId::new(),
-                shared_users: vec![],
+                user_permissions: vec![],
                 permissions_by_user_id: HashMap::new(),
             },
             root_canvas: canvas_a_id,
@@ -301,8 +299,7 @@ mod unit_tests {
 
         assert!(whiteboard.id == whiteboard_id);
         assert!(whiteboard.metadata.name == "Project Alpha");
-        assert!(whiteboard.metadata.owner_id == ObjectId::parse_str("68d5e8cf829da666aece5f47").unwrap());
-        assert!(whiteboard.metadata.shared_users.len() == 1);
+        assert!(whiteboard.metadata.user_permissions.len() == 1);
         assert!(whiteboard.root_canvas == root_canvas_id);
         assert!(whiteboard.canvases.len() == 4);
         assert!(whiteboard.canvases.contains_key(&root_canvas_id));
@@ -422,8 +419,7 @@ mod unit_tests {
             id: ObjectId::new(),
             metadata: WhiteboardMetadata {
                 name: String::from("Test"),
-                owner_id: ObjectId::new(),
-                shared_users: vec![
+                user_permissions: vec![
                     WhiteboardPermission {
                         permission_type: WhiteboardPermissionType::User {
                             user: target_uid,
@@ -566,8 +562,7 @@ mod unit_tests {
             id: ObjectId::new(),
             metadata: WhiteboardMetadata {
                 name: String::from("Test"),
-                owner_id: ObjectId::new(),
-                shared_users: vec![
+                user_permissions: vec![
                     WhiteboardPermission {
                         permission_type: WhiteboardPermissionType::User {
                             user: test_user_id,
