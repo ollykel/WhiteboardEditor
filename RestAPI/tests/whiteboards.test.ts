@@ -628,4 +628,49 @@ describe("Whiteboards API", () => {
       expect(wbRes.body.shared_users[i]).toMatchObject(userPermissionsExpect[i]);
     }// -- end for (const i in userPermissionsExpect)
   });
+
+  it("should ensure that a request to change a whiteboard's shared users leaves at least one user with \"own\" permission", async () => {
+    const jwtSecret = process.env.JWT_SECRET;
+    const userCollection = mongoose.connection.collection('users');
+    const whiteboardCollection = mongoose.connection.collection('whiteboards');
+
+    const whiteboard = await whiteboardCollection.findOne({ name: "Project Alpha"});
+    const owner = await userCollection.findOne({ username: 'alice' });
+
+    expect(jwtSecret).not.toBeNull();
+    expect(owner).not.toBeNull();
+    expect(whiteboard).not.toBeNull();
+
+    // to please TypeScript
+    if ((! jwtSecret) || (! owner) || (! whiteboard)) {
+      return;
+    }
+
+    // Generate signed JWT
+    const authToken = jwt.sign(
+      { sub: owner._id.toString() },   // sub = subject claim
+      jwtSecret,
+      { expiresIn: 999999999 }
+    );
+
+    const targetUserEmail = 'carol@example.com';
+
+    // -- Eliminates owner from list of shared users
+    const userPermissionsReq = [
+      {
+        type: 'email',
+        email: targetUserEmail,
+        permission: 'view'
+      },
+    ];
+
+    // -- Attempt to reset shared users to exclude owner; should fail
+    await request(app)
+      .post(`/api/v1/whiteboards/${whiteboard._id}/shared_users`)
+      .set("Authorization", `Bearer ${authToken}`)
+      .send({
+        userPermissions: userPermissionsReq
+      })
+      .expect(400);
+  });
 });
