@@ -47,7 +47,6 @@ const ToolbarButton = React.forwardRef<HTMLButtonElement, ToolbarButtonProps>(
 );
 
 function Toolbar({ toolChoice, onToolChange }: ToolbarProps) {
-  
   const context = useContext(WhiteboardContext);
   if (!context) {
     throw new Error('No WhiteboardContext provided');

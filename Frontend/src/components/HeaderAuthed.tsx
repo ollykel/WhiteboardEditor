@@ -15,7 +15,16 @@ import Header, {
 } from '@/components/Header';
 
 import HeaderButton from '@/components/HeaderButton';
-import { NavigationMenu, NavigationMenuContent, NavigationMenuItem, NavigationMenuLink, NavigationMenuList, NavigationMenuTrigger } from '@radix-ui/react-navigation-menu';
+import { useSelector } from 'react-redux';
+import { selectActiveUsers } from '@/store/activeUsers/activeUsersSelectors';
+import type { ClientIdType, UserSummary } from '@/types/WebSocketProtocol';
+import { 
+  DropdownMenu, 
+  DropdownMenuContent, 
+  DropdownMenuItem, 
+  DropdownMenuLabel, 
+  DropdownMenuTrigger, 
+} from './ui/dropdown-menu';
 
 export type HeaderAuthedProps = HeaderProps;
 
@@ -26,6 +35,8 @@ const HeaderAuthed = ({
 }: HeaderAuthedProps): React.JSX.Element => {
   const navigate = useNavigate();
   const { user, setUser } = useUser();
+
+  const activeUsers : Record<ClientIdType, UserSummary> = useSelector(selectActiveUsers);
 
   const handleLogOut = () => {
     setUser(null);
@@ -46,35 +57,45 @@ const HeaderAuthed = ({
       ]}
       toolbarElemsRight={[
         ...toolbarElemsRight,
-        // Active Users
-        
-        // Profile Dropdown
         (
-          <NavigationMenu className="absolute">
-            <NavigationMenuList>
-              <NavigationMenuItem>
-                <NavigationMenuTrigger>
-                  {user?.username}
-                </NavigationMenuTrigger>
-                <NavigationMenuContent>
-                  <div className="flex flex-col">
-                    <NavigationMenuLink asChild>
-                      <HeaderButton 
-                        to="/account"
-                        title="Settings"
-                      /> 
-                    </NavigationMenuLink>
-                    <NavigationMenuLink asChild>
-                      <HeaderButton 
-                        onClick={handleLogOut}
-                        title="Log Out"
-                      />
-                    </NavigationMenuLink>
-                  </div>
-                </NavigationMenuContent>
-              </NavigationMenuItem>
-            </NavigationMenuList>
-          </NavigationMenu>
+          // Active Users
+          <DropdownMenu key="active-users">
+            <DropdownMenuTrigger className="px-3 py-2 rounded-md hover:bg-gray-200">
+              Active Users
+            </DropdownMenuTrigger>
+            <DropdownMenuContent>
+              <DropdownMenuLabel>Online</DropdownMenuLabel>
+              <div className="flex flex-col">
+                {Object.values(activeUsers).map((u) => (
+                  <DropdownMenuItem key={u.clientId}>
+                    {u.username}
+                  </DropdownMenuItem>
+                ))}
+              </div>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        ),
+        (
+          // Profile Dropdown
+          <DropdownMenu key="profile">
+            <DropdownMenuTrigger className="px-3 py-2 rounded-md hover:bg-gray-200">
+              {user?.username}
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className='flex flex-col items-center'>
+              <DropdownMenuItem asChild>
+                <HeaderButton 
+                  to="/account" 
+                  title="Settings" 
+                /> 
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <HeaderButton 
+                  onClick={handleLogOut}
+                  title="Log Out" 
+                />
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         ),
       ]}
     />
