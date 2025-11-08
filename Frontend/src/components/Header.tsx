@@ -40,10 +40,11 @@ const Header = ({
     <>
       {/** Floating header **/}
       <div
-        className="fixed top-1 left-0 right-0 max-h-15 shadow-md rounded-lg mx-5 lg:mx-30 m-1 p-3 bg-stone-50"
+        className="fixed top-1 left-0 right-0 max-h-15 shadow-md rounded-lg mx-5 lg:mx-30 m-1 px-3 py-1 bg-stone-50"
         style={{ zIndex }}
       > 
-        <div className="relative flex items-center justify-between">
+        <div className="relative flex items-center justify-between"> 
+
           {/* Hamburger Menu */}
           <NavigationMenu className="md:hidden">
             <NavigationMenuList>
