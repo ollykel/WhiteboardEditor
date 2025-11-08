@@ -1,6 +1,8 @@
+import React from "react";
+
 interface AttributeLableProps {
   title: string,
-  children: React.ReactElement<HTMLInputElement>;
+  children: React.ReactElement<{ className?: string}>;
 }
 
 const AttributeMenuItem = ({ 
@@ -12,7 +14,9 @@ const AttributeMenuItem = ({
       <label className="text-md text-center">
         {title}
       </label>
-      {children}
+      {React.cloneElement(children, {
+        className: "w-15 pl-2 ml-4",
+      })}
     </div>
   );
 }
