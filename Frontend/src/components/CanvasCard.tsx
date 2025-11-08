@@ -92,7 +92,8 @@ function CanvasCard(props: CanvasCardProps) {
   }
 
   const {
-    selectedCanvasId
+    selectedCanvasId,
+    tooltipText,
   } = whiteboardContext;
 
   const [selectedCanvasAllowedUsers, setSelectedCanvasAllowedUsers] = useState<User[] | null>(null);
@@ -181,9 +182,9 @@ function CanvasCard(props: CanvasCardProps) {
         </Stage>
       </div>
 
-      {/* Canvas Menu */}
+      {/* Canvas Menu & Tooltip Text */}
       {selectedCanvasId && (
-        <div className='fixed bottom-6 left-2 z-50'>
+        <div className='fixed bottom-6 left-2 flex items-end gap-4 z-50'>
           <CanvasMenu 
             name={selectedCanvas.name}
             canvasId={selectedCanvasId}
@@ -193,6 +194,9 @@ function CanvasCard(props: CanvasCardProps) {
               ?? []
             }
           />
+          <h2>
+            {tooltipText}
+          </h2>
         </div>
       )}
     </div>
