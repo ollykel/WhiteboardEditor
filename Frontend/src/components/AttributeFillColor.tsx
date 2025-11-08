@@ -1,6 +1,6 @@
 import type { AttributeDefinition, AttributeProps } from "@/types/Attribute";
 import type { CanvasObjectIdType, CanvasObjectModel } from "@/types/CanvasObjectModel";
-import AttributeLabel from "./AttributeLabel";
+import AttributeMenuItem from "./AttributeMenuItem";
 
 const FillColorComponent = ({
   selectedShapeIds, 
@@ -23,8 +23,7 @@ const FillColorComponent = ({
   };
  
   return (
-    <div>
-      <AttributeLabel>Fill Color</AttributeLabel>
+    <AttributeMenuItem title="Fill Color">
       <input
         name="fill-color"
         type="color"
@@ -32,7 +31,7 @@ const FillColorComponent = ({
         onChange={onChangeFillColor}
         className={className}
       />
-    </div>
+    </AttributeMenuItem> 
   );
 }
 

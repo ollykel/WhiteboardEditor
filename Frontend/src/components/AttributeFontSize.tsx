@@ -1,6 +1,6 @@
 import type { AttributeDefinition, AttributeProps } from "@/types/Attribute";
 import type { CanvasObjectIdType, CanvasObjectModel } from "@/types/CanvasObjectModel";
-import AttributeLabel from "./AttributeLabel";
+import AttributeMenuItem from "./AttributeMenuItem";
 
 const FontSizeComponent = ({
   selectedShapeIds, 
@@ -24,14 +24,15 @@ const FontSizeComponent = ({
  
   return (
     <div>
-      <AttributeLabel>Font Size</AttributeLabel>
-      <input
-        name="font-size"
-        type="number"
-        value={value}
-        onChange={onChangeFontSize}
-        className={className}
-      />
+      <AttributeMenuItem title="Font Size">
+        <input
+          name="font-size"
+          type="number"
+          value={value}
+          onChange={onChangeFontSize}
+          className={className}
+        />
+      </AttributeMenuItem>
     </div>
   );
 }

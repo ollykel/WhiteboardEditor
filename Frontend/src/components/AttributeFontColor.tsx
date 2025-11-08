@@ -1,6 +1,6 @@
 import type { AttributeDefinition, AttributeProps } from "@/types/Attribute";
 import type { CanvasObjectIdType, CanvasObjectModel } from "@/types/CanvasObjectModel";
-import AttributeLabel from "./AttributeLabel";
+import AttributeMenuItem from "./AttributeMenuItem";
 
 const FontColorComponent = ({
   selectedShapeIds, 
@@ -24,14 +24,15 @@ const FontColorComponent = ({
  
   return (
     <div>
-      <AttributeLabel>Font Color</AttributeLabel>
-      <input
-        name="font-color"
-        type="color"
-        value={value}
-        onChange={onChangeFontColor}
-        className={className}
-      />
+      <AttributeMenuItem title="Font Color">
+        <input
+          name="font-color"
+          type="color"
+          value={value}
+          onChange={onChangeFontColor}
+          className={className}
+        />
+      </AttributeMenuItem>
     </div>
   );
 }
