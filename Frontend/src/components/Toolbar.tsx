@@ -38,7 +38,7 @@ const ToolbarButton = React.forwardRef<HTMLButtonElement, ToolbarButtonProps>(
       <button
         ref={ref}
         onClick={onClick}
-        className={`p-2 place-items-center rounded-xl hover:cursor-pointer ${variant === 'selected' && 'bg-gray-400'} hover:bg-gray-200`}
+        className={`p-2 place-items-center rounded-xl hover:cursor-pointer ${variant === 'selected' && 'bg-gray-300'} hover:bg-gray-200`}
       >
         <Icon />
       </button>
