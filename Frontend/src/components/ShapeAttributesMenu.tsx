@@ -78,7 +78,7 @@ const ShapeAttributesMenu = (props: ShapeAttributesMenuProps) => {
 
   return (
     <div className="max-w-40 flex flex-col flex-shrink-0 text-center p-4 rounded-lg shadow-md bg-stone-50">
-      <h2 className="text-xl font-bold mb-2">Shape Attributes</h2>
+      <h2 className="text-md font-bold mb-1">Edit Attributes</h2>
       <form
         className="flex flex-col"
         onSubmit={(ev: React.FormEvent<HTMLFormElement>) => {
