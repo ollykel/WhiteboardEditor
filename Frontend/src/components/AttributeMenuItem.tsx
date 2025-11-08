@@ -15,7 +15,7 @@ const AttributeMenuItem = ({
         {title}
       </label>
       {React.cloneElement(children, {
-        className: "w-15 pl-2 ml-4",
+        className: `${children.props.className ?? ""} w-10 pl-2 mx-4`,
       })}
     </div>
   );
