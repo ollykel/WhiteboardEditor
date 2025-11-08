@@ -1,6 +1,7 @@
 import type { AttributeDefinition, AttributeProps } from "@/types/Attribute";
 import type { CanvasObjectIdType, CanvasObjectModel } from "@/types/CanvasObjectModel";
 import AttributeMenuItem from "./AttributeMenuItem";
+import { useEffect, useState } from "react";
 
 const FontSizeComponent = ({
   selectedShapeIds, 
@@ -9,16 +10,27 @@ const FontSizeComponent = ({
   canvasId, 
   value,
 }: AttributeProps) => {
+  const [inputValue, setInputValue] = useState(value.toString());
+
+  useEffect(() => {
+    setInputValue(value.toString());
+  }, [value]);
+  
   const onChangeFontSize = (ev: React.ChangeEvent<HTMLInputElement>) => {
     ev.preventDefault();
-    const size = parseInt(ev.target.value);
-  
-    dispatch({ type: 'SET_FONT_SIZE', payload: size });
-  
-    handleUpdateShapes(
-      canvasId,
-      Object.fromEntries(selectedShapeIds.map(id => [id, { fontSize: size }])) as Record<CanvasObjectIdType, Partial<CanvasObjectModel>>
-    );  
+
+    const val = ev.target.value;
+    setInputValue(val);
+
+    const size = parseFloat(val);
+    
+    if (!isNaN(size)) {
+      dispatch({ type: 'SET_FONT_SIZE', payload: size });
+      handleUpdateShapes(
+        canvasId,
+        Object.fromEntries(selectedShapeIds.map(id => [id, { fontSize: size }])) as Record<CanvasObjectIdType, Partial<CanvasObjectModel>>
+      );  
+    }
   };
  
   return (
@@ -27,9 +39,9 @@ const FontSizeComponent = ({
         <input
           name="font-size"
           type="number"
-          value={value}
+          value={inputValue}
           onChange={onChangeFontSize}
-          className="w-15 mr-0"
+          className="w-16 mr-0"
         />
       </AttributeMenuItem>
     </div>
