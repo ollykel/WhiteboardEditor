@@ -1,5 +1,6 @@
 import type { AttributeDefinition, AttributeProps } from "@/types/Attribute";
 import type { CanvasObjectIdType, CanvasObjectModel } from "@/types/CanvasObjectModel";
+import AttributeLabel from "./AttributeLabel";
 
 const FillColorComponent = ({
   selectedShapeIds, 
@@ -23,7 +24,7 @@ const FillColorComponent = ({
  
   return (
     <div>
-      <label>Fill Color</label>
+      <AttributeLabel>Fill Color</AttributeLabel>
       <input
         name="fill-color"
         type="color"

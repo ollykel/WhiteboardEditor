@@ -1,5 +1,6 @@
 import type { AttributeDefinition, AttributeProps } from "@/types/Attribute";
 import type { CanvasObjectIdType, CanvasObjectModel } from "@/types/CanvasObjectModel";
+import AttributeLabel from "./AttributeLabel";
 
 const FontColorComponent = ({
   selectedShapeIds, 
@@ -23,7 +24,7 @@ const FontColorComponent = ({
  
   return (
     <div>
-      <label>Font Color</label>
+      <AttributeLabel>Font Color</AttributeLabel>
       <input
         name="font-color"
         type="color"

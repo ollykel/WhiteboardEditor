@@ -1,5 +1,6 @@
 import type { AttributeDefinition, AttributeProps } from "@/types/Attribute";
 import type { CanvasObjectIdType, CanvasObjectModel } from "@/types/CanvasObjectModel";
+import AttributeLabel from "./AttributeLabel";
 
 const StrokeWidthComponent = ({
   selectedShapeIds, 
@@ -25,7 +26,7 @@ const StrokeWidthComponent = ({
  
   return (
     <div>
-      <label>Stroke Width</label>
+      <AttributeLabel>Stroke Width</AttributeLabel>
       <input
         name="stroke-width"
         type="number"

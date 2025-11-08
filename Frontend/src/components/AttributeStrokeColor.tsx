@@ -1,5 +1,6 @@
 import type { AttributeDefinition, AttributeProps } from "@/types/Attribute";
 import type { CanvasObjectIdType, CanvasObjectModel } from "@/types/CanvasObjectModel";
+import AttributeLabel from "./AttributeLabel";
 
 const StrokeColorComponent = ({
   selectedShapeIds, 
@@ -23,7 +24,7 @@ const StrokeColorComponent = ({
  
   return (
     <div>
-      <label>Stroke Color</label>
+      <AttributeLabel>Stroke Color</AttributeLabel>
       <input
         name="stroke-color"
         type="color"
