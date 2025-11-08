@@ -139,6 +139,7 @@ const Canvas = (props: CanvasProps) => {
     selectedCanvasId,
     setSelectedCanvasId,
     canvasGroupRefsByIdRef,
+    setTooltipText,
   } = whiteboardContext;
 
   const {
@@ -327,6 +328,10 @@ const Canvas = (props: CanvasProps) => {
     'You are in view-only mode'
     : getTooltipText();
 
+  useEffect(() => {
+    setTooltipText(tooltipText);
+  }, [tooltipText]);
+
   const currCanvasKey : CanvasKeyType = [whiteboardId, id];
   const childCanvasesData : CanvasData[] = childCanvasesByCanvas[currCanvasKey.toString()]
     ?.map((childCanvasKey: CanvasKeyType) => canvasesByKey[childCanvasKey.toString()] || null)
@@ -418,14 +423,6 @@ const Canvas = (props: CanvasProps) => {
           stroke={canvasFrameColor}
           strokeWidth={canvasFrameWidth}
         />
-
-        {/** Tooltip **/}
-        {isCanvasSelected && (
-          <Text
-            text={tooltipText}
-            fontSize={15}
-          />
-        )}
 
         {/** Display current editor, if given **/}
         {currentEditor && (
