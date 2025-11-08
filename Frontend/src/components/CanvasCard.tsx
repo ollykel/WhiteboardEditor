@@ -208,6 +208,10 @@ function CanvasCard(props: CanvasCardProps) {
             name={selectedCanvas.name}
             canvasId={selectedCanvasId}
             whiteboardId={whiteboardId}
+            allowedUsernames={selectedCanvasAllowedUsers
+              ?.map(u => u.username)
+              ?? []
+            }
           />
         </div>
       )}
