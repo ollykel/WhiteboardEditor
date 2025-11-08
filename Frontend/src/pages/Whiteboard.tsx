@@ -835,6 +835,7 @@ const WrappedWhiteboard = () => {
   const [selectedShapeIds, setSelectedShapeIds] = useState<CanvasObjectIdType[]>([]);
   const [currentDispatcher, setCurrentDispatcher] = useState<OperationDispatcher | null>(null);
   const [selectedCanvasId, setSelectedCanvasId] = useState<CanvasIdType | null>(null);
+  const [tooltipText, setTooltipText] = useState<string>("");
 
   const { data: whiteboardData, isLoading: isWhiteboardDataLoading } = useQuery<APIWhiteboard, string>({
     queryKey: ['whiteboard', whiteboardId],
@@ -990,6 +991,8 @@ const WrappedWhiteboard = () => {
       selectedCanvasId={selectedCanvasId}
       setSelectedCanvasId={setSelectedCanvasId}
       canvasGroupRefsByIdRef={canvasGroupRefsByIdRef}
+      tooltipText={tooltipText}
+      setTooltipText={setTooltipText}
     >
       <Whiteboard />
     </WhiteboardProvider>
