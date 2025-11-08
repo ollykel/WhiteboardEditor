@@ -21,7 +21,12 @@ import {
   DropdownMenu, 
   DropdownMenuTrigger, 
   DropdownMenuContent, 
-  DropdownMenuItem, 
+  DropdownMenuItem,
+  DropdownMenuSub,
+  DropdownMenuSubTrigger,
+  DropdownMenuSubContent,
+  DropdownMenuLabel,
+  DropdownMenuSeparator, 
 } from "@/components/ui/dropdown-menu";
 
 import { 
@@ -62,16 +67,22 @@ import {
   selectWhiteboardById
 } from '@/store/whiteboards/whiteboardsSelectors';
 
+import {
+  SquarePen
+} from 'lucide-react';
+
 interface CanvasMenuProps {
   name: string;
   canvasId: CanvasIdType;
   whiteboardId: WhiteboardIdType;
+  allowedUsernames: string[];
 }
 
 const CanvasMenu = ({
   name,
   canvasId,
   whiteboardId,
+  allowedUsernames,
 }: CanvasMenuProps) => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const allowedUsers = useSelector((state: RootState) =>
@@ -185,12 +196,31 @@ const CanvasMenu = ({
     <div>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="outline">{name}</Button>
+          <Button variant="outline">Selected Canvas: {name}</Button>
         </DropdownMenuTrigger>
+
         <DropdownMenuContent className="w-48">
-          <DropdownMenuItem onSelect={() => setDialogOpen(true)}>
-            Edit Allowed Users
-          </DropdownMenuItem>
+        
+          <DropdownMenuSub>
+            <DropdownMenuSubTrigger>
+              Allowed Users
+            </DropdownMenuSubTrigger>
+            <DropdownMenuSubContent>
+              <DropdownMenuItem 
+                className="flex justify-center" 
+                onSelect={() => setDialogOpen(true)}
+              >
+                Edit
+                <SquarePen/>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              {allowedUsernames.map((u) => (
+                <DropdownMenuLabel key={u}>
+                  {u}
+                </DropdownMenuLabel>
+              ))}
+            </DropdownMenuSubContent>
+          </DropdownMenuSub>
 
           <DropdownMenuItem onSelect={handleDownload}>
             Export to PNG
