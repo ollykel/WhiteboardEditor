@@ -70,6 +70,7 @@ import {
 import {
   SquarePen
 } from 'lucide-react';
+import HeaderButton from "./HeaderButton";
 
 interface CanvasMenuProps {
   name: string;
@@ -196,7 +197,15 @@ const CanvasMenu = ({
     <div>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="outline">Selected Canvas: {name}</Button>
+          <div className="fixed bottom-6 left-2 shadow-md rounded-lg bg-stone-50">
+            <HeaderButton
+              title={
+                <span>
+                  Selected Canvas: <strong className="text-lg">{name}</strong>
+                </span>
+              }
+            />
+          </div>
         </DropdownMenuTrigger>
 
         <DropdownMenuContent className="w-48">
