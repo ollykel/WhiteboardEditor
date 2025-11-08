@@ -8,8 +8,8 @@ const AttributeMenuItem = ({
   children, 
 }: AttributeLableProps) => {
   return (
-    <div>
-      <label className="text-sm">
+    <div className="flex justify-between items-center">
+      <label className="text-md text-center">
         {title}
       </label>
       {children}
