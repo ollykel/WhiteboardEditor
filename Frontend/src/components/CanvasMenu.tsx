@@ -198,7 +198,7 @@ const CanvasMenu = ({
     <div>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <div className="fixed bottom-6 left-2 shadow-md rounded-lg bg-stone-50">
+          <div className="shadow-md rounded-lg bg-stone-50">
             <HeaderButton
               title={
                 <div className="flex items-center gap-2">
