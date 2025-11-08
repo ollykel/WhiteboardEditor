@@ -17,13 +17,12 @@ export interface SidebarProps {
 
 const Sidebar = ({
   side,
-  width = '10em',
   zIndex = 50,
   children,
 }: PropsWithChildren<SidebarProps>): React.JSX.Element => {
   return (
     <aside
-      className={`fixed top-1/2 -translate-y-1/2 ${side}-2 ${width} flex flex-col flex-shrink-0`}
+      className={`fixed top-[20%] ${side}-2 flex flex-wrap flex-col items-start justify-center gap-2 max-h-[70vh]`}
       style={{ zIndex }}
     >
       {children}
