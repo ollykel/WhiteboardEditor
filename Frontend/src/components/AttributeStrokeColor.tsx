@@ -8,7 +8,6 @@ const StrokeColorComponent = ({
   dispatch, 
   canvasId, 
   value,
-  className,
 }: AttributeProps) => {
   const onChangeStrokeColor = (ev: React.ChangeEvent<HTMLInputElement>) => {
     ev.preventDefault();
@@ -30,7 +29,7 @@ const StrokeColorComponent = ({
           type="color"
           value={value}
           onChange={onChangeStrokeColor}
-          className={className}
+          className=""
         />
       </AttributeMenuItem>
     </div>

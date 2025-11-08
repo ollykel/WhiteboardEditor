@@ -8,7 +8,6 @@ const FillColorComponent = ({
   dispatch, 
   canvasId, 
   value,
-  className,
 }: AttributeProps) => {
   const onChangeFillColor = (ev: React.ChangeEvent<HTMLInputElement>) => {
     ev.preventDefault();
@@ -29,7 +28,7 @@ const FillColorComponent = ({
         type="color"
         value={value}
         onChange={onChangeFillColor}
-        className={className}
+        className=""
       />
     </AttributeMenuItem> 
   );

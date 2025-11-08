@@ -8,7 +8,6 @@ const StrokeWidthComponent = ({
   dispatch, 
   canvasId, 
   value,
-  className,
 }: AttributeProps) => {
   const onChangeStrokeWidth = (ev: React.ChangeEvent<HTMLInputElement>) => {
     ev.preventDefault();
@@ -34,7 +33,7 @@ const StrokeWidthComponent = ({
           step={0.5}
           value={value}
           onChange={onChangeStrokeWidth}
-          className={className}
+          className="w-15 mr-0"
         />
       </AttributeMenuItem>
     </div>

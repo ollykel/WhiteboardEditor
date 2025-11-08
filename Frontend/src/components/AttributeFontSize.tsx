@@ -8,7 +8,6 @@ const FontSizeComponent = ({
   dispatch, 
   canvasId, 
   value,
-  className,
 }: AttributeProps) => {
   const onChangeFontSize = (ev: React.ChangeEvent<HTMLInputElement>) => {
     ev.preventDefault();
@@ -30,7 +29,7 @@ const FontSizeComponent = ({
           type="number"
           value={value}
           onChange={onChangeFontSize}
-          className={className}
+          className="w-15 mr-0"
         />
       </AttributeMenuItem>
     </div>

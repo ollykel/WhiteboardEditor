@@ -8,7 +8,6 @@ const FontColorComponent = ({
   dispatch, 
   canvasId, 
   value,
-  className,
 }: AttributeProps) => {
   const onChangeFontColor = (ev: React.ChangeEvent<HTMLInputElement>) => {
     ev.preventDefault();
@@ -30,7 +29,7 @@ const FontColorComponent = ({
           type="color"
           value={value}
           onChange={onChangeFontColor}
-          className={className}
+          className=""
         />
       </AttributeMenuItem>
     </div>
