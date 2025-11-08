@@ -8,7 +8,7 @@ import {
 } from '../middleware/auth';
 
 import {
-  handleGetOwnWhiteboard,
+  handleGetOwnWhiteboards,
   handleGetWhiteboardById,
   handleCreateWhiteboard,
   handleShareWhiteboard,
@@ -22,13 +22,13 @@ router.use(authenticateJWT);
 router.post("/", handleCreateWhiteboard);
 
 // -- Get user's own whiteboards
-router.get("/own", handleGetOwnWhiteboard);
+router.get("/own", handleGetOwnWhiteboards);
 
 // -- Get whiteboard by id
 router.get('/:whiteboardId', handleGetWhiteboardById);
 
 // --- Share whiteboard with other users
-router.post("/:id/shared_users", handleShareWhiteboard);
+router.post("/:id/user_permissions", handleShareWhiteboard);
 
 export default router;
 

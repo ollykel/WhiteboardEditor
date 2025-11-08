@@ -24,7 +24,7 @@ import type {
 } from '../models/Auth';
 
 import {
-  addSharedUsers,
+  setSharedUsers,
   getWhiteboardById,
   getWhiteboardsByOwner,
 } from '../services/whiteboardService';
@@ -58,8 +58,7 @@ export const handleGetWhiteboardById = async (
       {
           const { whiteboard } = resp;
           const validUserIdSet: Record<string, boolean> = Object.fromEntries([
-            [whiteboard.owner._id?.toString(), true],
-            ...whiteboard.shared_users.filter(perm => perm.type === 'user').map(perm => [
+            ...whiteboard.user_permissions.filter(perm => perm.type === 'user').map(perm => [
               perm.user._id, true 
             ])
           ]);
@@ -86,7 +85,7 @@ export const handleCreateWhiteboard = async (
     const { id: ownerId } = authUser;
     console.log("handleCreateWhiteboard req.body: ", req.body);
     
-    // Give owner 'own' permission for shared_users
+    // Give owner 'own' permission for user_permissions
     const ownerPermission: IWhiteboardUserPermissionModel<Types.ObjectId> = {
       type: 'user',
       user: ownerId,
@@ -141,10 +140,8 @@ export const handleCreateWhiteboard = async (
 
     const whiteboard = new Whiteboard({
       name,
-      // canvases: [defaultCanvas], // TODO: remove
-      owner: ownerId,
       root_canvas: rootCanvas._id,
-      shared_users: [ownerPermission, ...collaboratorPermissionsFinal]
+      user_permissions: [ownerPermission, ...collaboratorPermissionsFinal]
     });
 
     console.log('Attempting to create new whiteboard:', whiteboard);
@@ -160,13 +157,20 @@ export const handleCreateWhiteboard = async (
 };// -- end handleCreateWhiteboard
 
 // -- Get user's own whiteboards
-export const handleGetOwnWhiteboard = async (req: Request<{}, any, AuthorizedRequestBody>, res: Response) => {
-  const { authUser } = req.body;
-  const { id: ownerId } = authUser;
+export const handleGetOwnWhiteboards = async (
+  req: Request<{}, any, AuthorizedRequestBody>,
+  res: Response
+) => {
+  const {
+    authUser,
+  } = req.body;
+  const {
+    id: ownerId,
+  } = authUser;
   const ownWhiteboards = await getWhiteboardsByOwner(ownerId);
 
   res.status(200).json(ownWhiteboards);
-};// -- end handleGetOwnWhiteboard
+};// -- end handleGetOwnWhiteboards
 
 export interface WhiteboardPermissionRequest {
   email: string;
@@ -185,7 +189,7 @@ export const handleShareWhiteboard = async (
     const { id: whiteboardId } = req.params;
     const { authUser, userPermissions } = req.body;
 
-    const result = await addSharedUsers(
+    const result = await setSharedUsers(
       whiteboardId,
       authUser.id,
       userPermissions
@@ -200,6 +204,14 @@ export const handleShareWhiteboard = async (
         return res
           .status(400)
           .json({ error: "Invalid users", invalid_users: result.invalid_users });
+      case "invalid_permissions":
+        return res
+          .status(400)
+          .json({ error: "Invalid permissions", invalid_permissions: result.invalid_permissions });
+      case "need_one_owner":
+        return res
+          .status(400)
+          .json({ error: "Whiteboard needs at least one owner whose account has already been created" });
       case "forbidden":
         return res.status(403).json({ error: "You do not own this whiteboard" });
       default:

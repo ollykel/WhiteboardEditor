@@ -134,9 +134,9 @@ const ShareWhiteboardForm = ({
   };
 
   return (
-    <div className="w-200 p-0 m-4 flex flex-col flex-shrink">
+    <div className="w-200 p-0 m-4 mt-0 flex flex-col flex-shrink">
       <form onSubmit={handleSubmit}>
-        <h2 className="text-center text-2xl font-bold m-2">Control access to this whiteboard</h2>
+        <h2 className="text-center text-2xl font-bold m-2">Update User Permissions</h2>
 
         <div className="flex flex-col flex-shrink p-4">
           <h3 className="text-lg font-semibold">
@@ -217,7 +217,7 @@ const ShareWhiteboardForm = ({
             type="submit"
             className="w-1/2"
           >
-            Update Shared Users
+            Update User Permissions
           </Button>
         </div>
       </form>

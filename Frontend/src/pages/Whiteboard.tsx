@@ -18,6 +18,11 @@ import {
 } from 'react-redux';
 
 // -- third-party imports
+
+import {
+  type AxiosError,
+} from 'axios';
+
 import {
   useQuery,
   useQueryClient
@@ -26,6 +31,11 @@ import {
 import { X } from 'lucide-react';
 
 import Konva from 'konva';
+
+import {
+  Bounce,
+  toast,
+} from 'react-toastify';
 
 // -- local types
 import {
@@ -176,7 +186,7 @@ const Whiteboard = () => {
   const {
     socketRef,
     setWhiteboardId,
-    sharedUsers,
+    userPermissions,
     ownPermission,
     currentTool,
     setCurrentTool,
@@ -758,17 +768,19 @@ const Whiteboard = () => {
             {/** Modal that opens to share the whiteboard **/}
             <ShareModal zIndex={20}>
               <div className="flex flex-col">
-                <button
-                  onClick={closeShareModal}
-                  className="flex flex-row justify-end hover:cursor-pointer"
+                <div
+                  className="flex flex-row justify-end"
                 >
-                  <X />
-                </button>
-      
-                <h2 className="text-md font-bold text-center">Share Whiteboard</h2>
+                  <button
+                    onClick={closeShareModal}
+                    className="hover:cursor-pointer"
+                  >
+                    <X />
+                  </button>
+                </div>
       
                 <ShareWhiteboardForm
-                  initUserPermissions={sharedUsers || []}
+                  initUserPermissions={userPermissions || []}
                   onSubmit={async (data: ShareWhiteboardFormData) => {
                     try {
                       const {
@@ -791,25 +803,66 @@ const Whiteboard = () => {
                           return perm;
                         }
                       });
+
+                      // -- make sure we have at least one owner
+                      if (! userPermissionsFinal.find(perm => perm.permission === 'own')) {
+                        // -- display popup alert
+                        toast.error('Whiteboard must have at least one owner.', {
+                          position: "bottom-center",
+                          hideProgressBar: true,
+                          closeOnClick: true,
+                          pauseOnHover: true,
+                          draggable: true,
+                          progress: undefined,
+                          theme: "colored",
+                          transition: Bounce,
+                        });
+
+                        return;
+                      }
       
                       // No need for AxiosResp<..> type check, as response body
                       // isn't used.
-                      const res = await api.post(`/whiteboards/${whiteboardId}/shared_users`, ({
+                      await api.post(`/whiteboards/${whiteboardId}/user_permissions`, ({
                         userPermissions: userPermissionsFinal
                       }));
-      
-                      if (res.status >= 400) {
-                        console.error('POST /whiteboards/:id/shared_users failed:', res.data);
-                        alert(`Share request failed: ${JSON.stringify(res.data)}`);
-                      } else {
-                        console.log('Share request submitted successfully');
-                        alert('Share request submitted successfully');
-                        queryClient.invalidateQueries({
-                          queryKey: whiteboardKey
-                        });
-                      }
-                    } finally {
+
+                      console.log('User permissions update submitted successfully');
+
+                      // -- display popup alert
+                      toast.success('User permissions updated successfully', {
+                        position: "bottom-center",
+                        autoClose: 5000,
+                        hideProgressBar: false,
+                        closeOnClick: true,
+                        pauseOnHover: true,
+                        draggable: true,
+                        progress: undefined,
+                        theme: "colored",
+                        transition: Bounce,
+                      });
+
+                      queryClient.invalidateQueries({
+                        queryKey: whiteboardKey
+                      });
+
                       closeShareModal();
+                    } catch (err: unknown) {
+                        const axiosErr = err as AxiosError<{ error: string; }>;
+
+                        console.error('POST /whiteboards/:id/user_permissions failed:', axiosErr);
+
+                        // -- display popup alert
+                        toast.error(`Share request failed: ${axiosErr.response?.data.error}`, {
+                          position: "bottom-center",
+                          hideProgressBar: true,
+                          closeOnClick: true,
+                          pauseOnHover: true,
+                          draggable: true,
+                          progress: undefined,
+                          theme: "colored",
+                          transition: Bounce,
+                        });
                     }
                   }}
                 />
@@ -881,21 +934,21 @@ const WrappedWhiteboard = () => {
   console.log("Current whiteboard data:", whiteboardData);
   console.log("Loading status:", isWhiteboardDataLoading);
 
-  // update the state of sharedUsers whenever whiteboardData changes
-  const [sharedUsers, setSharedUsers] = useState<APIWhiteboard['shared_users']>([]);
-  console.log("Current shared users:", sharedUsers);
+  // update the state of userPermissions whenever whiteboardData changes
+  const [userPermissions, setSharedUsers] = useState<APIWhiteboard['user_permissions']>([]);
+  console.log("Current shared users:", userPermissions);
 
   // -- view/edit/own - determines which actions to enable or disable
   const [ownPermission, setOwnPermission] = useState<UserPermissionEnum | null>(null);
 
   useEffect(() => {
     if (whiteboardData && user) {
-      const newOwnPermission = whiteboardData.shared_users
+      const newOwnPermission = whiteboardData.user_permissions
         .find(
           (perm: UserPermission) => perm.type === 'user' && perm.user.id === user.id
         ) || null;
 
-      setSharedUsers(whiteboardData.shared_users);
+      setSharedUsers(whiteboardData.user_permissions);
       
       if (newOwnPermission) {
         setOwnPermission(newOwnPermission.permission);
@@ -988,7 +1041,7 @@ const WrappedWhiteboard = () => {
       setCurrentTool={setCurrentTool}
       whiteboardId={whiteboardId}
       setWhiteboardId={setWhiteboardId}
-      sharedUsers={sharedUsers}
+      userPermissions={userPermissions}
       setSharedUsers={setSharedUsers}
       newCanvasAllowedUsers={newCanvasAllowedUsers}
       setNewCanvasAllowedUsers={setNewCanvasAllowedUsers}

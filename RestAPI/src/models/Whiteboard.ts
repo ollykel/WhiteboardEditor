@@ -361,11 +361,10 @@ const whiteboardUserPermissionSchema = new Schema<IWhiteboardUserPermission <Typ
 export interface IWhiteboardModel <UserType, CanvasType> {
   name: string;
   time_created: Date;
-  owner: IUser;             // reference to User
   root_canvas: CanvasType;
 
   // -- vector fields: exclude from attribute view
-  shared_users: IWhiteboardUserPermission<UserType>[];
+  user_permissions: IWhiteboardUserPermission<UserType>[];
 }
 
 export type IWhiteboard <UserType, CanvasType> =
@@ -385,10 +384,9 @@ const WHITEBOARD_VECTOR_FIELDS = [
 ];
 
 const WHITEBOARD_POP_FIELDS_ATTRIBS = [
-  'owner',
   'root_canvas',
   {
-    path: 'shared_users',
+    path: 'user_permissions',
     populate: [
       'user',
     ],
@@ -419,9 +417,8 @@ const whiteboardSchema = new Schema<IWhiteboard<Types.ObjectId, Types.ObjectId>,
   {
     name: { type: String, required: true },
     time_created: { type: Date, default: Date.now },
-    owner: { type: Schema.Types.ObjectId, ref: "User", required: true },
     root_canvas: { type: Schema.Types.ObjectId, ref: "Canvas", required: true },
-    shared_users: [whiteboardUserPermissionSchema],
+    user_permissions: [whiteboardUserPermissionSchema],
   },
   {
     toObject: {
@@ -449,16 +446,14 @@ const whiteboardSchema = new Schema<IWhiteboard<Types.ObjectId, Types.ObjectId>,
         const obj = this.toObject({ virtuals: true });
         const {
           _id,
-          owner: _owner,
-          shared_users: _shared_users,
+          user_permissions: _user_permissions,
           ...fields
         } = obj;
 
         return ({
           ...fields,
-          owner: this.owner.toPublicView(),
-          shared_users: (this as unknown as IWhiteboard <IUser, ICanvas<IUser>>)
-            .shared_users
+          user_permissions: (this as unknown as IWhiteboard <IUser, ICanvas<IUser>>)
+            .user_permissions
             .map(perm => perm.toPublicView()),
         });
       },
@@ -466,16 +461,14 @@ const whiteboardSchema = new Schema<IWhiteboard<Types.ObjectId, Types.ObjectId>,
         const obj = this.toObject({ virtuals: true });
         const {
           _id,
-          owner: _owner,
-          shared_users: _shared_users,
+          user_permissions: _user_permissions,
           ...fields
         } = obj;
 
         return ({
           ...fields,
-          owner: this.owner.toAttribView(),
-          shared_users: (this as unknown as IWhiteboard <IUser, ICanvas<IUser>>)
-            .shared_users
+          user_permissions: (this as unknown as IWhiteboard <IUser, ICanvas<IUser>>)
+            .user_permissions
             .map(perm => perm.toAttribView()),
         });
       }
@@ -493,20 +486,20 @@ const whiteboardSchema = new Schema<IWhiteboard<Types.ObjectId, Types.ObjectId>,
       },
       async findSharedUsersByWhiteboardId(whiteboardId: Types.ObjectId): Promise<IWhiteboardUserPermission<IUser>[] | null> {
         const res : Partial<IWhiteboard <IUser, ICanvas<IUser>>> | null = await this.findById(whiteboardId)
-          .select("shared_users")
+          .select("user_permissions")
           .then(wb => wb?.populateAttribs() || null);
 
-        if ((! res) || (! Array.isArray(res.shared_users))) {
+        if ((! res) || (! Array.isArray(res.user_permissions))) {
           return null;
         } else {
-          return res.shared_users;
+          return res.user_permissions;
         }
       }
     },
   }
 );
 
-const sharedUsersArraySchema = whiteboardSchema.path('shared_users').schema;
+const sharedUsersArraySchema = whiteboardSchema.path('user_permissions').schema;
 
 sharedUsersArraySchema?.discriminator('user', new Schema<IWhiteboardUserPermissionById<Types.ObjectId>>(
   {

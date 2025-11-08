@@ -73,7 +73,7 @@ const AllowedUsersPopover = ({ selected, onChange }: AllowedUsersPopoverProps) =
     isLoading: isWhiteboardLoading,
     isFetching: isWhiteboardFetching,
   } = useQuery<APIWhiteboard>({
-    queryKey: ["whiteboard", whiteboardId, 'shared_users'],
+    queryKey: ["whiteboard", whiteboardId, 'user_permissions'],
     queryFn: async () => {
       const res : AxiosResponse<APIWhiteboard> = await api.get(`/whiteboards/${whiteboardId}`);
 
@@ -98,7 +98,7 @@ const AllowedUsersPopover = ({ selected, onChange }: AllowedUsersPopoverProps) =
     }
   })();
   
-  const sharedUsers = whiteboard?.shared_users ?? [];
+  const userPermissions = whiteboard?.user_permissions ?? [];
 
   const toggleUser = (user: string) => {
     const next = selected.includes(user)
@@ -151,7 +151,7 @@ const AllowedUsersPopover = ({ selected, onChange }: AllowedUsersPopoverProps) =
                   </>
               ),
               'ready': () => (
-                sharedUsers
+                userPermissions
                   .filter((u): u is Extract<UserPermission, { type: "user" }> => u.type === "user")
                   .map((userPerm) => (
                     <CommandItem

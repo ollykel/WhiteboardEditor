@@ -14,7 +14,11 @@ import {
 // -- third-party imports
 
 import {
-  ToastContainer,
+  type AxiosResponse,
+  type AxiosError,
+} from 'axios';
+
+import {
   Bounce,
   toast,
 } from 'react-toastify';
@@ -24,11 +28,6 @@ import AuthContext from '@/context/AuthContext';
 import AuthInput from "@/components/AuthInput";
 import { useUser } from "@/hooks/useUser";
 import api from '@/api/axios';
-
-import {
-  type AxiosResponse,
-  type AxiosError,
-} from 'axios';
 
 import {
   APP_NAME,
@@ -154,94 +153,73 @@ const AuthForm = ({
   }
 
   return (
-    <>
-      {/** Main component content **/}
-      <div className="flex flex-col w-75 sm:w-95 md:w-120">
-        <h1 className="text-2xl font-bold text-center mb-6">
-          {action === "login" ? "Welcome Back!" : `Welcome to ${APP_NAME}!`}
-        </h1>
+    <div className="flex flex-col w-75 sm:w-95 md:w-120">
+      <h1 className="text-2xl font-bold text-center mb-6">
+        {action === "login" ? "Welcome Back!" : `Welcome to ${APP_NAME}!`}
+      </h1>
 
-        {/* Entry Form */}
-        <form
-          onSubmit={handleSubmit}
-          className="space-y-4"
-        >
-          <AuthInput
-            name="Email"
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="you@example.com"
+      {/* Entry Form */}
+      <form
+        onSubmit={handleSubmit}
+        className="space-y-4"
+      >
+        <AuthInput
+          name="Email"
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          placeholder="you@example.com"
+          variant={uiStatus === 'err_user' ? 'error' : 'default'}
+        />
+        {action === "signup" && (
+          <AuthInput 
+            name="Username"
+            type="text"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            placeholder="yourname"
             variant={uiStatus === 'err_user' ? 'error' : 'default'}
           />
-          {action === "signup" && (
-            <AuthInput 
-              name="Username"
-              type="text"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              placeholder="yourname"
-              variant={uiStatus === 'err_user' ? 'error' : 'default'}
-            />
-          )}
+        )}
+        <AuthInput
+          name="Password"
+          type="password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          placeholder="********"
+          variant={uiStatus === 'err_user' ? 'error' : 'default'}
+        />
+        {action === "signup" && (
           <AuthInput
-            name="Password"
+            name="Confirm Password"
             type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
             placeholder="********"
             variant={uiStatus === 'err_user' ? 'error' : 'default'}
           />
-          {action === "signup" && (
-            <AuthInput
-              name="Confirm Password"
-              type="password"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              placeholder="********"
-              variant={uiStatus === 'err_user' ? 'error' : 'default'}
-            />
-          )}
-          <button
-            type="submit"
-            className="w-full font-medium py-2 my-2 rounded-lg bg-gray-100 hover:bg-gray-200 hover:cursor-pointer shadow-md"
-          >
-            {action === "login" ? "Log In" : "Sign Up"}
-          </button>
-        </form>
+        )}
+        <button
+          type="submit"
+          className="w-full font-medium py-2 my-2 rounded-lg bg-gray-100 hover:bg-gray-200 hover:cursor-pointer shadow-md"
+        >
+          {action === "login" ? "Log In" : "Sign Up"}
+        </button>
+      </form>
 
-        {/* Toggle Login/Signup */}
-        <div className="flex justify-center mt-4 pt-6 border-t-1 border-gray-400">
-          <div className="p-2 text-center">
-            {action === "login" ? `New to ${APP_NAME}?` : "Already have an account?"}
-          </div>
-          <button 
-            onClick={handleToggle}
-            className=" font-medium rounded-lg px-4 bg-gray-100 hover:bg-gray-200 hover:cursor-pointer shadow-md"
-          >
-            {action === "login" ? "Create a New Account!" : "Log In"}
-          </button>
+      {/* Toggle Login/Signup */}
+      <div className="flex justify-center mt-4 pt-6 border-t-1 border-gray-400">
+        <div className="p-2 text-center">
+          {action === "login" ? `New to ${APP_NAME}?` : "Already have an account?"}
         </div>
+        <button 
+          onClick={handleToggle}
+          className=" font-medium rounded-lg px-4 bg-gray-100 hover:bg-gray-200 hover:cursor-pointer shadow-md"
+        >
+          {action === "login" ? "Create a New Account!" : "Log In"}
+        </button>
       </div>
-
-      {/** Misc. overlays and modals **/}
-      <>
-        {/** Toast allows us to display styled popup alerts **/}
-        <ToastContainer
-          position="top-right"
-          autoClose={5000}
-          hideProgressBar={false}
-          newestOnTop={false}
-          closeOnClick={false}
-          rtl={false}
-          pauseOnFocusLoss
-          draggable
-          pauseOnHover
-          theme="light"
-          transition={Bounce}
-        />
-      </>
-    </>
+    </div>
   );
 };// -- end AuthForm
 

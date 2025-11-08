@@ -534,15 +534,14 @@ pub type WhiteboardPermissionMongoDBView = WhiteboardPermission;
 // === WhiteboardMetadata =========================================================================
 //
 // Encompasses data about a whiteboard that doesn't pertain to graphic elements that are updated
-// during the process of users editing the whiteboard. This includes the whiteboard's name, owner
-// id, user permissions, etc.
+// during the process of users editing the whiteboard. This includes the whiteboard's name, id,
+// user permissions, etc.
 //
 // ================================================================================================
 #[derive(Clone, Debug)]
 pub struct WhiteboardMetadata {
     pub name: String,
-    pub owner_id: UserIdType,
-    pub shared_users: Vec<WhiteboardPermission>,
+    pub user_permissions: Vec<WhiteboardPermission>,
     // For permissions attached to an existing account, index by user id, to enable faster
     // retrieval when users log in.
     pub permissions_by_user_id: HashMap<String, WhiteboardPermissionEnum>,
@@ -658,19 +657,16 @@ pub enum UserPermission {
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct WhiteboardMetadataMongoDBView {
     pub name: String,
-    #[serde(rename = "owner")]
-    pub owner_id: ObjectId,
-    #[serde(rename = "shared_users")]
-    pub shared_users: Vec<WhiteboardPermissionMongoDBView>,
+    #[serde(rename = "user_permissions")]
+    pub user_permissions: Vec<WhiteboardPermissionMongoDBView>,
 }// -- end struct WhiteboardMetadataMongoDBView
 
 impl WhiteboardMetadataMongoDBView {
     pub fn to_whiteboard_metadata(&self) -> WhiteboardMetadata {
         WhiteboardMetadata {
             name: self.name.clone(),
-            owner_id: self.owner_id.clone(),
-            shared_users: self.shared_users.clone(),
-            permissions_by_user_id: self.shared_users.iter()
+            user_permissions: self.user_permissions.clone(),
+            permissions_by_user_id: self.user_permissions.iter()
                 .map(|wb_perm| match wb_perm.permission_type {
                     WhiteboardPermissionType::User { ref user} => Some((user.to_string(), wb_perm.permission)),
                     _ => None
