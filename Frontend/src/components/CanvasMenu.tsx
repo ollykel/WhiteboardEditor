@@ -68,7 +68,8 @@ import {
 } from '@/store/whiteboards/whiteboardsSelectors';
 
 import {
-  SquarePen
+  ChevronUp,
+  SquarePen,
 } from 'lucide-react';
 import HeaderButton from "./HeaderButton";
 
@@ -200,9 +201,12 @@ const CanvasMenu = ({
           <div className="fixed bottom-6 left-2 shadow-md rounded-lg bg-stone-50">
             <HeaderButton
               title={
-                <span>
-                  Selected Canvas: <strong className="text-lg">{name}</strong>
-                </span>
+                <div className="flex items-center gap-2">
+                  <span>
+                    Selected Canvas: <strong className="text-lg">{name}</strong>
+                  </span>
+                  <ChevronUp size={18}/>
+                </div>
               }
             />
           </div>
