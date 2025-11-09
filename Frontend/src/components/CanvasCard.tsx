@@ -94,6 +94,7 @@ function CanvasCard(props: CanvasCardProps) {
   const {
     selectedCanvasId,
     tooltipText,
+    editingText,
   } = whiteboardContext;
 
   const [selectedCanvasAllowedUsers, setSelectedCanvasAllowedUsers] = useState<User[] | null>(null);
@@ -196,6 +197,9 @@ function CanvasCard(props: CanvasCardProps) {
           />
           <h2>
             {tooltipText}
+          </h2>
+          <h2>
+            {editingText}
           </h2>
         </div>
       )}
