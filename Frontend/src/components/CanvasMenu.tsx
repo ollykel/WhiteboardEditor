@@ -2,21 +2,14 @@
 import { 
   useState,
   useContext,
-  type RefObject,
 } from "react";
 
 // -- third-party imports
-import Konva from 'konva';
-
 import {
   useSelector,
 } from "react-redux";
 
 // -- local imports
-import {
-  KONVA_NODE_UI_ONLY_KEY,
-} from '@/app.config';
-
 import { 
   DropdownMenu, 
   DropdownMenuTrigger, 
@@ -72,6 +65,7 @@ import {
   SquarePen,
 } from 'lucide-react';
 import HeaderButton from "./HeaderButton";
+import { captureImage } from "@/lib/captureImage";
 
 interface CanvasMenuProps {
   name: string;
@@ -147,51 +141,18 @@ const CanvasMenu = ({
   const handleDownload = () => {
     console.log("!! Download clicked");// TODO: remove debug
 
-    const canvasGroupRef : RefObject<Konva.Group | null> | undefined = canvasGroupRefsByIdRef.current[canvasId];
+    const exportUrl = captureImage(canvasGroupRefsByIdRef, canvasId);
 
-    if (! canvasGroupRef?.current) {
-      console.error('Could not find ref to Canvas with id', canvasId);
-      alert('Error exporting Canvas');
-    } else {
-      // -- create a clone of the Canvas group that excludes UI-only elements
-      //    such as borders and tooltips.
-      const exportableCanvas : Konva.Node = canvasGroupRef.current.clone();
+    // -- create a dummy link that the function can "click"
+    const downloadLink : HTMLAnchorElement = document.createElement('a');
+    const fileName = `${whiteboard.name} - ${canvas.name}.png`;
 
-      const isNodeContainer = (node: Konva.Node): node is Konva.Container => node.hasChildren();
+    downloadLink.download = fileName;
+    downloadLink.href = exportUrl;
 
-      const destroyUIOnlyDescendants = (node: Konva.Node) => {
-        if (isNodeContainer(node)) {
-          for (const child of node.getChildren()) {
-            if (child.hasName(KONVA_NODE_UI_ONLY_KEY)) {
-              child.destroy();
-            } else {
-              destroyUIOnlyDescendants(child);
-            }
-          }// -- end for child
-        }
-      };// -- end destroyUIOnlyDescendants
-
-      // -- filter out UI-only nodes
-      destroyUIOnlyDescendants(exportableCanvas);
-
-      const exportUrl : string = exportableCanvas.toDataURL({
-        mimeType: 'image/png',
-      });
-
-      // -- create a dummy link that the function can "click"
-      const downloadLink : HTMLAnchorElement = document.createElement('a');
-      const fileName = `${whiteboard.name} - ${canvas.name}.png`;
-
-      downloadLink.download = fileName;
-      downloadLink.href = exportUrl;
-
-      document.body.appendChild(downloadLink);
-      downloadLink.click();
-      document.body.removeChild(downloadLink);
-
-      // -- destroy temporary exportable canvas node
-      exportableCanvas.destroy();
-    }
+    document.body.appendChild(downloadLink);
+    downloadLink.click();
+    document.body.removeChild(downloadLink);
   };
 
   return (
