@@ -139,7 +139,7 @@ const Canvas = (props: CanvasProps) => {
     selectedCanvasId,
     setSelectedCanvasId,
     canvasGroupRefsByIdRef,
-    setTooltipText,
+    setTooltipText : setWhiteboardTooltipText,
     setEditingText,
   } = whiteboardContext;
 
@@ -330,7 +330,7 @@ const Canvas = (props: CanvasProps) => {
     : getTooltipText();
 
   useEffect(() => {
-    setTooltipText(tooltipText);
+    setWhiteboardTooltipText(tooltipText);
   }, [tooltipText]);
 
   const editingText = currentEditor?.id === user?.id ?
