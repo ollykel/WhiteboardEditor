@@ -33,6 +33,8 @@ function WhiteboardCard({
     }
   };
 
+  const thumbnailSrc = "/images/testThumbnail.png";
+
   return (
     <Link 
       key={id}
@@ -40,7 +42,7 @@ function WhiteboardCard({
       className="flex flex-col justify-center align-items-center m-2 md:m-10 w-80 md:w-100 rounded-xl shadow bg-stone-50 hover:bg-gray-200"
     >
       {/** TODO: replace with actual preview image, with a standard fallback image in /static **/}
-      <img src="/images/Screenshot 2025-08-17 at 1.16.54 PM.png" alt="Whiteboard Thumbnail" />
+      <img src={thumbnailSrc} alt="Whiteboard Thumbnail" />
       <div className="p-5">
         <h1 className=" text-lg font-bold">{name}</h1>
 
