@@ -1,5 +1,6 @@
 import type { AttributeDefinition, AttributeProps } from "@/types/Attribute";
 import type { CanvasObjectIdType, CanvasObjectModel } from "@/types/CanvasObjectModel";
+import AttributeMenuItem from "./AttributeMenuItem";
 
 const StrokeColorComponent = ({
   selectedShapeIds, 
@@ -7,7 +8,6 @@ const StrokeColorComponent = ({
   dispatch, 
   canvasId, 
   value,
-  className,
 }: AttributeProps) => {
   const onChangeStrokeColor = (ev: React.ChangeEvent<HTMLInputElement>) => {
     ev.preventDefault();
@@ -23,14 +23,15 @@ const StrokeColorComponent = ({
  
   return (
     <div>
-      <label>Stroke Color</label>
-      <input
-        name="stroke-color"
-        type="color"
-        value={value}
-        onChange={onChangeStrokeColor}
-        className={className}
-      />
+      <AttributeMenuItem title="Stroke Color">
+        <input
+          name="stroke-color"
+          type="color"
+          value={value}
+          onChange={onChangeStrokeColor}
+          className=""
+        />
+      </AttributeMenuItem>
     </div>
   );
 }

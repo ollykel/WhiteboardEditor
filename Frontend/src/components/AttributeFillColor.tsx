@@ -1,5 +1,6 @@
 import type { AttributeDefinition, AttributeProps } from "@/types/Attribute";
 import type { CanvasObjectIdType, CanvasObjectModel } from "@/types/CanvasObjectModel";
+import AttributeMenuItem from "./AttributeMenuItem";
 
 const FillColorComponent = ({
   selectedShapeIds, 
@@ -7,7 +8,6 @@ const FillColorComponent = ({
   dispatch, 
   canvasId, 
   value,
-  className,
 }: AttributeProps) => {
   const onChangeFillColor = (ev: React.ChangeEvent<HTMLInputElement>) => {
     ev.preventDefault();
@@ -22,16 +22,15 @@ const FillColorComponent = ({
   };
  
   return (
-    <div>
-      <label>Fill Color</label>
+    <AttributeMenuItem title="Fill Color">
       <input
         name="fill-color"
         type="color"
         value={value}
         onChange={onChangeFillColor}
-        className={className}
+        className=""
       />
-    </div>
+    </AttributeMenuItem> 
   );
 }
 

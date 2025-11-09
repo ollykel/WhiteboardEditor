@@ -1,5 +1,7 @@
 import type { AttributeDefinition, AttributeProps } from "@/types/Attribute";
 import type { CanvasObjectIdType, CanvasObjectModel } from "@/types/CanvasObjectModel";
+import AttributeMenuItem from "./AttributeMenuItem";
+import { useEffect, useState } from "react";
 
 const StrokeWidthComponent = ({
   selectedShapeIds, 
@@ -7,34 +9,43 @@ const StrokeWidthComponent = ({
   dispatch, 
   canvasId, 
   value,
-  className,
 }: AttributeProps) => {
+  const [inputValue, setInputValue] = useState(value.toString());
+
+  useEffect(() => {
+    setInputValue(value.toString());
+  }, [value]);
+
   const onChangeStrokeWidth = (ev: React.ChangeEvent<HTMLInputElement>) => {
     ev.preventDefault();
 
-    const widthParsed = parseInt(ev.target.value);
-    const width = isNaN(widthParsed) ? 0 : widthParsed;
-  
-    dispatch({ type: 'SET_STROKE_WIDTH', payload: width });
-  
-    handleUpdateShapes(
-      canvasId,
-      Object.fromEntries(selectedShapeIds.map(id => [id, { strokeWidth: width }])) as Record<CanvasObjectIdType, Partial<CanvasObjectModel>>
-    );  
+    const val = ev.target.value;
+    setInputValue(val);
+
+    const widthParsed = parseFloat(val);  
+    
+    if (!isNaN(widthParsed)) {
+      dispatch({ type: 'SET_STROKE_WIDTH', payload: widthParsed });
+      handleUpdateShapes(
+        canvasId,
+        Object.fromEntries(selectedShapeIds.map(id => [id, { strokeWidth: widthParsed }])) as Record<CanvasObjectIdType, Partial<CanvasObjectModel>>
+      );  
+    }
   };
  
   return (
     <div>
-      <label>Stroke Width</label>
-      <input
-        name="stroke-width"
-        type="number"
-        min={1}
-        step={0.5}
-        value={value}
-        onChange={onChangeStrokeWidth}
-        className={className}
-      />
+      <AttributeMenuItem title="Stroke Width">
+        <input
+          name="stroke-width"
+          type="number"
+          min={1}
+          step={0.5}
+          value={inputValue}
+          onChange={onChangeStrokeWidth}
+          className="w-16 mr-0"
+        />
+      </AttributeMenuItem>
     </div>
   );
 }

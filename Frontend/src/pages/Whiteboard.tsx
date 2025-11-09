@@ -736,17 +736,6 @@ const Whiteboard = () => {
                       </span>
                     </div>
                   )}
-      
-                  {/** Own Client ID **/}
-                  <div>
-                    <span>Your Username: </span> {user?.username}
-                  </div>
-      
-                  {/* Display Active Clients */}
-                  <div>
-                    <span>Active Users: </span>
-                    { Object.values(activeUsers).map(userSummary => userSummary.username).join(', ') }
-                  </div>
                 </div>
       
                 {/* Display Canvases */}
@@ -899,6 +888,8 @@ const WrappedWhiteboard = () => {
   const [selectedShapeIds, setSelectedShapeIds] = useState<CanvasObjectIdType[]>([]);
   const [currentDispatcher, setCurrentDispatcher] = useState<OperationDispatcher | null>(null);
   const [selectedCanvasId, setSelectedCanvasId] = useState<CanvasIdType | null>(null);
+  const [tooltipText, setTooltipText] = useState<string>("");
+  const [editingText, setEditingText] = useState<string>("");
 
   const { data: whiteboardData, isLoading: isWhiteboardDataLoading } = useQuery<APIWhiteboard, string>({
     queryKey: ['whiteboard', whiteboardId],
@@ -1054,6 +1045,10 @@ const WrappedWhiteboard = () => {
       selectedCanvasId={selectedCanvasId}
       setSelectedCanvasId={setSelectedCanvasId}
       canvasGroupRefsByIdRef={canvasGroupRefsByIdRef}
+      tooltipText={tooltipText}
+      setTooltipText={setTooltipText}
+      editingText={editingText}
+      setEditingText={setEditingText}
     >
       <Whiteboard />
     </WhiteboardProvider>

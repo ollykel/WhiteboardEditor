@@ -11,6 +11,7 @@ import {
 import {
   cn,
 } from "@/lib/utils"
+import type { ReactNode } from 'react';
 
 const buttonVariants = cva(
   "px-4 py-2 rounded-lg",
@@ -31,7 +32,7 @@ export interface HeaderButtonProps {
   // If to is present renders a link, if onClick is present renders a button
   to?: string;
   onClick?: () => void;
-  title: string;
+  title: ReactNode;
   disabled?: boolean;
 }
 

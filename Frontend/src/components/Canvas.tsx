@@ -139,6 +139,8 @@ const Canvas = (props: CanvasProps) => {
     selectedCanvasId,
     setSelectedCanvasId,
     canvasGroupRefsByIdRef,
+    setTooltipText : setWhiteboardTooltipText,
+    setEditingText,
   } = whiteboardContext;
 
   const {
@@ -327,6 +329,24 @@ const Canvas = (props: CanvasProps) => {
     'You are in view-only mode'
     : getTooltipText();
 
+  useEffect(() => {
+    setWhiteboardTooltipText(tooltipText);
+  }, [tooltipText]);
+
+  const editingText = currentEditor?.id === user?.id ?
+    'You are currently editing'
+    : `${currentEditor?.username} is currently editing`;
+
+  // Set editingText in context for main canvas
+  useEffect(() => {
+    if (currentEditor && !parentCanvas) {
+      setEditingText(editingText);
+    }
+    else {
+      setEditingText("");
+    }
+  }, [editingText]);
+
   const currCanvasKey : CanvasKeyType = [whiteboardId, id];
   const childCanvasesData : CanvasData[] = childCanvasesByCanvas[currCanvasKey.toString()]
     ?.map((childCanvasKey: CanvasKeyType) => canvasesByKey[childCanvasKey.toString()] || null)
@@ -419,22 +439,10 @@ const Canvas = (props: CanvasProps) => {
           strokeWidth={canvasFrameWidth}
         />
 
-        {/** Tooltip **/}
-        {isCanvasSelected && (
-          <Text
-            text={tooltipText}
-            fontSize={15}
-          />
-        )}
-
         {/** Display current editor, if given **/}
-        {currentEditor && (
+        {currentEditor && parentCanvas && (
           <Text
-            text={
-              currentEditor.id === user?.id ?
-                'You are currently editing'
-                : `${currentEditor.username} is currently editing`
-            }
+            text={editingText}
             fontSize={15}
             fontStyle="italic"
             height={height}

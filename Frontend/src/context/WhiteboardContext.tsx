@@ -51,6 +51,10 @@ export interface WhiteboardContextType {
   setSelectedCanvasId: (id: CanvasIdType | null) => void;
   // -- tracks refs to Canvas groups (Konva Groups serve as frames for each Canvas)
   canvasGroupRefsByIdRef: RefObject<Record<CanvasIdType, RefObject<Konva.Group | null>>>;
+  tooltipText: string;
+  setTooltipText: (text: string) => void;
+  editingText: string;
+  setEditingText: (text: string) => void;
 }
 
 export type WhiteboardProvidersProps = WhiteboardContextType;
@@ -79,6 +83,10 @@ const WhiteboardProvider = (props: PropsWithChildren<WhiteboardProvidersProps>):
     selectedCanvasId,
     setSelectedCanvasId,
     canvasGroupRefsByIdRef,
+    tooltipText,
+    setTooltipText,
+    editingText,
+    setEditingText,
   } = props;
 
   return (
@@ -102,6 +110,10 @@ const WhiteboardProvider = (props: PropsWithChildren<WhiteboardProvidersProps>):
       selectedCanvasId,
       setSelectedCanvasId,
       canvasGroupRefsByIdRef,
+      tooltipText,
+      setTooltipText,
+      editingText,
+      setEditingText,
     }}>
       {children}
     </WhiteboardContext.Provider>

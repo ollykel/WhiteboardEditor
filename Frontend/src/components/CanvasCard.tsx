@@ -92,7 +92,9 @@ function CanvasCard(props: CanvasCardProps) {
   }
 
   const {
-    selectedCanvasId
+    selectedCanvasId,
+    tooltipText,
+    editingText,
   } = whiteboardContext;
 
   const [selectedCanvasAllowedUsers, setSelectedCanvasAllowedUsers] = useState<User[] | null>(null);
@@ -149,26 +151,6 @@ function CanvasCard(props: CanvasCardProps) {
 
   return (
     <div className="flex flex-col">
-      {/* Name selected canvas, if a canvas is selected */}
-      <div
-        className="fixed top-40 left-2 right-0 z-50 min-h-16"
-      >
-        {selectedCanvas && (
-          <>
-            <h2>
-              <strong>Selected Canvas:</strong> {selectedCanvas.name}
-            </h2>
-            <h3>
-              <strong>Allowed Users:</strong> {selectedCanvasAllowedUsers
-                ?.map(user => user.username)
-                .join(', ')
-                ?? 'all'
-              }
-            </h3>
-          </>
-        )}
-      </div>
-
       {/* Konva Canvas */}
       <div 
         className="border border-black"
@@ -201,13 +183,24 @@ function CanvasCard(props: CanvasCardProps) {
         </Stage>
       </div>
 
-      {/* Canvas Menu */}
+      {/* Canvas Menu & Tooltip Text */}
       {selectedCanvasId && (
-        <div className='fixed bottom-0 left-1 z-50'>
+        <div className='fixed bottom-6 left-2 flex justify-between items-end gap-4 w-[95vw] z-50'>
           <CanvasMenu 
+            name={selectedCanvas.name}
             canvasId={selectedCanvasId}
             whiteboardId={whiteboardId}
+            allowedUsernames={selectedCanvasAllowedUsers
+              ?.map(u => u.username)
+              ?? []
+            }
           />
+          <h2>
+            {editingText}
+          </h2>
+          <h2>
+            {tooltipText}
+          </h2>
         </div>
       )}
     </div>
