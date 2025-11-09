@@ -337,7 +337,7 @@ const Canvas = (props: CanvasProps) => {
     'You are currently editing'
     : `${currentEditor?.username} is currently editing`;
 
-  // Set editing text in context for main canvas
+  // Set editingText in context for main canvas
   useEffect(() => {
     if (currentEditor && !parentCanvas) {
       setEditingText(editingText);

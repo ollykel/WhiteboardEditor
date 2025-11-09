@@ -185,7 +185,7 @@ function CanvasCard(props: CanvasCardProps) {
 
       {/* Canvas Menu & Tooltip Text */}
       {selectedCanvasId && (
-        <div className='fixed bottom-6 left-2 flex items-end gap-4 z-50'>
+        <div className='fixed bottom-6 left-2 flex justify-between items-end gap-4 w-[95vw] z-50'>
           <CanvasMenu 
             name={selectedCanvas.name}
             canvasId={selectedCanvasId}
@@ -196,10 +196,10 @@ function CanvasCard(props: CanvasCardProps) {
             }
           />
           <h2>
-            {tooltipText}
+            {editingText}
           </h2>
           <h2>
-            {editingText}
+            {tooltipText}
           </h2>
         </div>
       )}
