@@ -185,7 +185,7 @@ const CreateWhiteboardModal = ({
         <Button
           size="lg"
           onClick={handleOpenModal}
-          className="bg-button-large "
+          className="bg-button-300"
         >
           + New Whiteboard
         </Button>
