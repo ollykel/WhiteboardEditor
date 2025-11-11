@@ -20,7 +20,7 @@ const AuthInput = ({
   placeholder,
   variant = 'default',
 }: AuthInputProps): React.JSX.Element => {
-  const inputCnBase = "w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-gray-500";
+  const inputCnBase = "text-h3-text w-full rounded-lg border-1 border-border px-3 py-2 focus:outline-none focus:ring-2 focus:ring-gray-500";
   let inputCn;
 
   switch (variant) {
@@ -28,7 +28,7 @@ const AuthInput = ({
       inputCn = `${inputCnBase} border-2 border-red-500`;
       break;
     case 'default':
-      inputCn = inputCnBase;
+      inputCn = `${inputCnBase} placeholder-placeholder-text`;
       break;
     default:
       throw new Error(`Unrecognized variant "${variant}"`);
@@ -36,7 +36,7 @@ const AuthInput = ({
 
   return (
     <div className="flex flex-col">
-      <label className="block text-sm font-medium text-gray-700 mb-1">
+      <label className="block text-sm font-medium text-h2-text mb-1">
         {name}
       </label>
       <input
