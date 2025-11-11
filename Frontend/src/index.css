@@ -41,21 +41,24 @@
   --color-sidebar-ring: var(--sidebar-ring);
 
   /* Custom color theme */
-  --color-page-background: #1C1F22;
+  --color-page-background: #121416;
   
   --color-h1-text: #e8eeec;
   --color-h2-text: #e8eeec;
   --color-h3-text: #e8eeec;
   --color-p-text: #e8eeec;
+  --color-placeholder-text: oklch(40% 0.013 250);
   
-  --color-card-background: #49555a;
-  --color-card-button: #114c55;
+  --color-card-background: #090A0B;
+  /* #49555a; */
   
-  --color-bar-background: #49555a;
-  --color-bar-button: #114c55;
+  --color-bar-background: #090A0B;
   
-  /* --color-button-hover:  */
-  --color-button-large: #114C55;
+  --color-button-300: #114C55;
+  --color-button-600: #0a2e33;
+  --color-button-hover: #121416;
+
+  --color-border: oklch(27.8% 0.033 256.848);
 }
 
 :root {
