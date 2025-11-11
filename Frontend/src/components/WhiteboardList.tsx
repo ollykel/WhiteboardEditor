@@ -45,7 +45,7 @@ const WhiteboardList = (props: WhiteboardListProps): React.JSX.Element => {
 
         return (
           <div>
-            <p className="text-lg font-bold text-red m-12">
+            <p className="text-lg text-h3-text font-bold text-red m-12">
               Error: {message}
             </p>
           </div>
@@ -55,7 +55,7 @@ const WhiteboardList = (props: WhiteboardListProps): React.JSX.Element => {
     {
         return (
           <div>
-            <p className="text-lg font-bold m-12 flex space-x-2">
+            <p className="text-lg  text-h3-text font-bold m-12 flex space-x-2">
               <LoaderCircle className='animate-spin'/> 
               <span>Loading...</span>
             </p>
@@ -70,7 +70,7 @@ const WhiteboardList = (props: WhiteboardListProps): React.JSX.Element => {
 
         if (whiteboardsAttribs.length < 1) {
           return (
-            <p className="text-lg font-bold font-arial text-gray-400 italic">
+            <p className="pl-20 pb-10 text-lg font-bold font-arial text-h3-text italic">
               No whiteboards to display
             </p>
           );
