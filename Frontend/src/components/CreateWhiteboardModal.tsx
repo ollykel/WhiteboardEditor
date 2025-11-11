@@ -185,6 +185,7 @@ const CreateWhiteboardModal = ({
         <Button
           size="lg"
           onClick={handleOpenModal}
+          className="bg-button-large "
         >
           + New Whiteboard
         </Button>
@@ -219,7 +220,7 @@ const CreateWhiteboardModal = ({
               </h4>
 
               <div
-                className="flex flex-row align-bottom align-text-bottom w-full"
+                className="flex flex-row align-text-bottom w-full"
               >
                 <Input
                   name="new-email"

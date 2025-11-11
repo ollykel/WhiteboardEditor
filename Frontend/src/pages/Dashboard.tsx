@@ -110,7 +110,7 @@ const Dashboard = (): React.JSX.Element => {
         title={APP_NAME}
       />
 
-      <main>
+      <main className='bg-page-background'>
         <h1 className="text-xl md:text-4xl font-bold text-center m-5">
           Welcome Back, {user?.username}!
         </h1>
