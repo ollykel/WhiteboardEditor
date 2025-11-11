@@ -37,28 +37,28 @@ const UserAuth = ({
         title={authActionLabel}
       />
 
-      <div className="flex flex-col justify-center items-center mb-12">
+      <div className="flex flex-col justify-center items-center pb-12">
         {/** Main branding section **/}
         <div
           id="branding"
           className="text-center mx-16 md:mx-32 lg:mx-56 mt-4 mb-8 md:my-16"
         >
-          <h1 className="text-4xl md:text-8xl font-light mb-2 md:my-8">
+          <h1 className="text-4xl md:text-8xl text-h1-text font-light mb-2 md:my-8">
             {APP_NAME}
           </h1>
 
-          <h2 className="text-2xl md:text-4xl font-thin my-4">
+          <h2 className="text-2xl md:text-4xl text-h2-text font-thin my-4">
             The better web whiteboard
           </h2>
 
-          <p className="text-md md:text-lg font-sans">
+          <p className="text-md md:text-lg text-p-text font-sans">
             Need a place to make quick and easy diagrams to share with your colleagues? Look no further — Boardly is here for you.
             Get started in minutes and share your designs with your peers with a simple email invite.
           </p>
         </div>
 
         {/** Auth portal **/}
-        <div className="rounded-lg shadow-md bg-stone-50 py-5 px-2 sm:p-10">
+        <div className="rounded-lg border-border border-1 shadow-md bg-card-background py-5 px-2 sm:p-10">
           <AuthForm
             initialAction={action}
           />
