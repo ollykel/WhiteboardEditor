@@ -110,8 +110,8 @@ const Dashboard = (): React.JSX.Element => {
         title={APP_NAME}
       />
 
-      <main className='bg-page-background'>
-        <h1 className="text-xl md:text-4xl font-bold text-center m-5">
+      <main>
+        <h1 className="text-xl md:text-4xl text-h1-text text-center m-5">
           Welcome Back, {user?.username}!
         </h1>
 
@@ -121,7 +121,7 @@ const Dashboard = (): React.JSX.Element => {
           />
         </div>
 
-        <h1 className="my-6 m-4 text-2xl font-bold font-mono">
+        <h1 className="my-6 m-4 text-2xl text-h2-text font-bold font-mono">
           Your Whiteboards
         </h1>
         {(() => {
@@ -144,7 +144,7 @@ const Dashboard = (): React.JSX.Element => {
           }
         })()}
 
-        <h1 className="my-6 m-4 text-2xl font-bold font-mono">
+        <h1 className="my-6 m-4 text-2xl text-h2-text font-bold font-mono">
           Shared Whiteboards
         </h1>
         {(() => {

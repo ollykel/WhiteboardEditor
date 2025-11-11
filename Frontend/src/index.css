@@ -41,7 +41,7 @@
   --color-sidebar-ring: var(--sidebar-ring);
 
   /* Custom color theme */
-  --color-page-background: #590302;
+  --color-page-background: #1C1F22;
   
   --color-h1-text: #e8eeec;
   --color-h2-text: #e8eeec;
@@ -55,7 +55,7 @@
   --color-bar-button: #114c55;
   
   /* --color-button-hover:  */
-  --color-button-large: #fe9d0b;
+  --color-button-large: #114C55;
 }
 
 :root {
