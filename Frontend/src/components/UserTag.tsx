@@ -91,7 +91,7 @@ export type UserTagProps =
 ;
 
 const userTagVariants = cva(
-  "inline-block align-middle rounded-2xl bg-gray-200 border-gray-600 font-semibold",
+  "text-h3-text inline-block align-middle rounded-2xl bg-button-300 border-1 border-border font-semibold",
   {
     variants: {
       role: {
