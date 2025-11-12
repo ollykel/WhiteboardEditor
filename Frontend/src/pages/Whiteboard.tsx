@@ -10,7 +10,8 @@ import {
 } from 'react';
 
 import {
-  useParams
+  useParams,
+  Link,
 } from 'react-router-dom';
 
 import {
@@ -36,6 +37,10 @@ import {
   Bounce,
   toast,
 } from 'react-toastify';
+
+import {
+  type AxiosResponse as AxiosResp,
+} from 'axios';
 
 // -- local types
 import {
@@ -89,10 +94,6 @@ import AuthContext from '@/context/AuthContext';
 
 import api from '@/api/axios';
 
-import {
-  type AxiosResponse as AxiosResp,
-} from 'axios';
-
 import { useModal } from '@/components/Modal';
 
 import Page from '@/components/Page';
@@ -145,7 +146,7 @@ import { type OperationDispatcher } from '@/types/OperationDispatcher';
 type ComponentStatus = 
   | { status: 'ready'; }
   | { status: 'pending'; }
-  | { status: 'error'; error: string; }
+  | { status: 'error'; error: AxiosError; }
 ;
 
 const getWebSocketUri = (wid: WhiteboardIdType): string => {
@@ -213,7 +214,7 @@ const Whiteboard = () => {
       );
 
       if (axiosResponseIsError(res)) {
-        throw new Error(res.data.message || 'whiteboard request failed');
+        throw res;
       } else {
         // success
         return res.data;
@@ -228,7 +229,16 @@ const Whiteboard = () => {
     () => {
       if (whiteboardError) {
         console.error('Error fetching whiteboard', whiteboardId, ':', whiteboardError);
-        alert(`Error fetching whiteboard: ${whiteboardError}`);
+        toast.error(`Error fetching whiteboard: ${whiteboardError}`, {
+          position: "bottom-center",
+          hideProgressBar: true,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          theme: "colored",
+          transition: Bounce,
+        });
       }
     }, [whiteboardError, whiteboardId]
   );
@@ -554,10 +564,10 @@ const Whiteboard = () => {
   // -- derived state
   let status : ComponentStatus;
 
-  if (isWhiteboardLoading || isWhiteboardFetching || (! currWhiteboard) || (! socketRef.current)) {
-    status = { status: 'pending' };
-  } else if (whiteboardError) {
+  if (whiteboardError) {
     status = { status: 'error', error: whiteboardError };
+  } else if (isWhiteboardLoading || isWhiteboardFetching || (! currWhiteboard) || (! socketRef.current)) {
+    status = { status: 'pending' };
   } else {
     status = { status: 'ready' };
   }
@@ -595,23 +605,57 @@ const Whiteboard = () => {
           error,
         } = status;
 
-        return (
-          <Page
-            title="Error Loading Whiteboard"
-          >
-            <main>
-              {/* Header */}
-              <HeaderAuthed 
-                title="Error Loading Whiteboard"
-                zIndex={10}
-              />
+        switch (error.status) {
+          case 403:
+          case 404:
+            // -- indicate that the given resource either doesn't exist or can't
+            // be accessed
+            return (
+              <Page
+                title="Whiteboard Not Found"
+              >
+                <main>
+                  {/* Header */}
+                  <HeaderAuthed 
+                    title="Not Found"
+                    zIndex={10}
+                  />
 
-              <p className="text-xl font-semibold font-red">
-                Error: {error}
-              </p>
-            </main>
-          </Page>
-        );
+                  <div className="flex flex-col items-center gap-8 w-full px-16">
+                    <p className="text-center text-3xl font-normal">
+                      Either the requested whiteboard doesn't exist or you don't have permission to access it.
+                    </p>
+
+                    <Link
+                      to="/dashboard"
+                      className="w-64 rounded-md bg-blue-400 text-center text-xl"
+                    >
+                      Back to Dashboard
+                    </Link>
+                  </div>
+                </main>
+              </Page>
+            );
+          default:
+            // -- generic error message
+            return (
+              <Page
+                title="Error Loading Whiteboard"
+              >
+                <main>
+                  {/* Header */}
+                  <HeaderAuthed 
+                    title="Error Loading Whiteboard"
+                    zIndex={10}
+                  />
+
+                  <p className="text-xl font-semibold font-red">
+                    Error: {error.toString()}
+                  </p>
+                </main>
+              </Page>
+            );
+        }// -- end switch error.status
     }
     case 'ready':
     {
