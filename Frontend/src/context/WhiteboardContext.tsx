@@ -35,7 +35,6 @@ export interface WhiteboardContextType {
   currentTool: ToolChoice;
   setCurrentTool: React.Dispatch<React.SetStateAction<ToolChoice>>;
   whiteboardId: WhiteboardIdType;
-  setWhiteboardId: React.Dispatch<React.SetStateAction<WhiteboardIdType>>;
   userPermissions: UserPermission[];
   setSharedUsers: React.Dispatch<React.SetStateAction<UserPermission[]>>;
   newCanvasAllowedUsers: string[];
@@ -68,7 +67,6 @@ const WhiteboardProvider = (props: PropsWithChildren<WhiteboardProvidersProps>):
     currentTool,
     setCurrentTool,
     whiteboardId,
-    setWhiteboardId,
     children,
     userPermissions,
     setSharedUsers,
@@ -96,7 +94,6 @@ const WhiteboardProvider = (props: PropsWithChildren<WhiteboardProvidersProps>):
       currentTool,
       setCurrentTool,
       whiteboardId,
-      setWhiteboardId,
       userPermissions,
       setSharedUsers,
       newCanvasAllowedUsers,
