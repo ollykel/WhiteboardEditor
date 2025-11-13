@@ -85,29 +85,6 @@ export const selectCanvasObjectById = (
   return canvasObject;
 };
 
-export const selectCanvasIdForShape = (
-  state: RootState,
-  whiteboardId: WhiteboardIdType,
-  objectId: CanvasObjectIdType
-): CanvasIdType | null => {
-  // Iterate through all canvases in the whiteboard
-  const canvasKeys = state.canvasesByWhiteboard[whiteboardId] ?? [];
-
-  for (const canvasKey of canvasKeys) {
-    const canvasObjectKeys = state.canvasObjectsByCanvas[canvasKey.toString()] ?? [];
-
-    for (const objectKey of canvasObjectKeys) {
-      const [_wbId, canvasId, objId] = objectKey;
-
-      if (objId === objectId) {
-        return canvasId;
-      }
-    }
-  }
-
-  return null;
-};
-
 export const getShapeType = (
   state: RootState,
   whiteboardId: string,

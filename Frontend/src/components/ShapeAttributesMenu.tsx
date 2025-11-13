@@ -1,5 +1,9 @@
-import { useContext } from 'react';
-import { useSelector } from 'react-redux';
+import {
+  useContext,
+} from 'react';
+import {
+  useSelector,
+} from 'react-redux';
 
 import {
   type Dispatch,
@@ -9,12 +13,22 @@ import {
 import WhiteboardContext from '@/context/WhiteboardContext';
 import type {
   ShapeAttributesState,
-  ShapeAttributesAction
+  ShapeAttributesAction,
 } from '@/reducers/shapeAttributesReducer';
-import { getShapeType, selectCanvasIdForShape, selectCanvasObjectById } from '@/store/canvasObjects/canvasObjectsSelectors';
-import type { RootState } from '@/store';
-import { getAttributesByShape, type AttributeDefinition } from '@/types/Attribute';
-import type { CanvasObjectModel } from '@/types/CanvasObjectModel';
+import {
+  getShapeType,
+  selectCanvasObjectById,
+} from '@/store/canvasObjects/canvasObjectsSelectors';
+import type {
+  RootState,
+} from '@/store';
+import {
+  getAttributesByShape,
+  type AttributeDefinition,
+} from '@/types/Attribute';
+import type {
+  CanvasObjectModel,
+} from '@/types/CanvasObjectModel';
 
 export interface ShapeAttributesMenuProps {
   attributes: ShapeAttributesState;
@@ -42,25 +56,19 @@ const ShapeAttributesMenu = (props: ShapeAttributesMenuProps) => {
   // TODO: Change this for multiple select, right now only handles one shape
   const firstShapeId = selectedShapeIds[0];
 
-  let canvasId = useSelector((state: RootState) => 
-    firstShapeId ? selectCanvasIdForShape(state, whiteboardId, firstShapeId): undefined
-  );
   const shapeType = useSelector((state: RootState) => 
-    canvasId && firstShapeId ? getShapeType(state, whiteboardId, canvasId, firstShapeId) : undefined
+    selectedCanvasId && firstShapeId ? getShapeType(state, whiteboardId, selectedCanvasId, firstShapeId) : undefined
   );
   const firstShape = useSelector((state: RootState) =>
-    firstShapeId && canvasId
-      ? selectCanvasObjectById(state, whiteboardId, canvasId, firstShapeId)
+    firstShapeId && selectedCanvasId
+      ? selectCanvasObjectById(state, whiteboardId, selectedCanvasId, firstShapeId)
       : undefined
   );
 
   if (currentTool === 'create_canvas') return null;
 
-  if (!canvasId) {
-    if (!selectedCanvasId) {
-      return null;
-    }
-    canvasId = selectedCanvasId;
+  if (! selectedCanvasId) {
+    return null;
   }
   
   let AttributeComponents: AttributeDefinition[];
@@ -91,7 +99,7 @@ const ShapeAttributesMenu = (props: ShapeAttributesMenuProps) => {
             selectedShapeIds={selectedShapeIds}
             handleUpdateShapes={handleUpdateShapes}
             dispatch={dispatch}
-            canvasId={canvasId}
+            canvasId={selectedCanvasId}
             value={firstShape ? firstShape[key as keyof CanvasObjectModel] : attributes[key]}
             className="rounded-lg border-gray-50"
           />
