@@ -185,7 +185,7 @@ const CreateWhiteboardModal = ({
         <Button
           size="lg"
           onClick={handleOpenModal}
-          className="bg-button-300"
+          className="bg-header-button-background border-1 border-border hover:text-header-button-text-hover"
         >
           + New Whiteboard
         </Button>

@@ -61,7 +61,7 @@ function Toolbar({ toolChoice, onToolChange }: ToolbarProps) {
   );
 
   return (
-    <div className="max-w-40 flex flex-col flex-shrink-0 text-center p-2 rounded-lg shadow-md backdrop-blur-md bg-bar-background/80 border-1 border-border">
+    <div className="max-w-40 flex flex-col flex-shrink-0 text-center p-2 rounded-lg shadow-2xl backdrop-blur-md bg-bar-background/80 border-1 border-border">
       <h2 className="text-md text-h1-text font-bold mb-1">Tools</h2>
       {tools.map((tool) => renderToolChoice(tool))}
 
