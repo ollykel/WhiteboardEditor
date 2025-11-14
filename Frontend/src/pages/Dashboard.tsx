@@ -144,7 +144,7 @@ const Dashboard = (): React.JSX.Element => {
           }
         })()}
 
-        <h1 className="pt-12 mb-8 mx-24 text-center lg:text-left lg:pl-36 text-2xl text-h2-text font-bold font-mono border-t-1 border-border">
+        <h1 className="pt-12 my-8 mx-24 text-center lg:text-left lg:pl-36 text-2xl text-h2-text font-bold font-mono border-t-1 border-border">
           Shared Whiteboards
         </h1>
         {(() => {
