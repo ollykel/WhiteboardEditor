@@ -59,7 +59,7 @@
   --color-h3-text: var(--h3-text);
   --color-p-text: var(--p-text);
   --color-placeholder-text: var(--placeholder-text);
-
+  --color-dark-text: var(--dark-text);
   
   --color-button-300: var(--button-background);
   --color-button-600: var(--button-background);
