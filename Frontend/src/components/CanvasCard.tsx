@@ -195,10 +195,10 @@ function CanvasCard(props: CanvasCardProps) {
               ?? []
             }
           />
-          <h2>
+          <h2 className='text-dark-text'>
             {editingText}
           </h2>
-          <h2>
+          <h2 className='text-dark-text'>
             {tooltipText}
           </h2>
         </div>
