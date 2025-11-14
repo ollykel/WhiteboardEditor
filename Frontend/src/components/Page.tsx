@@ -27,7 +27,7 @@ const Page = ({
   );
 
   return (
-    <div className='bg-page-background'>
+    <div>
       {children}
     </div>
   );
