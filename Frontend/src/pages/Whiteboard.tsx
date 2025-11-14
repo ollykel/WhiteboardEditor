@@ -28,7 +28,7 @@ import {
   useQueryClient
 } from '@tanstack/react-query';
 
-import { X } from 'lucide-react';
+import { ChevronDown, X } from 'lucide-react';
 
 import Konva from 'konva';
 
@@ -141,6 +141,7 @@ import { useUser } from '@/hooks/useUser';
 import { setAllowedUsersByCanvas } from '@/store/allowedUsers/allowedUsersByCanvasSlice';
 import { setActiveUser } from '@/controllers/activeUsers';
 import { type OperationDispatcher } from '@/types/OperationDispatcher';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuLabel, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 
 type ComponentStatus = 
   | { status: 'ready'; }
@@ -674,6 +675,26 @@ const Whiteboard = () => {
       );
       
       const pageTitle = `${title} | ${APP_NAME}`;
+
+      const ActiveUsersHeaderDropdown = () => (
+        // TODO: Abstract out a generic dropdown menu
+        // Active Users
+        <DropdownMenu key="active-users">
+          <DropdownMenuTrigger className="bg-header-button-background text-header-button-text group flex items-center gap-1 px-4 py-2 rounded-lg hover:cursor-pointer hover:text-header-button-text-hover whitespace-nowrap">
+            Active Users
+            <ChevronDown className="w-4 h-4 transition-transform duration-300 group-data-[state=open]:rotate-180"/>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent>
+            <div className="flex flex-col bg-dropdown-background">
+              {Object.values(activeUsers).map((u) => (
+                <DropdownMenuLabel key={u.clientId}>
+                  {u.username}
+                </DropdownMenuLabel>
+              ))}
+            </div>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      );
       
       return (
         <Page
@@ -685,7 +706,10 @@ const Whiteboard = () => {
               title={title}
               zIndex={10}
               toolbarElemsLeft={[
-                <ShareWhiteboardButton />
+                <ShareWhiteboardButton />,
+              ]}
+              toolbarElemsRight={[
+                <ActiveUsersHeaderDropdown />,
               ]}
               noMarginTop={true}
             />
