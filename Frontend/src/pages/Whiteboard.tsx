@@ -79,7 +79,7 @@ import {
 } from '@/store/whiteboards/whiteboardsSelectors';
 
 import {
-  selectCanvasesWithObjectsByWhiteboardId
+  selectCanvasesWithObjectsByWhiteboardId,
 } from '@/store/canvases/canvasesSelectors';
 
 import {
@@ -132,7 +132,6 @@ import type {
   ClientMessageCreateCanvas,
   CanvasData,
   CanvasIdType,
-  CanvasKeyType,
   WhiteboardIdType,
   WhiteboardAttribs,
   UserSummary,
@@ -259,7 +258,7 @@ const Whiteboard = ({
     return selectCanvasesWithObjectsByWhiteboardId(state, whiteboardId)
   });
 
-  const childCanvasesByCanvas : Record<string, CanvasKeyType[]> = useSelector(
+  const childCanvasesByCanvas : Record<CanvasIdType, CanvasIdType[]> = useSelector(
     (state: RootState) => state['childCanvasesByCanvas']
   );
 
@@ -345,7 +344,7 @@ const Whiteboard = ({
                 ...prev,
                 [canvasId]: activeUsers[clientId].userId,
               }));
-              setCanvasObjects(dispatch, whiteboardIdRef.current, canvasId, shapes);
+              setCanvasObjects(dispatch, canvasId, shapes);
 
               const oldCurrentEditorTimeoutId = currentEditorTimeoutsByCanvasRef.current[canvasId];
 
@@ -378,7 +377,7 @@ const Whiteboard = ({
                 ...prev,
                 [canvasId]: activeUsers[clientId].userId,
               }));
-              setCanvasObjects(dispatch, whiteboardIdRef.current, canvasId, shapes);
+              setCanvasObjects(dispatch, canvasId, shapes);
 
               const oldCurrentEditorTimeoutId = currentEditorTimeoutsByCanvasRef.current[canvasId];
 
@@ -411,17 +410,15 @@ const Whiteboard = ({
               const { canvasIds } = msg;
 
               for (const canvasId of canvasIds) {
-                deleteCanvas(dispatch, whiteboardIdRef.current, canvasId);
+                deleteCanvas(dispatch, canvasId);
               }// end for (const canvasId of canvasIds)
             }
             break;
           case 'update_canvas_allowed_users': 
           {
             const { canvasId, allowedUsers } = msg;
-            const canvasKey: CanvasKeyType = [whiteboardIdRef.current, canvasId];
-            const canvasKeyString = canvasKey.toString();
 
-            dispatch(setAllowedUsersByCanvas({ [canvasKeyString]: allowedUsers }));
+            dispatch(setAllowedUsersByCanvas({ [canvasId]: allowedUsers }));
           }
           break;
           case 'individual_error':
@@ -645,11 +642,8 @@ const Whiteboard = ({
     }
     case 'ready':
     {
-      const canvasesByKey : Record<string, CanvasData> = Object.fromEntries(canvases.map(
-        canvasData => [
-          [whiteboardId, canvasData.id].toString(),
-          canvasData
-        ]
+      const canvasesById : Record<CanvasIdType, CanvasData> = Object.fromEntries(canvases.map(
+        canvasData => [ canvasData.id, canvasData ]
       ));
       
       const rootCanvasId = currWhiteboard.rootCanvas;
@@ -775,7 +769,7 @@ const Whiteboard = ({
                     rootCanvasId={rootCanvasId}
                     shapeAttributes={shapeAttributesState}
                     currentTool={currentTool}
-                    canvasesByKey={canvasesByKey}
+                    canvasesById={canvasesById}
                     childCanvasesByCanvas={childCanvasesByCanvas}
                     currentEditorByCanvas={currentEditorByCanvas}
                     onSelectCanvasDimensions={handleCreateCanvasDimensions}
@@ -1020,8 +1014,6 @@ const WrappedWhiteboard = () => {
       const changedObjects: Record<CanvasObjectIdType, CanvasObjectModel> = {};
 
       for (const [objId, objUpdate] of Object.entries(shapes)) {
-        console.log("updated shape: ", objId, " : ", objUpdate);
-
         const existingShape = canvasObjects[objId];
         if (!existingShape) continue;
 

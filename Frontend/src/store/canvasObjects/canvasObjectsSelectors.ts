@@ -5,34 +5,28 @@ import type {
 import type {
   WhiteboardIdType,
   CanvasIdType,
-  CanvasKeyType
 } from '@/types/WebSocketProtocol';
 
 import type {
   CanvasObjectIdType,
-  CanvasObjectKeyType,
   CanvasObjectModel
 } from '@/types/CanvasObjectModel';
 
 export const selectCanvasObjectsByCanvas = (
   state: RootState,
-  whiteboardId: WhiteboardIdType,
   canvasId: CanvasIdType
 ): Record<CanvasObjectIdType, CanvasObjectModel> | null => {
-  const canvasKey: CanvasKeyType = [whiteboardId, canvasId];
-  const objectsIds: CanvasObjectKeyType[] | null = state.canvasObjectsByCanvas[canvasKey.toString()] || null;
+  const objectsIds: CanvasObjectIdType[] | null = state.canvasObjectsByCanvas[canvasId] || null;
 
   if (! objectsIds) {
     return null;
   } else {
-    return Object.fromEntries(objectsIds.map((objectKey: CanvasObjectKeyType) => {
-      const canvasObject = state.canvasObjects[objectKey.toString()] || null;
+    return Object.fromEntries(objectsIds.map((objectId: CanvasObjectIdType) => {
+      const canvasObject = state.canvasObjects[objectId] || null;
 
       if (! canvasObject) {
         return null;
       } else {
-        const [_whiteboardId, _canvasId, objectId] = objectKey;
-
         return [objectId, canvasObject];
       }
     }).filter(entry => !!entry));
@@ -43,28 +37,26 @@ export const selectCanvasObjectsByWhiteboard = (
   state: RootState,
   whiteboardId: WhiteboardIdType
 ): Record<CanvasIdType, Record<CanvasObjectIdType, CanvasObjectModel>> => {
-  const canvasKeys: CanvasKeyType[] | null = state.canvasesByWhiteboard[whiteboardId] || null;
+  const canvasIds: CanvasIdType[] | null = state.canvasesByWhiteboard[whiteboardId] || null;
 
-  if (! canvasKeys) {
+  if (! canvasIds) {
     return {};
   } else {
-    return Object.fromEntries(canvasKeys.map((canvasKey: CanvasKeyType) => {
-      const [_whiteboardId, canvasId] = canvasKey;
-      const objectKeys = state.canvasObjectsByCanvas[canvasKey.toString()] || null;
+    return Object.fromEntries(canvasIds.map((canvasId: CanvasIdType) => {
+      const objectIds = state.canvasObjectsByCanvas[canvasId] || null;
 
-      if (! objectKeys) {
+      if (! objectIds) {
         return null;
       } else {
         return [
           canvasId,
-          Object.fromEntries(objectKeys.map(objKey => {
-            const [_whiteboardId, _canvasId, objectId] = objKey;
-            const objModel = state.canvasObjects[objKey.toString()];
+          Object.fromEntries(objectIds.map(objId => {
+            const objModel = state.canvasObjects[objId];
 
             if (! objModel) {
               return null;
             } else {
-              return [objectId, objModel];
+              return [objId, objModel];
             }
           }).filter(entry => !!entry))
         ];
@@ -75,23 +67,17 @@ export const selectCanvasObjectsByWhiteboard = (
 
 export const selectCanvasObjectById = (
   state: RootState,
-  whiteboardId: WhiteboardIdType,
-  canvasId: CanvasIdType,
-  objectId: CanvasObjectIdType
+  objectId: CanvasObjectIdType,
 ): CanvasObjectModel | null => {
-  const key: CanvasObjectKeyType = [whiteboardId, canvasId, objectId];
-  const canvasObject: CanvasObjectModel | null = state.canvasObjects[key.toString()] || null;
+  const canvasObject: CanvasObjectModel | null = state.canvasObjects[objectId] || null;
 
   return canvasObject;
 };
 
 export const getShapeType = (
   state: RootState,
-  whiteboardId: string,
-  canvasId: string,
   shapeId: CanvasObjectIdType,
 ): CanvasObjectModel['type'] | undefined => {
-  const key: CanvasObjectKeyType = [whiteboardId, canvasId, shapeId];
-  const shape = state.canvasObjects[key.toString()];
+  const shape = state.canvasObjects[shapeId];
   return shape?.type;
 }

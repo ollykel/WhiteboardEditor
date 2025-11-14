@@ -5,7 +5,6 @@ import type {
 import type {
   WhiteboardIdType,
   CanvasIdType,
-  CanvasKeyType,
   CanvasData
 } from '@/types/WebSocketProtocol';
 
@@ -49,15 +48,13 @@ export const addCanvas = (
     canvasObjects,
     canvasObjectsByCanvas,
     allowedUsersByCanvas
-  } = normalizeCanvas(whiteboardId, canvas);
-
-  const canvasKey : CanvasKeyType = [whiteboardId, canvas.id];
+  } = normalizeCanvas(canvas);
 
   if (canvas.parentCanvas) {
-    const parentCanvasKey = [whiteboardId, canvas.parentCanvas.canvasId];
+    const parentCanvasId = canvas.parentCanvas.canvasId;
 
     dispatch(addChildCanvasesByCanvas({
-      [parentCanvasKey.toString()]: [canvasKey],
+      [parentCanvasId]: [canvas.id],
     }));
   }
 
@@ -66,17 +63,14 @@ export const addCanvas = (
   dispatch(setObjectsByCanvas(canvasObjectsByCanvas));
   dispatch(setAllowedUsersByCanvas(allowedUsersByCanvas));
   dispatch(addCanvasesByWhiteboard({
-    [whiteboardId]: [canvasKey]
+    [whiteboardId]: [canvas.id]
   }));
 };
 
 export const deleteCanvas = (
   dispatch: AppDispatch,
-  whiteboardId: WhiteboardIdType,
   canvasId: CanvasIdType
 ) => {
-  const canvasKey: CanvasKeyType = [whiteboardId, canvasId];
-
-  dispatch(removeCanvases([canvasKey]));
-  dispatch(removeCanvasesByWhiteboard([canvasKey]));
+  dispatch(removeCanvases([canvasId]));
+  dispatch(removeCanvasesByWhiteboard([canvasId]));
 };

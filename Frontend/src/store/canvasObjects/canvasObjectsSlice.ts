@@ -1,31 +1,31 @@
 import {
   createSlice,
-  type PayloadAction
+  type PayloadAction,
 } from '@reduxjs/toolkit'
 
 // -- local imports
 import type {
-  CanvasObjectKeyType,
-  CanvasObjectModel
+  CanvasObjectIdType,
+  CanvasObjectModel,
 } from '@/types/CanvasObjectModel';
 
 const canvasObjectsSlice = createSlice({
   name: 'canvasObjects',
   // Will store data in a <whiteboard_id, canvas_id, object_id> => CanvasObjectModel format
-  initialState: {} as Record<string, CanvasObjectModel>,
+  initialState: {} as Record<CanvasObjectIdType, CanvasObjectModel>,
   reducers: {
-    setCanvasObjects(state, action: PayloadAction<Record<string, CanvasObjectModel>>) {
+    setCanvasObjects(state, action: PayloadAction<Record<CanvasObjectIdType, CanvasObjectModel>>) {
 
       return ({
         ...state,
         ...action.payload
       });
     },
-    removeCanvasObjects(state, action: PayloadAction<CanvasObjectKeyType[]>) {
+    removeCanvasObjects(state, action: PayloadAction<CanvasObjectIdType[]>) {
       const out = { ...state };
 
       for (const id of action.payload) {
-        delete out[id.toString()];
+        delete out[id];
       }
 
       return out;

@@ -5,57 +5,55 @@ import {
 
 // -- local imports
 import type {
-  CanvasKeyType
+  CanvasIdType
 } from '@/types/WebSocketProtocol';
 
 import type {
-  CanvasObjectKeyType
+  CanvasObjectIdType
 } from '@/types/CanvasObjectModel';
 
-// In reality, the string represents a CanvasKeyType
-export type CanvasObjectsByCanvasState = Record<string, CanvasObjectKeyType[]>;
+export type CanvasObjectsByCanvasState = Record<CanvasIdType, CanvasObjectIdType[]>;
 
 const canvasObjectsByCanvasSlice = createSlice({
   name: 'canvasObjectsByCanvas',
-  // Will store data in a <whiteboard_id, canvas_id, object_id> => CanvasObjectModel[] format
   initialState: {} as CanvasObjectsByCanvasState,
   reducers: {
-    setObjectsByCanvas(state, action: PayloadAction<Record<string, CanvasObjectKeyType[]>>) {
+    setObjectsByCanvas(state, action: PayloadAction<Record<CanvasIdType, CanvasObjectIdType[]>>) {
       return {
         ...state,
         ...action.payload
       };
     },
-    addObjectsByCanvas(state, action: PayloadAction<Record<string, CanvasObjectKeyType[]>>) {
+    addObjectsByCanvas(state, action: PayloadAction<Record<CanvasIdType, CanvasObjectIdType[]>>) {
       const out = { ...state };
 
-      Object.entries(action.payload).forEach(([key, records]) => {
-        if (key.toString() in state) {
-          const objectKeySet : Record<string, CanvasObjectKeyType> = {};
+      Object.entries(action.payload).forEach(([canvasId, records]) => {
+        if (canvasId in state) {
+          const objectIdSet : Record<CanvasObjectIdType, CanvasObjectIdType> = {};
 
-          // add existing keys to set
-          state[key.toString()]?.forEach(objKey => {
-            objectKeySet[objKey.toString()] = objKey;
+          // add existing canvasIds to set
+          state[canvasId]?.forEach(objId => {
+            objectIdSet[objId] = objId;
           });
 
-          // add new keys to set
-          records.forEach(objKey => {
-            objectKeySet[objKey.toString()] = objKey;
+          // add new canvasIds to set
+          records.forEach(objId => {
+            objectIdSet[objId] = objId;
           });
 
-          out[key] = Object.values(objectKeySet);
+          out[canvasId] = Object.values(objectIdSet);
         } else {
-          out[key] = [...records];
+          out[canvasId] = [...records];
         }
       });
 
       return out;
     },
-    removeObjectsByCanvas(state, action: PayloadAction<CanvasKeyType[]>) {
+    removeObjectsByCanvas(state, action: PayloadAction<CanvasIdType[]>) {
       const out = { ...state };
 
       for (const id of action.payload) {
-        delete out[id.toString()];
+        delete out[id];
       }
 
       return out;
@@ -64,7 +62,7 @@ const canvasObjectsByCanvasSlice = createSlice({
   selectors: {
     // Entire state is mapping of object ids to objects
     // Objects redundantly store their ids
-    selectObjectsByCanvas: (state, canvasId: CanvasKeyType) => state[canvasId.toString()]
+    selectObjectsByCanvas: (state, canvasId: CanvasIdType) => state[canvasId]
   }
 });
 

@@ -47,7 +47,6 @@ const ShapeAttributesMenu = (props: ShapeAttributesMenuProps) => {
   const {
     selectedShapeIds,
     handleUpdateShapes,
-    whiteboardId,
     currentTool,
     currentDispatcher,
     selectedCanvasId,
@@ -57,11 +56,11 @@ const ShapeAttributesMenu = (props: ShapeAttributesMenuProps) => {
   const firstShapeId = selectedShapeIds[0];
 
   const shapeType = useSelector((state: RootState) => 
-    selectedCanvasId && firstShapeId ? getShapeType(state, whiteboardId, selectedCanvasId, firstShapeId) : undefined
+    selectedCanvasId && firstShapeId ? getShapeType(state, firstShapeId) : undefined
   );
   const firstShape = useSelector((state: RootState) =>
     firstShapeId && selectedCanvasId
-      ? selectCanvasObjectById(state, whiteboardId, selectedCanvasId, firstShapeId)
+      ? selectCanvasObjectById(state, firstShapeId)
       : undefined
   );
 
