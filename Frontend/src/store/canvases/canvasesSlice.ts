@@ -5,25 +5,23 @@ import {
 
 // -- local imports
 import type {
-  CanvasKeyType,
+  CanvasIdType,
   CanvasAttribs
 } from '@/types/WebSocketProtocol';
 
 const canvasesSlice = createSlice({
   name: 'canvases',
-  initialState: {} as Record<string, CanvasAttribs>,
+  initialState: {} as Record<CanvasIdType, CanvasAttribs>,
   reducers: {
-    setCanvases(state, action: PayloadAction<Record<string, CanvasAttribs>>) {
+    setCanvases(state, action: PayloadAction<Record<CanvasIdType, CanvasAttribs>>) {
       return ({
         ...state,
         ...action.payload
       });
     },
-    removeCanvases(state, action: PayloadAction<CanvasKeyType[]>) {
-      for (const canvasKey of action.payload) {
-        delete state[canvasKey.toString()];
-        console.log("canvasKey: ", canvasKey);
-        console.log("canvasKey string: ", canvasKey.toString());
+    removeCanvases(state, action: PayloadAction<CanvasIdType[]>) {
+      for (const canvasId of action.payload) {
+        delete state[canvasId];
       }
     }
   },
