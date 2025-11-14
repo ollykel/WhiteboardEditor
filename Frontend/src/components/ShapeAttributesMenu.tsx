@@ -84,8 +84,8 @@ const ShapeAttributesMenu = (props: ShapeAttributesMenuProps) => {
   }
 
   return (
-    <div className="flex flex-col flex-shrink-0 text-center p-4 pr-2 rounded-lg shadow-md bg-stone-50">
-      <h2 className="text-md font-bold mb-1">Edit Attributes</h2>
+    <div className="flex flex-col flex-shrink-0 text-center p-4 pr-2 rounded-lg shadow-2xl backdrop-blur-md bg-bar-background/80 border-1 border-border">
+      <h2 className="text-md text-h1-text font-bold mb-1">Edit Attributes</h2>
       <form
         className="flex flex-col gap-1"
         onSubmit={(ev: React.FormEvent<HTMLFormElement>) => {
@@ -100,7 +100,7 @@ const ShapeAttributesMenu = (props: ShapeAttributesMenuProps) => {
             dispatch={dispatch}
             canvasId={selectedCanvasId}
             value={firstShape ? firstShape[key as keyof CanvasObjectModel] : attributes[key]}
-            className="rounded-lg border-gray-50"
+            className="rounded-lg border-border"
           />
         ))}
       </form>

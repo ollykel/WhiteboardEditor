@@ -217,7 +217,7 @@ export default function AccountSettings() {
           </div>
 
           {/* Danger Zone */}
-          <div className="border border-red-300 bg-red-50 rounded-lg p-6">
+          <div className="border border-red-300 rounded-lg p-6">
             <h2 className="text-lg font-semibold text-red-600 mb-4">Danger Zone</h2>
             <form
               onSubmit={(e) => {

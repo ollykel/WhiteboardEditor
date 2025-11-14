@@ -154,7 +154,7 @@ const AuthForm = ({
 
   return (
     <div className="flex flex-col w-75 sm:w-95 md:w-120">
-      <h1 className="text-2xl font-bold text-center mb-6">
+      <h1 className="text-2xl text-h1-text font-bold text-center mb-6">
         {action === "login" ? "Welcome Back!" : `Welcome to ${APP_NAME}!`}
       </h1>
 
@@ -201,20 +201,20 @@ const AuthForm = ({
         )}
         <button
           type="submit"
-          className="w-full font-medium py-2 my-2 rounded-lg bg-gray-100 hover:bg-gray-200 hover:cursor-pointer shadow-md"
+          className="w-full font-medium text-h2-text py-2 my-2 rounded-lg border-border border-1 bg-button-300 hover:bg-button-hover hover:cursor-pointer shadow-md"
         >
           {action === "login" ? "Log In" : "Sign Up"}
         </button>
       </form>
 
       {/* Toggle Login/Signup */}
-      <div className="flex justify-center mt-4 pt-6 border-t-1 border-gray-400">
-        <div className="p-2 text-center">
+      <div className="flex justify-center mt-4 pt-6 border-t-1 border-border">
+        <div className="text-h2-text p-2 text-center">
           {action === "login" ? `New to ${APP_NAME}?` : "Already have an account?"}
         </div>
         <button 
           onClick={handleToggle}
-          className=" font-medium rounded-lg px-4 bg-gray-100 hover:bg-gray-200 hover:cursor-pointer shadow-md"
+          className="text-h2-text font-medium rounded-lg border-border border-1 px-4 bg-button-600 hover:bg-button-hover hover:cursor-pointer shadow-md"
         >
           {action === "login" ? "Create a New Account!" : "Log In"}
         </button>
