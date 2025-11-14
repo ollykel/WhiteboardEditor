@@ -18,7 +18,7 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default: "hover:cursor-pointer hover:bg-gray-200",
+        default: "bg-header-button-background text-header-button-text hover:cursor-pointer hover:text-header-button-text-hover",
         disabled: "bg-gray-200 text-gray-400"
       },
     },
