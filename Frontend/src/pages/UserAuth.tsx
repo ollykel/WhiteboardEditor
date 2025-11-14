@@ -41,7 +41,7 @@ const UserAuth = ({
         {/** Main branding section **/}
         <div
           id="branding"
-          className="text-center mx-16 md:mx-32 lg:mx-56 mt-4 mb-8 md:my-16"
+          className="text-center mx-16 md:mx-32 lg:mx-56 mt-4 mb-8 md:mb-12"
         >
           <h1 className="text-4xl md:text-8xl text-h1-text font-light mb-2 md:my-8">
             {APP_NAME}
