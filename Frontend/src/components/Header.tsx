@@ -46,13 +46,13 @@ const Header = ({
         <div className="relative flex items-center justify-between"> 
 
           {/* Hamburger Menu */}
-          <NavigationMenu className="md:hidden">
+          <NavigationMenu className="flex md:hidden">
             <NavigationMenuList>
               <NavigationMenuItem>
-                <NavigationMenuTrigger>
+                <NavigationMenuTrigger className="bg-header-button-background text-header-button-text hover:cursor-pointer hover:bg-header-button-background hover:text-header-button-text-hover">
                   <TextAlignJustify />
                 </NavigationMenuTrigger>
-                <NavigationMenuContent>
+                <NavigationMenuContent className="bg-dropdown-background">
                   <div className="flex flex-col">
                     {toolbarElemsLeft.map((elem, idx) => (
                       <NavigationMenuLink asChild key={idx}>
@@ -76,7 +76,7 @@ const Header = ({
           </div>
 
           {/* Title */}
-          <h1 className="flex-1 min-w-0 text-lg md:text-2xl text-h1-text font-bold truncate text-center">
+          <h1 className="flex-1 min-w-0 text-lg md:text-2xl text-header-title-text font-bold truncate text-center">
             {title}
           </h1>
           
