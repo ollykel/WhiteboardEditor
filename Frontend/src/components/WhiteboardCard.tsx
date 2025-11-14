@@ -37,7 +37,7 @@ function WhiteboardCard({
     <Link 
       key={id}
       to={`/whiteboard/${id}`}
-      className="flex flex-col justify-center align-items-center m-2 md:m-10 w-80 md:w-100 rounded-xl border-1 border-border shadow bg-card-background hover:bg-button-hover"
+      className="flex flex-col justify-center align-items-center m-2 md:m-8 w-80 rounded-xl border-1 border-border shadow-2xl bg-card-background hover:bg-button-hover"
     >
       {/** TODO: replace with actual preview image, with a standard fallback image in /static **/}
       <img
