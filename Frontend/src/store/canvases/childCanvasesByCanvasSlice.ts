@@ -11,26 +11,25 @@ import {
 
 // -- local imports
 import {
-  type CanvasKeyType
+  type CanvasIdType,
 } from '@/types/WebSocketProtocol';
 
 const childCanvasesByCanvasSlice = createSlice({
   name: 'childCanvasesByCanvasSlice',
-  // Will store data in a <canvas_key> => CanvasKeyType[] format
-  initialState: {} as Record<string, CanvasKeyType[]>,
+  initialState: {} as Record<CanvasIdType, CanvasIdType[]>,
   reducers: {
-    setChildCanvasesByCanvas(state, action: PayloadAction<Record<string, CanvasKeyType[]>>) {
+    setChildCanvasesByCanvas(state, action: PayloadAction<Record<string, CanvasIdType[]>>) {
       return {
         ...state,
         ...action.payload
       };
     },
-    addChildCanvasesByCanvas(state, action: PayloadAction<Record<string, CanvasKeyType[]>>) {
+    addChildCanvasesByCanvas(state, action: PayloadAction<Record<string, CanvasIdType[]>>) {
       const out = { ...state };
 
       Object.entries(action.payload).forEach(([key, records]) => {
         if (key.toString() in state) {
-          const canvasKeySet : Record<string, CanvasKeyType> = {};
+          const canvasKeySet : Record<string, CanvasIdType> = {};
 
           // add existing keys to set
           state[key.toString()]?.forEach(canvasKey => {
@@ -50,7 +49,7 @@ const childCanvasesByCanvasSlice = createSlice({
 
       return out;
     },
-    removeCanvases(state, action: PayloadAction<CanvasKeyType[]>) {
+    removeCanvases(state, action: PayloadAction<CanvasIdType[]>) {
       const canvasIdSet = Object.fromEntries(action.payload.map(key => [
         key.toString(), true
       ]));
@@ -61,7 +60,7 @@ const childCanvasesByCanvasSlice = createSlice({
   selectors: {
     // Entire state is mapping of object ids to objects
     // Canvases redundantly store their ids
-    selectChildCanvasesByCanvas: (state, canvasKey: CanvasKeyType) => state[canvasKey.toString()]
+    selectChildCanvasesByCanvas: (state, canvasKey: CanvasIdType) => state[canvasKey.toString()]
   }
 });
 

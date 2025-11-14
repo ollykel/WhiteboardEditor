@@ -100,8 +100,12 @@ export const getWhiteboardById = async (whiteboardId: string): Promise<GetWhiteb
 
 export const getWhiteboardsByOwner = async (ownerId: Types.ObjectId): Promise<IWhiteboardAttribView[]> => {
   const query = {
-    'user_permissions.user': ownerId,
-    'user_permissions.permission': 'own',
+    user_permissions: {
+      '$elemMatch': {
+        user: ownerId,
+        permission: 'own',
+      },
+    },
   };
 
   return await Whiteboard.findAttribs(query) as IWhiteboardAttribView[];

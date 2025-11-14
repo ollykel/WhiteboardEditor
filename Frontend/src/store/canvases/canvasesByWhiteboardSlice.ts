@@ -6,46 +6,45 @@ import {
 // -- local imports
 import type {
   WhiteboardIdType,
-  CanvasKeyType
+  CanvasIdType,
 } from '@/types/WebSocketProtocol';
 
 const canvasesByWhiteboardSlice = createSlice({
   name: 'canvasesByWhiteboard',
-  // Will store data in a <whiteboard_id> => CanvasKeyType[] format
-  initialState: {} as Record<string, CanvasKeyType[]>,
+  initialState: {} as Record<WhiteboardIdType, CanvasIdType[]>,
   reducers: {
-    setCanvasesByWhiteboard(state, action: PayloadAction<Record<string, CanvasKeyType[]>>) {
+    setCanvasesByWhiteboard(state, action: PayloadAction<Record<WhiteboardIdType, CanvasIdType[]>>) {
       return {
         ...state,
         ...action.payload
       };
     },
-    addCanvasesByWhiteboard(state, action: PayloadAction<Record<string, CanvasKeyType[]>>) {
+    addCanvasesByWhiteboard(state, action: PayloadAction<Record<WhiteboardIdType, CanvasIdType[]>>) {
       const out = { ...state };
 
-      Object.entries(action.payload).forEach(([key, records]) => {
-        if (key.toString() in state) {
-          const canvasKeySet : Record<string, CanvasKeyType> = {};
+      Object.entries(action.payload).forEach(([whiteboardId, records]) => {
+        if (whiteboardId in state) {
+          const canvasIdSet : Record<CanvasIdType, CanvasIdType> = {};
 
-          // add existing keys to set
-          state[key.toString()]?.forEach(canvasKey => {
-            canvasKeySet[canvasKey.toString()] = canvasKey;
+          // add existing whiteboardIds to set
+          state[whiteboardId]?.forEach(canvasId => {
+            canvasIdSet[canvasId] = canvasId;
           });
 
-          // add new keys to set
-          records.forEach(canvasKey => {
-            canvasKeySet[canvasKey.toString()] = canvasKey;
+          // add new whiteboardIds to set
+          records.forEach(canvasId => {
+            canvasIdSet[canvasId] = canvasId;
           });
 
-          out[key.toString()] = Object.values(canvasKeySet);
+          out[whiteboardId] = Object.values(canvasIdSet);
         } else {
-          out[key.toString()] = [...records];
+          out[whiteboardId] = [...records];
         }
       });
 
       return out;
     },
-    removeCanvasesByWhiteboard(state, action: PayloadAction<CanvasKeyType[]>) {
+    removeCanvasesByWhiteboard(state, action: PayloadAction<CanvasIdType[]>) {
       for (const [whiteboardId, canvasId] of action.payload) {
         state[whiteboardId] = (state[whiteboardId] ?? []).filter(
           ([wbId, cId]) => !(wbId === whiteboardId && cId === canvasId)
@@ -56,7 +55,7 @@ const canvasesByWhiteboardSlice = createSlice({
   selectors: {
     // Entire state is mapping of object ids to objects
     // Canvases redundantly store their ids
-    selectCanvasesByWhiteboard: (state, canvasId: WhiteboardIdType) => state[canvasId.toString()]
+    selectCanvasesByWhiteboard: (state, canvasId: WhiteboardIdType) => state[canvasId]
   }
 });
 

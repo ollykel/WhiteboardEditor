@@ -19,10 +19,13 @@ import api from '@/api/axios';
 
 import {
   type AxiosResponse,
+  type AxiosError,
 } from 'axios';
 
-import type {
-  Whiteboard,
+import {
+  axiosResponseIsError,
+  type Whiteboard,
+  type ErrorResponse,
 } from '@/types/APIProtocol';
 
 import Page from '@/components/Page';
@@ -41,18 +44,22 @@ const Dashboard = (): React.JSX.Element => {
   const pageTitle = `Your Dashboard | ${APP_NAME}`;
   const user: User | null = useUser().user;
 
+  if (! user) {
+    throw new Error('Dashboard page needs authenticated user');
+  }
+
   const {
     isError: isOwnWhiteboardsError,
     isLoading: isOwnWhiteboardsLoading,
     isFetching: isOwnWhiteboardsFetching,
     data: ownWhiteboards,
-  } = useQuery<Whiteboard[]>({
-    queryKey: [user?.id, 'dashboard', 'whiteboards', 'own'],
+  } = useQuery<Whiteboard[], AxiosError<ErrorResponse>>({
+    queryKey: [user.id, 'dashboard', 'whiteboards', 'own'],
     queryFn: async () => {
       const res : AxiosResponse<Whiteboard[]> = await api.get('/whiteboards/own');
 
-      if (res.status >= 400) {
-        throw new Error('Bad API call');
+      if (axiosResponseIsError(res)) {
+        throw res;
       } else {
         return res.data;
       }
@@ -64,22 +71,18 @@ const Dashboard = (): React.JSX.Element => {
     isLoading: isSharedWhiteboardsLoading,
     isFetching: isSharedWhiteboardsFetching,
     data: sharedWhiteboards,
-  } = useQuery<Whiteboard[]>({
-    queryKey: [user?.id, 'dashboard', 'whiteboards', 'shared'],
+  } = useQuery<Whiteboard[], AxiosError<ErrorResponse>>({
+    queryKey: [user.id, 'dashboard', 'whiteboards', 'shared'],
     queryFn: async () => {
       const res : AxiosResponse<Whiteboard[]> = await api.get('/users/me/shared_whiteboards');
 
-      if (res.status >= 400) {
-        throw new Error('Bad API call');
+      if (axiosResponseIsError(res)) {
+        throw res;
       } else {
         return res.data;
       }
     }
   });
-
-  if (! user) {
-    throw new Error('No user found on authenticated page');
-  }
 
   const handleCreateWhiteboard = async (data: CreateWhiteboardFormData) => {
     const res : AxiosResponse<Whiteboard> = await api.post('/whiteboards', data);
@@ -112,7 +115,7 @@ const Dashboard = (): React.JSX.Element => {
 
       <main>
         <h1 className="text-xl md:text-4xl text-h1-text text-center m-5">
-          Welcome Back, {user?.username}!
+          Welcome Back, {user.username}!
         </h1>
 
         <div className='text-center lg:text-left m-4 lg:ml-60 lg:mb-12'>

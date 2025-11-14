@@ -57,7 +57,6 @@ import type {
 } from '@/types/CanvasObjectModel';
 
 import type {
-  CanvasKeyType,
   CanvasIdType,
   CanvasData,
   ClientMessageEditingCanvas,
@@ -93,9 +92,9 @@ export interface CanvasProps extends CanvasData {
   shapeAttributes: ShapeAttributesState;
   currentTool: ToolChoice;
   // -- should be fetched from selector in root calling component
-  childCanvasesByCanvas: Record<string, CanvasKeyType[]>;
+  childCanvasesByCanvas: Record<string, CanvasIdType[]>;
   // -- should be fetched from selector in root calling component
-  canvasesByKey: Record<string, CanvasData>;
+  canvasesById: Record<string, CanvasData>;
   // -- editor identified by user id
   currentEditorByCanvas: Record<string, string>;
   onSelectCanvasDimensions: (canvasId: CanvasIdType, dimensions: NewCanvasDimensions) => void;
@@ -111,7 +110,7 @@ const Canvas = (props: CanvasProps) => {
     shapeAttributes,
     currentTool,
     childCanvasesByCanvas,
-    canvasesByKey,
+    canvasesById,
     currentEditorByCanvas,
     onSelectCanvasDimensions,
   } = props;
@@ -129,7 +128,6 @@ const Canvas = (props: CanvasProps) => {
   }
 
   const {
-    whiteboardId,
     socketRef,
     setCurrentTool,
     handleUpdateShapes,
@@ -151,11 +149,9 @@ const Canvas = (props: CanvasProps) => {
     user,
   } = useUser();
 
-  const canvasKey : CanvasKeyType = [whiteboardId, id];
-
   const allowedUserIds = useSelector(
-    // ['', ''] is effectively a null canvas key
-    (state: RootState) => selectAllowedUsersByCanvas(state, canvasKey || ['', ''])
+    // '' is effectively a null canvas id
+    (state: RootState) => selectAllowedUsersByCanvas(state, id || '')
   );
 
   const currentEditorId : string | null = currentEditorByCanvas[id] || null;
@@ -347,9 +343,8 @@ const Canvas = (props: CanvasProps) => {
     }
   }, [editingText]);
 
-  const currCanvasKey : CanvasKeyType = [whiteboardId, id];
-  const childCanvasesData : CanvasData[] = childCanvasesByCanvas[currCanvasKey.toString()]
-    ?.map((childCanvasKey: CanvasKeyType) => canvasesByKey[childCanvasKey.toString()] || null)
+  const childCanvasesData : CanvasData[] = childCanvasesByCanvas[id]
+    ?.map((childCanvasId: CanvasIdType) => canvasesById[childCanvasId] || null)
     .filter((canvas: CanvasData | null): canvas is CanvasData => !!canvas)
     ?? [];
 

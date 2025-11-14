@@ -55,7 +55,6 @@ import type {
   CanvasIdType, 
   WhiteboardIdType,
   WhiteboardAttribs,
-  CanvasKeyType,
   CanvasAttribs,
 } from "@/types/WebSocketProtocol";
 
@@ -88,7 +87,7 @@ const CanvasMenu = ({
 }: CanvasMenuProps) => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const allowedUsers = useSelector((state: RootState) =>
-    selectAllowedUsersByCanvas(state, [whiteboardId, canvasId])
+    selectAllowedUsersByCanvas(state, canvasId)
   ) ?? [];
   const [selectedUsers, setSelectedUsers] = useState<string[]>(allowedUsers);
 
@@ -111,10 +110,8 @@ const CanvasMenu = ({
     throw new Error(`No whiteboard found with ID whiteboardId`);
   }
 
-  const canvasKey : CanvasKeyType = [whiteboardId, canvasId];
-
   const canvas : CanvasAttribs | null = useSelector((state: RootState) => (
-    selectCanvasById(state, canvasKey)
+    selectCanvasById(state, canvasId)
   ));
 
   if (! canvas) {

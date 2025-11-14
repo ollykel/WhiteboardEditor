@@ -10,7 +10,8 @@ import {
 } from 'react';
 
 import {
-  useParams
+  useParams,
+  Link,
 } from 'react-router-dom';
 
 import {
@@ -36,6 +37,10 @@ import {
   Bounce,
   toast,
 } from 'react-toastify';
+
+import {
+  type AxiosResponse as AxiosResp,
+} from 'axios';
 
 // -- local types
 import {
@@ -74,7 +79,7 @@ import {
 } from '@/store/whiteboards/whiteboardsSelectors';
 
 import {
-  selectCanvasesWithObjectsByWhiteboardId
+  selectCanvasesWithObjectsByWhiteboardId,
 } from '@/store/canvases/canvasesSelectors';
 
 import {
@@ -88,10 +93,6 @@ import WhiteboardContext, {
 import AuthContext from '@/context/AuthContext';
 
 import api from '@/api/axios';
-
-import {
-  type AxiosResponse as AxiosResp,
-} from 'axios';
 
 import { useModal } from '@/components/Modal';
 
@@ -131,7 +132,6 @@ import type {
   ClientMessageCreateCanvas,
   CanvasData,
   CanvasIdType,
-  CanvasKeyType,
   WhiteboardIdType,
   WhiteboardAttribs,
   UserSummary,
@@ -146,8 +146,15 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuLabel, DropdownMenuTrigg
 type ComponentStatus = 
   | { status: 'ready'; }
   | { status: 'pending'; }
-  | { status: 'error'; error: string; }
+  | { status: 'error'; error: AxiosError; }
 ;
+
+type WhiteboardQueryType = ReturnType<typeof useQuery<APIWhiteboard, AxiosError>>;
+
+// -- only for inner whiteboard, not wrapper, which is the default export
+interface WhiteboardProps {
+  query: WhiteboardQueryType;
+}
 
 const getWebSocketUri = (wid: WhiteboardIdType): string => {
     const wsScheme = window.location.protocol === 'https:' ? 'wss' : 'ws';
@@ -156,7 +163,9 @@ const getWebSocketUri = (wid: WhiteboardIdType): string => {
     return wsUri;
 };
 
-const Whiteboard = () => {
+const Whiteboard = ({
+  query,
+}: WhiteboardProps) => {
   // Inputs:
   //  - whiteboard id
   //  - list of canvases
@@ -168,14 +177,6 @@ const Whiteboard = () => {
   const queryClient = useQueryClient();
   const { user } = useUser();
 
-  const {
-    whiteboard_id: whiteboardId
-  } = useParams();
-
-  if (! whiteboardId) {
-    throw new Error('No whiteboard id provided');
-  }
-
   if (! context) {
     throw new Error('No WhiteboardContext provided to Whiteboard');
   }
@@ -186,7 +187,7 @@ const Whiteboard = () => {
 
   const {
     socketRef,
-    setWhiteboardId,
+    whiteboardId,
     userPermissions,
     ownPermission,
     currentTool,
@@ -206,21 +207,7 @@ const Whiteboard = () => {
     isLoading: isWhiteboardLoading,
     isFetching: isWhiteboardFetching,
     error: whiteboardError,
-  } = useQuery<APIWhiteboard, string>({
-    queryKey: whiteboardKey,
-    queryFn: async (): Promise<APIWhiteboard> => {
-      const res : AxiosResp<APIWhiteboard> | AxiosResp<APIErrorResponse> = await api.get(
-        `/whiteboards/${whiteboardId}`
-      );
-
-      if (axiosResponseIsError(res)) {
-        throw new Error(res.data.message || 'whiteboard request failed');
-      } else {
-        // success
-        return res.data;
-      }
-    }
-  });
+  } = query;
   const whiteboardIdRef = useRef<WhiteboardIdType>(whiteboardId);
   const currentEditorTimeoutsByCanvasRef = useRef<Record<CanvasIdType, number>>({});
 
@@ -229,7 +216,16 @@ const Whiteboard = () => {
     () => {
       if (whiteboardError) {
         console.error('Error fetching whiteboard', whiteboardId, ':', whiteboardError);
-        alert(`Error fetching whiteboard: ${whiteboardError}`);
+        toast.error(`Error fetching whiteboard: ${whiteboardError}`, {
+          position: "bottom-center",
+          hideProgressBar: true,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          theme: "colored",
+          transition: Bounce,
+        });
       }
     }, [whiteboardError, whiteboardId]
   );
@@ -263,7 +259,7 @@ const Whiteboard = () => {
     return selectCanvasesWithObjectsByWhiteboardId(state, whiteboardId)
   });
 
-  const childCanvasesByCanvas : Record<string, CanvasKeyType[]> = useSelector(
+  const childCanvasesByCanvas : Record<CanvasIdType, CanvasIdType[]> = useSelector(
     (state: RootState) => state['childCanvasesByCanvas']
   );
 
@@ -287,7 +283,6 @@ const Whiteboard = () => {
 
               const activeUsers: UserSummary[] = Object.values(activeClients);
 
-              setWhiteboardId(whiteboard.id);
               addWhiteboard(dispatch, whiteboard);
               addActiveUser(dispatch, activeUsers);
             }
@@ -350,7 +345,7 @@ const Whiteboard = () => {
                 ...prev,
                 [canvasId]: activeUsers[clientId].userId,
               }));
-              setCanvasObjects(dispatch, whiteboardIdRef.current, canvasId, shapes);
+              setCanvasObjects(dispatch, canvasId, shapes);
 
               const oldCurrentEditorTimeoutId = currentEditorTimeoutsByCanvasRef.current[canvasId];
 
@@ -383,7 +378,7 @@ const Whiteboard = () => {
                 ...prev,
                 [canvasId]: activeUsers[clientId].userId,
               }));
-              setCanvasObjects(dispatch, whiteboardIdRef.current, canvasId, shapes);
+              setCanvasObjects(dispatch, canvasId, shapes);
 
               const oldCurrentEditorTimeoutId = currentEditorTimeoutsByCanvasRef.current[canvasId];
 
@@ -416,17 +411,15 @@ const Whiteboard = () => {
               const { canvasIds } = msg;
 
               for (const canvasId of canvasIds) {
-                deleteCanvas(dispatch, whiteboardIdRef.current, canvasId);
+                deleteCanvas(dispatch, canvasId);
               }// end for (const canvasId of canvasIds)
             }
             break;
           case 'update_canvas_allowed_users': 
           {
             const { canvasId, allowedUsers } = msg;
-            const canvasKey: CanvasKeyType = [whiteboardIdRef.current, canvasId];
-            const canvasKeyString = canvasKey.toString();
 
-            dispatch(setAllowedUsersByCanvas({ [canvasKeyString]: allowedUsers }));
+            dispatch(setAllowedUsersByCanvas({ [canvasId]: allowedUsers }));
           }
           break;
           case 'individual_error':
@@ -481,7 +474,7 @@ const Whiteboard = () => {
         console.log('Failed to parse message:', e);
       }
     },
-    [activeUsers, dispatch, setWhiteboardId]
+    [activeUsers, dispatch]
   );// -- end handleServerMessage
 
   // -- set up web socket connection
@@ -555,10 +548,10 @@ const Whiteboard = () => {
   // -- derived state
   let status : ComponentStatus;
 
-  if (isWhiteboardLoading || isWhiteboardFetching || (! currWhiteboard) || (! socketRef.current)) {
-    status = { status: 'pending' };
-  } else if (whiteboardError) {
+  if (whiteboardError) {
     status = { status: 'error', error: whiteboardError };
+  } else if (isWhiteboardLoading || isWhiteboardFetching || (! currWhiteboard) || (! socketRef.current)) {
+    status = { status: 'pending' };
   } else {
     status = { status: 'ready' };
   }
@@ -596,31 +589,62 @@ const Whiteboard = () => {
           error,
         } = status;
 
-        return (
-          <Page
-            title="Error Loading Whiteboard"
-          >
-            <main>
-              {/* Header */}
-              <HeaderAuthed 
-                title="Error Loading Whiteboard"
-                zIndex={10}
-              />
+        switch (error.status) {
+          case 403:
+          case 404:
+            // -- indicate that the given resource either doesn't exist or can't
+            // be accessed
+            return (
+              <Page
+                title="Whiteboard Not Found"
+              >
+                <main>
+                  {/* Header */}
+                  <HeaderAuthed 
+                    title="Not Found"
+                    zIndex={10}
+                  />
 
-              <p className="text-xl font-semibold font-red">
-                Error: {error}
-              </p>
-            </main>
-          </Page>
-        );
+                  <div className="flex flex-col items-center gap-8 w-full px-16">
+                    <p className="text-center text-3xl font-normal">
+                      Either the requested whiteboard doesn't exist or you don't have permission to access it.
+                    </p>
+
+                    <Link
+                      to="/dashboard"
+                      className="w-64 rounded-md bg-blue-400 text-center text-xl"
+                    >
+                      Back to Dashboard
+                    </Link>
+                  </div>
+                </main>
+              </Page>
+            );
+          default:
+            // -- generic error message
+            return (
+              <Page
+                title="Error Loading Whiteboard"
+              >
+                <main>
+                  {/* Header */}
+                  <HeaderAuthed 
+                    title="Error Loading Whiteboard"
+                    zIndex={10}
+                  />
+
+                  <p className="text-xl font-semibold font-red">
+                    Error: {error.toString()}
+                  </p>
+                </main>
+              </Page>
+            );
+        }// -- end switch error.status
     }
     case 'ready':
     {
-      const canvasesByKey : Record<string, CanvasData> = Object.fromEntries(canvases.map(
-        canvasData => [
-          [whiteboardId, canvasData.id].toString(),
-          canvasData
-        ]
+      const canvasesById : Record<CanvasIdType, CanvasData> = Object.fromEntries(canvases.map(
+        canvasData => [ canvasData.id, canvasData ]
       ));
       
       const rootCanvasId = currWhiteboard.rootCanvas;
@@ -769,7 +793,7 @@ const Whiteboard = () => {
                     rootCanvasId={rootCanvasId}
                     shapeAttributes={shapeAttributesState}
                     currentTool={currentTool}
-                    canvasesByKey={canvasesByKey}
+                    canvasesById={canvasesById}
                     childCanvasesByCanvas={childCanvasesByCanvas}
                     currentEditorByCanvas={currentEditorByCanvas}
                     onSelectCanvasDimensions={handleCreateCanvasDimensions}
@@ -907,36 +931,12 @@ const Whiteboard = () => {
 const WrappedWhiteboard = () => {
   const authContext = useContext(AuthContext);
   const socketRef = useRef<WebSocket | null>(null);
-  const [whiteboardId, setWhiteboardId] = useState<WhiteboardIdType>("");
   const [newCanvasAllowedUsers, setNewCanvasAllowedUsers] = useState<string[]>([]);
   const [selectedShapeIds, setSelectedShapeIds] = useState<CanvasObjectIdType[]>([]);
   const [currentDispatcher, setCurrentDispatcher] = useState<OperationDispatcher | null>(null);
   const [selectedCanvasId, setSelectedCanvasId] = useState<CanvasIdType | null>(null);
   const [tooltipText, setTooltipText] = useState<string>("");
   const [editingText, setEditingText] = useState<string>("");
-
-  const { data: whiteboardData, isLoading: isWhiteboardDataLoading } = useQuery<APIWhiteboard, string>({
-    queryKey: ['whiteboard', whiteboardId],
-    enabled: !!whiteboardId, // Only run query when whiteboardId exists
-    queryFn: async () => {
-      if (! whiteboardId) {
-        throw new Error('No whiteboard ID provided');
-      }
-
-      console.log('Fetching whiteboard data for ID:', whiteboardId);
-
-      const res : AxiosResp<APIWhiteboard> | AxiosResp<APIErrorResponse> = await api.get(
-        `/whiteboards/${whiteboardId}`
-      );
-
-      if (axiosResponseIsError(res)) {
-        throw new Error(res.data.message || 'Failed');
-      } else {
-        console.log('API Response:', res.data);
-        return res.data;
-      }
-    },
-  });
 
   if (! authContext) {
     throw new Error('AuthContext not provided to Whiteboard');
@@ -946,8 +946,52 @@ const WrappedWhiteboard = () => {
     user,
   } = authContext;
 
+  const {
+    whiteboard_id: whiteboardId
+  } = useParams<WhiteboardIdType>();
+
+  if (! whiteboardId) {
+    throw new Error("No whiteboard ID provided to Whiteboard page");
+  }
+
+  const whiteboardKey = ['whiteboard', whiteboardId];
+
+  const query = useQuery<APIWhiteboard, AxiosError>({
+    queryKey: whiteboardKey,
+    queryFn: async (): Promise<APIWhiteboard> => {
+      const res : AxiosResp<APIWhiteboard> | AxiosResp<APIErrorResponse> = await api.get(
+        `/whiteboards/${whiteboardId}`
+      );
+
+      if (axiosResponseIsError(res)) {
+        throw res;
+      } else {
+        // success
+        return res.data;
+      }
+    },
+    retry: (failureCount, error) => {
+      if (failureCount >= 3) {
+        return false;
+      } else {
+        switch (error.status) {
+          case 403:
+          case 404:
+            // -- We can be sure that the whiteboard either doesn't exist or we
+            // don't have permission to access it.
+            return false;
+          default:
+            return true;
+        }// -- end switch error.
+      }
+    },
+  });
+
+  const {
+    data: whiteboardData,
+  } = query;
+
   console.log("Current whiteboard data:", whiteboardData);
-  console.log("Loading status:", isWhiteboardDataLoading);
 
   // update the state of userPermissions whenever whiteboardData changes
   const [userPermissions, setSharedUsers] = useState<APIWhiteboard['user_permissions']>([]);
@@ -994,8 +1038,6 @@ const WrappedWhiteboard = () => {
       const changedObjects: Record<CanvasObjectIdType, CanvasObjectModel> = {};
 
       for (const [objId, objUpdate] of Object.entries(shapes)) {
-        console.log("updated shape: ", objId, " : ", objUpdate);
-
         const existingShape = canvasObjects[objId];
         if (!existingShape) continue;
 
@@ -1055,7 +1097,6 @@ const WrappedWhiteboard = () => {
       currentTool={currentTool}
       setCurrentTool={setCurrentTool}
       whiteboardId={whiteboardId}
-      setWhiteboardId={setWhiteboardId}
       userPermissions={userPermissions}
       setSharedUsers={setSharedUsers}
       newCanvasAllowedUsers={newCanvasAllowedUsers}
@@ -1074,7 +1115,9 @@ const WrappedWhiteboard = () => {
       editingText={editingText}
       setEditingText={setEditingText}
     >
-      <Whiteboard />
+      <Whiteboard
+        query={query}
+      />
     </WhiteboardProvider>
   );
 };// end WrappedWhiteboard

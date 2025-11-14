@@ -7,20 +7,20 @@ import type {
 import type {
   CanvasAttribs,
   CanvasData,
-  CanvasKeyType,
+  CanvasIdType,
   WhiteboardIdType
 } from '@/types/WebSocketProtocol';
 
-export const selectCanvasById = (state: RootState, canvasId: CanvasKeyType): CanvasAttribs | null => (
-  state.canvases[canvasId.toString()] || null
+export const selectCanvasById = (state: RootState, canvasId: CanvasIdType): CanvasAttribs | null => (
+  state.canvases[canvasId] || null
 );
 
 export const selectCanvasesByWhiteboardId = (state: RootState, whiteboardId: WhiteboardIdType): CanvasAttribs[] => (
-  state.canvasesByWhiteboard[whiteboardId]?.map(canvasKey => state.canvases[canvasKey.toString()]) ?? []
+  state.canvasesByWhiteboard[whiteboardId]?.map(canvasId => state.canvases[canvasId]) ?? []
 );
 
-export const selectObjectsForCanvas = (state: RootState, canvasId: CanvasKeyType) => (
-  state.canvasObjectsByCanvas[canvasId.toString()]?.map(id => state.canvasObjects[id.toString()]) ?? []
+export const selectObjectsForCanvas = (state: RootState, canvasId: CanvasIdType) => (
+  state.canvasObjectsByCanvas[canvasId]?.map(id => state.canvasObjects[id]) ?? []
 );
 
 export const selectCanvasWithObjects = createSelector(
@@ -33,28 +33,27 @@ export const selectCanvasesWithObjectsByWhiteboardId = (
   whiteboardId: WhiteboardIdType
 ): CanvasData[] => (
   state.canvasesByWhiteboard[whiteboardId]
-    ?.map((canvasKey: CanvasKeyType) => {
-      const canvas = state.canvases[canvasKey.toString()] || null;
+    ?.map((canvasId: CanvasIdType) => {
+      const canvas = state.canvases[canvasId] || null;
 
       if (! canvas) {
         return null;
       } else {
         return ({
           ...canvas,
-          shapes: Object.fromEntries(state.canvasObjectsByCanvas[canvasKey.toString()]
-            .map(canvasObjectKey => {
-              if (! (canvasObjectKey.toString() in state.canvasObjects)) {
+          shapes: Object.fromEntries(state.canvasObjectsByCanvas[canvasId]
+            .map(canvasObjectId => {
+              if (! (canvasObjectId in state.canvasObjects)) {
                 return null;
               } else {
-                const [_whiteboardId, _canvasId, objId] = canvasObjectKey;
-                const canvasObjectRecord = state.canvasObjects[canvasObjectKey.toString()];
+                const canvasObjectRecord = state.canvasObjects[canvasObjectId];
 
-                return [objId, canvasObjectRecord];
+                return [canvasObjectId, canvasObjectRecord];
               }
             })
             .filter(entry => !!entry)
           ),
-          allowedUsers: state.allowedUsersByCanvas[canvasKey.toString()] || []
+          allowedUsers: state.allowedUsersByCanvas[canvasId] || []
         });
       }
     })

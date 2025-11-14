@@ -5,7 +5,7 @@ import {
 
 // -- local imports
 import type {
-  CanvasKeyType,
+  CanvasIdType,
 } from '@/types/WebSocketProtocol';
 
 const allowedUsersByCanvasSlice = createSlice({
@@ -23,7 +23,7 @@ const allowedUsersByCanvasSlice = createSlice({
       const out = { ...state };
 
       Object.entries(action.payload).forEach(([id, users]) => {
-        if (id.toString() in state) {
+        if (id in state) {
           out[id] = [...state[id], ...users];
         } else {
           out[id] = users;
@@ -32,11 +32,11 @@ const allowedUsersByCanvasSlice = createSlice({
 
       return out;
     },
-    removeAllowedUsersByCanvas(state, action: PayloadAction<CanvasKeyType[]>) {
+    removeAllowedUsersByCanvas(state, action: PayloadAction<CanvasIdType[]>) {
       const out = { ...state };
 
       for (const id of action.payload) {
-        delete out[id.toString()];
+        delete out[id];
       }
 
       return out;
@@ -45,7 +45,7 @@ const allowedUsersByCanvasSlice = createSlice({
   selectors: {
     // Entire state is mapping of object ids to objects
     // Objects redundantly store their ids
-    selectAllowedUsersByCanvas: (state, canvasId: CanvasKeyType) => state[canvasId.toString()]
+    selectAllowedUsersByCanvas: (state, canvasId: CanvasIdType) => state[canvasId]
   }
 });
 
