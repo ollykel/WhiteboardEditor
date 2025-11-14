@@ -8,20 +8,20 @@
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
-  --color-background: var(--background);
+  --color-background: var(--page-background); /* Controls the overall page background */
   --color-foreground: var(--foreground);
   --color-card: var(--card);
   --color-card-foreground: var(--card-foreground);
-  --color-popover: var(--popover);
-  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--dropdown-background); /* Controls the background of shadcn popovers */
+  --color-popover-foreground: var(--h3-text); /* Controls the text of shadcn popovers */
   --color-primary: var(--primary);
   --color-primary-foreground: var(--primary-foreground);
   --color-secondary: var(--secondary);
   --color-secondary-foreground: var(--secondary-foreground);
   --color-muted: var(--muted);
   --color-muted-foreground: var(--muted-foreground);
-  --color-accent: var(--accent);
-  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--dropdown-background);
+  --color-accent-foreground: var(--button-text-hover);
   --color-destructive: var(--destructive);
   --color-border: var(--border);
   --color-input: var(--input);
@@ -69,20 +69,21 @@
 
 :root {
   --radius: 0.625rem;
-  --background: #142537; /* Controls the overall page background */
-  --foreground: oklch(0.145 0 0);
+  /* --background: #142537;  */
+  /* tools text */
+  --foreground: oklch(60.849% 0.23996 28.37);
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
+  /* --popover: #111820;  */
+  --popover-foreground: oklch(59.134% 0.23576 28.595);
   --primary: oklch(0.205 0 0);
   --primary-foreground: oklch(0.985 0 0);
   --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
+  --secondary-foreground: oklch(60.159% 0.24156 28.746);
   --muted: oklch(0.97 0 0);
   --muted-foreground: oklch(0.556 0 0);
-  --accent: #142537;
-  --accent-foreground: oklch(0.205 0 0);
+  --accent: #0f7aed;
+  --accent-foreground: oklch(59.419% 0.24097 28.96);
   --destructive: oklch(0.577 0.245 27.325);
   --border: oklch(0.922 0 0);
   --input: oklch(0.922 0 0);
@@ -93,11 +94,11 @@
   --chart-4: oklch(0.828 0.189 84.429);
   --chart-5: oklch(0.769 0.188 70.08);
   --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
+  --sidebar-foreground: oklch(58.687% 0.22683 27.973);
+  --sidebar-primary: oklch(59.464% 0.24052 28.902);
   --sidebar-primary-foreground: oklch(0.985 0 0);
   --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
+  --sidebar-accent-foreground: oklch(56.04% 0.21543 27.87);
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
 
@@ -114,9 +115,9 @@
   --button-text-hover: #ffffff;
   
   --h1-text: #d4faee;
-  --h2-text: #e8eeec;
-  --h3-text: #e8eeec;
-  --p-text: #e8eeec;
+  --h2-text: #b3b6b9;
+  --h3-text: #b3b6b9;
+  --p-text: #b3b6b9;
   --placeholder-text: oklch(40% 0.013 250);
 
   --dropdown-background: #111820;

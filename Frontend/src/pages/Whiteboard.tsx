@@ -680,12 +680,12 @@ const Whiteboard = () => {
         // TODO: Abstract out a generic dropdown menu
         // Active Users
         <DropdownMenu key="active-users">
-          <DropdownMenuTrigger className="bg-header-button-background text-header-button-text group flex items-center gap-1 px-4 py-2 rounded-lg hover:cursor-pointer hover:text-header-button-text-hover whitespace-nowrap">
+          <DropdownMenuTrigger className="text-header-button-text group flex items-center gap-1 px-4 py-2 rounded-lg hover:cursor-pointer hover:text-header-button-text-hover whitespace-nowrap">
             Active Users
             <ChevronDown className="w-4 h-4 transition-transform duration-300 group-data-[state=open]:rotate-180"/>
           </DropdownMenuTrigger>
           <DropdownMenuContent>
-            <div className="flex flex-col bg-dropdown-background">
+            <div className="flex flex-col">
               {Object.values(activeUsers).map((u) => (
                 <DropdownMenuLabel key={u.clientId}>
                   {u.username}
