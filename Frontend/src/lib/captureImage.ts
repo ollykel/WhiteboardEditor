@@ -10,7 +10,12 @@ import {
 
 import type { CanvasIdType } from "@/types/WebSocketProtocol";
 
-export const captureImage = (canvasGroupRefsByIdRef: RefObject<Record<CanvasIdType, RefObject<Konva.Group | null>>>, canvasId: string): string => {
+export type ImageTypeEnum =
+  | 'jpeg'
+  | 'png'
+;
+
+export const captureImage = (canvasGroupRefsByIdRef: RefObject<Record<CanvasIdType, RefObject<Konva.Group | null>>>, canvasId: string, imageType: ImageTypeEnum): string => {
   const canvasGroupRef : RefObject<Konva.Group | null> | undefined = canvasGroupRefsByIdRef.current[canvasId];
   
   if (! canvasGroupRef?.current) {
@@ -41,7 +46,7 @@ export const captureImage = (canvasGroupRefsByIdRef: RefObject<Record<CanvasIdTy
     destroyUIOnlyDescendants(exportableCanvas);
 
     const exportUrl : string = exportableCanvas.toDataURL({
-      mimeType: 'image/jpeg',
+      mimeType: `image/${imageType}`,
     });
 
     // -- destroy temporary exportable canvas node

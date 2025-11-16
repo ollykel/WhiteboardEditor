@@ -64,7 +64,7 @@ import {
   SquarePen,
 } from 'lucide-react';
 import HeaderButton from "./HeaderButton";
-import { captureImage } from "@/lib/captureImage";
+import { captureImage, type ImageTypeEnum } from "@/lib/captureImage";
 
 interface CanvasMenuProps {
   name: string;
@@ -137,8 +137,10 @@ const CanvasMenu = ({
 
   const handleDownload = () => {
     console.log("!! Download clicked");// TODO: remove debug
+    
+    const imageType: ImageTypeEnum = 'png';
 
-    const exportUrl = captureImage(canvasGroupRefsByIdRef, canvasId);
+    const exportUrl = captureImage(canvasGroupRefsByIdRef, canvasId, imageType);
 
     // -- create a dummy link that the function can "click"
     const downloadLink : HTMLAnchorElement = document.createElement('a');
