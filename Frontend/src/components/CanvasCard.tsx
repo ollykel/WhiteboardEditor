@@ -24,7 +24,6 @@ import type {
 import {
   type WhiteboardIdType,
   type CanvasIdType,
-  type CanvasKeyType,
   type CanvasData,
 } from "@/types/WebSocketProtocol";
 
@@ -55,10 +54,10 @@ export interface CanvasCardProps {
   whiteboardId: WhiteboardIdType;
   rootCanvasId: CanvasIdType,
   shapeAttributes: ShapeAttributesState;
-  childCanvasesByCanvas: Record<string, CanvasKeyType[]>;
-  canvasesByKey: Record<string, CanvasData>;
+  childCanvasesByCanvas: Record<CanvasIdType, CanvasIdType[]>;
+  canvasesById: Record<CanvasIdType, CanvasData>;
   // -- editor identified by user id
-  currentEditorByCanvas: Record<string, string>;
+  currentEditorByCanvas: Record<CanvasIdType, string>;
   currentTool: ToolChoice;
   onSelectCanvasDimensions: (canvasId: CanvasIdType, dimensions: NewCanvasDimensions) => void;
 }
@@ -69,7 +68,7 @@ function CanvasCard(props: CanvasCardProps) {
     rootCanvasId,
     shapeAttributes,
     childCanvasesByCanvas,
-    canvasesByKey,
+    canvasesById,
     currentEditorByCanvas,
     currentTool,
     onSelectCanvasDimensions,
@@ -99,8 +98,7 @@ function CanvasCard(props: CanvasCardProps) {
 
   const [selectedCanvasAllowedUsers, setSelectedCanvasAllowedUsers] = useState<User[] | null>(null);
 
-  const rootCanvasKey : CanvasKeyType = [whiteboardId, rootCanvasId];
-  const rootCanvas : CanvasData | undefined = canvasesByKey[rootCanvasKey.toString()];
+  const rootCanvas : CanvasData | undefined = canvasesById[rootCanvasId];
 
   if (! rootCanvas) {
     throw new Error(`Could not find canvas ${rootCanvasId}`);
@@ -111,13 +109,11 @@ function CanvasCard(props: CanvasCardProps) {
     height,
   } = rootCanvas;
 
-  const selectedCanvasKey : CanvasKeyType | null = selectedCanvasId ? [whiteboardId, selectedCanvasId] : null;
-  const selectedCanvasKeyStr : string = selectedCanvasKey?.toString() ?? '';
-  const selectedCanvas : CanvasData | null = canvasesByKey[selectedCanvasKeyStr] || null;
+  const selectedCanvas : CanvasData | null = canvasesById[selectedCanvasId ?? ''] || null;
 
   const allowedUserIds = useSelector(
     // ['', ''] is effectively a null canvas key
-    (state: RootState) => selectAllowedUsersByCanvas(state, selectedCanvasKey || ['', ''])
+    (state: RootState) => selectAllowedUsersByCanvas(state, selectedCanvasId ?? '')
   );
 
   useEffect(
@@ -174,7 +170,7 @@ function CanvasCard(props: CanvasCardProps) {
                 shapeAttributes,
                 currentTool,
                 childCanvasesByCanvas,
-                canvasesByKey,
+                canvasesById,
                 currentEditorByCanvas,
                 onSelectCanvasDimensions,
               }}
@@ -195,10 +191,10 @@ function CanvasCard(props: CanvasCardProps) {
               ?? []
             }
           />
-          <h2>
+          <h2 className='text-dark-text'>
             {editingText}
           </h2>
-          <h2>
+          <h2 className='text-dark-text'>
             {tooltipText}
           </h2>
         </div>

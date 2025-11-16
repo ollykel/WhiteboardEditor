@@ -139,6 +139,16 @@ const canvases = [
     // null allowed_users = all users allowed
     // allowed_users: [],
   },
+  {
+    _id: new ObjectId('68d5e8d4829da666aece6000'),
+    width: 3000,
+    height: 3000,
+    name: "Canvas Gamma",
+    time_created: new Date("2025-08-01T12:10:00.000Z"),
+    time_last_modified: new Date("2025-08-10T12:10:00.000Z"),
+    // null allowed_users = all users allowed
+    // allowed_users: [],
+  },
 ];
 
 db.canvases.insertMany(canvases);
@@ -187,7 +197,6 @@ const whiteboards = [
     _id: new ObjectId('68d5e8d4829da666aece5f56'),
     name: "Project Alpha",
     time_created: new Date("2025-08-01T12:00:00.000Z"),
-    owner: new ObjectId('68d5e8cf829da666aece5f47'),  // Alice
     root_canvas: insertedCanvases[0]._id,
     user_permissions: [
       {
@@ -201,7 +210,6 @@ const whiteboards = [
     _id: new ObjectId('68d5e8d4829da666aece5f57'),
     name: "Project Beta",
     time_created: new Date("2025-08-02T12:10:00.000Z"),
-    owner: new ObjectId('68d5e8d4829da666aece5f48'),  // Bob
     root_canvas: insertedCanvases[1]._id,
     user_permissions: [
       {
@@ -209,6 +217,24 @@ const whiteboards = [
         user: new ObjectId('68d5e8d4829da666aece5f48'), // Bob
         permission: 'own',
       }
+    ],
+  },
+  {
+    _id: new ObjectId('68d5e8d4829da666aece5f58'),
+    name: "Project Gamma",
+    time_created: new Date("2025-08-02T12:10:00.000Z"),
+    root_canvas: new ObjectId('68d5e8d4829da666aece6000'),
+    user_permissions: [
+      {
+        type: 'user',
+        user: new ObjectId('68d5e8d4829da666aece5f49'), // Carol
+        permission: 'own',
+      },
+      {
+        type: 'user',
+        user: new ObjectId('68d5e8cf829da666aece5f47'),  // Alice
+        permission: 'edit',
+      },
     ],
   },
 ];

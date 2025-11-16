@@ -11,7 +11,7 @@ const AttributeMenuItem = ({
 }: AttributeLableProps) => {
   return (
     <div className="flex justify-between items-center">
-      <label className="text-md text-center">
+      <label className="text-md text-center text-h2-text">
         {title}
       </label>
       {React.cloneElement(children, {

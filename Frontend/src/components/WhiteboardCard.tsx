@@ -39,15 +39,19 @@ function WhiteboardCard({
     <Link 
       key={id}
       to={`/whiteboard/${id}`}
-      className="flex flex-col justify-center align-items-center m-2 md:m-10 w-80 md:w-100 rounded-xl shadow bg-stone-50 hover:bg-gray-200"
+      className="flex flex-col justify-center align-items-center m-2 md:m-4 w-80 rounded-xl border-1 border-border shadow-2xl bg-card-background hover:bg-button-hover"
     >
       {/** TODO: replace with actual preview image, with a standard fallback image in /static **/}
-      <img src={thumbnailSrc} alt="Whiteboard Thumbnail" />
+      <img
+        className='rounded-t-xl' 
+        src={thumbnailSrc} 
+        alt="Whiteboard Thumbnail" 
+      />
       <div className="p-5">
-        <h1 className=" text-lg font-bold">{name}</h1>
+        <h1 className="text-lg text-h2-text font-bold">{name}</h1>
 
         {/** List shared users **/}
-        <h3 className="">Collaborators: </h3>
+        <h3 className="text-h3-text">Collaborators: </h3>
         <ul
           className="flex flex-row flex-wrap"
         >

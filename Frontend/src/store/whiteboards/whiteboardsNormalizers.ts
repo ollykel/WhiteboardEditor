@@ -1,6 +1,6 @@
 import type {
   CanvasData,
-  CanvasKeyType,
+  CanvasIdType,
   WhiteboardIdType,
   WhiteboardData,
   WhiteboardAttribs
@@ -13,8 +13,8 @@ import {
 
 export interface WhiteboardNormal extends CanvasNormal {
   whiteboards: Record<WhiteboardIdType, WhiteboardAttribs>;
-  childCanvasesByCanvas: Record<string, CanvasKeyType[]>;
-  canvasesByWhiteboard: Record<WhiteboardIdType, CanvasKeyType[]>;
+  childCanvasesByCanvas: Record<string, CanvasIdType[]>;
+  canvasesByWhiteboard: Record<WhiteboardIdType, CanvasIdType[]>;
 }
 
 // === normalizeWhiteboard =====================================================
@@ -27,22 +27,21 @@ export const normalizeWhiteboard = (
   whiteboard: WhiteboardData
 ): WhiteboardNormal => {
   const {
-    id,
+    id: whiteboardId,
   } = whiteboard;
 
   // -- first, generate mapping of canvases to children
-  const childCanvasesByCanvas : Record<string, CanvasKeyType[]> = {};
+  const childCanvasesByCanvas : Record<string, CanvasIdType[]> = {};
 
   for (const canvas of whiteboard.canvases) {
     if (canvas.parentCanvas) {
-      const childCanvasKey : CanvasKeyType = [id, canvas.id];
+      const childCanvasId : CanvasIdType = canvas.id;
       const { canvasId: parentCanvasId } = canvas.parentCanvas;
-      const parentCanvasKey : CanvasKeyType = [id, parentCanvasId];
 
-      if (parentCanvasKey.toString() in childCanvasesByCanvas) {
-        childCanvasesByCanvas[parentCanvasKey.toString()].push(childCanvasKey);
+      if (parentCanvasId in childCanvasesByCanvas) {
+        childCanvasesByCanvas[parentCanvasId].push(childCanvasId);
       } else {
-        childCanvasesByCanvas[parentCanvasKey.toString()] = [childCanvasKey];
+        childCanvasesByCanvas[parentCanvasId] = [childCanvasId];
       }
     }
   }// -- end for (const canvas of whiteboard.canvases)
@@ -53,7 +52,7 @@ export const normalizeWhiteboard = (
     canvasObjectsByCanvas,
     allowedUsersByCanvas,
   } = whiteboard.canvases
-    .map((canvas: CanvasData) => normalizeCanvas(id, canvas))
+    .map((canvas: CanvasData) => normalizeCanvas(canvas))
     .reduce(
     (accum: CanvasNormal, curr: CanvasNormal) => ({
       canvases: {...accum.canvases, ...curr.canvases},
@@ -77,16 +76,12 @@ export const normalizeWhiteboard = (
 
   return ({
     whiteboards: {
-      [id]: whiteboard
+      [whiteboardId]: whiteboard
     },
     canvases,
     childCanvasesByCanvas,
     canvasesByWhiteboard: {
-      [id]: whiteboard.canvases.map(({ id: canvasId }) => {
-        const canvasKey: CanvasKeyType = [id, canvasId];
-
-        return canvasKey;
-      })
+      [whiteboardId]: whiteboard.canvases.map(({ id }) => id)
     },
     canvasObjects,
     canvasObjectsByCanvas,

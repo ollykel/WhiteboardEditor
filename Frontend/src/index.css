@@ -8,20 +8,20 @@
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
+  --color-background: var(--page-background); /* Controls the overall page background */
+  --color-foreground: var(--h2-text);
   --color-card: var(--card);
   --color-card-foreground: var(--card-foreground);
-  --color-popover: var(--popover);
-  --color-popover-foreground: var(--popover-foreground);
-  --color-primary: var(--primary);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-secondary: var(--secondary);
-  --color-secondary-foreground: var(--secondary-foreground);
+  --color-popover: var(--dropdown-background); /* Controls the background of shadcn popovers */
+  --color-popover-foreground: var(--h3-text); /* Controls the text of shadcn popovers */
+  --color-primary: var(--button-background-hover);
+  --color-primary-foreground: var(--button-text);
+  --color-secondary: var(--button-background-hover);
+  --color-secondary-foreground: var(--button-text);
   --color-muted: var(--muted);
   --color-muted-foreground: var(--muted-foreground);
-  --color-accent: var(--accent);
-  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--dropdown-background);
+  --color-accent-foreground: var(--button-text-hover);
   --color-destructive: var(--destructive);
   --color-border: var(--border);
   --color-input: var(--input);
@@ -39,25 +39,53 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
+
+  /* Custom color theme */
+  --color-page-background: var(--page-background);
+  --color-bar-background: var(--bar-background);
+  --color-card-background: var(--card-background);  
+  
+  --color-border: var(--border);
+
+  --color-header-title-text: var(--h1-text);
+  
+  --color-header-button-background: var(--button-background);
+  --color-header-button-background-hover: var(--button-background-hover);
+  --color-header-button-text: var(--button-text);
+  --color-header-button-text-hover: var(--button-text-hover);
+  
+  --color-h1-text: var(--h1-text);
+  --color-h2-text: var(--h2-text);
+  --color-h3-text: var(--h3-text);
+  --color-p-text: var(--p-text);
+  --color-placeholder-text: var(--placeholder-text);
+  --color-dark-text: var(--dark-text);
+  
+  --color-button-300: var(--button-background);
+  --color-button-600: var(--button-background);
+  --color-button-hover: var(--button-background-hover);
+
+  --color-dropdown-background: var(--dropdown-background);
 }
 
 :root {
   --radius: 0.625rem;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
+  /* --background: #142537;  */
+  /* tools text */
+  --foreground: oklch(81.588% 0.27357 142.433);
   --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
+  --card-foreground: oklch(57.659% 0.23172 28.763);
+  /* --popover: #111820;  */
+  --popover-foreground: oklch(79.469% 0.24697 139.754);
+  --primary: oklch(78.586% 0.26134 141.882);
+  --primary-foreground: oklch(90.144% 0.05717 137.308);
+  --secondary: oklch(60.921% 0.24727 28.979);
+  --secondary-foreground: oklch(82.638% 0.27351 143.047);
+  --muted: oklch(81.822% 0.2717 143.069);
   --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
+  --accent: #0f7aed;
+  --accent-foreground: oklch(59.419% 0.24097 28.96);
+  --destructive: oklch(80.468% 0.26819 143.14);
   --border: oklch(0.922 0 0);
   --input: oklch(0.922 0 0);
   --ring: oklch(0.708 0 0);
@@ -67,13 +95,34 @@
   --chart-4: oklch(0.828 0.189 84.429);
   --chart-5: oklch(0.769 0.188 70.08);
   --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
+  --sidebar-foreground: oklch(58.687% 0.22683 27.973);
+  --sidebar-primary: oklch(59.464% 0.24052 28.902);
   --sidebar-primary-foreground: oklch(0.985 0 0);
   --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
+  --sidebar-accent-foreground: oklch(56.04% 0.21543 27.87);
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
+
+  /* Custom color variables, defined here for the color square then referenced in @theme */
+  --page-background: #142537;
+  --bar-background: #111820;
+  --card-background: #111820;
+
+  --border: #6785a5;
+
+  --button-background: #111820;
+  --button-background-hover: #142537;
+  --button-text: #b3b6b9;
+  --button-text-hover: #ffffff;
+  
+  --h1-text: #ebfdff;
+  --h2-text: #d4d5d6;
+  --h3-text: #b3b6b9;
+  --p-text: #b3b6b9;
+  --placeholder-text: oklch(40% 0.013 250);
+  --dark-text: #111820; 
+
+  --dropdown-background: #111820;
 }
 
 .dark {
