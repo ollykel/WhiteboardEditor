@@ -513,7 +513,7 @@ const Whiteboard = ({
 
       return () => {
         ws.close();
-      }
+      };
     },
     // -- can't make handleServerMessage a dependency, as it will result in an
     //    infinite loop
