@@ -46,6 +46,7 @@ jobs:
           ssh -v \
             -i "${{ runner.temp }}/instance-key.pem" \
             -o StrictHostKeyChecking=no \
+            -o ConnectTimeout=20 \
             "${{ secrets.EC2_TEST_USER }}@${{ secrets.EC2_TEST_HOST }}" \
             bash -ve - << '_EOF_'
           # cd to repo dir
