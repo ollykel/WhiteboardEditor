@@ -52,7 +52,7 @@ jobs:
           cd ${{ secrets.EC2_TEST_DEPLOYMENT_DIR }}
 
           # Ensure all services are running
-          test "$(docker compose ps --quiet --status running)" -eq 4
+          test "$(docker compose ps --quiet --status running | wc -l)" -eq 4
           _EOF_
       - id: delete-ssh-key
         name: Delete SSH Key
