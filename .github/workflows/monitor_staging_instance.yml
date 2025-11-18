@@ -32,21 +32,19 @@ jobs:
   perform_liveness_check:
     name: Perform Liveness Check
     runs-on: ubuntu-24.04
-    env:
-      SSH_PRIVATE_KEY_FILE: ${{ runner.temp }}/instance-key.pem
     steps:
       - id: write-ssh-key
         name: Write SSH Key
         run: |
-          cat > "${SSH_PRIVATE_KEY_FILE}"  << _EOF_
+          cat > "${{ runner.temp }}/instance-key.pem"  << _EOF_
           ${{ secrets.EC2_TEST_PRIVATE_KEY }}
           _EOF_
-          chmod 400 "${SSH_PRIVATE_KEY_FILE}"
+          chmod 400 "${{ runner.temp }}/instance-key.pem"
       - id: test-service-liveness
         name: Test Service Liveness on Staging Instance
         run: |
           ssh -v \
-            -i "${SSH_PRIVATE_KEY_FILE}" \
+            -i "${{ runner.temp }}/instance-key.pem" \
             -o StrictHostKeyChecking=no \
             "${{ secrets.EC2_TEST_USER }}@${{ secrets.EC2_TEST_HOST }}" \
             bash -ve - << '_EOF_'
@@ -60,5 +58,5 @@ jobs:
         name: Delete SSH Key
         if: always()
         run: |
-          chmod 600 "${SSH_PRIVATE_KEY_FILE}"
-          shred -u "${SSH_PRIVATE_KEY_FILE}"
+          chmod 600 "${{ runner.temp }}/instance-key.pem"
+          shred -u "${{ runner.temp }}/instance-key.pem"
