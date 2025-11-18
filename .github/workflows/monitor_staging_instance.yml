@@ -5,7 +5,7 @@ name: Monitor Staging Instance
 on:
   workflow_dispatch:
   schedule:
-    - cron: ${{ secrets.STAGING_MONITOR_CRON_SCHEDULE }}
+    - cron: 22 4,16 * * *
   push:
     # TODO: remove on push branches trigger (only for testing)
     branches:
