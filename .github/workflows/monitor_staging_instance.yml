@@ -20,7 +20,7 @@ on:
       EC2_TEST_DEPLOYMENT_DIR:
         description: "Location of the git repository on the staging instance"
         required: true
-  workflow_call:
+  workflow_dispatch:
   schedule:
     - cron: ${{ secrets.STAGING_MONITOR_CRON_SCHEDULE }}
   push:
