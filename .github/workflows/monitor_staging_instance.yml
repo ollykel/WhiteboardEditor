@@ -6,15 +6,8 @@ on:
   workflow_dispatch:
   schedule:
     - cron: 22 4,16 * * *
-  push:
-    # TODO: remove on push branches trigger (only for testing)
-    branches:
-      - feat/staging_instance_monitor
   workflow_call:
     secrets:
-      STAGING_MONITOR_CRON_SCHEDULE:
-        description: The scheduled times at which to perform the liveness check, specified using CRON syntax.
-        required: true
       EC2_TEST_PRIVATE_KEY:
         description: "The key to use to ssh into the ec2 instance"
         required: true
