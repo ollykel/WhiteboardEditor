@@ -39,7 +39,7 @@ jobs:
         name: Write SSH Key
         run: |
           cat > "${SSH_PRIVATE_KEY_FILE}"  << _EOF_
-          ${{ .secrets.EC2_TEST_PRIVATE_KEY }}
+          ${{ secrets.EC2_TEST_PRIVATE_KEY }}
           _EOF_
           chmod 400 "${SSH_PRIVATE_KEY_FILE}"
       - id: test-service-liveness
