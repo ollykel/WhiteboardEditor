@@ -14,7 +14,8 @@ import {
 } from './whiteboards';
 
 import {
-  addActiveUser
+  addActiveUsersByWhiteboard,
+  setActiveUsersByWhiteboard,
 } from './activeUsers';
 
 export {
@@ -22,5 +23,6 @@ export {
   addCanvas,
   deleteCanvas,
   addWhiteboard,
-  addActiveUser,
+  addActiveUsersByWhiteboard,
+  setActiveUsersByWhiteboard,
 };
