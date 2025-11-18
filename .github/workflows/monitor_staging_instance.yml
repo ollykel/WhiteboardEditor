@@ -3,6 +3,13 @@
 name: Monitor Staging Instance
 
 on:
+  workflow_dispatch:
+  schedule:
+    - cron: ${{ secrets.STAGING_MONITOR_CRON_SCHEDULE }}
+  push:
+    # TODO: remove on push branches trigger (only for testing)
+    branches:
+      - feat/staging_instance_monitor
   workflow_call:
     secrets:
       STAGING_MONITOR_CRON_SCHEDULE:
@@ -20,13 +27,6 @@ on:
       EC2_TEST_DEPLOYMENT_DIR:
         description: "Location of the git repository on the staging instance"
         required: true
-  workflow_dispatch:
-  schedule:
-    - cron: ${{ secrets.STAGING_MONITOR_CRON_SCHEDULE }}
-  push:
-    # TODO: remove on push branches trigger (only for testing)
-    branches:
-      - feat/staging_instance_monitor
 
 jobs:
   perform_liveness_check:
