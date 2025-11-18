@@ -1,0 +1,64 @@
+# Performs a regular liveness checks on the staging instance, to ensure it is still
+# running.
+name: Monitor Staging Instance
+
+on:
+  workflow_call:
+    secrets:
+      STAGING_MONITOR_CRON_SCHEDULE:
+        description: The scheduled times at which to perform the liveness check, specified using CRON syntax.
+        required: true
+      EC2_TEST_PRIVATE_KEY:
+        description: "The key to use to ssh into the ec2 instance"
+        required: true
+      EC2_TEST_USER:
+        description: "User on the staging instance"
+        required: true
+      EC2_TEST_HOST:
+        description: "Hostname of the staging instance"
+        required: true
+      EC2_TEST_DEPLOYMENT_DIR:
+        description: "Location of the git repository on the staging instance"
+        required: true
+  workflow_call:
+  schedule:
+    - cron: ${{ secrets.STAGING_MONITOR_CRON_SCHEDULE }}
+  push:
+    # TODO: remove on push branches trigger (only for testing)
+    branches:
+      - feat/staging_instance_monitor
+
+jobs:
+  perform_liveness_check:
+    name: Perform Liveness Check
+    runs-on: ubuntu-24.04
+    env:
+      SSH_PRIVATE_KEY_FILE: ${{ runner.temp }}/instance-key.pem
+    steps:
+      - id: write-ssh-key
+        name: Write SSH Key
+        run: |
+          cat > "${SSH_PRIVATE_KEY_FILE}"  << _EOF_
+          ${{ .secrets.EC2_TEST_PRIVATE_KEY }}
+          _EOF_
+          chmod 400 "${SSH_PRIVATE_KEY_FILE}"
+      - id: test-service-liveness
+        name: Test Service Liveness on Staging Instance
+        run: |
+          ssh -v \
+            -i "${SSH_PRIVATE_KEY_FILE}" \
+            -o StrictHostKeyChecking=no \
+            "${{ secrets.EC2_TEST_USER }}@${{ secrets.EC2_TEST_HOST }}" \
+            bash -ve - << '_EOF_'
+          # cd to repo dir
+          cd ${{ secrets.EC2_TEST_DEPLOYMENT_DIR }}
+
+          # Ensure all services are running
+          test "$(docker compose ps --quiet --status running)" -eq 4
+          _EOF_
+      - id: delete-ssh-key
+        name: Delete SSH Key
+        if: always()
+        run: |
+          chmod 600 "${SSH_PRIVATE_KEY_FILE}"
+          shred -u "${SSH_PRIVATE_KEY_FILE}"
