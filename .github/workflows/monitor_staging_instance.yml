@@ -1,0 +1,65 @@
+# Performs a regular liveness checks on the staging instance, to ensure it is still
+# running.
+name: Monitor Staging Instance
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: 22 4,16 * * *
+  workflow_call:
+    secrets:
+      EC2_TEST_PRIVATE_KEY:
+        description: "The key to use to ssh into the ec2 instance"
+        required: true
+      EC2_TEST_USER:
+        description: "User on the staging instance"
+        required: true
+      EC2_TEST_HOST:
+        description: "Hostname of the staging instance"
+        required: true
+      EC2_TEST_DEPLOYMENT_DIR:
+        description: "Location of the git repository on the staging instance"
+        required: true
+
+jobs:
+  perform_liveness_check:
+    name: Perform Liveness Check
+    runs-on: ubuntu-24.04
+    steps:
+      - id: write-ssh-key
+        name: Write SSH Key
+        run: |
+          cat > "${{ runner.temp }}/instance-key.pem"  << _EOF_
+          ${{ secrets.EC2_TEST_PRIVATE_KEY }}
+          _EOF_
+          chmod 400 "${{ runner.temp }}/instance-key.pem"
+      - id: test-service-liveness
+        name: Test Service Liveness on Staging Instance
+        run: |
+          ssh -v \
+            -i "${{ runner.temp }}/instance-key.pem" \
+            -o StrictHostKeyChecking=no \
+            -o ConnectTimeout=20 \
+            "${{ secrets.EC2_TEST_USER }}@${{ secrets.EC2_TEST_HOST }}" \
+            bash -ve - << '_EOF_'
+          # cd to repo dir
+          cd ${{ secrets.EC2_TEST_DEPLOYMENT_DIR }}
+
+          # Ensure all services are running
+          N_SERVICES_RUNNING="$(docker compose ps --quiet --status running | wc -l)"
+
+          if test "${N_SERVICES_RUNNING}" -eq 4
+          then
+            echo "** All Services Running **"
+            exit 0
+          else
+            echo "** Only ${N_SERVICES_RUNNING} / 4 Services Running **"
+            exit 1
+          fi
+          _EOF_
+      - id: delete-ssh-key
+        name: Delete SSH Key
+        if: always()
+        run: |
+          chmod 600 "${{ runner.temp }}/instance-key.pem"
+          shred -u "${{ runner.temp }}/instance-key.pem"
