@@ -1,6 +1,7 @@
 import { configureStore } from '@reduxjs/toolkit'
 
 import activeUsersReducer from './activeUsers/activeUsersSlice';
+import activeUsersByWhiteboardReducer from './activeUsers/activeUsersByWhiteboardSlice';
 import canvasObjectsReducer from './canvasObjects/canvasObjectsSlice';
 import allowedUsersByCanvasReducer from './allowedUsers/allowedUsersByCanvasSlice';
 import canvasObjectsByCanvasReducer from './canvasObjects/canvasObjectsByCanvasSlice';
@@ -12,6 +13,7 @@ import whiteboardsReducer from './whiteboards/whiteboardsSlice';
 export const store = configureStore({
   reducer: {
     activeUsers: activeUsersReducer,
+    activeUsersByWhiteboard: activeUsersByWhiteboardReducer,
     canvasObjects: canvasObjectsReducer,
     canvasObjectsByCanvas: canvasObjectsByCanvasReducer,
     allowedUsersByCanvas: allowedUsersByCanvasReducer,
