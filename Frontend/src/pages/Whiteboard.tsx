@@ -67,11 +67,10 @@ import {
   setCanvasObjects,
   addCanvas,
   deleteCanvas,
-  addActiveUser,
 } from '@/controllers';
 
 import {
-  selectActiveUsers,
+  selectActiveUsersByWhiteboard,
 } from '@/store/activeUsers/activeUsersSelectors';
 
 import {
@@ -137,11 +136,28 @@ import type {
   UserSummary,
 } from '@/types/WebSocketProtocol';
 
-import { useUser } from '@/hooks/useUser';
-import { setAllowedUsersByCanvas } from '@/store/allowedUsers/allowedUsersByCanvasSlice';
-import { setActiveUser } from '@/controllers/activeUsers';
-import { type OperationDispatcher } from '@/types/OperationDispatcher';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuLabel, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import {
+  useUser,
+} from '@/hooks/useUser';
+
+import {
+  setAllowedUsersByCanvas,
+} from '@/store/allowedUsers/allowedUsersByCanvasSlice';
+
+import {
+  setActiveUsersByWhiteboard,
+} from '@/controllers/activeUsers';
+
+import {
+  type OperationDispatcher,
+} from '@/types/OperationDispatcher';
+
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 type ComponentStatus = 
   | { status: 'ready'; }
@@ -246,7 +262,9 @@ const Whiteboard = ({
     color: '#000000',
   });
 
-  const activeUsers : Record<ClientIdType, UserSummary> = useSelector(selectActiveUsers);
+  const activeUsers : Record<ClientIdType, UserSummary> = useSelector((state: RootState) => (
+    selectActiveUsersByWhiteboard(state, whiteboardId)
+  ));
 
   const currWhiteboard: WhiteboardAttribs | null = useSelector((state: RootState) => (
     selectWhiteboardById(state, whiteboardId))
@@ -284,7 +302,7 @@ const Whiteboard = ({
               const activeUsers: UserSummary[] = Object.values(activeClients);
 
               addWhiteboard(dispatch, whiteboard);
-              addActiveUser(dispatch, activeUsers);
+              setActiveUsersByWhiteboard(dispatch, whiteboardId, activeUsers);
             }
             break;
           case 'active_users': 
@@ -299,7 +317,7 @@ const Whiteboard = ({
               setCurrentEditorByCanvas(prev => Object.fromEntries(Object.entries(prev).filter(
                 ([_canvasId, editorId]) => editorId in activeUsersSet
               )));
-              setActiveUser(dispatch, users);
+              setActiveUsersByWhiteboard(dispatch, whiteboardId, users);
             } 
             break;
           case 'editing_canvas':
