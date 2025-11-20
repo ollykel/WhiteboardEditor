@@ -16,7 +16,7 @@ import {
 
 const router = Router();
 
-// --- all routes authenticated
+// -- all routes authenticated
 router.use(authenticateJWT);
 
 router.post("/", handleCreateWhiteboard);
@@ -27,8 +27,14 @@ router.get("/own", handleGetOwnWhiteboards);
 // -- Get whiteboard by id
 router.get('/:whiteboardId', handleGetWhiteboardById);
 
-// --- Share whiteboard with other users
+// -- Share whiteboard with other users
 router.post("/:id/user_permissions", handleShareWhiteboard);
+
+// -- Post thumbnail screenshot to database
+router.post("/:id/thumbnail", handlePostThumbnail);
+
+// -- Get thumbnail screenshot
+router.get("/:id/thumbnail", handleGetThumbnail);
 
 export default router;
 
