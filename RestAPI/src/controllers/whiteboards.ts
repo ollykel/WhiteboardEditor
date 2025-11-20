@@ -223,3 +223,53 @@ export const handleShareWhiteboard = async (
     return res.status(500).json({ error: "Server error" });
   }
 };// -- end handleShareWhiteboard
+
+// -- Post the whiteboard's thumbnail
+export const handlePostThumbnail = async (
+  req: Request<{ whiteboardId: string }, any, AuthorizedRequestBody & { thumbnailUrl: string }>,
+  res: Response 
+) => {
+  try {
+    const { whiteboardId } = req.params;
+    const { authUser, thumbnailUrl } = req.body;
+
+    if (!thumbnailUrl || typeof thumbnailUrl != "string") {
+      return res.status(400).json({ message: "thumbnailUrl string is required" })
+    }
+
+    const resp = await getWhiteboardById(whiteboardId);
+
+    switch (resp.status) {
+      case 'invalid_id':
+        return res.status(400).json({ message: 'Invalid whiteboard id' });
+      case 'not_found':
+        return res.status(400).json({ message: 'Whiteboard not found' });
+      case 'server_error':
+        return res.status(400).json({ message: 'Unexpected server error' });
+    }
+
+    const { whiteboard } = resp;
+
+    const allowedUserIds = new Set(
+      whiteboard.user_permissions
+        .filter(perm => perm.type === 'user')
+        .map(perm => perm.user._id.toString())
+    );
+
+    if (!allowedUserIds.has(authUser.id.toString())) {
+      return res.status(403).json({ message: 'Not authorized to update thumbnail' });
+    }
+
+    whiteboard.thumbnail_url = thumbnailUrl;
+
+    await whiteboard.save();
+
+    return res.status(200).json({
+      message: "Thumbnail updated successfully",
+      whiteboard: whiteboard.toAttribView()
+    });
+  } catch (err) {
+    console.error("Error updating thumbnail", err);
+    return res.status(500).json({ message: "Unexpected server error" });
+  }
+};
