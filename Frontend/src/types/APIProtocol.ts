@@ -112,6 +112,7 @@ export interface Whiteboard {
   id: string;
   name: string;
   time_created: Date;
+  thumbnail_url: string;
   user_permissions: UserPermission[];
   canvases?: Canvas[];
 }
