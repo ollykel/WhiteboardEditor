@@ -16,7 +16,8 @@ export type WhiteboardProps = Whiteboard;
 function WhiteboardCard({
   id,
   name,
-  user_permissions: userPermissions
+  user_permissions: userPermissions,
+  thumbnail_url,
 }: WhiteboardProps) {
   // -- rephrase permissions as the user's role
   const permissionTypeToUserRole = (perm: UserPermissionEnum): string => {
@@ -33,8 +34,6 @@ function WhiteboardCard({
     }
   };
 
-  const thumbnailSrc = "/images/testThumbnail.png";
-
   return (
     <Link 
       key={id}
@@ -44,7 +43,7 @@ function WhiteboardCard({
       {/** TODO: replace with actual preview image, with a standard fallback image in /static **/}
       <img
         className='rounded-t-xl' 
-        src={thumbnailSrc} 
+        src={thumbnail_url || "/images/testThumbnail.png"} 
         alt="Whiteboard Thumbnail" 
       />
       <div className="p-5">
