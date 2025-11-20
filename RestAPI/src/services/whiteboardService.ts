@@ -244,3 +244,17 @@ export const setSharedUsers = async (
     };
   }
 };// -- end setSharedUsers
+
+export const updateWhiteboardThumbnail = async (
+  whiteboardId: string,
+  thumbnailUrl: string,
+) => {
+  const whiteboard = await Whiteboard.findById(whiteboardId);
+
+  if (!whiteboard) return null;
+
+  whiteboard.thumbnail_url = thumbnailUrl;
+  await whiteboard.save();
+
+  return whiteboard.toAttribView();
+}
