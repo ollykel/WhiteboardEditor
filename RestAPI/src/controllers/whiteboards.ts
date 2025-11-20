@@ -257,7 +257,7 @@ export const handlePostThumbnail = async (
     );
 
     if (!allowedUserIds.has(authUser.id.toString())) {
-      return res.status(403).json({ message: 'Not authorized to update thumbnail' });
+      return res.status(403).json({ message: 'Forbidden' });
     }
 
     whiteboard.thumbnail_url = thumbnailUrl;

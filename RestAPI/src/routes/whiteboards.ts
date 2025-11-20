@@ -34,8 +34,5 @@ router.post("/:id/user_permissions", handleShareWhiteboard);
 // -- Post thumbnail screenshot to database
 router.post("/:id/thumbnail", handlePostThumbnail);
 
-// -- Get thumbnail screenshot
-router.get("/:id/thumbnail", handleGetThumbnail);
-
 export default router;
 
