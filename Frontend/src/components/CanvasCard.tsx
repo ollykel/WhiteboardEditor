@@ -49,6 +49,7 @@ import {
   type NewCanvasDimensions,
 } from '@/types/CreateCanvas';
 import WhiteboardContext from '@/context/WhiteboardContext';
+import { captureImage } from '@/lib/captureImage';
 
 export interface CanvasCardProps {
   whiteboardId: WhiteboardIdType;
@@ -94,6 +95,7 @@ function CanvasCard(props: CanvasCardProps) {
     selectedCanvasId,
     tooltipText,
     editingText,
+    canvasGroupRefsByIdRef,
   } = whiteboardContext;
 
   const [selectedCanvasAllowedUsers, setSelectedCanvasAllowedUsers] = useState<User[] | null>(null);
@@ -134,6 +136,30 @@ function CanvasCard(props: CanvasCardProps) {
     },
     [selectedCanvas, allowedUserIds, getUserById]
   );
+
+  // Set the whiteboard thumbnail
+  useEffect(() => {
+    const interval = setInterval(async () => {
+      if (!canvasGroupRefsByIdRef.current) return;
+
+      const dataUrl = captureImage(
+        canvasGroupRefsByIdRef,
+        rootCanvas.id,
+        "jpeg"
+      );
+      
+      if (!dataUrl) return;
+
+      await fetch(`/api/whiteboards/${whiteboardId}/thumbnail`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ thumbnail: dataUrl }),
+      });
+    }, 1000 * 10); // every 10 seconds
+
+    return () => clearInterval(interval);
+  }, [whiteboardId]);
+
 
   // Handle initial scroll to the center of the stage
   const containerRef = useRef<HTMLDivElement>(null);
