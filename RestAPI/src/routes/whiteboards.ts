@@ -12,7 +12,7 @@ import {
   handleGetWhiteboardById,
   handleCreateWhiteboard,
   handleShareWhiteboard,
-  handlePostThumbnail,
+  handlePutThumbnail,
 } from "../controllers/whiteboards";
 
 const router = Router();
@@ -31,8 +31,8 @@ router.get('/:whiteboardId', handleGetWhiteboardById);
 // -- Share whiteboard with other users
 router.post("/:id/user_permissions", handleShareWhiteboard);
 
-// -- Post thumbnail screenshot to database
-router.post("/:id/thumbnail", handlePostThumbnail);
+// -- Put thumbnail screenshot to database
+router.put("/:id/thumbnail", handlePutThumbnail);
 
 export default router;
 

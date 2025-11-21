@@ -224,8 +224,8 @@ export const handleShareWhiteboard = async (
   }
 };// -- end handleShareWhiteboard
 
-// -- Post the whiteboard's thumbnail
-export const handlePostThumbnail = async (
+// -- Put the whiteboard's thumbnail
+export const handlePutThumbnail = async (
   req: Request<{ whiteboardId: string }, any, AuthorizedRequestBody & { thumbnailUrl: string }>,
   res: Response 
 ) => {
