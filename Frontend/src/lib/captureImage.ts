@@ -58,6 +58,7 @@ export const captureImage = (
     let minY = Infinity;
     let maxX = -Infinity;
     let maxY = -Infinity;
+    const padding = 30;
 
     children.forEach(child => {
       const box = child.getClientRect({ skipShadow: true, skipStroke: false });
@@ -70,10 +71,10 @@ export const captureImage = (
     const exportUrl = exportableCanvas.toDataURL({
       mimeType: `image/${imageType}`,
       quality,
-      x: minX,
-      y: minY,
-      width: maxX - minX,
-      height: maxY - minY,
+      x: minX - padding,
+      y: minY - padding,
+      width: maxX - minX + 2 * padding,
+      height: maxY - minY + 2 * padding,
     });
 
     // -- destroy temporary exportable canvas node
