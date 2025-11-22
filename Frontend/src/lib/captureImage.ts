@@ -68,13 +68,31 @@ export const captureImage = (
       maxY = Math.max(maxY, box.y + box.height);
     });
 
+    // get the stage from any node
+    const stage = canvasGroupRef.current?.getStage();
+    if (!stage) {
+      console.error("Could not get stage from group");
+      return "";
+    }
+
+    // stage width & height
+    const canvasWidth = stage.width();
+    const canvasHeight = stage.height();
+
+    // calculate clamped export rectangle
+    const x = Math.max(0, minX - padding);
+    const y = Math.max(0, minY - padding);
+    const width = Math.min(maxX - minX + 2 * padding, canvasWidth - x);
+    const height = Math.min(maxY - minY + 2 * padding, canvasHeight - y);
+
+    // export
     const exportUrl = exportableCanvas.toDataURL({
       mimeType: `image/${imageType}`,
       quality,
-      x: minX - padding,
-      y: minY - padding,
-      width: maxX - minX + 2 * padding,
-      height: maxY - minY + 2 * padding,
+      x,
+      y,
+      width,
+      height,
     });
 
     // -- destroy temporary exportable canvas node
