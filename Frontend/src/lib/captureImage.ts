@@ -15,7 +15,12 @@ export type ImageTypeEnum =
   | 'png'
 ;
 
-export const captureImage = (canvasGroupRefsByIdRef: RefObject<Record<CanvasIdType, RefObject<Konva.Group | null>>>, canvasId: string, imageType: ImageTypeEnum): string => {
+export const captureImage = (
+  canvasGroupRefsByIdRef: RefObject<Record<CanvasIdType, RefObject<Konva.Group | null>>>, 
+  canvasId: string, 
+  imageType: ImageTypeEnum,
+  quality: number,
+): string => {
   const canvasGroupRef : RefObject<Konva.Group | null> | undefined = canvasGroupRefsByIdRef.current[canvasId];
   
   if (! canvasGroupRef?.current) {
@@ -47,6 +52,7 @@ export const captureImage = (canvasGroupRefsByIdRef: RefObject<Record<CanvasIdTy
 
     const exportUrl : string = exportableCanvas.toDataURL({
       mimeType: `image/${imageType}`,
+      quality: quality,
     });
 
     // -- destroy temporary exportable canvas node
