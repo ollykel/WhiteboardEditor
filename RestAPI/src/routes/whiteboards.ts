@@ -32,7 +32,7 @@ router.get('/:whiteboardId', handleGetWhiteboardById);
 router.post("/:id/user_permissions", handleShareWhiteboard);
 
 // -- Put thumbnail screenshot to database
-router.put("/:id/thumbnail", handlePutThumbnail);
+router.put("/:whiteboardId/thumbnail", handlePutThumbnail);
 
 export default router;
 
