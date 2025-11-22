@@ -38,11 +38,12 @@ function WhiteboardCard({
     <Link 
       key={id}
       to={`/whiteboard/${id}`}
-      className="flex flex-col justify-center align-items-center m-2 md:m-4 w-80 rounded-xl border-1 border-border shadow-2xl bg-card-background hover:bg-button-hover"
+      className="flex flex-col justify-center align-items-center m-2 md:m-4 w-75 rounded-xl border-1 border-border shadow-2xl bg-card-background hover:bg-button-hover"
     >
-      {/** TODO: replace with actual preview image, with a standard fallback image in /static **/}
       <img
-        className='rounded-t-xl' 
+        className={`rounded-t-xl w-full h-50 ${
+          thumbnail_url ? 'object-contain' : 'object-cover'
+        }`}
         src={thumbnail_url || "/images/testThumbnail.png"} 
         alt="Whiteboard Thumbnail" 
       />
