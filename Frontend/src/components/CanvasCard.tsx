@@ -140,6 +140,7 @@ function CanvasCard(props: CanvasCardProps) {
 
   const thumbnailType: ImageTypeEnum = "jpeg";
   const thumbnailQuality: number = 0.2;
+  const waitTime = 1000 * 20; // Capture & set thumbnail image every 20 seconds
 
   // Set the whiteboard thumbnail
   useEffect(() => {
@@ -163,7 +164,7 @@ function CanvasCard(props: CanvasCardProps) {
       } catch (err) {
         console.error("Error updating thumbnail:", err);
       }
-    }, 1000 * 10); // every 10 seconds
+    }, waitTime);
 
     return () => clearInterval(interval);
   }, [whiteboardId]);
