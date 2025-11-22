@@ -31,7 +31,7 @@ export const captureImage = (
   } else {
     // -- create a clone of the Canvas group that excludes UI-only elements
     //    such as borders and tooltips.
-    const exportableCanvas : Konva.Node = canvasGroupRef.current.clone();
+    const exportableCanvas : Konva.Container = canvasGroupRef.current.clone();
 
     const isNodeContainer = (node: Konva.Node): node is Konva.Container => node.hasChildren();
 
@@ -50,9 +50,30 @@ export const captureImage = (
     // -- filter out UI-only nodes
     destroyUIOnlyDescendants(exportableCanvas);
 
-    const exportUrl : string = exportableCanvas.toDataURL({
+    // skip the first child, it's the canvas itself
+    const children = exportableCanvas.getChildren().slice(1);
+
+    // get the bounds of the child shapes
+    let minX = Infinity;
+    let minY = Infinity;
+    let maxX = -Infinity;
+    let maxY = -Infinity;
+
+    children.forEach(child => {
+      const box = child.getClientRect({ skipShadow: true, skipStroke: false });
+      minX = Math.min(minX, box.x);
+      minY = Math.min(minY, box.y);
+      maxX = Math.max(maxX, box.x + box.width);
+      maxY = Math.max(maxY, box.y + box.height);
+    });
+
+    const exportUrl = exportableCanvas.toDataURL({
       mimeType: `image/${imageType}`,
-      quality: quality,
+      quality,
+      x: minX,
+      y: minY,
+      width: maxX - minX,
+      height: maxY - minY,
     });
 
     // -- destroy temporary exportable canvas node
