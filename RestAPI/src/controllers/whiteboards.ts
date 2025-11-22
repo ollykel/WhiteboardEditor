@@ -141,6 +141,7 @@ export const handleCreateWhiteboard = async (
     const whiteboard = new Whiteboard({
       name,
       root_canvas: rootCanvas._id,
+      thumbnail_url: null,
       user_permissions: [ownerPermission, ...collaboratorPermissionsFinal]
     });
 
@@ -231,7 +232,7 @@ export const handlePutThumbnail = async (
 ) => {
   try {
     const { whiteboardId } = req.params;
-    const { authUser, thumbnailUrl } = req.body;
+    const { thumbnailUrl } = req.body;
 
     if (!thumbnailUrl || typeof thumbnailUrl != "string") {
       return res.status(400).json({ message: "thumbnailUrl string is required" })
@@ -249,16 +250,6 @@ export const handlePutThumbnail = async (
     }
 
     const { whiteboard } = resp;
-
-    const allowedUserIds = new Set(
-      whiteboard.user_permissions
-        .filter(perm => perm.type === 'user')
-        .map(perm => perm.user._id.toString())
-    );
-
-    if (!allowedUserIds.has(authUser.id.toString())) {
-      return res.status(403).json({ message: 'Forbidden' });
-    }
 
     whiteboard.thumbnail_url = thumbnailUrl;
 
