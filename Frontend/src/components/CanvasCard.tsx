@@ -154,11 +154,12 @@ function CanvasCard(props: CanvasCardProps) {
       );
       
       if (!dataUrl) return;
-      
+
       try {
         await api.put(`/whiteboards/${whiteboardId}/thumbnail`, {
           thumbnailUrl: dataUrl,
         });
+        console.log("Thumbnail captured");
       } catch (err) {
         console.error("Error updating thumbnail:", err);
       }
