@@ -49,7 +49,8 @@ import {
   type NewCanvasDimensions,
 } from '@/types/CreateCanvas';
 import WhiteboardContext from '@/context/WhiteboardContext';
-import { captureImage } from '@/lib/captureImage';
+import { captureImage, type ImageTypeEnum } from '@/lib/captureImage';
+import api from '@/api/axios';
 
 export interface CanvasCardProps {
   whiteboardId: WhiteboardIdType;
@@ -137,6 +138,9 @@ function CanvasCard(props: CanvasCardProps) {
     [selectedCanvas, allowedUserIds, getUserById]
   );
 
+  const thumbnailType: ImageTypeEnum = "jpeg";
+  const thumbnailQuality: number = 0.2;
+
   // Set the whiteboard thumbnail
   useEffect(() => {
     const interval = setInterval(async () => {
@@ -145,21 +149,25 @@ function CanvasCard(props: CanvasCardProps) {
       const dataUrl = captureImage(
         canvasGroupRefsByIdRef,
         rootCanvas.id,
-        "jpeg"
+        thumbnailType,
+        thumbnailQuality,
       );
       
       if (!dataUrl) return;
 
-      await fetch(`/api/whiteboards/${whiteboardId}/thumbnail`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ thumbnail: dataUrl }),
-      });
+      console.log("Captured thumbnail dataUrl: ", dataUrl);
+
+      try {
+        await api.put(`/whiteboards/${whiteboardId}/thumbnail`, {
+          thumbnailUrl: dataUrl,
+        });
+      } catch (err) {
+        console.error("Error updating thumbnail:", err);
+      }
     }, 1000 * 10); // every 10 seconds
 
     return () => clearInterval(interval);
   }, [whiteboardId]);
-
 
   // Handle initial scroll to the center of the stage
   const containerRef = useRef<HTMLDivElement>(null);
