@@ -16,7 +16,8 @@ export type WhiteboardProps = Whiteboard;
 function WhiteboardCard({
   id,
   name,
-  user_permissions: userPermissions
+  user_permissions: userPermissions,
+  thumbnail_url,
 }: WhiteboardProps) {
   // -- rephrase permissions as the user's role
   const permissionTypeToUserRole = (perm: UserPermissionEnum): string => {
@@ -37,12 +38,13 @@ function WhiteboardCard({
     <Link 
       key={id}
       to={`/whiteboard/${id}`}
-      className="flex flex-col justify-center align-items-center m-2 md:m-4 w-80 rounded-xl border-1 border-border shadow-2xl bg-card-background hover:bg-button-hover"
+      className="flex flex-col justify-center align-items-center m-2 md:m-4 w-75 rounded-xl border-1 border-border shadow-2xl bg-card-background hover:bg-button-hover"
     >
-      {/** TODO: replace with actual preview image, with a standard fallback image in /static **/}
       <img
-        className='rounded-t-xl' 
-        src="/images/Screenshot 2025-08-17 at 1.16.54 PM.png" 
+        className={`rounded-t-xl w-full h-50 bg-canvas-background ${
+          thumbnail_url ? 'object-contain' : 'object-cover'
+        }`}
+        src={thumbnail_url || "/images/testThumbnail.png"} 
         alt="Whiteboard Thumbnail" 
       />
       <div className="p-5">

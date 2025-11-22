@@ -141,6 +141,7 @@ export const handleCreateWhiteboard = async (
     const whiteboard = new Whiteboard({
       name,
       root_canvas: rootCanvas._id,
+      thumbnail_url: null,
       user_permissions: [ownerPermission, ...collaboratorPermissionsFinal]
     });
 
@@ -223,3 +224,43 @@ export const handleShareWhiteboard = async (
     return res.status(500).json({ error: "Server error" });
   }
 };// -- end handleShareWhiteboard
+
+// -- Put the whiteboard's thumbnail
+export const handlePutThumbnail = async (
+  req: Request<{ whiteboardId: string }, any, AuthorizedRequestBody & { thumbnailUrl: string }>,
+  res: Response 
+) => {
+  try {
+    const { whiteboardId } = req.params;
+    const { thumbnailUrl } = req.body;
+
+    if (!thumbnailUrl || typeof thumbnailUrl != "string") {
+      return res.status(400).json({ message: "thumbnailUrl string is required" })
+    }
+
+    const resp = await getWhiteboardById(whiteboardId);
+
+    switch (resp.status) {
+      case 'invalid_id':
+        return res.status(400).json({ message: 'Invalid whiteboard id' });
+      case 'not_found':
+        return res.status(400).json({ message: 'Whiteboard not found' });
+      case 'server_error':
+        return res.status(400).json({ message: 'Unexpected server error' });
+    }
+
+    const { whiteboard } = resp;
+
+    whiteboard.thumbnail_url = thumbnailUrl;
+
+    await whiteboard.save();
+
+    return res.status(200).json({
+      message: "Thumbnail updated successfully",
+      whiteboard: whiteboard.toAttribView()
+    });
+  } catch (err) {
+    console.error("Error updating thumbnail", err);
+    return res.status(500).json({ message: "Unexpected server error" });
+  }
+};

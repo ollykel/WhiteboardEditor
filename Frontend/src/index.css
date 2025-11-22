@@ -43,7 +43,8 @@
   /* Custom color theme */
   --color-page-background: var(--page-background);
   --color-bar-background: var(--bar-background);
-  --color-card-background: var(--card-background);  
+  --color-card-background: var(--card-background);
+  --color-canvas-background: var(--canvas-background);
   
   --color-border: var(--border);
 
@@ -107,6 +108,7 @@
   --page-background: #142537;
   --bar-background: #111820;
   --card-background: #111820;
+  --canvas-background: #f0f0f0;
 
   --border: #6785a5;
 
