@@ -41,7 +41,7 @@ function WhiteboardCard({
       className="flex flex-col justify-center align-items-center m-2 md:m-4 w-75 rounded-xl border-1 border-border shadow-2xl bg-card-background hover:bg-button-hover"
     >
       <img
-        className={`rounded-t-xl w-full h-50 ${
+        className={`rounded-t-xl w-full h-50 bg-canvas-background ${
           thumbnail_url ? 'object-contain' : 'object-cover'
         }`}
         src={thumbnail_url || "/images/testThumbnail.png"} 
