@@ -419,7 +419,7 @@ const whiteboardSchema = new Schema<IWhiteboard<Types.ObjectId, Types.ObjectId>,
     name: { type: String, required: true },
     time_created: { type: Date, default: Date.now },
     root_canvas: { type: Schema.Types.ObjectId, ref: "Canvas", required: true },
-    thumbnail_url: { type: String, required: false },
+    thumbnail_url: { type: String, required: false, default: null },
     user_permissions: [whiteboardUserPermissionSchema],
   },
   {
