@@ -139,8 +139,9 @@ const CanvasMenu = ({
     console.log("!! Download clicked");// TODO: remove debug
     
     const imageType: ImageTypeEnum = 'png';
+    const imageQuality: number = 1.0;
 
-    const exportUrl = captureImage(canvasGroupRefsByIdRef, canvasId, imageType);
+    const exportUrl = captureImage(canvasGroupRefsByIdRef, canvasId, imageType, imageQuality);
 
     // -- create a dummy link that the function can "click"
     const downloadLink : HTMLAnchorElement = document.createElement('a');
