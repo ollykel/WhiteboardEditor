@@ -16,15 +16,16 @@ const FooterItem = ({
 	type,
 }: FooterItemType) => {
 	const variants = {
-		header: "font-bold text-lg text-h2-text",
-		standard: "text-md text-h2-text",
-		footnote: "text-xs text-gray-500"
+		header: " font-bold text-lg text-h2-text ",
+		standard: " text-md text-h2-text ",
+		footnote: " text-xs text-gray-500 "
 	};
 
 	const imageSize = type === "header" ? 24 : 18;
+	const externalLink = icon && type === 'standard' ? "_blank" : "";
 
 	return (		
-		<a href={href} className={"flex items-center gap-4 p-2 hover:opacity-80 " + variants[type]} target="_blank">
+		<a href={href} className={"flex items-center gap-4 p-2 hover:opacity-80 " + variants[type]} target={externalLink}>
 			{icon && <img src={icon} width={imageSize} height={imageSize} alt={label + " icon"} />}
 			{label}
 		</a>
