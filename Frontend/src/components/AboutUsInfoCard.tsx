@@ -21,11 +21,11 @@ const AboutUsInfoCard = ({
       <div className="flex flex-col">
         <h3>{name}</h3>
         <div className="flex">
-          <a href={linkedInLink}>
+          <a href={linkedInLink} target="_blank">
             <img src={linkedInImgSrc} alt={`${name}'s LinkedIn`} />
             LinkedIn
           </a>
-          <a href={gitHubLink}>
+          <a href={gitHubLink} target="_blank">
             <img src={gitHubImgSrc} alt={`${name}'s GitHub`} />
             GitHub
           </a>

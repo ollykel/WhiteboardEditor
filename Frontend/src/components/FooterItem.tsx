@@ -24,7 +24,7 @@ const FooterItem = ({
 	const imageSize = type === "header" ? 24 : 18;
 
 	return (		
-		<a href={href} className={"flex items-center gap-4 p-2 hover:opacity-80 " + variants[type]}>
+		<a href={href} className={"flex items-center gap-4 p-2 hover:opacity-80 " + variants[type]} target="_blank">
 			{icon && <img src={icon} width={imageSize} height={imageSize} alt={label + " icon"} />}
 			{label}
 		</a>
