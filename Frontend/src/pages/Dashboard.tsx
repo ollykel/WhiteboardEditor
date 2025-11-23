@@ -38,6 +38,7 @@ import CreateWhiteboardModal, {
   type CreateWhiteboardFormData
 } from '@/components/CreateWhiteboardModal';
 import WhiteboardList from '@/components/WhiteboardList';
+import Footer from '@/components/Footer';
 
 const Dashboard = (): React.JSX.Element => {
   const navigate = useNavigate();
@@ -170,6 +171,8 @@ const Dashboard = (): React.JSX.Element => {
           }
         })()}
       </main>
+
+      <Footer />
     </Page>
   );
 };// end Dashboard
