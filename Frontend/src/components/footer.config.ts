@@ -19,13 +19,13 @@ export const defaultFooterConfig: FooterConfigType = [
 		items: [
 			{ 
 				label: "GitHub", 
-				href: "/", 
+				href: "https://github.com/ollykel/WhiteboardEditor", 
 				icon: "@/github", 
 				type: "standard",
 			},
 			{ 
 				label: "LinkedIn", 
-				href: "/", 
+				href: "https://www.linkedin.com/in/oliver-andrew-k/", 
 				icon: "@/linkedin",
 				type: "standard",
 			},
