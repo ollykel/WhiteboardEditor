@@ -17,6 +17,7 @@ import {
 import {
   type User,
 } from '@/types/APIProtocol';
+import Footer from "@/components/Footer";
 
 export default function AccountSettings() {
   const { user, setUser } = useContext(AuthContext)!;
@@ -269,6 +270,8 @@ export default function AccountSettings() {
           </div>
         </div>
       </div>
+
+      <Footer />
     </Page>
   );
 }
