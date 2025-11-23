@@ -400,6 +400,10 @@ const Canvas = (props: CanvasProps) => {
     }
   };// -- end handleMouseOut
 
+  // get the CSS variable from :root (index.css)
+  const rootStyles = getComputedStyle(document.documentElement);
+  const canvasBackgroundColor = rootStyles.getPropertyValue('--canvas-background').trim();
+
   return (
     <Group
       ref={groupRef}
@@ -420,7 +424,7 @@ const Canvas = (props: CanvasProps) => {
       <Rect
         width={width}
         height={height}
-        fill="white"
+        fill={canvasBackgroundColor}
       />
 
       <Group
