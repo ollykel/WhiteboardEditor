@@ -1,4 +1,5 @@
 import type { FooterSectionType } from "./FooterSection";
+import BoardlyIcon from "@/assets/icons/boardly.svg";
 
 export type FooterConfigType = FooterSectionType[];
 
@@ -9,7 +10,7 @@ export const defaultFooterConfig: FooterConfigType = [
 			{
 				label: "Boardly", 
 				href: "/", 
-				icon: "@/public/images/boardl.svg", 
+				icon: BoardlyIcon, 
 				type: "header" 
 			},
 		],
@@ -20,13 +21,13 @@ export const defaultFooterConfig: FooterConfigType = [
 			{ 
 				label: "GitHub", 
 				href: "https://github.com/ollykel/WhiteboardEditor", 
-				icon: "@/github", 
+				icon: "icons/github-mark-white.svg", 
 				type: "standard",
 			},
 			{ 
 				label: "LinkedIn", 
 				href: "https://www.linkedin.com/in/oliver-andrew-k/", 
-				icon: "@/linkedin",
+				icon: "icons/LI-In-Bug.png",
 				type: "standard",
 			},
 		],
