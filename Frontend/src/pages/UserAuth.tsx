@@ -6,6 +6,7 @@ import {
 import HeaderUnauthed from "@/components/HeaderUnauthed";
 import AuthForm from "@/components/AuthForm";
 import Page from '@/components/Page';
+import Footer from '@/components/Footer';
 
 interface UserAuthProps {
   action: "login" | "signup";
@@ -64,6 +65,8 @@ const UserAuth = ({
           />
         </div>
       </div>
+
+      <Footer />
     </Page>
 );
 };
