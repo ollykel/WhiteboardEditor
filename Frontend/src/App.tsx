@@ -22,6 +22,7 @@ import {
 import AccountSettings from '@/pages/AccountSettings';
 import { AuthProvider } from '@/context/AuthContext';
 import ProtectedRoute from '@/components/ProtectedRoute';
+import AboutUs from './pages/AboutUs';
 
 const App = () => {
   const queryClient = new QueryClient();
@@ -34,6 +35,7 @@ const App = () => {
             {/** Public Routes **/}
             <Route path="/login" element={<UserAuth action="login"/>} />
             <Route path="/signup" element={<UserAuth action="signup"/>} />
+            <Route path="/aboutUs" element={<AboutUs />} />
 
             {/** Protected Routes **/}
             <Route path="/" element={
