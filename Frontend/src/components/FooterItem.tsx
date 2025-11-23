@@ -21,9 +21,11 @@ const FooterItem = ({
 		footnote: "text-xs text-gray-500"
 	};
 
+	const imageSize = type === "header" ? 24 : 18;
+
 	return (		
 		<a href={href} className={variants[type]}>
-			{icon && <img src={icon} height={16} />}
+			{icon && <img src={icon} width={imageSize} height={imageSize} alt={label + " icon"} />}
 			{label}
 		</a>
 	);
