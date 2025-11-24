@@ -1,3 +1,5 @@
+// -- third-party imports
+
 import {
   Routes,
   Route,
@@ -13,14 +15,24 @@ import {
   Bounce,
 } from 'react-toastify';
 
-import Dashboard from '@/pages/Dashboard';
-import Whiteboard from '@/pages/Whiteboard';
-import UserAuth from '@/pages/UserAuth';
+// -- local imports
+
+import {
+  AuthProvider,
+} from '@/context/AuthContext';
+
 import {
   UserCacheProvider,
 } from '@/context/UserCacheContext';
+
+import {
+  WebSocketClientMessengerProvider,
+} from '@/context/WebSocketClientMessengerProvider';
+
+import Dashboard from '@/pages/Dashboard';
+import Whiteboard from '@/pages/Whiteboard';
+import UserAuth from '@/pages/UserAuth';
 import AccountSettings from '@/pages/AccountSettings';
-import { AuthProvider } from '@/context/AuthContext';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import AboutUs from './pages/AboutUs';
 
@@ -55,7 +67,9 @@ const App = () => {
             } />
             <Route path="/whiteboard/:whiteboard_id" element={
               <ProtectedRoute fallback="/login">
-                <Whiteboard />
+                <WebSocketClientMessengerProvider>
+                  <Whiteboard />
+                </WebSocketClientMessengerProvider>
               </ProtectedRoute>
             } />
           </Routes>

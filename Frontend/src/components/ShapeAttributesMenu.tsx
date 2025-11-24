@@ -45,8 +45,8 @@ const ShapeAttributesMenu = (props: ShapeAttributesMenuProps) => {
   }
 
   const {
-    selectedShapeIds,
     handleUpdateShapes,
+    selectedShapeIds,
     currentTool,
     currentDispatcher,
     selectedCanvasId,
@@ -96,8 +96,8 @@ const ShapeAttributesMenu = (props: ShapeAttributesMenuProps) => {
           <Component
             key={key}
             selectedShapeIds={selectedShapeIds}
-            handleUpdateShapes={handleUpdateShapes}
             dispatch={dispatch}
+            handleUpdateShapes={handleUpdateShapes}
             canvasId={selectedCanvasId}
             value={firstShape ? firstShape[key as keyof CanvasObjectModel] : attributes[key]}
             className="rounded-lg border-border"

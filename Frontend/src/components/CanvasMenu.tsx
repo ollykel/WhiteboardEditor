@@ -41,10 +41,13 @@ import {
 
 import WhiteboardContext from "@/context/WhiteboardContext";
 
+import {
+  ClientMessengerContext,
+} from '@/context/ClientMessengerContext';
+
 import AllowedUsersPopover from "@/components/AllowedUsersPopover";
 
 import type { 
-  ClientMessageDeleteCanvases, 
   CanvasIdType, 
   WhiteboardIdType,
   WhiteboardAttribs,
@@ -85,6 +88,7 @@ const CanvasMenu = ({
   ) ?? [];
   const [selectedUsers, setSelectedUsers] = useState<string[]>(allowedUsers);
 
+  // -- unpack Whiteboard context
   const whiteboardContext = useContext(WhiteboardContext);
 
   if (! whiteboardContext) {
@@ -92,9 +96,19 @@ const CanvasMenu = ({
   }
 
   const { 
-    socketRef, 
     canvasGroupRefsByIdRef,
   } = whiteboardContext;
+
+  // -- unpack ClientMessenger context
+  const clientMessengerContext = useContext(ClientMessengerContext);
+
+  if (! clientMessengerContext) {
+    throw new Error('No ClientMessengerContext provided to CanvasMenu');
+  }
+
+  const {
+    clientMessenger,
+  } = clientMessengerContext;
 
   const whiteboard: WhiteboardAttribs | null = useSelector((state: RootState) => (
     selectWhiteboardById(state, whiteboardId))
@@ -113,25 +127,25 @@ const CanvasMenu = ({
   }
 
   const handleUpdateAllowedUsers = (allowedUsers: string[]) => {
-    // Send WS message
-    if (socketRef.current) {
-      socketRef.current.send(JSON.stringify({
+    if (! clientMessenger) {
+      console.error('Could not update allowed users: no ClientMessenger provided');
+    } else {
+      clientMessenger.sendUpdateCanvasAllowedUsers({
         type: 'update_canvas_allowed_users',
         canvasId,
         allowedUsers,
-      }));
+      });
     }
   };
 
   const handleDelete = () => {
-    // broadcast to server
-    if (socketRef.current) {
-      const msg: ClientMessageDeleteCanvases = {
+    if (! clientMessenger) {
+      console.error('Could not update allowed users: no ClientMessenger provided');
+    } else {
+      clientMessenger.sendDeleteCanvases({
         type: "delete_canvases",
         canvasIds: [canvasId],
-      };
-
-      socketRef.current.send(JSON.stringify(msg));
+      });
     }
   };
 

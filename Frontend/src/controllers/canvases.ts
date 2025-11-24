@@ -2,10 +2,11 @@ import type {
   AppDispatch
 } from '@/store';
 
-import type {
-  WhiteboardIdType,
-  CanvasIdType,
-  CanvasData
+import {
+  type WhiteboardIdType,
+  type CanvasIdType,
+  type CanvasData,
+  type UserIdType,
 } from '@/types/WebSocketProtocol';
 
 import {
@@ -22,7 +23,9 @@ import {
 
 import {
   setCanvases,
-  removeCanvases
+  removeCanvases,
+  setCurrentEditorByCanvas as reduxSetCurrentEditorByCanvas,
+  unsetCurrentEditorByCanvas as reduxUnsetCurrentEditorByCanvas,
 } from '@/store/canvases/canvasesSlice';
 
 import {
@@ -73,4 +76,19 @@ export const deleteCanvas = (
 ) => {
   dispatch(removeCanvases([canvasId]));
   dispatch(removeCanvasesByWhiteboard([canvasId]));
+};
+
+export const setCurrentEditorByCanvas = (
+  dispatch: AppDispatch,
+  canvasId: CanvasIdType,
+  editorUserId: UserIdType
+) => {
+  dispatch(reduxSetCurrentEditorByCanvas({ [canvasId]: editorUserId }));
+};
+
+export const unsetCurrentEditorByCanvas = (
+  dispatch: AppDispatch,
+  canvasId: CanvasIdType,
+) => {
+  dispatch(reduxUnsetCurrentEditorByCanvas([ canvasId ]));
 };

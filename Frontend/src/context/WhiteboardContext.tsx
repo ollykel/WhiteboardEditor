@@ -30,8 +30,7 @@ import type {
 import type { OperationDispatcher } from '@/types/OperationDispatcher';
 
 export interface WhiteboardContextType {
-  socketRef: RefObject<WebSocket | null>;
-  handleUpdateShapes: (canvasId: CanvasIdType, shapes: Record<CanvasObjectIdType, Partial<CanvasObjectModel>>) => void;
+  handleUpdateShapes: (canvasId: CanvasIdType, shapes: Record<CanvasObjectIdType, Partial<CanvasObjectModel>>) => unknown;
   currentTool: ToolChoice;
   setCurrentTool: React.Dispatch<React.SetStateAction<ToolChoice>>;
   whiteboardId: WhiteboardIdType;
@@ -54,7 +53,7 @@ export interface WhiteboardContextType {
   setTooltipText: (text: string) => void;
   editingText: string;
   setEditingText: (text: string) => void;
-}
+}// -- end interface WhiteboardContextType
 
 export type WhiteboardProvidersProps = WhiteboardContextType;
 
@@ -62,7 +61,6 @@ const WhiteboardContext = createContext<WhiteboardContextType | undefined>(undef
 
 const WhiteboardProvider = (props: PropsWithChildren<WhiteboardProvidersProps>): React.JSX.Element => {
   const {
-    socketRef,
     handleUpdateShapes,
     currentTool,
     setCurrentTool,
@@ -89,7 +87,6 @@ const WhiteboardProvider = (props: PropsWithChildren<WhiteboardProvidersProps>):
 
   return (
     <WhiteboardContext.Provider value={{
-      socketRef,
       handleUpdateShapes,
       currentTool,
       setCurrentTool,

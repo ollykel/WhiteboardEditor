@@ -1,25 +1,55 @@
-import type { AttributeDefinition, AttributeProps } from "@/types/Attribute";
-import type { CanvasObjectIdType, CanvasObjectModel } from "@/types/CanvasObjectModel";
+// -- std imports
+import {
+  useContext,
+  useCallback,
+} from 'react';
+
+// -- local imports
+import {
+  type AttributeDefinition,
+  type AttributeProps,
+} from "@/types/Attribute";
+
+import {
+  type CanvasObjectIdType,
+  type CanvasObjectModel,
+} from "@/types/CanvasObjectModel";
+
+import WhiteboardContext from '@/context/WhiteboardContext';
+
 import AttributeMenuItem from "./AttributeMenuItem";
 
 const FillColorComponent = ({
   selectedShapeIds, 
-  handleUpdateShapes, 
   dispatch, 
   canvasId, 
   value,
 }: AttributeProps) => {
-  const onChangeFillColor = (ev: React.ChangeEvent<HTMLInputElement>) => {
-    ev.preventDefault();
-    const color = ev.target.value;
-  
-    dispatch({ type: 'SET_FILL_COLOR', payload: color });
-  
-    handleUpdateShapes(
-      canvasId,
-      Object.fromEntries(selectedShapeIds.map(id => [id, { fillColor: color }])) as Record<CanvasObjectIdType, Partial<CanvasObjectModel>>
-    );  
-  };
+  const whiteboardContext = useContext(WhiteboardContext);
+
+  if (! whiteboardContext) {
+    throw new Error('No Whiteboard context provided to AttributeFillColor');
+  }
+
+  const {
+    handleUpdateShapes,
+  } = whiteboardContext;
+
+  const onChangeFillColor = useCallback(
+    (ev: React.ChangeEvent<HTMLInputElement>) => {
+      ev.preventDefault();
+
+      const color = ev.target.value;
+    
+      dispatch({ type: 'SET_FILL_COLOR', payload: color });
+    
+      handleUpdateShapes(
+        canvasId,
+        Object.fromEntries(selectedShapeIds.map(id => [id, { fillColor: color }])) as Record<CanvasObjectIdType, Partial<CanvasObjectModel>>
+      );  
+    },
+    [dispatch, handleUpdateShapes]
+  );
  
   return (
     <AttributeMenuItem title="Fill Color">

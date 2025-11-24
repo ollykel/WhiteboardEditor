@@ -4,8 +4,11 @@ import type {
   RootState
 } from '@/store';
 
+import {
+  type CanvasAttribs,
+} from '@/types/RootState';
+
 import type {
-  CanvasAttribs,
   CanvasData,
   CanvasIdType,
   WhiteboardIdType
