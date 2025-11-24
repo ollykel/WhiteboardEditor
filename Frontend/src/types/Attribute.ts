@@ -8,10 +8,24 @@
 //
 // =============================================================================
 
-import type { Dispatch } from "react";
-import type { CanvasObjectIdType, CanvasObjectModel } from "./CanvasObjectModel";
-import type { CanvasIdType } from "./WebSocketProtocol";
-import type { ShapeAttributesAction, ShapeAttributesState } from "@/reducers/shapeAttributesReducer";
+import type {
+  Dispatch,
+} from "react";
+
+import {
+  type CanvasObjectIdType,
+  type CanvasObjectModel,
+} from "@/types/CanvasObjectModel";
+
+import {
+  type CanvasIdType,
+} from '@/types/WebSocketProtocol';
+
+import type {
+  ShapeAttributesAction,
+  ShapeAttributesState,
+} from "@/reducers/shapeAttributesReducer";
+
 import AttributeStrokeWidth from "@/components/AttributeStrokeWidth";
 import AttributeStrokeColor from "@/components/AttributeStrokeColor";
 import AttributeFillColor from "@/components/AttributeFillColor";
@@ -51,8 +65,8 @@ export type Attribute =
 
 export interface AttributeProps {
   selectedShapeIds: CanvasObjectIdType[];
-  handleUpdateShapes(canvasId: CanvasIdType, shapes: Record<CanvasObjectIdType, Partial<CanvasObjectModel>>): void;
   dispatch: Dispatch<ShapeAttributesAction>;
+  handleUpdateShapes: (canvasId: CanvasIdType, shapes: Record<CanvasObjectIdType, Partial<CanvasObjectModel>>) => unknown;
   canvasId: string;
   value: Attribute['value'];
   className: string;

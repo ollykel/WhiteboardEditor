@@ -1,16 +1,18 @@
 // re-import constituent functions
 
 import {
-  setCanvasObjects
+  setCanvasObjects,
 } from './canvasObjects';
 
 import {
   addCanvas,
-  deleteCanvas
+  deleteCanvas,
+  setCurrentEditorByCanvas,
+  unsetCurrentEditorByCanvas,
 } from './canvases';
 
 import {
-  addWhiteboard
+  addWhiteboard,
 } from './whiteboards';
 
 import {
@@ -22,6 +24,8 @@ export {
   setCanvasObjects,
   addCanvas,
   deleteCanvas,
+  setCurrentEditorByCanvas,
+  unsetCurrentEditorByCanvas,
   addWhiteboard,
   addActiveUsersByWhiteboard,
   setActiveUsersByWhiteboard,
