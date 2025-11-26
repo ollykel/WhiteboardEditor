@@ -125,51 +125,57 @@ const Dashboard = (): React.JSX.Element => {
           />
         </div>
 
-        <h1 className="pt-12 mb-8 mx-24 text-center lg:text-left lg:pl-36 text-2xl text-h2-text font-bold font-mono border-t-1 border-border">
-          Your Whiteboards
-        </h1>
-        {(() => {
-          if (isOwnWhiteboardsError) {
-            return (
-              <WhiteboardList
-                status="error"
-                message={`${isOwnWhiteboardsError}`}
-              />
-            );
-          } else if (isOwnWhiteboardsLoading || isOwnWhiteboardsFetching) {
-            return (<WhiteboardList status="loading" />);
-          } else {
-            return (
-              <WhiteboardList
-                status="ready"
-                whiteboardsAttribs={ownWhiteboards || []}
-              />
-            );
-          }
-        })()}
+        <div className='flex border-t-1 border-border mx-24'>
+          <div className="flex-1 flex-col border-r-1 border-border">
+            <h1 className="pt-12 mb-8 mx-24 text-center lg:text-left lg:pl-36 text-2xl text-h2-text font-bold font-mono">
+              Your Whiteboards
+            </h1>
+            {(() => {
+              if (isOwnWhiteboardsError) {
+                return (
+                  <WhiteboardList
+                    status="error"
+                    message={`${isOwnWhiteboardsError}`}
+                  />
+                );
+              } else if (isOwnWhiteboardsLoading || isOwnWhiteboardsFetching) {
+                return (<WhiteboardList status="loading" />);
+              } else {
+                return (
+                  <WhiteboardList
+                    status="ready"
+                    whiteboardsAttribs={ownWhiteboards || []}
+                  />
+                );
+              }
+            })()}
+          </div>
 
-        <h1 className="pt-12 my-8 mx-24 text-center lg:text-left lg:pl-36 text-2xl text-h2-text font-bold font-mono border-t-1 border-border">
-          Shared Whiteboards
-        </h1>
-        {(() => {
-          if (isSharedWhiteboardsError) {
-            return (
-              <WhiteboardList
-                status="error"
-                message={`${isSharedWhiteboardsError}`}
-              />
-            );
-          } else if (isSharedWhiteboardsLoading || isSharedWhiteboardsFetching) {
-            return (<WhiteboardList status="loading" />);
-          } else {
-            return (
-              <WhiteboardList
-                status="ready"
-                whiteboardsAttribs={sharedWhiteboards || []}
-              />
-            );
-          }
-        })()}
+          <div className="flex-1 flex-col">
+            <h1 className="pt-12 mb-8 mx-24 text-center lg:text-left lg:pl-36 text-2xl text-h2-text font-bold font-mono">
+              Shared Whiteboards
+            </h1>
+            {(() => {
+              if (isSharedWhiteboardsError) {
+                return (
+                  <WhiteboardList
+                    status="error"
+                    message={`${isSharedWhiteboardsError}`}
+                  />
+                );
+              } else if (isSharedWhiteboardsLoading || isSharedWhiteboardsFetching) {
+                return (<WhiteboardList status="loading" />);
+              } else {
+                return (
+                  <WhiteboardList
+                    status="ready"
+                    whiteboardsAttribs={sharedWhiteboards || []}
+                  />
+                );
+              }
+            })()}
+          </div>
+        </div>
       </main>
 
       <Footer />
