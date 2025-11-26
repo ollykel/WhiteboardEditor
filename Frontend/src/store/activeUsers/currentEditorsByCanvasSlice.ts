@@ -21,6 +21,14 @@ import {
   type CanvasIdType,
 } from '@/types/WebSocketProtocol';
 
+import {
+  removeActiveUser,
+} from '@/store/activeUsers/activeUsersSlice';
+
+import {
+  removeCanvases,
+} from '@/store/canvases/canvasesSlice';
+
 // -- type definitions
 interface CurrentEditorsByCanvasSliceState {
   currentEditorsByCanvas: Record<CanvasIdType, ClientIdType>;
@@ -81,6 +89,45 @@ const currentEditorsByCanvasSlice = createSlice({
         canvasesByCurrentEditor: newCanvasesByCurrentEditor,
       };
     },
+  },
+  extraReducers: (builder) => {
+    // -- ensure current editor relation is removed if active user is removed
+    builder.addCase(removeActiveUser, (state, action: PayloadAction<ClientIdType>) => {
+      const clientId : ClientIdType = action.payload;
+
+      if (clientId in state.canvasesByCurrentEditor) {
+        const newCurrentEditorsByCanvas = { ...state.currentEditorsByCanvas };
+        const newCanvasesByCurrentEditor = { ...state.canvasesByCurrentEditor };
+
+        delete newCurrentEditorsByCanvas[newCanvasesByCurrentEditor[clientId]];
+        delete newCanvasesByCurrentEditor[clientId];
+
+        return {
+          currentEditorsByCanvas: newCurrentEditorsByCanvas,
+          canvasesByCurrentEditor: newCanvasesByCurrentEditor,
+        };
+      }
+    });
+
+    // -- ensure current editor relations are removed when canvases are removed
+    builder.addCase(removeCanvases, (state, action: PayloadAction<CanvasIdType[]>) => {
+      const canvasIds : CanvasIdType[] = action.payload;
+      const newCurrentEditorsByCanvas = { ...state.currentEditorsByCanvas };
+      const newCanvasesByCurrentEditor = { ...state.canvasesByCurrentEditor };
+
+      for (const canvasId of canvasIds) {
+        if (canvasId in newCurrentEditorsByCanvas) {
+
+          delete newCanvasesByCurrentEditor[newCurrentEditorsByCanvas[canvasId]];
+          delete newCurrentEditorsByCanvas[canvasId];
+        }
+      }// -- end for canvasId
+
+      return {
+        currentEditorsByCanvas: newCurrentEditorsByCanvas,
+        canvasesByCurrentEditor: newCanvasesByCurrentEditor,
+      };
+    });
   },
 });// -- end currentEditorsByCanvasSlice
 
