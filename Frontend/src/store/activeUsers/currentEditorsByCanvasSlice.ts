@@ -12,7 +12,7 @@
 // -- std imports
 import {
   createSlice,
-  type PayloadAction
+  type PayloadAction,
 } from '@reduxjs/toolkit'
 
 // -- local imports
@@ -130,5 +130,11 @@ const currentEditorsByCanvasSlice = createSlice({
     });
   },
 });// -- end currentEditorsByCanvasSlice
+
+export const {
+  setCurrentEditorsByCanvas,
+  unsetCurrentEditorsByCanvas,
+  removeCurrentEditors,
+} = currentEditorsByCanvasSlice.actions;
 
 export default currentEditorsByCanvasSlice.reducer;
