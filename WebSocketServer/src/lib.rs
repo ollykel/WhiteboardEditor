@@ -323,8 +323,11 @@ pub enum ServerSocketMessage {
         whiteboard: WhiteboardClientView,
         active_clients: HashMap<ClientIdType, UserSummary>,
     },
-    ActiveUsers {
+    LoginUsers {
         users: Vec<UserSummary>,
+    },
+    LogoutUsers {
+        clients: Vec<ClientIdType>,
     },
     EditingCanvas {
         client_id: ClientIdType,
@@ -721,6 +724,7 @@ pub struct ProgramState {
 #[derive(Debug)]
 pub struct ClientState {
     pub client_id: ClientIdType,
+    pub user_summary: Mutex<Option<UserSummary>>,
     pub whiteboard_ref: Arc<Mutex<Whiteboard>>,
     pub jwt_secret: String,
     // The permission (view/edit/own) the user has on the current whiteboard
@@ -1214,18 +1218,22 @@ pub async fn handle_unauthenticated_client_message<StoreType: UserStore + Whiteb
 
                     if let Some(permission) = permission {
                         // User has a valid permission
+                        let user_summary = UserSummary{
+                            client_id: client_state.client_id,
+                            user_id: user_id.to_string(),
+                            username: user.username.clone(),
+                        };
+
+                        *client_state.user_summary.lock().await = Some(user_summary.clone());
 
                         let active_clients = {
                             // Return a clone of clients here to avoid acquiring two locks at the
                             // same time (reduces risk of deadlock).
                             let mut clients = client_state.active_clients.lock().await;
+
                             clients.insert(
                                 client_state.client_id,
-                                UserSummary {
-                                    client_id: client_state.client_id,
-                                    user_id: user_id.to_string(),
-                                    username: user.username.clone(),
-                                },
+                                user_summary.clone(),
                             );
 
                             clients.clone()

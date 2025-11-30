@@ -5,7 +5,6 @@ use std::{
     process,
     sync::Arc,
     net::SocketAddr,
-    collections::HashSet,
     collections::HashMap,
 };
 
@@ -188,6 +187,7 @@ async fn handle_connection(ws: WebSocket, whiteboard_id: WhiteboardIdType, conne
     // -- create client state
     let client_state_ref = Arc::new(ClientState {
         client_id: current_client_id,
+        user_summary: Mutex::new(None),
         jwt_secret: connection_state_ref.jwt_secret.clone(),
         // None = user unauthenticated
         user_whiteboard_permission: Mutex::new(None),
@@ -430,6 +430,14 @@ async fn handle_connection(ws: WebSocket, whiteboard_id: WhiteboardIdType, conne
                 if let Some(_) = *client_state_ref.user_whiteboard_permission.lock().await {
                     // break if user has been authenticated (indicated by user_permission field
                     // being set in client state)
+
+                    // First, notify all clients of new login
+                    if let Some(ref user_summary) = *client_state_ref.user_summary.lock().await {
+                        tx.send(ServerSocketMessage::LoginUsers{
+                            users: vec![ user_summary.clone() ],
+                        }).ok();
+                    }
+
                     break;
                 }
             }// end while let Some(Ok(msg)) = user_ws_rx.next().await
@@ -618,20 +626,17 @@ async fn handle_connection(ws: WebSocket, whiteboard_id: WhiteboardIdType, conne
         _ = recv_task => {},
     }
 
-    // Cleanup when client disconnects
+    // Clean up when client disconnects
     {
         let mut clients = shared_whiteboard_entry.active_clients.lock().await;
+
         clients.remove(&current_client_id);
 
-        // Deduplicate by user_id
-        let mut seen = HashSet::new();
-        let users: Vec<UserSummary> = clients
-            .values()
-            .filter(|u| seen.insert(u.user_id.clone())) // only first occurences
-            .cloned() // turn &UserSummary into UserSummary
-            .collect();
-
-        tx.send(ServerSocketMessage::ActiveUsers { users }).ok();
+        // -- notify other clients of client disconnect
+        let _ = tx.send(ServerSocketMessage::LogoutUsers{ clients: Vec::<ClientIdType>::from_iter([
+                current_client_id,
+            ])
+        });
     }
 
     println!("Client {} disconnected", current_client_id);

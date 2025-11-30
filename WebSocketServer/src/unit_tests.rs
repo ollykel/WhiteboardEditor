@@ -32,6 +32,11 @@ mod unit_tests {
 
         let client_state = ClientState {
             client_id: test_client_id,
+            user_summary: Mutex::new(Some(UserSummary{
+                client_id: test_client_id,
+                user_id: String::from("68d5e8cf829da666aece5f47"),
+                username: String::from("Alice"),
+            })),
             jwt_secret: String::from("abcd"),
             user_whiteboard_permission: Mutex::new(None),
             whiteboard_ref: Arc::new(Mutex::new(whiteboard.clone())),
@@ -166,6 +171,11 @@ mod unit_tests {
 
         let client_state = ClientState {
             client_id: test_client_id,
+            user_summary: Mutex::new(Some(UserSummary{
+                client_id: test_client_id,
+                user_id: String::from("68d5e8cf829da666aece5f47"),
+                username: String::from("Alice"),
+            })),
             jwt_secret: String::from("abcd"),
             user_whiteboard_permission: Mutex::new(
                 Some(WhiteboardPermissionEnum::Own)
@@ -436,6 +446,11 @@ mod unit_tests {
         };
         let client_state = ClientState {
             client_id: test_client_id,
+            user_summary: Mutex::new(Some(UserSummary{
+                client_id: test_client_id,
+                user_id: String::from("68d5e8cf829da666aece5f47"),
+                username: String::from("Alice"),
+            })),
             jwt_secret: String::from(jwt_secret),
             user_whiteboard_permission: Mutex::new(None),
             whiteboard_ref: Arc::new(Mutex::new(whiteboard.clone())),
@@ -581,6 +596,11 @@ mod unit_tests {
 
         let client_state = ClientState {
             client_id: test_client_id,
+            user_summary: Mutex::new(Some(UserSummary{
+                client_id: test_client_id,
+                user_id: String::from("68d5e8cf829da666aece5f47"),
+                username: String::from("Alice"),
+            })),
             jwt_secret: String::from("abcd"),
             user_whiteboard_permission: Mutex::new(Some(WhiteboardPermissionEnum::Edit)),
             whiteboard_ref: Arc::new(Mutex::new(whiteboard.clone())),
