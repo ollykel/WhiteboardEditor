@@ -58,7 +58,7 @@ function Toolbar({ toolChoice, onToolChange }: ToolbarProps) {
       label={getToolChoiceLabel(choice)}
       variant={choice === toolChoice ? 'selected' : 'default'}
       onClick={() => onToolChange(choice)}
-      tooltip={getTooltip(toolChoice)}
+      tooltip={getTooltip(choice)}
     />
   );
 
