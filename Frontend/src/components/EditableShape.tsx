@@ -59,7 +59,7 @@ const EditableShape = <ShapeType extends ShapeModel> ({
     trRef.current.nodes(isSelected ? [shapeRef.current] : []);
   }, [isSelected]);
 
-  const handleSelect = (ev: Konva.KonvaEventObject<MouseEvent>) => {
+  const handleSelect = (ev: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => {
     ev.cancelBubble = true;
     setSelectedShapeIds([id]);
   }
@@ -69,7 +69,7 @@ const EditableShape = <ShapeType extends ShapeModel> ({
     const stage = shapeRef.current?.getStage();
     if (!stage) return;
 
-    const listener = (ev: Konva.KonvaEventObject<MouseEvent>) => {
+    const listener = (ev: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => {
       if (ev.target !== shapeRef.current) setSelectedShapeIds([]);
     };
 
