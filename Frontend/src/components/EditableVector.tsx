@@ -38,7 +38,7 @@ const EditableVector = <VectorType extends VectorModel>({
   } = whiteboardContext;
   const isSelected = selectedShapeIds.includes(id);
 
-  const handleSelect = (e: Konva.KonvaEventObject<MouseEvent>) => {
+  const handleSelect = (e: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => {
     e.cancelBubble = true;
     setSelectedShapeIds([id]);
   };
@@ -48,7 +48,7 @@ const EditableVector = <VectorType extends VectorModel>({
     const stage = vectorRef.current?.getStage();
     if (!stage) return;
 
-    const listener = (ev: Konva.KonvaEventObject<MouseEvent>) => {
+    const listener = (ev: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => {
       if (ev.target !== vectorRef.current) setSelectedShapeIds([]);
     };
 

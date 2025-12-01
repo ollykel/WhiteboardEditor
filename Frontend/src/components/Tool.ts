@@ -36,6 +36,25 @@ const getToolChoiceLabel = (toolChoice: ToolChoice): LucideIcon => {
   }// end switch (toolChoice)
 };// end getToolChoiceLabel
 
+export const getTooltip = (toolChoice: ToolChoice): string => {
+  switch (toolChoice) {
+    case 'hand':
+      return "Move Shapes";
+    case 'rect':
+      return "Draw Rectangle";
+    case 'vector':
+      return "Draw Line";
+    case 'ellipse':
+      return "Draw Ellipse";
+    case 'text':
+      return "Add Text";
+    case 'create_canvas':
+      return "Create a new Canvas";
+    default:
+      throw new Error(`Unrecognized tool choice: ${toolChoice}`);
+  }
+}
+
 export {
   getToolChoiceLabel
 };

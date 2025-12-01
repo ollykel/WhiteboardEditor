@@ -78,7 +78,7 @@ const EditableText = ({
     }
   }, [isSelected])
   
-  const handleSelect = useCallback((ev: Konva.KonvaEventObject<MouseEvent>) => {
+  const handleSelect = useCallback((ev: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => {
     ev.cancelBubble = true;
 
     if (!isEditing) {
@@ -91,7 +91,7 @@ const EditableText = ({
   useEffect(() => {
     if (isEditing) return;
 
-    const handleStageClick = (e: Konva.KonvaEventObject<MouseEvent>) => {
+    const handleStageClick = (e: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => {
       if (e.evt.detail === 2) {
         return;
       }
@@ -110,7 +110,7 @@ const EditableText = ({
   }, [isEditing, setSelectedShapeIds]);
 
 
-  const handleTextDblClick = useCallback((e: Konva.KonvaEventObject<MouseEvent>) => {
+  const handleTextDblClick = useCallback((e: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => {
     if (!draggable) return;
 
     e.cancelBubble = true;
