@@ -4,11 +4,12 @@ import React, {
 
 import WhiteboardContext from '@/context/WhiteboardContext';
 
-import { getToolChoiceLabel } from '@/components/Tool';
+import { getToolChoiceLabel, getTooltip } from '@/components/Tool';
 
 import type { ToolChoice } from '@/components/Tool';
 
 import type { LucideIcon } from 'lucide-react';
+import TooltipHover from './TooltipHover';
 
 interface ToolbarProps {
   toolChoice: ToolChoice;
@@ -19,7 +20,7 @@ interface ToolbarButtonProps {
   label: LucideIcon;
   variant: 'default' | 'selected';
   onClick?: () => void;
-
+  tooltip: string;
 }
 const tools: ToolChoice[] = [
   "hand",
@@ -31,17 +32,19 @@ const tools: ToolChoice[] = [
 ];
 
 const ToolbarButton = React.forwardRef<HTMLButtonElement, ToolbarButtonProps>(
-  ({ label, variant, onClick }, ref) => {
+  ({ label, variant, onClick, tooltip }, ref) => {
     const Icon = label;
     
     return (
-      <button
-        ref={ref}
-        onClick={onClick}
-        className={`p-2 place-items-center rounded-xl hover:cursor-pointer ${variant === 'selected' && 'text-header-button-text-hover bg-header-button-background border-1 border-border'} hover:bg-header-button-background-hover hover:text-header-button-text-hover`}
-      >
-        <Icon />
-      </button>
+      <TooltipHover text={tooltip}>
+        <button
+          ref={ref}
+          onClick={onClick}
+          className={`p-2 place-items-center rounded-xl hover:cursor-pointer ${variant === 'selected' && 'text-header-button-text-hover bg-header-button-background border-1 border-border'} hover:bg-header-button-background-hover hover:text-header-button-text-hover`}
+        >
+          <Icon />
+        </button>
+      </TooltipHover>
     )
   }
 );
@@ -57,6 +60,7 @@ function Toolbar({ toolChoice, onToolChange }: ToolbarProps) {
       label={getToolChoiceLabel(choice)}
       variant={choice === toolChoice ? 'selected' : 'default'}
       onClick={() => onToolChange(choice)}
+      tooltip={getTooltip(choice)}
     />
   );
 
