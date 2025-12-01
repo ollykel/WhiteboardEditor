@@ -20,7 +20,7 @@ export const defaultFooterConfig: FooterConfigType = [
 		items: [
 			{ 
 				label: "GitHub", 
-				href: "https://github.com/ollykel/WhiteboardEditor", 
+				href: "https://github.com/board-ly-app/WhiteboardEditor", 
 				icon: "icons/github-mark-white.svg", 
 				type: "standard",
 			},
