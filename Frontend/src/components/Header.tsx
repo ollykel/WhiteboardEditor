@@ -76,7 +76,7 @@ const Header = ({
           </div>
 
           {/* Title */}
-          <h1 className="flex-1 min-w-0 text-lg md:text-2xl text-header-title-text font-bold truncate text-center">
+          <h1 className="absolute left-1/2 transform -translate-x-1/2 md:flex-1 min-w-0 text-lg md:text-2xl text-header-title-text font-bold truncate text-center">
             {title}
           </h1>
           
