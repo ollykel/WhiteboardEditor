@@ -9,6 +9,7 @@ import { getToolChoiceLabel, getTooltip } from '@/components/Tool';
 import type { ToolChoice } from '@/components/Tool';
 
 import type { LucideIcon } from 'lucide-react';
+import TooltipHover from './TooltipHover';
 
 interface ToolbarProps {
   toolChoice: ToolChoice;
@@ -35,14 +36,15 @@ const ToolbarButton = React.forwardRef<HTMLButtonElement, ToolbarButtonProps>(
     const Icon = label;
     
     return (
-      <button
-        ref={ref}
-        onClick={onClick}
-        className={`p-2 place-items-center rounded-xl hover:cursor-pointer ${variant === 'selected' && 'text-header-button-text-hover bg-header-button-background border-1 border-border'} hover:bg-header-button-background-hover hover:text-header-button-text-hover`}
-        title={tooltip}
-      >
-        <Icon />
-      </button>
+      <TooltipHover text={tooltip}>
+        <button
+          ref={ref}
+          onClick={onClick}
+          className={`p-2 place-items-center rounded-xl hover:cursor-pointer ${variant === 'selected' && 'text-header-button-text-hover bg-header-button-background border-1 border-border'} hover:bg-header-button-background-hover hover:text-header-button-text-hover`}
+        >
+          <Icon />
+        </button>
+      </TooltipHover>
     )
   }
 );
