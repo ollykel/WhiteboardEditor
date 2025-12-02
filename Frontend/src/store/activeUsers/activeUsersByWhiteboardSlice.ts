@@ -6,56 +6,105 @@ import {
 import {
   type ClientIdType,
   type WhiteboardIdType,
-  type UserSummary,
 } from '@/types/WebSocketProtocol';
 
-type ActiveUsersByWhiteboardState = Record<WhiteboardIdType, Record<ClientIdType, UserSummary>>;
+interface ActiveUsersByWhiteboardState {
+  clientsByWhiteboard: Record<WhiteboardIdType, Record<ClientIdType, ClientIdType>>;
+  whiteboardsByClient: Record<ClientIdType, WhiteboardIdType>;
+};
 
-type RemoveActiveUsersByWhiteboardPayload = PayloadAction<{
-  whiteboardId: WhiteboardIdType;
-  clientId: ClientIdType;
-}>;
-
-const initialState : ActiveUsersByWhiteboardState = {};
+const initialState : ActiveUsersByWhiteboardState = {
+  clientsByWhiteboard: {},
+  whiteboardsByClient: {},
+};
 
 export const activeUsersByWhiteboardSlice = createSlice({
   name: 'activeUsersByWhiteboard',
   initialState,
   reducers: {
-    setActiveUsersByWhiteboard(state, action: PayloadAction<ActiveUsersByWhiteboardState>) {
+    setActiveUsersByWhiteboard(state: ActiveUsersByWhiteboardState, action: PayloadAction<Record<WhiteboardIdType, ClientIdType[]>>) {
+      const {
+        clientsByWhiteboard,
+        whiteboardsByClient,
+      } = state;
+
+      for (const [whiteboardId, clientIds] of Object.entries(action.payload)) {
+        clientsByWhiteboard[whiteboardId] = Object.fromEntries(clientIds.map(clientId => [clientId, clientId]));
+
+        for (const clientId of clientIds) {
+          whiteboardsByClient[clientId] = whiteboardId;
+        }// -- end for clientId
+      }// -- end for whiteboardId, clientIds
+
       return {
-        ...state,
-        ...action.payload
+        clientsByWhiteboard,
+        whiteboardsByClient,
       };
     },
-    addActiveUsersByWhiteboard(state, action: PayloadAction<ActiveUsersByWhiteboardState>) {
-      const newState : ActiveUsersByWhiteboardState = { ...state };
+    addActiveUsersByWhiteboard(state: ActiveUsersByWhiteboardState, action: PayloadAction<Record<WhiteboardIdType, ClientIdType[]>>) {
+      const {
+        clientsByWhiteboard,
+        whiteboardsByClient,
+      } = state;
 
-      for (const [whiteboardId, userSummariesByWhiteboardId] of Object.entries(action.payload)) {
-        if (whiteboardId in newState) {
-          newState[whiteboardId] = {
-            ...newState[whiteboardId],
-            ...userSummariesByWhiteboardId
-          };
+      for (const [whiteboardId, clientIds] of Object.entries(action.payload)) {
+        if (whiteboardId in clientsByWhiteboard) {
+          for (const clientId of clientIds) {
+            clientsByWhiteboard[whiteboardId][clientId] = clientId;
+            whiteboardsByClient[clientId] = whiteboardId;
+          }// -- end for clientId
         } else {
-          newState[whiteboardId] = userSummariesByWhiteboardId;
+          clientsByWhiteboard[whiteboardId] = Object.fromEntries(clientIds.map(clientId => [clientId, clientId]));
+
+          for (const clientId of clientIds) {
+            whiteboardsByClient[clientId] = whiteboardId;
+          }// -- end for clientId
         }
       }// -- end for whiteboardId, userSummariesByWhiteboardId
 
-      return newState;
+      return {
+        clientsByWhiteboard,
+        whiteboardsByClient,
+      };
     },
-    removeActiveUserByWhiteboard(state, action: RemoveActiveUsersByWhiteboardPayload) {
-      const newState = { ...state };
+    removeActiveUsers(state: ActiveUsersByWhiteboardState, action: PayloadAction<ClientIdType[]>) {
       const {
-        whiteboardId,
-        clientId,
-      } = action.payload;
+        clientsByWhiteboard,
+        whiteboardsByClient,
+      } = state;
 
-      if (whiteboardId in newState) {
-        delete newState[whiteboardId][clientId];
-      }
+      for (const clientId of action.payload) {
+        if (clientId in whiteboardsByClient) {
+          delete clientsByWhiteboard[whiteboardsByClient[clientId]][clientId];
+          delete whiteboardsByClient[clientId];
+        }
+      }// -- end for clientId
 
-      return newState;
+      return {
+        clientsByWhiteboard,
+        whiteboardsByClient,
+      };
+    },
+    removeWhiteboards(state: ActiveUsersByWhiteboardState, action: PayloadAction<WhiteboardIdType[]>) {
+      const {
+        clientsByWhiteboard,
+        whiteboardsByClient,
+      } = state;
+
+      for (const whiteboardId of action.payload) {
+        if (whiteboardId in clientsByWhiteboard) {
+          for (const clientId of Object.keys(clientsByWhiteboard[whiteboardId])) {
+            delete whiteboardsByClient[clientId];
+          }// -- end for clientId
+
+          delete clientsByWhiteboard[whiteboardId];
+        }
+      }// -- end for whiteboardId
+
+      return {
+        clientsByWhiteboard,
+        whiteboardsByClient,
+      };
     },
   },
 });// -- end activeUsersByWhiteboardSlice
@@ -63,7 +112,8 @@ export const activeUsersByWhiteboardSlice = createSlice({
 export const {
   setActiveUsersByWhiteboard,
   addActiveUsersByWhiteboard,
-  removeActiveUserByWhiteboard,
+  removeActiveUsers,
+  removeWhiteboards,
 } = activeUsersByWhiteboardSlice.actions;
 
 export default activeUsersByWhiteboardSlice.reducer;

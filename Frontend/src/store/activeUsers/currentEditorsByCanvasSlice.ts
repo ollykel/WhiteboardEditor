@@ -22,7 +22,7 @@ import {
 } from '@/types/WebSocketProtocol';
 
 import {
-  removeActiveUser,
+  removeActiveUsers,
 } from '@/store/activeUsers/activeUsersSlice';
 
 import {
@@ -92,21 +92,22 @@ const currentEditorsByCanvasSlice = createSlice({
   },
   extraReducers: (builder) => {
     // -- ensure current editor relation is removed if active user is removed
-    builder.addCase(removeActiveUser, (state, action: PayloadAction<ClientIdType>) => {
-      const clientId : ClientIdType = action.payload;
+    builder.addCase(removeActiveUsers, (state, action: PayloadAction<ClientIdType[]>) => {
+      const newCurrentEditorsByCanvas = { ...state.currentEditorsByCanvas };
+      const newCanvasesByCurrentEditor = { ...state.canvasesByCurrentEditor };
+      const clientIds : ClientIdType[] = action.payload;
 
-      if (clientId in state.canvasesByCurrentEditor) {
-        const newCurrentEditorsByCanvas = { ...state.currentEditorsByCanvas };
-        const newCanvasesByCurrentEditor = { ...state.canvasesByCurrentEditor };
+      for (const clientId of clientIds) {
+        if (clientId in state.canvasesByCurrentEditor) {
+          delete newCurrentEditorsByCanvas[newCanvasesByCurrentEditor[clientId]];
+          delete newCanvasesByCurrentEditor[clientId];
+        }
+      }// -- end for clientId
 
-        delete newCurrentEditorsByCanvas[newCanvasesByCurrentEditor[clientId]];
-        delete newCanvasesByCurrentEditor[clientId];
-
-        return {
-          currentEditorsByCanvas: newCurrentEditorsByCanvas,
-          canvasesByCurrentEditor: newCanvasesByCurrentEditor,
-        };
-      }
+      return {
+        currentEditorsByCanvas: newCurrentEditorsByCanvas,
+        canvasesByCurrentEditor: newCanvasesByCurrentEditor,
+      };
     });
 
     // -- ensure current editor relations are removed when canvases are removed
