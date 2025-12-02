@@ -52,7 +52,7 @@ use chrono::{
 #[cfg(test)]
 mod unit_tests;
 
-pub type ClientIdType = i32;
+pub type ClientIdType = String;
 pub type CanvasIdType = ObjectId;
 pub type CanvasObjectIdType = ObjectId;
 pub type WhiteboardIdType = ObjectId;
@@ -742,13 +742,17 @@ pub struct ClientState {
 pub struct ConnectionState {
     pub jwt_secret: String,
     pub mongo_client: Client,
-    pub next_client_id: Mutex<ClientIdType>,
+    pub next_client_id_index: Mutex<i32>,
     pub program_state: ProgramState,
 }
 
 // === misc. utils ================================================================================
 //
 // ================================================================================================
+
+pub fn generate_unique_client_id(whiteboard_id: WhiteboardIdType, index: i32) -> ClientIdType {
+    format!("{}.{}", whiteboard_id, index)
+}// -- end generate_unique_client_id
 
 pub fn dt_bson_to_chrono_utc(dt: &bson::DateTime) -> chrono::DateTime::<Utc> {
     match chrono::DateTime::<Utc>::from_timestamp_millis(dt.timestamp_millis()) {
@@ -873,7 +877,7 @@ pub async fn handle_authenticated_client_message(
                         .expect("Expected to find \"type\" tag in client message.");
 
                     return Some(ServerSocketMessage::IndividualError {
-                        client_id: client_state.client_id,
+                        client_id: client_state.client_id.clone(),
                         error: ClientError::ActionForbidden {
                             action: inspector.type_tag,
                         },
@@ -889,14 +893,14 @@ pub async fn handle_authenticated_client_message(
             match client_msg {
                 // -- User already authenticated; return error
                 Login { .. } => Some(ServerSocketMessage::IndividualError {
-                    client_id: client_state.client_id,
+                    client_id: client_state.client_id.clone(),
                     error: ClientError::AlreadyAuthorized,
                 }),
                 EditingCanvas { canvas_id } => {
                     // TODO: validate that canvas id is valid and user has permission to edit
                     // canvas.
                     Some(ServerSocketMessage::EditingCanvas {
-                        client_id: client_state.client_id,
+                        client_id: client_state.client_id.clone(),
                         canvas_id: canvas_id,
                     })
                 },
@@ -907,7 +911,7 @@ pub async fn handle_authenticated_client_message(
                     match whiteboard.canvases.get_mut(&canvas_id) {
                         None => {
                             Some(ServerSocketMessage::IndividualError {
-                                client_id: client_state.client_id,
+                                client_id: client_state.client_id.clone(),
                                 error: ClientError::CanvasNotFound {
                                     canvas_id: canvas_id.to_string(),
                                 },
@@ -934,7 +938,7 @@ pub async fn handle_authenticated_client_message(
                             }
 
                             Some(ServerSocketMessage::CreateShapes{
-                                client_id: client_state.client_id,
+                                client_id: client_state.client_id.clone(),
                                 canvas_id: canvas_id.to_string(),
                                 shapes: new_shapes.iter()
                                     .map(|(obj_id, shape)| (obj_id.to_string(), shape.clone()))
@@ -951,7 +955,7 @@ pub async fn handle_authenticated_client_message(
                     match whiteboard.canvases.get_mut(&canvas_id) {
                         None => {
                             Some(ServerSocketMessage::IndividualError {
-                                client_id: client_state.client_id,
+                                client_id: client_state.client_id.clone(),
                                 error: ClientError::CanvasNotFound {
                                     canvas_id: canvas_id.to_string(),
                                 },
@@ -985,7 +989,7 @@ pub async fn handle_authenticated_client_message(
                             }
 
                             Some(ServerSocketMessage::UpdateShapes{
-                                client_id: client_state.client_id,
+                                client_id: client_state.client_id.clone(),
                                 canvas_id: canvas_id.to_string(),
                                 shapes: new_shapes.iter()
                                     .map(|(obj_id, shape)| (obj_id.to_string(), shape.clone()))
@@ -1033,7 +1037,7 @@ pub async fn handle_authenticated_client_message(
                     }
 
                     Some(ServerSocketMessage::CreateCanvas{
-                        client_id: client_state.client_id,
+                        client_id: client_state.client_id.clone(),
                         canvas: canvas.to_client_view(),
                     })
                 },
@@ -1055,7 +1059,7 @@ pub async fn handle_authenticated_client_message(
                     }
 
                     Some(ServerSocketMessage::DeleteCanvases{
-                        client_id: client_state.client_id,
+                        client_id: client_state.client_id.clone(),
                         canvas_ids: canvas_ids.iter()
                             .map(|id| id.to_string())
                             .collect()
@@ -1069,7 +1073,7 @@ pub async fn handle_authenticated_client_message(
                         match whiteboard.metadata.permissions_by_user_id.get(&user_id.to_string()) {
                             None => {
                                 return Some(ServerSocketMessage::IndividualError {
-                                    client_id: client_state.client_id,
+                                    client_id: client_state.client_id.clone(),
                                     error: ClientError::Other {
                                         message: format!("User {} not found", user_id),
                                     }
@@ -1078,7 +1082,7 @@ pub async fn handle_authenticated_client_message(
                             Some(perm) => match perm {
                                 WhiteboardPermissionEnum::View => {
                                     return Some(ServerSocketMessage::IndividualError {
-                                        client_id: client_state.client_id,
+                                        client_id: client_state.client_id.clone(),
                                         error: ClientError::Other {
                                             message: format!("User {} does not have edit permission", user_id),
                                         }
@@ -1093,7 +1097,7 @@ pub async fn handle_authenticated_client_message(
                         None => {
                             // canvas doesn't exist
                             return Some(ServerSocketMessage::IndividualError {
-                                client_id: client_state.client_id,
+                                client_id: client_state.client_id.clone(),
                                 error: ClientError::CanvasNotFound {
                                     canvas_id: canvas_id.to_string(),
                                 },
@@ -1117,7 +1121,7 @@ pub async fn handle_authenticated_client_message(
 
                             // broadcast to all users
                             Some(ServerSocketMessage::UpdateCanvasAllowedUsers { 
-                                client_id: client_state.client_id, 
+                                client_id: client_state.client_id.clone(), 
                                 canvas_id: canvas_id.to_string(), 
                                 allowed_users: allowed_users.iter()
                                     .map(|oid| oid.to_string())
@@ -1133,7 +1137,7 @@ pub async fn handle_authenticated_client_message(
             println!("Reason: {}", e);
 
             Some(ServerSocketMessage::IndividualError{
-                client_id: client_state.client_id,
+                client_id: client_state.client_id.clone(),
                 error: ClientError::InvalidMessage {
                     client_message_raw: String::from(client_msg_s),
                 },
@@ -1154,7 +1158,7 @@ pub async fn handle_unauthenticated_client_message<StoreType: UserStore + Whiteb
 ) -> Option<ServerSocketMessage> {
     match serde_json::from_str::<ClientSocketMessage>(client_msg_s) {
         Ok(client_msg) => {
-            println!("Received message from client {}", client_state.client_id);
+            println!("Received message from client {}", client_state.client_id.clone());
 
             match client_msg {
                 // -- This is the only valid message an unathenticated client can send and expect a
@@ -1165,7 +1169,7 @@ pub async fn handle_unauthenticated_client_message<StoreType: UserStore + Whiteb
                             println!("Error parsing user_id from jwt: {}", e);
 
                             return Some(ServerSocketMessage::IndividualError {
-                                client_id: client_state.client_id,
+                                client_id: client_state.client_id.clone(),
                                 error: ClientError::UserNotFound {
                                     user_id: client_state.client_id.to_string(),
                                 },
@@ -1179,7 +1183,7 @@ pub async fn handle_unauthenticated_client_message<StoreType: UserStore + Whiteb
                             println!("Error fetching user {}: {}", user_id, e);
 
                             return Some(ServerSocketMessage::IndividualError {
-                                client_id: client_state.client_id,
+                                client_id: client_state.client_id.clone(),
                                 error: ClientError::Other {
                                     message: format!("Error fetching user {}", user_id),
                                 },
@@ -1187,7 +1191,7 @@ pub async fn handle_unauthenticated_client_message<StoreType: UserStore + Whiteb
                         },
                         Ok(None) => {
                             return Some(ServerSocketMessage::IndividualError {
-                                client_id: client_state.client_id,
+                                client_id: client_state.client_id.clone(),
                                 error: ClientError::UserNotFound {
                                     user_id: user_id.to_string(),
                                 },
@@ -1219,7 +1223,7 @@ pub async fn handle_unauthenticated_client_message<StoreType: UserStore + Whiteb
                     if let Some(permission) = permission {
                         // User has a valid permission
                         let user_summary = UserSummary{
-                            client_id: client_state.client_id,
+                            client_id: client_state.client_id.clone(),
                             user_id: user_id.to_string(),
                             username: user.username.clone(),
                         };
@@ -1232,7 +1236,7 @@ pub async fn handle_unauthenticated_client_message<StoreType: UserStore + Whiteb
                             let mut clients = client_state.active_clients.lock().await;
 
                             clients.insert(
-                                client_state.client_id,
+                                client_state.client_id.clone(),
                                 user_summary.clone(),
                             );
 
@@ -1247,21 +1251,21 @@ pub async fn handle_unauthenticated_client_message<StoreType: UserStore + Whiteb
 
                         // -- initialize client
                         Some(ServerSocketMessage::InitClient {
-                            client_id: client_state.client_id,
+                            client_id: client_state.client_id.clone(),
                             whiteboard: client_state.whiteboard_ref.lock().await.to_client_view(),
                             active_clients,
                         })
                     } else {
                         // User has no valid permission; send back an error message
                         Some(ServerSocketMessage::IndividualError {
-                            client_id: client_state.client_id,
+                            client_id: client_state.client_id.clone(),
                             error: ClientError::Unauthorized,
                         })
                     }
                 },
                 // -- All other messages should be responded to with an individual error
                 _ => Some(ServerSocketMessage::IndividualError {
-                    client_id: client_state.client_id,
+                    client_id: client_state.client_id.clone(),
                     error: ClientError::NotAuthenticated,
                 }),
             }
@@ -1271,7 +1275,7 @@ pub async fn handle_unauthenticated_client_message<StoreType: UserStore + Whiteb
             println!("Reason: {}", e);
 
             Some(ServerSocketMessage::IndividualError {
-                client_id: client_state.client_id,
+                client_id: client_state.client_id.clone(),
                 error: ClientError::InvalidMessage {
                     client_message_raw: String::from(client_msg_s),
                 },
