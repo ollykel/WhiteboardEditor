@@ -14,7 +14,7 @@ mod unit_tests {
     #[tokio::test]
     async fn handle_invalid_client_message() {
         // not even valid json
-        let test_client_id = 0;
+        let test_client_id = generate_unique_client_id(ObjectId::new(), 0);
         let client_msg_s = "This is not valid json";
         let test_canvas_id = ObjectId::new();
 
@@ -31,7 +31,12 @@ mod unit_tests {
         };
 
         let client_state = ClientState {
-            client_id: test_client_id,
+            client_id: test_client_id.clone(),
+            user_summary: Mutex::new(Some(UserSummary{
+                client_id: test_client_id.clone(),
+                user_id: String::from("68d5e8cf829da666aece5f47"),
+                username: String::from("Alice"),
+            })),
             jwt_secret: String::from("abcd"),
             user_whiteboard_permission: Mutex::new(None),
             whiteboard_ref: Arc::new(Mutex::new(whiteboard.clone())),
@@ -62,7 +67,7 @@ mod unit_tests {
     #[tokio::test]
     async fn handle_authenticated_client_message_create_shapes() {
         let f64_prec: f64 = 1.0e-16;
-        let test_client_id = 0;
+        let test_client_id = generate_unique_client_id(ObjectId::new(), 0);
         let canvas_a_id = ObjectId::new();
         let shapes_expected = vec![
             ShapeModel::Rect {
@@ -165,7 +170,12 @@ mod unit_tests {
         };
 
         let client_state = ClientState {
-            client_id: test_client_id,
+            client_id: test_client_id.clone(),
+            user_summary: Mutex::new(Some(UserSummary{
+                client_id: test_client_id.clone(),
+                user_id: String::from("68d5e8cf829da666aece5f47"),
+                username: String::from("Alice"),
+            })),
             jwt_secret: String::from("abcd"),
             user_whiteboard_permission: Mutex::new(
                 Some(WhiteboardPermissionEnum::Own)
@@ -413,7 +423,7 @@ mod unit_tests {
         };
 
         // -- initialize mock client state
-        let test_client_id = 0;
+        let test_client_id = generate_unique_client_id(ObjectId::new(), 0);
 
         let whiteboard = Whiteboard {
             id: ObjectId::new(),
@@ -435,7 +445,12 @@ mod unit_tests {
             canvases: HashMap::new(),
         };
         let client_state = ClientState {
-            client_id: test_client_id,
+            client_id: test_client_id.clone(),
+            user_summary: Mutex::new(Some(UserSummary{
+                client_id: test_client_id.clone(),
+                user_id: String::from("68d5e8cf829da666aece5f47"),
+                username: String::from("Alice"),
+            })),
             jwt_secret: String::from(jwt_secret),
             user_whiteboard_permission: Mutex::new(None),
             whiteboard_ref: Arc::new(Mutex::new(whiteboard.clone())),
@@ -464,8 +479,8 @@ mod unit_tests {
                 assert_eq!(whiteboard_view, whiteboard.to_client_view());
                 assert_eq!(*user_perm, Some(WhiteboardPermissionEnum::Edit));
                 assert_eq!(active_clients, HashMap::from([
-                    (test_client_id, UserSummary {
-                        client_id: test_client_id,
+                    (test_client_id.clone(), UserSummary {
+                        client_id: test_client_id.clone(),
                         user_id: String::from(target_uid_s),
                         username: String::from("bob"),
                     })
@@ -536,7 +551,7 @@ mod unit_tests {
     async fn test_create_shapes_nonexistent_canvas_id() {
         use ServerSocketMessage::*;
 
-        let test_client_id = 0;
+        let test_client_id = generate_unique_client_id(ObjectId::new(), 0);
         let test_user_id = ObjectId::new();
         let invalid_canvas_id = ObjectId::new();
         let client_msg_s = format!(r#"{{
@@ -580,7 +595,12 @@ mod unit_tests {
         };
 
         let client_state = ClientState {
-            client_id: test_client_id,
+            client_id: test_client_id.clone(),
+            user_summary: Mutex::new(Some(UserSummary{
+                client_id: test_client_id.clone(),
+                user_id: String::from("68d5e8cf829da666aece5f47"),
+                username: String::from("Alice"),
+            })),
             jwt_secret: String::from("abcd"),
             user_whiteboard_permission: Mutex::new(Some(WhiteboardPermissionEnum::Edit)),
             whiteboard_ref: Arc::new(Mutex::new(whiteboard.clone())),

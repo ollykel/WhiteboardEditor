@@ -4,11 +4,11 @@ import type {
   RootState
 } from '@/store';
 
-import type {
-  CanvasAttribs,
-  CanvasData,
-  CanvasIdType,
-  WhiteboardIdType
+import {
+  type CanvasAttribs,
+  type CanvasData,
+  type CanvasIdType,
+  type WhiteboardIdType
 } from '@/types/WebSocketProtocol';
 
 export const selectCanvasById = (state: RootState, canvasId: CanvasIdType): CanvasAttribs | null => (

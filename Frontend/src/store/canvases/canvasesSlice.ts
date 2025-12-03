@@ -4,9 +4,9 @@ import {
 } from '@reduxjs/toolkit'
 
 // -- local imports
-import type {
-  CanvasIdType,
-  CanvasAttribs
+import {
+  type CanvasIdType,
+  type CanvasAttribs,
 } from '@/types/WebSocketProtocol';
 
 const canvasesSlice = createSlice({
@@ -23,7 +23,7 @@ const canvasesSlice = createSlice({
       for (const canvasId of action.payload) {
         delete state[canvasId];
       }
-    }
+    },
   },
   selectors: {
     // Entire state is mapping of object ids to objects
@@ -34,11 +34,11 @@ const canvasesSlice = createSlice({
 
 export const {
   setCanvases,
-  removeCanvases
+  removeCanvases,
 } = canvasesSlice.actions;
 
 export const {
-  selectCanvases
+  selectCanvases,
 } = canvasesSlice.selectors;
 
 export default canvasesSlice.reducer;

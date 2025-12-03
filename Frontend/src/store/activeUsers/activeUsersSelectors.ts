@@ -6,18 +6,20 @@ import {
   type ClientIdType,
   type UserSummary,
   type WhiteboardIdType,
+  type CanvasIdType,
 } from '@/types/WebSocketProtocol';
 
-export const selectActiveUsers = (state: RootState): Record<ClientIdType, UserSummary> => {
-  return state.activeUsers.users;
-};
-
 export const selectActiveUsersByWhiteboard = (state: RootState, wid: WhiteboardIdType) : Record<ClientIdType, UserSummary> => {
-  return Object.fromEntries(state.activeUsersByWhiteboard[wid]?.map(
-    clientId => [clientId, state.activeUsers.users[clientId]]
-  ) ?? []);
+  return Object.fromEntries(
+    Object.keys(state.activeUsersByWhiteboard.clientsByWhiteboard[wid] || {}).map(clientId => [
+      clientId, state.activeUsers[clientId]
+    ])
+  );
 };
 
-export const selectActiveUserByClientId = (state: RootState, clientId: ClientIdType): UserSummary | null => {
-  return state.activeUsers.users[clientId] || null;
+export const selectCurrentEditorByCanvas = (
+  state: RootState,
+  canvasId: CanvasIdType
+): UserSummary | null => {
+  return state.activeUsers[state.currentEditorsByCanvas.currentEditorsByCanvas[canvasId]] || null;
 };

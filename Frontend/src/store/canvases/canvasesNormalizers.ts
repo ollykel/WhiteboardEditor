@@ -2,7 +2,7 @@
 import type {
   CanvasIdType,
   CanvasAttribs,
-  CanvasData
+  CanvasData,
 } from '@/types/WebSocketProtocol';
 
 import type {

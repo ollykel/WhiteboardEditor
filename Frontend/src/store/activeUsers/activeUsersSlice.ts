@@ -1,34 +1,51 @@
-import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
+// === activeUsersSlice ========================================================
+//
+// Stores user summaries indexed by client IDs.
+//
+// =============================================================================
 
-import type {
-  ClientIdType,
-  UserSummary,
+// -- std imports
+import {
+  createSlice,
+  type PayloadAction,
+} from '@reduxjs/toolkit';
+
+// -- local imports
+import {
+  type ClientIdType,
+  type UserSummary,
 } from '@/types/WebSocketProtocol';
 
-interface ActiveUsersState {
-  users: Record<ClientIdType, UserSummary>; // client_id -> username
-}
+type ActiveUsersSliceState = Record<ClientIdType, UserSummary>;
 
-const initialState: ActiveUsersState = { users: {} };
-
-export const activeUsersSlice = createSlice({
+const activeUsersSlice = createSlice({
   name: 'activeUsers',
-  initialState,
+  initialState: {} as ActiveUsersSliceState,
   reducers: {
-    setActiveUsers: (state, action: PayloadAction<UserSummary[]>) => {
-      state.users = {};
-      action.payload.forEach(userSummary => {
-        state.users[userSummary.clientId] = userSummary;
-      })
+    setActiveUsers(state, action: PayloadAction<UserSummary[]>) {
+      return {
+        ...state,
+        ...Object.fromEntries(action.payload.map(userSummary => [
+          userSummary.clientId, userSummary
+        ]))
+      };
     },
-    addActiveUser: (state, action: PayloadAction<UserSummary>) => {
-      state.users[action.payload.clientId] = action.payload;
-    },
-    removeActiveUser: (state, action: PayloadAction<ClientIdType>) => {
-      delete state.users[action.payload];
+    removeActiveUsers(state, action: PayloadAction<ClientIdType[]>) {
+      const newState = { ...state };
+      const clientIds : ClientIdType[] = action.payload;
+
+      for (const clientId of clientIds) {
+        delete newState[clientId];
+      }// -- end for clientId
+
+      return newState;
     },
   },
-});
+});// -- end activeUsersSlice
 
-export const { setActiveUsers, addActiveUser, removeActiveUser } = activeUsersSlice.actions;
+export const {
+  setActiveUsers,
+  removeActiveUsers,
+} = activeUsersSlice.actions;
+
 export default activeUsersSlice.reducer;

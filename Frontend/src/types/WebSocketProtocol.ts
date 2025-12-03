@@ -20,7 +20,7 @@ import type {
 } from '@/types/APIProtocol';
 
 // The unique identifier for clients within a web socket session.
-export type ClientIdType = number;
+export type ClientIdType = string;
 
 // -- string represents Mongo ObjectId
 export type UserIdType = string;
@@ -171,9 +171,14 @@ export interface ServerMessageInitClient {
   activeClients: Record<ClientIdType, UserSummary>;
 }
 
-export interface ServerMessageActiveUsers {
-  type: "active_users";
+export interface ServerMessageLoginUsers {
+  type: 'login_users';
   users: UserSummary[];
+}
+
+export interface ServerMessageLogoutUsers {
+  type: 'logout_users';
+  users: ClientIdType[];
 }
 
 // Used to notify clients when a user has started editing a canvas but hasn't
@@ -233,7 +238,8 @@ export interface ServerMessageBroadcastError {
 // Tagged union of all possible client-server messages
 export type SocketServerMessage =
   | ServerMessageInitClient
-  | ServerMessageActiveUsers
+  | ServerMessageLoginUsers
+  | ServerMessageLogoutUsers
   | ServerMessageEditingCanvas
   | ServerMessageCreateShapes
   | ServerMessageUpdateShapes
@@ -241,7 +247,8 @@ export type SocketServerMessage =
   | ServerMessageDeleteCanvases
   | ServerMessageIndividualError
   | ServerMessageBroadcastError
-  | ServerMessageUpdateAllowedUsers;
+  | ServerMessageUpdateAllowedUsers
+;
 
 // ========================== CLIENT → SERVER ==================================
 

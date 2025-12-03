@@ -29,7 +29,10 @@ import {
   useQueryClient
 } from '@tanstack/react-query';
 
-import { ChevronDown, X } from 'lucide-react';
+import {
+  ChevronDown,
+  X,
+} from 'lucide-react';
 
 import Konva from 'konva';
 
@@ -45,7 +48,6 @@ import {
 // -- local types
 import {
   APP_NAME,
-  CURRENT_EDITOR_NUM_MILLIS,
 } from '@/app.config';
 
 import {
@@ -58,16 +60,12 @@ import {
 
 // -- program state
 import {
-  store,
-  type RootState
+  type RootState,
 } from '@/store';
 
 import {
-  addWhiteboard,
-  setCanvasObjects,
-  addCanvas,
-  deleteCanvas,
-} from '@/controllers';
+  ClientMessengerContext,
+} from '@/context/ClientMessengerContext';
 
 import {
   selectActiveUsersByWhiteboard,
@@ -123,11 +121,7 @@ import {
 } from '@/types/CreateCanvas';
 
 import type {
-  SocketServerMessage,
-  UserIdType,
   ClientIdType,
-  ClientMessageLogin,
-  ClientMessageUpdateShapes,
   ClientMessageCreateCanvas,
   CanvasData,
   CanvasIdType,
@@ -135,18 +129,6 @@ import type {
   WhiteboardAttribs,
   UserSummary,
 } from '@/types/WebSocketProtocol';
-
-import {
-  useUser,
-} from '@/hooks/useUser';
-
-import {
-  setAllowedUsersByCanvas,
-} from '@/store/allowedUsers/allowedUsersByCanvasSlice';
-
-import {
-  setActiveUsersByWhiteboard,
-} from '@/controllers/activeUsers';
 
 import {
   type OperationDispatcher,
@@ -172,28 +154,16 @@ interface WhiteboardProps {
   query: WhiteboardQueryType;
 }
 
-const getWebSocketUri = (wid: WhiteboardIdType): string => {
-    const wsScheme = window.location.protocol === 'https:' ? 'wss' : 'ws';
-    const wsUri = `${wsScheme}://${window.location.host}/ws/${wid}`;
-
-    return wsUri;
-};
-
 const Whiteboard = ({
   query,
 }: WhiteboardProps) => {
-  // Inputs:
-  //  - whiteboard id
-  //  - list of canvases
-  //  - tool choice
-
   // -- references
-  const context = useContext(WhiteboardContext);
+  const whiteboardContext = useContext(WhiteboardContext);
   const authContext = useContext(AuthContext);
+  const clientMessengerContext = useContext(ClientMessengerContext);
   const queryClient = useQueryClient();
-  const { user } = useUser();
 
-  if (! context) {
+  if (! whiteboardContext) {
     throw new Error('No WhiteboardContext provided to Whiteboard');
   }
 
@@ -201,19 +171,22 @@ const Whiteboard = ({
     throw new Error('No AuthContext provided to Whiteboard');
   }
 
+  if (! clientMessengerContext) {
+    throw new Error('No ClientMessengerContext provided to Whiteboard');
+  }
+
   const {
-    socketRef,
     whiteboardId,
     userPermissions,
     ownPermission,
     currentTool,
     setCurrentTool,
     setSelectedShapeIds,
-  } = context;
+  } = whiteboardContext;
 
   const {
-    authToken,
-  } = authContext;
+    clientMessenger,
+  } = clientMessengerContext;
 
   // -- prop-derived state
   const whiteboardKey = ['whiteboard', whiteboardId];
@@ -225,7 +198,6 @@ const Whiteboard = ({
     error: whiteboardError,
   } = query;
   const whiteboardIdRef = useRef<WhiteboardIdType>(whiteboardId);
-  const currentEditorTimeoutsByCanvasRef = useRef<Record<CanvasIdType, number>>({});
 
   // alert user of any errors fetching whiteboard
   useEffect(
@@ -264,7 +236,7 @@ const Whiteboard = ({
 
   const activeUsers : Record<ClientIdType, UserSummary> = useSelector((state: RootState) => (
     selectActiveUsersByWhiteboard(state, whiteboardId)
-  ));
+  )) || {};
 
   const currWhiteboard: WhiteboardAttribs | null = useSelector((state: RootState) => (
     selectWhiteboardById(state, whiteboardId))
@@ -279,273 +251,6 @@ const Whiteboard = ({
 
   const childCanvasesByCanvas : Record<CanvasIdType, CanvasIdType[]> = useSelector(
     (state: RootState) => state['childCanvasesByCanvas']
-  );
-
-  const [currentEditorByCanvas, setCurrentEditorByCanvas] = useState<Record<string, string>>({});
-
-  const dispatch = store.dispatch;
-
-  // handles all web socket messages
-  const handleServerMessage = useCallback(
-    (event: MessageEvent): void => {
-      console.log('Raw WebSocket message received:', event.data);
-
-      try {
-        const msg = JSON.parse(event.data) as SocketServerMessage;
-        console.log('Parsed message:', msg);
-
-        switch (msg.type) {
-          case 'init_client':
-            {
-              const { whiteboard, activeClients } = msg;
-
-              const activeUsers: UserSummary[] = Object.values(activeClients);
-
-              addWhiteboard(dispatch, whiteboard);
-              setActiveUsersByWhiteboard(dispatch, whiteboardId, activeUsers);
-            }
-            break;
-          case 'active_users': 
-            {
-              const {
-                users,
-              } = msg;
-
-              const activeUsersSet : Record<UserIdType, boolean> = Object.fromEntries(
-                users.map(userSummary => [userSummary.userId, true])
-              );
-              setCurrentEditorByCanvas(prev => Object.fromEntries(Object.entries(prev).filter(
-                ([_canvasId, editorId]) => editorId in activeUsersSet
-              )));
-              setActiveUsersByWhiteboard(dispatch, whiteboardId, users);
-            } 
-            break;
-          case 'editing_canvas':
-            {
-              const {
-                clientId,
-                canvasId,
-              } = msg;
-
-              setCurrentEditorByCanvas(prev => ({
-                ...prev,
-                [canvasId]: activeUsers[clientId].userId,
-              }));
-
-              const oldCurrentEditorTimeoutId = currentEditorTimeoutsByCanvasRef.current[canvasId];
-
-              if (oldCurrentEditorTimeoutId) {
-                window.clearTimeout(oldCurrentEditorTimeoutId);
-                currentEditorTimeoutsByCanvasRef.current[canvasId] = 0;
-              }
-
-              currentEditorTimeoutsByCanvasRef.current[canvasId] = window.setTimeout(
-                () => {
-                  setCurrentEditorByCanvas(prev => Object.fromEntries(Object.entries(prev).filter(
-                    ([k, _v]) => k !== canvasId
-                  )));
-                  window.clearTimeout(currentEditorTimeoutsByCanvasRef.current[canvasId]);
-                  currentEditorTimeoutsByCanvasRef.current[canvasId] = 0;
-                },
-                CURRENT_EDITOR_NUM_MILLIS
-              );
-            }
-            break;
-          case 'create_shapes':
-            {
-              const {
-                clientId,
-                canvasId,
-                shapes,
-              } = msg;
-
-              setCurrentEditorByCanvas(prev => ({
-                ...prev,
-                [canvasId]: activeUsers[clientId].userId,
-              }));
-              setCanvasObjects(dispatch, canvasId, shapes);
-
-              const oldCurrentEditorTimeoutId = currentEditorTimeoutsByCanvasRef.current[canvasId];
-
-              if (oldCurrentEditorTimeoutId) {
-                window.clearTimeout(oldCurrentEditorTimeoutId);
-                currentEditorTimeoutsByCanvasRef.current[canvasId] = 0;
-              }
-
-              currentEditorTimeoutsByCanvasRef.current[canvasId] = window.setTimeout(
-                () => {
-                  setCurrentEditorByCanvas(prev => Object.fromEntries(Object.entries(prev).filter(
-                    ([k, _v]) => k !== canvasId
-                  )));
-                  window.clearTimeout(currentEditorTimeoutsByCanvasRef.current[canvasId]);
-                  currentEditorTimeoutsByCanvasRef.current[canvasId] = 0;
-                },
-                CURRENT_EDITOR_NUM_MILLIS
-              );
-            }
-            break;
-          case 'update_shapes':
-            {
-              const {
-                clientId,
-                canvasId,
-                shapes,
-              } = msg;
-
-              setCurrentEditorByCanvas(prev => ({
-                ...prev,
-                [canvasId]: activeUsers[clientId].userId,
-              }));
-              setCanvasObjects(dispatch, canvasId, shapes);
-
-              const oldCurrentEditorTimeoutId = currentEditorTimeoutsByCanvasRef.current[canvasId];
-
-              if (oldCurrentEditorTimeoutId) {
-                clearTimeout(oldCurrentEditorTimeoutId);
-                currentEditorTimeoutsByCanvasRef.current[canvasId] = 0;
-              }
-
-              currentEditorTimeoutsByCanvasRef.current[canvasId] = window.setTimeout(
-                () => {
-                  setCurrentEditorByCanvas(prev => Object.fromEntries(Object.entries(prev).filter(
-                    ([k, _v]) => k !== canvasId
-                  )));
-                  clearTimeout(currentEditorTimeoutsByCanvasRef.current[canvasId]);
-                  currentEditorTimeoutsByCanvasRef.current[canvasId] = 0;
-                },
-                CURRENT_EDITOR_NUM_MILLIS
-              );
-            }
-            break;
-          case 'create_canvas':
-            {
-              const { canvas } = msg;
-
-              addCanvas(dispatch, whiteboardIdRef.current, canvas);
-            }
-            break;
-          case 'delete_canvases':
-            {
-              const { canvasIds } = msg;
-
-              for (const canvasId of canvasIds) {
-                deleteCanvas(dispatch, canvasId);
-              }// end for (const canvasId of canvasIds)
-            }
-            break;
-          case 'update_canvas_allowed_users': 
-          {
-            const { canvasId, allowedUsers } = msg;
-
-            dispatch(setAllowedUsersByCanvas({ [canvasId]: allowedUsers }));
-          }
-          break;
-          case 'individual_error':
-          case 'broadcast_error':
-            {
-              const { error } = msg;
-
-              switch (error.type) {
-                case 'invalid_message':
-                  console.error('Socket error: invalid message:', error.clientMessageRaw);
-                  break;
-                case 'unauthorized':
-                  console.error('Socket error: not authorized to view this whiteboard');
-                  break;
-                case 'not_authenticated':
-                  console.error('Socket error: client not authenticated');
-                  break;
-                case 'already_authorized':
-                  console.error('Socket error: client cannot authenticate again');
-                  break;
-                case 'invalid_auth':
-                  console.error('Socket error: auth token invalid');
-                  break;
-                case 'auth_token_expired':
-                  console.error('Socket error: auth token expired');
-                  break;
-                case 'user_not_found':
-                  console.error(`Socket error: user ${error.userId} not found`);
-                  break;
-                case 'whiteboard_not_found':
-                  console.error(`Socket error: whiteboard ${error.whiteboardId} not found`);
-                  break;
-                case 'canvas_not_found':
-                  console.error(`Socket error: canvas ${error.canvasId} not found`);
-                  break;
-                case 'action_forbidden':
-                  console.error(`Socket error: action ${error.action} not permitted`);
-                  break;
-                case 'other':
-                  console.error('Socket error:', error.message);
-                  break;
-                default:
-                  throw new Error(`Unrecognized error: ${JSON.stringify(error, null, 2)}`);
-              }// -- end switch (error.type)
-            }
-            break;
-          default:
-            console.log('Server Message unrecognized:', msg);
-            throw new Error(`Server Message unrecognized: ${JSON.stringify(msg, null, 2)}`);
-        }// end switch (msg.type)
-      } catch (e) {
-        console.log('Failed to parse message:', e);
-      }
-    },
-    [activeUsers, dispatch]
-  );// -- end handleServerMessage
-
-  // -- set up web socket connection
-  useEffect(
-    () => {
-      console.log('Initializing web socket connection ...');
-      // TODO: get whiteboard id from path params
-      const wsUri = getWebSocketUri(whiteboardId);
-      const ws = new WebSocket(wsUri);
-
-      ws.onopen = () => {
-        // Send login/auth message with user ID, if currently logged in
-        if (! user) {
-          console.error('Cannot log into web socket server without authenticated user');
-        } else if (! authToken) {
-          console.error('Cannot log into web socket server without authentication token');
-        } else {
-          const loginMessage : ClientMessageLogin = {
-            type: "login",
-            jwt: authToken,
-          };
-          console.log('Sending login message:', loginMessage);
-          ws.send(JSON.stringify(loginMessage));
-        }
-
-        console.log(`Established web socket connection to ${wsUri}`);
-        socketRef.current = ws;
-      };
-      ws.onerror = () => {
-        console.log(`Failed to establish web socket connection to ${wsUri}`);
-        socketRef.current = null;
-      };
-
-      // -- handled in another useEffect below
-      ws.onmessage = handleServerMessage;
-
-      return () => {
-        ws.close();
-      }
-    },
-    // -- can't make handleServerMessage a dependency, as it will result in an
-    //    infinite loop
-    [socketRef, whiteboardId, user, authToken]
-  );
-
-  // -- update the web socket message handler
-  useEffect(
-    () => {
-      if (socketRef.current) {
-        socketRef.current.onmessage = handleServerMessage;
-      }
-    },
-    [socketRef, handleServerMessage]
   );
 
   const {
@@ -568,7 +273,7 @@ const Whiteboard = ({
 
   if (whiteboardError) {
     status = { status: 'error', error: whiteboardError };
-  } else if (isWhiteboardLoading || isWhiteboardFetching || (! currWhiteboard) || (! socketRef.current)) {
+  } else if (isWhiteboardLoading || isWhiteboardFetching || (! currWhiteboard)) {
     status = { status: 'pending' };
   } else {
     status = { status: 'ready' };
@@ -577,7 +282,7 @@ const Whiteboard = ({
   switch (status.status) {
     case 'pending':
     {
-        const isActive = !!socketRef.current;
+        const isActive = !!clientMessenger;
 
         return (
           <Page
@@ -685,7 +390,7 @@ const Whiteboard = ({
         // Server will echo response back, and actually inserting the new canvas
         // will be handled by handleServerMessage.
         // TODO: allow setting custom canvas sizes
-        if (socketRef.current && newCanvasParentId && newCanvasDimensions) {
+        if (clientMessenger && newCanvasParentId && newCanvasDimensions) {
           const createCanvasMsg : ClientMessageCreateCanvas = ({
             type: 'create_canvas',
             width: newCanvasDimensions.width,
@@ -699,7 +404,7 @@ const Whiteboard = ({
             allowedUsers: canvas.allowedUsers,
           });
       
-          socketRef.current.send(JSON.stringify(createCanvasMsg));
+          clientMessenger.sendCreateCanvas(createCanvasMsg);
           setNewCanvasParentId(null);
           setNewCanvasDimensions(null);
         }
@@ -813,7 +518,6 @@ const Whiteboard = ({
                     currentTool={currentTool}
                     canvasesById={canvasesById}
                     childCanvasesByCanvas={childCanvasesByCanvas}
-                    currentEditorByCanvas={currentEditorByCanvas}
                     onSelectCanvasDimensions={handleCreateCanvasDimensions}
                   />
                 </div>
@@ -947,8 +651,9 @@ const Whiteboard = ({
 };// end Whiteboard
 
 const WrappedWhiteboard = () => {
+  console.log('!! Rendering Wrapped Whiteboard');// TODO: remove debug
   const authContext = useContext(AuthContext);
-  const socketRef = useRef<WebSocket | null>(null);
+  const clientMessengerContext = useContext(ClientMessengerContext);
   const [newCanvasAllowedUsers, setNewCanvasAllowedUsers] = useState<string[]>([]);
   const [selectedShapeIds, setSelectedShapeIds] = useState<CanvasObjectIdType[]>([]);
   const [currentDispatcher, setCurrentDispatcher] = useState<OperationDispatcher | null>(null);
@@ -963,6 +668,14 @@ const WrappedWhiteboard = () => {
   const {
     user,
   } = authContext;
+
+  if (! clientMessengerContext) {
+    throw new Error('ClientMessengerContext not provided to Whiteboard');
+  }
+
+  const {
+    clientMessenger,
+  } = clientMessengerContext;
 
   const {
     whiteboard_id: whiteboardId
@@ -1042,42 +755,6 @@ const WrappedWhiteboard = () => {
 
   console.log("canvasObjects: ", canvasObjectsByCanvas);
 
-  const handleUpdateShapes = useCallback((canvasId: CanvasIdType, shapes: Record<CanvasObjectIdType, Partial<CanvasObjectModel>>) => {
-    if (socketRef.current) {
-      // find relevant objects and merge the new attributes into the existing
-      // attributes
-      const canvasObjects: Record<CanvasObjectIdType, CanvasObjectModel> | null = canvasObjectsByCanvas[canvasId] || null;
-
-      if (! canvasObjects) {
-        console.error('No canvas objects on canvas id', canvasId);
-        return;
-      }
-
-      const changedObjects: Record<CanvasObjectIdType, CanvasObjectModel> = {};
-
-      for (const [objId, objUpdate] of Object.entries(shapes)) {
-        const existingShape = canvasObjects[objId];
-        if (!existingShape) continue;
-
-        if (objId in canvasObjects) {
-          console.log("updated shape is in canvas objects"); // debug
-          changedObjects[objId] = {
-            ...canvasObjects[objId],
-            ...(objUpdate as Partial<typeof existingShape>),
-          } as CanvasObjectModel;
-        }
-      }// end for (const [objId, objUpdate] of Object.entries(shapes))
-
-      const updateShapesMsg: ClientMessageUpdateShapes = ({
-        type: 'update_shapes',
-        canvasId,
-        shapes: changedObjects
-      });
-
-      socketRef.current.send(JSON.stringify(updateShapesMsg));
-    }
-  }, [canvasObjectsByCanvas]);
-
   // Current tool choice will be saved to localStorage to ensure seamless UX
   // after page reloads.
   // TODO: save default tool choice ('hand') in a separate config file.
@@ -1108,9 +785,47 @@ const WrappedWhiteboard = () => {
   // -- track refs to canvas groups (frames)
   const canvasGroupRefsByIdRef: RefObject<Record<CanvasIdType, RefObject<Konva.Group | null>>> = useRef({});
 
+  // -- transform canvas object diffs into full updated shapes
+  const handleUpdateShapes = useCallback(
+    (canvasId: CanvasIdType, shapes: Record<CanvasObjectIdType, Partial<CanvasObjectModel>>) => {
+      if (clientMessenger) {
+        // find relevant objects and merge the new attributes into the existing
+        // attributes
+        const canvasObjects: Record<CanvasObjectIdType, CanvasObjectModel> | null = canvasObjectsByCanvas[canvasId] || null;
+
+        if (! canvasObjects) {
+          console.error('No canvas objects on canvas id', canvasId);
+          return;
+        }
+
+        const changedObjects: Record<CanvasObjectIdType, CanvasObjectModel> = {};
+
+        for (const [objId, objUpdate] of Object.entries(shapes)) {
+          const existingShape = canvasObjects[objId];
+
+          if (!existingShape) continue;
+
+          if (objId in canvasObjects) {
+            console.log("updated shape is in canvas objects"); // debug
+            changedObjects[objId] = {
+              ...canvasObjects[objId],
+              ...(objUpdate as Partial<typeof existingShape>),
+            } as CanvasObjectModel;
+          }
+        }// end for (const [objId, objUpdate] of Object.entries(shapes))
+
+        clientMessenger.sendUpdateShapes({
+          type: 'update_shapes',
+          canvasId,
+          shapes: changedObjects
+        });
+      }
+    },
+    [canvasObjectsByCanvas, clientMessenger]
+  );
+
   return (
     <WhiteboardProvider
-      socketRef={socketRef}
       handleUpdateShapes={handleUpdateShapes}
       currentTool={currentTool}
       setCurrentTool={setCurrentTool}

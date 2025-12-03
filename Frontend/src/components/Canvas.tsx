@@ -11,7 +11,7 @@ import {
   useRef,
   useContext,
   useEffect,
-  useState,
+  useCallback,
 } from 'react';
 
 import {
@@ -33,7 +33,9 @@ import {
 
 import WhiteboardContext from '@/context/WhiteboardContext';
 
-import UserCacheContext from '@/context/UserCacheContext';
+import {
+  ClientMessengerContext,
+} from '@/context/ClientMessengerContext';
 
 import {
   type RootState,
@@ -42,6 +44,10 @@ import {
 import {
   selectAllowedUsersByCanvas,
 } from '@/store/allowedUsers/allowedUsersByCanvasSlice';
+
+import {
+  selectCurrentEditorByCanvas,
+} from '@/store/activeUsers/activeUsersSelectors';
 
 import {
   useUser,
@@ -56,15 +62,11 @@ import type {
   CanvasObjectModel,
 } from '@/types/CanvasObjectModel';
 
-import type {
-  CanvasIdType,
-  CanvasData,
-  ClientMessageEditingCanvas,
-} from '@/types/WebSocketProtocol';
-
 import {
-  type User,
-} from '@/types/UserAuth';
+  type CanvasIdType,
+  type CanvasData,
+  type UserSummary,
+} from '@/types/WebSocketProtocol';
 
 import {
   type ShapeAttributesState,
@@ -94,15 +96,13 @@ export interface CanvasProps extends CanvasData {
   // -- should be fetched from selector in root calling component
   childCanvasesByCanvas: Record<string, CanvasIdType[]>;
   // -- should be fetched from selector in root calling component
-  canvasesById: Record<string, CanvasData>;
-  // -- editor identified by user id
-  currentEditorByCanvas: Record<string, string>;
+  canvasesById: Record<CanvasIdType, CanvasData>;
   onSelectCanvasDimensions: (canvasId: CanvasIdType, dimensions: NewCanvasDimensions) => void;
 }
 
 const Canvas = (props: CanvasProps) => {
   const {
-    id,
+    id : canvasId,
     parentCanvas,
     width,
     height,
@@ -111,7 +111,6 @@ const Canvas = (props: CanvasProps) => {
     currentTool,
     childCanvasesByCanvas,
     canvasesById,
-    currentEditorByCanvas,
     onSelectCanvasDimensions,
   } = props;
 
@@ -121,16 +120,15 @@ const Canvas = (props: CanvasProps) => {
     throw new Error('No whiteboard context');
   }
 
-  const userCacheContext = useContext(UserCacheContext);
+  const clientMessengerContext = useContext(ClientMessengerContext);
 
-  if (! userCacheContext) {
-    throw new Error('No user cache context provided to Canvas');
+  if (! clientMessengerContext) {
+    throw new Error('No Client Messenger context provided');
   }
 
   const {
-    socketRef,
-    setCurrentTool,
     handleUpdateShapes,
+    setCurrentTool,
     ownPermission,
     currentDispatcher,
     setCurrentDispatcher,
@@ -142,8 +140,8 @@ const Canvas = (props: CanvasProps) => {
   } = whiteboardContext;
 
   const {
-    getUserById,
-  } = userCacheContext;
+    clientMessenger,
+  } = clientMessengerContext;
 
   const {
     user,
@@ -151,29 +149,12 @@ const Canvas = (props: CanvasProps) => {
 
   const allowedUserIds = useSelector(
     // '' is effectively a null canvas id
-    (state: RootState) => selectAllowedUsersByCanvas(state, id || '')
+    (state: RootState) => selectAllowedUsersByCanvas(state, canvasId || '')
   );
 
-  const currentEditorId : string | null = currentEditorByCanvas[id] || null;
-
-  const [currentEditor, setCurrentEditor] = useState<User | null>(null);
-
-  useEffect(
-    () => {
-      const fetchCurrentEditor = async () => {
-        if (currentEditorId) {
-          const user : User | null = await getUserById(currentEditorId);
-
-          setCurrentEditor(user);
-        } else {
-          setCurrentEditor(null);
-        }
-      };
-
-      fetchCurrentEditor();
-    },
-    [currentEditorId, setCurrentEditor, getUserById]
-  );
+  const currentEditor : UserSummary | null = useSelector((state: RootState) => (
+    selectCurrentEditorByCanvas(state, canvasId)
+  ));
 
   const userHasAccess = user?.id
     ? allowedUserIds === undefined || allowedUserIds.length === 0 || allowedUserIds.includes(user.id)
@@ -181,22 +162,22 @@ const Canvas = (props: CanvasProps) => {
 
   const groupRef = useRef<Konva.Group | null>(null);
 
-  const handleObjectUpdateShapes = (shapes: Record<CanvasObjectIdType, CanvasObjectModel>) => {
-    handleUpdateShapes(id, shapes);
-  };
+  const handleObjectUpdateShapes = useCallback(
+    (shapes: Record<CanvasObjectIdType, CanvasObjectModel>) => {
+      handleUpdateShapes(canvasId, shapes);
+    },
+    [handleUpdateShapes, canvasId]
+  );
 
   // In the future, we may wrap onAddShapes with some other logic.
   // For now, it's just an alias.
   const addShapes = (shapes: CanvasObjectModel[]) => {
-    if (socketRef.current) {
-      // TODO: modify backend to take multiple shapes (i.e. create_shapes)
-      const createShapesMsg = ({
+    if (clientMessenger) {
+      clientMessenger.sendCreateShapes({
         type: 'create_shapes',
-        canvasId: id,
+        canvasId,
         shapes
       });
-
-      socketRef.current.send(JSON.stringify(createShapesMsg));
 
       // Switch to hand tool after shape creation
       setCurrentTool("hand");
@@ -204,13 +185,11 @@ const Canvas = (props: CanvasProps) => {
   };// -- end addShapes
 
   const notifyStartEditing = () => {
-    if (socketRef.current) {
-      const editingCanvasMsg : ClientMessageEditingCanvas = {
+    if (clientMessenger) {
+      clientMessenger.sendEditingCanvas({
         type: 'editing_canvas',
-        canvasId: id,
-      };
-
-      socketRef.current.send(JSON.stringify(editingCanvasMsg));
+        canvasId,
+      });
     }
   };// -- end notifyStartEditing
   
@@ -253,7 +232,7 @@ const Canvas = (props: CanvasProps) => {
       shapeAttributes,
       addShapes,
       onCreate: (dimensions: NewCanvasDimensions) => {
-        onSelectCanvasDimensions(id, dimensions);
+        onSelectCanvasDimensions(canvasId, dimensions);
       },
     }),
   };
@@ -277,14 +256,14 @@ const Canvas = (props: CanvasProps) => {
     () => {
       const canvasGroupRefsById = canvasGroupRefsByIdRef.current;
 
-      canvasGroupRefsByIdRef.current[id] = groupRef;
+      canvasGroupRefsByIdRef.current[canvasId] = groupRef;
 
       // -- make sure to remove ref if Canvas is removed
       return () => {
-        delete canvasGroupRefsById[id];
+        delete canvasGroupRefsById[canvasId];
       };
     },
-    [canvasGroupRefsByIdRef, groupRef, id]
+    [canvasGroupRefsByIdRef, groupRef, canvasId]
   );
 
   const {
@@ -295,11 +274,11 @@ const Canvas = (props: CanvasProps) => {
   const handlePointerDown = (ev: Konva.KonvaEventObject<MouseEvent>) => {
     ev.cancelBubble = true;
 
-    if (selectedCanvasId === id) {
+    if (selectedCanvasId === canvasId) {
       dispatcher.handlePointerDown(ev);
     }
 
-    setSelectedCanvasId(id);
+    setSelectedCanvasId(canvasId);
   };
 
   const handlePointerMove = (ev: Konva.KonvaEventObject<MouseEvent>) => {
@@ -311,11 +290,11 @@ const Canvas = (props: CanvasProps) => {
   const handlePointerUp = (ev: Konva.KonvaEventObject<MouseEvent>) => {
     ev.cancelBubble = true;
 
-    if (selectedCanvasId === id) {
+    if (selectedCanvasId === canvasId) {
       dispatcher.handlePointerUp(ev);
     }
 
-    setSelectedCanvasId(id);
+    setSelectedCanvasId(canvasId);
   };
 
   // TODO: delegate draggability to tool definitions
@@ -329,13 +308,13 @@ const Canvas = (props: CanvasProps) => {
     setWhiteboardTooltipText(tooltipText);
   }, [tooltipText]);
 
-  const editingText = currentEditor?.id === user?.id ?
+  const editingText = currentEditor?.userId === user?.id ?
     'You are currently editing'
     : `${currentEditor?.username} is currently editing`;
 
   // Set editingText in context for main canvas
   useEffect(() => {
-    if (currentEditor && !parentCanvas) {
+    if (currentEditor && (! parentCanvas)) {
       setEditingText(editingText);
     }
     else {
@@ -343,7 +322,7 @@ const Canvas = (props: CanvasProps) => {
     }
   }, [editingText]);
 
-  const childCanvasesData : CanvasData[] = childCanvasesByCanvas[id]
+  const childCanvasesData : CanvasData[] = childCanvasesByCanvas[canvasId]
     ?.map((childCanvasId: CanvasIdType) => canvasesById[childCanvasId] || null)
     .filter((canvas: CanvasData | null): canvas is CanvasData => !!canvas)
     ?? [];
@@ -356,12 +335,12 @@ const Canvas = (props: CanvasProps) => {
       originY: 0,
   };
 
-  const isCanvasSelected = (id === selectedCanvasId);
+  const isCanvasSelected = (canvasId === selectedCanvasId);
 
   let canvasFrameColor : 'black' | 'green' | 'red';
   let canvasFrameWidth : number;
 
-  if (currentEditor && (currentEditor.id !== user?.id)) {
+  if (currentEditor && (currentEditor.userId !== user?.id)) {
     canvasFrameColor = 'red';
     canvasFrameWidth = 4;
   } else if (isCanvasSelected) {
