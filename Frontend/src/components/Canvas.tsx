@@ -11,7 +11,6 @@ import {
   useRef,
   useContext,
   useEffect,
-  useState,
   useCallback,
 } from 'react';
 
@@ -38,19 +37,17 @@ import {
   ClientMessengerContext,
 } from '@/context/ClientMessengerContext';
 
-import UserCacheContext from '@/context/UserCacheContext';
-
 import {
   type RootState,
 } from '@/store';
 
 import {
-  type CanvasData,
-} from '@/types/RootState';
-
-import {
   selectAllowedUsersByCanvas,
 } from '@/store/allowedUsers/allowedUsersByCanvasSlice';
+
+import {
+  selectCurrentEditorByCanvas,
+} from '@/store/activeUsers/activeUsersSelectors';
 
 import {
   useUser,
@@ -65,13 +62,11 @@ import type {
   CanvasObjectModel,
 } from '@/types/CanvasObjectModel';
 
-import type {
-  CanvasIdType,
-} from '@/types/WebSocketProtocol';
-
 import {
-  type User,
-} from '@/types/UserAuth';
+  type CanvasIdType,
+  type CanvasData,
+  type UserSummary,
+} from '@/types/WebSocketProtocol';
 
 import {
   type ShapeAttributesState,
@@ -114,7 +109,6 @@ const Canvas = (props: CanvasProps) => {
     shapes,
     shapeAttributes,
     currentTool,
-    currentEditorUserId,
     childCanvasesByCanvas,
     canvasesById,
     onSelectCanvasDimensions,
@@ -130,12 +124,6 @@ const Canvas = (props: CanvasProps) => {
 
   if (! clientMessengerContext) {
     throw new Error('No Client Messenger context provided');
-  }
-
-  const userCacheContext = useContext(UserCacheContext);
-
-  if (! userCacheContext) {
-    throw new Error('No user cache context provided to Canvas');
   }
 
   const {
@@ -156,10 +144,6 @@ const Canvas = (props: CanvasProps) => {
   } = clientMessengerContext;
 
   const {
-    getUserById,
-  } = userCacheContext;
-
-  const {
     user,
   } = useUser();
 
@@ -168,24 +152,9 @@ const Canvas = (props: CanvasProps) => {
     (state: RootState) => selectAllowedUsersByCanvas(state, canvasId || '')
   );
 
-  const [currentEditor, setCurrentEditor] = useState<User | null>(null);
-
-  useEffect(
-    () => {
-      const fetchCurrentEditor = async () => {
-        if (currentEditorUserId) {
-          const user : User | null = await getUserById(currentEditorUserId);
-
-          setCurrentEditor(user);
-        } else {
-          setCurrentEditor(null);
-        }
-      };
-
-      fetchCurrentEditor();
-    },
-    [currentEditorUserId, setCurrentEditor, getUserById]
-  );
+  const currentEditor : UserSummary | null = useSelector((state: RootState) => (
+    selectCurrentEditorByCanvas(state, canvasId)
+  ));
 
   const userHasAccess = user?.id
     ? allowedUserIds === undefined || allowedUserIds.length === 0 || allowedUserIds.includes(user.id)
@@ -339,13 +308,13 @@ const Canvas = (props: CanvasProps) => {
     setWhiteboardTooltipText(tooltipText);
   }, [tooltipText]);
 
-  const editingText = currentEditor?.id === user?.id ?
+  const editingText = currentEditor?.userId === user?.id ?
     'You are currently editing'
     : `${currentEditor?.username} is currently editing`;
 
   // Set editingText in context for main canvas
   useEffect(() => {
-    if (currentEditor && !parentCanvas) {
+    if (currentEditor && (! parentCanvas)) {
       setEditingText(editingText);
     }
     else {
@@ -371,7 +340,7 @@ const Canvas = (props: CanvasProps) => {
   let canvasFrameColor : 'black' | 'green' | 'red';
   let canvasFrameWidth : number;
 
-  if (currentEditor && (currentEditor.id !== user?.id)) {
+  if (currentEditor && (currentEditor.userId !== user?.id)) {
     canvasFrameColor = 'red';
     canvasFrameWidth = 4;
   } else if (isCanvasSelected) {

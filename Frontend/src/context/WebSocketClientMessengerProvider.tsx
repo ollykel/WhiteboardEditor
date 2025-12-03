@@ -8,6 +8,7 @@
 // -- std imports
 import {
   useState,
+  useEffect,
   useRef,
   useContext,
   useCallback,
@@ -17,11 +18,6 @@ import {
 import {
   useParams,
 } from 'react-router-dom';
-
-// -- third party imports
-import {
-  useSelector,
-} from 'react-redux';
 
 // -- local imports
 import {
@@ -39,17 +35,12 @@ import {
 } from '@/hooks/useUser';
 
 import {
-  type CanvasAttribs,
-} from '@/types/RootState';
-
-import {
   setAllowedUsersByCanvas,
 } from '@/store/allowedUsers/allowedUsersByCanvasSlice';
 
 import {
   type ClientMessageLogin,
   type SocketServerMessage,
-  type UserIdType,
   type UserSummary,
   type CanvasIdType,
 } from '@/types/WebSocketProtocol';
@@ -65,25 +56,18 @@ import {
 // -- program state
 import {
   store,
-  type RootState,
 } from '@/store';
-
-import {
-  selectCanvasesByWhiteboardId,
-} from '@/store/canvases/canvasesSelectors';
-
-import {
-  selectActiveUsersByWhiteboard,
-} from '@/store/activeUsers/activeUsersSelectors';
 
 import {
   addWhiteboard,
   setCanvasObjects,
   addCanvas,
   deleteCanvas,
-  setCurrentEditorByCanvas,
-  unsetCurrentEditorByCanvas,
+  setCurrentEditorsByCanvas,
+  removeCurrentEditorsByCanvas,
   setActiveUsersByWhiteboard,
+  addActiveUsersByWhiteboard,
+  removeActiveUsers,
 } from '@/controllers';
 
 // -- type declarations
@@ -95,6 +79,8 @@ export interface WebSocketClientMessengerProviderProps {
 const WebSocketClientMessengerProvider = ({
   children,
 }: WebSocketClientMessengerProviderProps): React.ReactNode => {
+  console.log('!! Rendering WebSocketClientMessengerProvider');// TODO: remove debug
+
   const {
     whiteboard_id: whiteboardId,
   } = useParams();
@@ -117,17 +103,6 @@ const WebSocketClientMessengerProvider = ({
     authToken,
   } = authContext;
 
-  const canvases : CanvasAttribs[] = useSelector((state: RootState) => (
-    selectCanvasesByWhiteboardId(state, whiteboardId)
-  ));
-
-  const activeUsersByClientId = useSelector((state: RootState) => (
-    selectActiveUsersByWhiteboard(state, whiteboardId)
-  ));
-
-  const wsUriScheme : 'ws' | 'wss' = window.location.protocol === 'https' ? 'wss' : 'ws';
-  const wsUri = `${wsUriScheme}://${window.location.host}/ws/${whiteboardId}`;
-  const ws : WebSocket = new WebSocket(wsUri);
   const dispatch = store.dispatch;
 
   const [clientMessenger, setClientMessenger] = useState<IWhiteboardClientMessenger | null>(null);
@@ -153,25 +128,23 @@ const WebSocketClientMessengerProvider = ({
               setActiveUsersByWhiteboard(dispatch, whiteboardId, activeUsers);
             }
             break;
-          case 'active_users': 
+          case 'login_users': 
             {
               const {
                 users,
               } = msg;
 
-              const activeUsersSet : Record<UserIdType, boolean> = Object.fromEntries(
-                users.map(userSummary => [userSummary.userId, true])
-              );
-              setActiveUsersByWhiteboard(dispatch, whiteboardId, users);
+              addActiveUsersByWhiteboard(dispatch, whiteboardId, users);
+            } 
+            break;
+          case 'logout_users': 
+            {
+              const {
+                users,
+              } = msg;
 
-              // -- unset current editors who are no longer logged in
-              const removedEditorCanvasIds : CanvasIdType[] = canvases
-                .filter(canvas => canvas.currentEditorUserId && ! (canvas.currentEditorUserId in activeUsersSet))
-                .map(canvas => canvas.id);
-              
-              for (const canvasId of removedEditorCanvasIds) {
-                unsetCurrentEditorByCanvas(dispatch, canvasId);
-              }// -- end for canvasId
+              // -- remove logged out users
+              removeActiveUsers(dispatch, users);
             } 
             break;
           case 'editing_canvas':
@@ -181,30 +154,24 @@ const WebSocketClientMessengerProvider = ({
                 canvasId,
               } = msg;
 
-              const userId : UserIdType | undefined = activeUsersByClientId[clientId].userId;
+              setCurrentEditorsByCanvas(dispatch, { [canvasId]: clientId });
 
-              if (! userId) {
-                console.error('Could not find user ID for client', clientId);
-              } else {
-                setCurrentEditorByCanvas(dispatch, canvasId, userId);
+              // -- set current editor timeout
+              const oldCurrentEditorTimeoutId = currentEditorTimeoutsByCanvasRef.current[canvasId];
 
-                // -- set current editor timeout
-                const oldCurrentEditorTimeoutId = currentEditorTimeoutsByCanvasRef.current[canvasId];
-
-                if (oldCurrentEditorTimeoutId) {
-                  window.clearTimeout(oldCurrentEditorTimeoutId);
-                  currentEditorTimeoutsByCanvasRef.current[canvasId] = 0;
-                }
-
-                currentEditorTimeoutsByCanvasRef.current[canvasId] = window.setTimeout(
-                  () => {
-                    unsetCurrentEditorByCanvas(dispatch, canvasId);
-                    window.clearTimeout(currentEditorTimeoutsByCanvasRef.current[canvasId]);
-                    currentEditorTimeoutsByCanvasRef.current[canvasId] = 0;
-                  },
-                  CURRENT_EDITOR_NUM_MILLIS
-                );
+              if (oldCurrentEditorTimeoutId) {
+                window.clearTimeout(oldCurrentEditorTimeoutId);
+                currentEditorTimeoutsByCanvasRef.current[canvasId] = 0;
               }
+
+              currentEditorTimeoutsByCanvasRef.current[canvasId] = window.setTimeout(
+                () => {
+                  removeCurrentEditorsByCanvas(dispatch, [canvasId]);
+                  window.clearTimeout(currentEditorTimeoutsByCanvasRef.current[canvasId]);
+                  currentEditorTimeoutsByCanvasRef.current[canvasId] = 0;
+                },
+                CURRENT_EDITOR_NUM_MILLIS
+              );
             }
             break;
           case 'create_shapes':
@@ -215,30 +182,24 @@ const WebSocketClientMessengerProvider = ({
                 shapes,
               } = msg;
 
-              const userId : UserIdType | undefined = activeUsersByClientId[clientId].userId;
+              setCanvasObjects(dispatch, canvasId, shapes);
+              setCurrentEditorsByCanvas(dispatch, { [canvasId]: clientId });
 
-              if (! userId) {
-                console.error('Could not find user ID for client', clientId);
-              } else {
-                setCanvasObjects(dispatch, canvasId, shapes);
-                setCurrentEditorByCanvas(dispatch, canvasId, userId);
+              const oldCurrentEditorTimeoutId = currentEditorTimeoutsByCanvasRef.current[canvasId];
 
-                const oldCurrentEditorTimeoutId = currentEditorTimeoutsByCanvasRef.current[canvasId];
-
-                if (oldCurrentEditorTimeoutId) {
-                  window.clearTimeout(oldCurrentEditorTimeoutId);
-                  currentEditorTimeoutsByCanvasRef.current[canvasId] = 0;
-                }
-
-                currentEditorTimeoutsByCanvasRef.current[canvasId] = window.setTimeout(
-                  () => {
-                    unsetCurrentEditorByCanvas(dispatch, canvasId);
-                    window.clearTimeout(currentEditorTimeoutsByCanvasRef.current[canvasId]);
-                    currentEditorTimeoutsByCanvasRef.current[canvasId] = 0;
-                  },
-                  CURRENT_EDITOR_NUM_MILLIS
-                );
+              if (oldCurrentEditorTimeoutId) {
+                window.clearTimeout(oldCurrentEditorTimeoutId);
+                currentEditorTimeoutsByCanvasRef.current[canvasId] = 0;
               }
+
+              currentEditorTimeoutsByCanvasRef.current[canvasId] = window.setTimeout(
+                () => {
+                  removeCurrentEditorsByCanvas(dispatch, [canvasId]);
+                  window.clearTimeout(currentEditorTimeoutsByCanvasRef.current[canvasId]);
+                  currentEditorTimeoutsByCanvasRef.current[canvasId] = 0;
+                },
+                CURRENT_EDITOR_NUM_MILLIS
+              );
             }
             break;
           case 'update_shapes':
@@ -249,30 +210,24 @@ const WebSocketClientMessengerProvider = ({
                 shapes,
               } = msg;
 
-              const userId : UserIdType | undefined = activeUsersByClientId[clientId].userId;
+              setCanvasObjects(dispatch, canvasId, shapes);
+              setCurrentEditorsByCanvas(dispatch, { [canvasId]: clientId });
 
-              if (! userId) {
-                console.error('Could not find user ID for client', clientId);
-              } else {
-                setCanvasObjects(dispatch, canvasId, shapes);
-                setCurrentEditorByCanvas(dispatch, canvasId, userId);
+              const oldCurrentEditorTimeoutId = currentEditorTimeoutsByCanvasRef.current[canvasId];
 
-                const oldCurrentEditorTimeoutId = currentEditorTimeoutsByCanvasRef.current[canvasId];
-
-                if (oldCurrentEditorTimeoutId) {
-                  clearTimeout(oldCurrentEditorTimeoutId);
-                  currentEditorTimeoutsByCanvasRef.current[canvasId] = 0;
-                }
-
-                currentEditorTimeoutsByCanvasRef.current[canvasId] = window.setTimeout(
-                  () => {
-                    unsetCurrentEditorByCanvas(dispatch, canvasId);
-                    clearTimeout(currentEditorTimeoutsByCanvasRef.current[canvasId]);
-                    currentEditorTimeoutsByCanvasRef.current[canvasId] = 0;
-                  },
-                  CURRENT_EDITOR_NUM_MILLIS
-                );
+              if (oldCurrentEditorTimeoutId) {
+                clearTimeout(oldCurrentEditorTimeoutId);
+                currentEditorTimeoutsByCanvasRef.current[canvasId] = 0;
               }
+
+              currentEditorTimeoutsByCanvasRef.current[canvasId] = window.setTimeout(
+                () => {
+                  removeCurrentEditorsByCanvas(dispatch, [canvasId]);
+                  clearTimeout(currentEditorTimeoutsByCanvasRef.current[canvasId]);
+                  currentEditorTimeoutsByCanvasRef.current[canvasId] = 0;
+                },
+                CURRENT_EDITOR_NUM_MILLIS
+              );
             }
             break;
           case 'create_canvas':
@@ -358,29 +313,43 @@ const WebSocketClientMessengerProvider = ({
     [dispatch]
   );// -- end handleServerMessage
 
-  ws.onopen = () => {
-    // Send login/auth message with user ID, if currently logged in
-    if (! user) {
-      console.error('Cannot log into web socket server without authenticated user');
-    } else if (! authToken) {
-      console.error('Cannot log into web socket server without authentication token');
-    } else {
-      const messenger = new WhiteboardSocketMessenger(ws);
-      const loginMessage : ClientMessageLogin = {
-        type: "login",
-        jwt: authToken,
-      };
+  const makeHandleWebSocketOpen = useCallback(
+    (ws: WebSocket, wsUri: string): () => void => () => {
+      // Send login/auth message with user ID, if currently logged in
+      if (! user) {
+        console.error('Cannot log into web socket server without authenticated user');
+      } else if (! authToken) {
+        console.error('Cannot log into web socket server without authentication token');
+      } else {
+        const messenger = new WhiteboardSocketMessenger(ws);
+        const loginMessage : ClientMessageLogin = {
+          type: "login",
+          jwt: authToken,
+        };
 
-      console.log('Sending login message:', loginMessage);
+        console.log('Sending login message:', loginMessage);
 
-      messenger.sendLogin(loginMessage);
-      setClientMessenger(messenger);
-    }
+        messenger.sendLogin(loginMessage);
+        setClientMessenger(messenger);
+      }
 
-    console.log(`Established web socket connection to ${wsUri}`);
+      console.log(`Established web socket connection to ${wsUri}`);
 
-    ws.onmessage = handleServerMessage;
-  };
+      ws.onmessage = handleServerMessage;
+    },
+    [authToken, handleServerMessage, setClientMessenger, user]
+  );
+
+  useEffect(
+    () => {
+      const wsUriScheme : 'ws' | 'wss' = window.location.protocol === 'https' ? 'wss' : 'ws';
+      const wsUri = `${wsUriScheme}://${window.location.host}/ws/${whiteboardId}`;
+      const ws : WebSocket = new WebSocket(wsUri);
+
+      ws.onopen = makeHandleWebSocketOpen(ws, wsUri);
+    },
+    [makeHandleWebSocketOpen, whiteboardId]
+  );
 
   return (
     <ClientMessengerContext.Provider value={{

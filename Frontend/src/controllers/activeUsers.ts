@@ -5,42 +5,45 @@ import {
 
 import {
   type UserSummary,
+  type ClientIdType,
   type WhiteboardIdType,
 } from "@/types/WebSocketProtocol";
 
-import { 
-  addActiveUser as addActiveUserReducer,
-  setActiveUsers as setActiveUsersReducer,
-} from "@/store/activeUsers/activeUsersSlice";
+import {
+  setActiveUsers,
+} from '@/store/activeUsers/activeUsersSlice';
 
 import {
   addActiveUsersByWhiteboard as addActiveUsersByWhiteboardReducer,
   setActiveUsersByWhiteboard as setActiveUsersByWhiteboardReducer,
+  removeActiveUsers as removeActiveUsersReducer,
 } from '@/store/activeUsers/activeUsersByWhiteboardSlice';
 
 export const addActiveUsersByWhiteboard = (
   dispatch: AppDispatch,
   whiteboardId: WhiteboardIdType,
-  users: UserSummary[],
+  userSummaries: UserSummary[],
 ) => {
-  users.forEach((u) => {
-    console.log('Processing user:', u);
-    dispatch(addActiveUserReducer(u));
-  });
-
+  dispatch(setActiveUsers(userSummaries));
   dispatch(addActiveUsersByWhiteboardReducer({
-    [whiteboardId]: users.map(u => u.clientId),
+    [whiteboardId]: userSummaries.map(userSummary => userSummary.clientId),
   }));
 };
 
 export const setActiveUsersByWhiteboard = (
   dispatch: AppDispatch,
   whiteboardId: WhiteboardIdType,
-  users: UserSummary[],
+  userSummaries: UserSummary[],
 ) => {
-  dispatch(setActiveUsersReducer(users));
+  dispatch(setActiveUsers(userSummaries));
   dispatch(setActiveUsersByWhiteboardReducer({
-    [whiteboardId]: users.map(u => u.clientId),
+    [whiteboardId]: userSummaries.map(userSummary => userSummary.clientId)
   }));
 };
 
+export const removeActiveUsers = (
+  dispatch: AppDispatch,
+  userClientIds: ClientIdType[]
+) => {
+  dispatch(removeActiveUsersReducer(userClientIds));
+};

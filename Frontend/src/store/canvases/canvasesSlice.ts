@@ -6,11 +6,8 @@ import {
 // -- local imports
 import {
   type CanvasIdType,
-} from '@/types/WebSocketProtocol';
-
-import {
   type CanvasAttribs,
-} from '@/types/RootState';
+} from '@/types/WebSocketProtocol';
 
 const canvasesSlice = createSlice({
   name: 'canvases',

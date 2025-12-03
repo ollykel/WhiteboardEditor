@@ -22,10 +22,12 @@ const activeUsersSlice = createSlice({
   name: 'activeUsers',
   initialState: {} as ActiveUsersSliceState,
   reducers: {
-    setActiveUsers(state, action: PayloadAction<ActiveUsersSliceState>) {
+    setActiveUsers(state, action: PayloadAction<UserSummary[]>) {
       return {
         ...state,
-        ...action.payload
+        ...Object.fromEntries(action.payload.map(userSummary => [
+          userSummary.clientId, userSummary
+        ]))
       };
     },
     removeActiveUsers(state, action: PayloadAction<ClientIdType[]>) {

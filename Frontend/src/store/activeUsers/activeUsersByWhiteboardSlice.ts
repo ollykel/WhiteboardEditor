@@ -8,6 +8,10 @@ import {
   type WhiteboardIdType,
 } from '@/types/WebSocketProtocol';
 
+import {
+  removeWhiteboards as removeWhiteboardsReducer,
+} from '@/store/whiteboards/whiteboardsSlice';
+
 interface ActiveUsersByWhiteboardState {
   clientsByWhiteboard: Record<WhiteboardIdType, Record<ClientIdType, ClientIdType>>;
   whiteboardsByClient: Record<ClientIdType, WhiteboardIdType>;
@@ -106,6 +110,30 @@ export const activeUsersByWhiteboardSlice = createSlice({
         whiteboardsByClient,
       };
     },
+  },
+  extraReducers: (builder) => {
+    builder.addCase(removeWhiteboardsReducer, (state, action: PayloadAction<WhiteboardIdType[]>) => {
+      const whiteboardIds = action.payload;
+      const {
+        clientsByWhiteboard,
+        whiteboardsByClient,
+      } = state;
+
+      for (const whiteboardId of whiteboardIds) {
+        if (whiteboardId in clientsByWhiteboard) {
+          for (const clientId of Object.keys(clientsByWhiteboard[whiteboardId])) {
+            delete whiteboardsByClient[clientId];
+          }// -- end for clientId
+
+          delete clientsByWhiteboard[whiteboardId];
+        }
+      }// -- end for whiteboardId
+
+      return {
+        clientsByWhiteboard,
+        whiteboardsByClient,
+      };
+    });
   },
 });// -- end activeUsersByWhiteboardSlice
 

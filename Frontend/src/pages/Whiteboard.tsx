@@ -236,7 +236,7 @@ const Whiteboard = ({
 
   const activeUsers : Record<ClientIdType, UserSummary> = useSelector((state: RootState) => (
     selectActiveUsersByWhiteboard(state, whiteboardId)
-  ));
+  )) || {};
 
   const currWhiteboard: WhiteboardAttribs | null = useSelector((state: RootState) => (
     selectWhiteboardById(state, whiteboardId))
@@ -651,6 +651,7 @@ const Whiteboard = ({
 };// end Whiteboard
 
 const WrappedWhiteboard = () => {
+  console.log('!! Rendering Wrapped Whiteboard');// TODO: remove debug
   const authContext = useContext(AuthContext);
   const clientMessengerContext = useContext(ClientMessengerContext);
   const [newCanvasAllowedUsers, setNewCanvasAllowedUsers] = useState<string[]>([]);

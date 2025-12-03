@@ -9,14 +9,17 @@ import {
   type CanvasIdType,
 } from '@/types/WebSocketProtocol';
 
-export const selectActiveUsersByWhiteboard = (state: RootState, wid: WhiteboardIdType) : Record<ClientIdType, UserSummary> | null => {
-  return state.activeUsersByWhiteboard[wid] || null;
+export const selectActiveUsersByWhiteboard = (state: RootState, wid: WhiteboardIdType) : Record<ClientIdType, UserSummary> => {
+  return Object.fromEntries(
+    Object.keys(state.activeUsersByWhiteboard.clientsByWhiteboard[wid] || {}).map(clientId => [
+      clientId, state.activeUsers[clientId]
+    ])
+  );
 };
 
 export const selectCurrentEditorByCanvas = (
   state: RootState,
-  whiteboardId: WhiteboardIdType,
   canvasId: CanvasIdType
 ): UserSummary | null => {
-  return state.activeUsersByWhiteboard[whiteboardId][state.currentEditorsByCanvas.currentEditorsByCanvas[canvasId]] || null;
+  return state.activeUsers[state.currentEditorsByCanvas.currentEditorsByCanvas[canvasId]] || null;
 };

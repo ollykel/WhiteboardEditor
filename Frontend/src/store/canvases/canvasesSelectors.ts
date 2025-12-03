@@ -6,12 +6,9 @@ import type {
 
 import {
   type CanvasAttribs,
-} from '@/types/RootState';
-
-import type {
-  CanvasData,
-  CanvasIdType,
-  WhiteboardIdType
+  type CanvasData,
+  type CanvasIdType,
+  type WhiteboardIdType
 } from '@/types/WebSocketProtocol';
 
 export const selectCanvasById = (state: RootState, canvasId: CanvasIdType): CanvasAttribs | null => (

@@ -20,7 +20,7 @@ import type {
 } from '@/types/APIProtocol';
 
 // The unique identifier for clients within a web socket session.
-export type ClientIdType = number;
+export type ClientIdType = string;
 
 // -- string represents Mongo ObjectId
 export type UserIdType = string;

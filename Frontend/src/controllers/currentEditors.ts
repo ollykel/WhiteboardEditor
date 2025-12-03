@@ -6,6 +6,7 @@ import {
 import {
   setCurrentEditorsByCanvas as setCurrentEditorsByCanvasReducer,
   removeCurrentEditors as removeCurrentEditorsReducer,
+  removeCurrentEditorsByCanvas as removeCurrentEditorsByCanvasReducer,
 } from '@/store/activeUsers/currentEditorsByCanvasSlice.ts';
 
 import {
@@ -20,9 +21,16 @@ export const setCurrentEditorsByCanvas = (
   dispatch(setCurrentEditorsByCanvasReducer(editorsByCanvas));
 };
 
-export const removeCurrentEditorsByCanvas = (
+export const removeCurrentEditorsByClient = (
   dispatch: AppDispatch,
   clientIds: ClientIdType[]
 ) => {
   dispatch(removeCurrentEditorsReducer(clientIds));
+};
+
+export const removeCurrentEditorsByCanvas = (
+  dispatch: AppDispatch,
+  canvasIds: CanvasIdType[]
+) => {
+  dispatch(removeCurrentEditorsByCanvasReducer(canvasIds));
 };

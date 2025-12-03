@@ -7,8 +7,6 @@ import {
 import {
   addCanvas,
   deleteCanvas,
-  setCurrentEditorByCanvas,
-  unsetCurrentEditorByCanvas,
 } from './canvases';
 
 import {
@@ -18,15 +16,22 @@ import {
 import {
   addActiveUsersByWhiteboard,
   setActiveUsersByWhiteboard,
+  removeActiveUsers,
 } from './activeUsers';
+
+import {
+  setCurrentEditorsByCanvas,
+  removeCurrentEditorsByCanvas,
+} from './currentEditors';
 
 export {
   setCanvasObjects,
   addCanvas,
   deleteCanvas,
-  setCurrentEditorByCanvas,
-  unsetCurrentEditorByCanvas,
+  setCurrentEditorsByCanvas,
+  removeCurrentEditorsByCanvas,
   addWhiteboard,
   addActiveUsersByWhiteboard,
   setActiveUsersByWhiteboard,
+  removeActiveUsers,
 };

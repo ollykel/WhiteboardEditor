@@ -89,6 +89,20 @@ const currentEditorsByCanvasSlice = createSlice({
         canvasesByCurrentEditor: newCanvasesByCurrentEditor,
       };
     },
+    removeCurrentEditorsByCanvas(state, action: PayloadAction<CanvasIdType[]>) {
+      const newCurrentEditorsByCanvas = { ...state.currentEditorsByCanvas };
+      const newCanvasesByCurrentEditor = { ...state.canvasesByCurrentEditor };
+
+      for (const canvasId of action.payload) {
+        delete newCanvasesByCurrentEditor[newCurrentEditorsByCanvas[canvasId]];
+        delete newCurrentEditorsByCanvas[canvasId];
+      }// -- end for canvasId
+
+      return {
+        currentEditorsByCanvas: newCurrentEditorsByCanvas,
+        canvasesByCurrentEditor: newCanvasesByCurrentEditor,
+      };
+    },
   },
   extraReducers: (builder) => {
     // -- ensure current editor relation is removed if active user is removed
@@ -136,6 +150,7 @@ export const {
   setCurrentEditorsByCanvas,
   unsetCurrentEditorsByCanvas,
   removeCurrentEditors,
+  removeCurrentEditorsByCanvas,
 } = currentEditorsByCanvasSlice.actions;
 
 export default currentEditorsByCanvasSlice.reducer;
