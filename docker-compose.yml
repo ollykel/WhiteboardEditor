@@ -16,11 +16,13 @@ services:
       <<: *cache_settings
     image: ${WHITEBOARD_EDITOR_CR_URI-whiteboard_editor}/reverse_proxy:${WHITEBOARD_EDITOR_TAG-latest}
     ports:
-      - ${WHITEBOARD_EDITOR_HTTP_PORT-8080}:8080
-      - ${WHITEBOARD_EDITOR_HTTPS_PORT-4430}:4430
+      - ${WHITEBOARD_EDITOR_HTTP_PORT-8080}:80
+      - ${WHITEBOARD_EDITOR_HTTPS_PORT-4430}:443
     environment:
+      WHITEBOARD_EDITOR_DOMAIN: ${WHITEBOARD_EDITOR_DOMAIN}
       WHITEBOARD_EDITOR_FRONTEND_PORT: ${WHITEBOARD_EDITOR_FRONTEND_PORT-3000}
       WHITEBOARD_EDITOR_WS_PORT: ${WHITEBOARD_EDITOR_WS_PORT-4000}
+      WHITEBOARD_EDITOR_AUTH_PORT: ${WHITEBOARD_EDITOR_AUTH_PORT-8080}
     volumes:
       - type: bind
         source: .secrets/key.pem
@@ -29,10 +31,20 @@ services:
         source: .secrets/cert.pem
         target: /app/cert.pem
     depends_on:
+      - auth
       - frontend
       - rest_api
       - web_socket_server
   
+  auth:
+    # docker run -p 127.0.0.1:8080:8080 -e KC_BOOTSTRAP_ADMIN_USERNAME=admin -e KC_BOOTSTRAP_ADMIN_PASSWORD=admin quay.io/keycloak/keycloak:26.4.7
+    build:
+      context: Auth
+      <<: *cache_settings
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: ${WHITEBOARD_EDITOR_KC_BOOTSTRAP_ADMIN_USERNAME}
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${WHITEBOARD_EDITOR_KC_BOOTSTRAP_ADMIN_PASSWORD}
+
   frontend:
     # Frontend code to serve to client.
     # Built using Vite, served with nginx
